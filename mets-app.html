@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.18</title>
+<title>Mets Tracker v1.19</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -456,8 +456,9 @@ async function loadNextGame(){
       }).sort(function(a,b){return new Date(a.gameDate)-new Date(b.gameDate);});
       group.forEach(function(s){used.add(s.gamePk);});seriesList.push(group);
     });
-    var nextSeries=null;
-    for(var i=0;i<seriesList.length;i++){if(seriesList[i].some(function(g){return g.status.abstractGameState!=='Final';})){nextSeries=seriesList[i];break;}}
+    var currentIdx=-1;
+    for(var i=0;i<seriesList.length;i++){if(seriesList[i].some(function(g){return g.status.abstractGameState!=='Final';})){currentIdx=i;break;}}
+    var nextSeries=currentIdx>=0&&currentIdx+1<seriesList.length?seriesList[currentIdx+1]:null;
     if(!nextSeries||!nextSeries.length){document.getElementById('nextGame').innerHTML='<div class="game-big" style="'+defaultGradient()+'"><div class="card-title">NEXT SERIES</div><div style="color:rgba(255,255,255,.6);margin:16px 0">No upcoming series found</div></div>';return;}
     var first=nextSeries[0],teamHome=first.teams.home.team.id===activeTeam.id,oppTeam=teamHome?first.teams.away.team:first.teams.home.team,style=gameGradient(first);
     var d1=new Date(nextSeries[0].gameDate),d2=new Date(nextSeries[nextSeries.length-1].gameDate);
