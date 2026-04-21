@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.20</title>
+<title>Mets Tracker v1.21</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -758,13 +758,13 @@ async function fetchLiveGame(){
     lsHtml+='</tbody></table></div>';document.getElementById('liveLinescore').innerHTML=lsHtml;
     var onDeck=offense.onDeck?' · On Deck: '+offense.onDeck.fullName:'';
     document.getElementById('liveLastPlay').innerHTML='<div class="live-card-title">At Bat</div><div class="last-play-text">'+(batter.fullName||'—')+onDeck+'</div>';
-    document.getElementById('liveRefreshTime').textContent='Last updated: '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+' · Auto-refreshes every 5 min';
     var awayPlayers=bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{},homePlayers=bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{};
     var awayAbbr=awayTeam.abbreviation||awayTeam.name||'Away',homeAbbr=homeTeam.abbreviation||homeTeam.name||'Home';
     document.getElementById('liveBoxscore').innerHTML='<div class="boxscore-wrap" style="margin-top:16px"><div class="live-card-title" style="margin-bottom:10px">Box Score</div><div style="display:flex;gap:6px;margin-bottom:10px"><button onclick="switchBoxTab(\'live_bs\',\'away\')" id="live_bs_away_btn" style="background:var(--orange);color:var(--accent-text);border:none;padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:700">'+awayAbbr+'</button><button onclick="switchBoxTab(\'live_bs\',\'home\')" id="live_bs_home_btn" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem">'+homeAbbr+'</button></div><div id="live_bs_away">'+buildBoxscore(awayPlayers)+'</div><div id="live_bs_home" style="display:none">'+buildBoxscore(homePlayers)+'</div></div>';
     var giHtml='';
     if(bs.info&&bs.info.length){giHtml='<div class="boxscore-wrap" style="margin-top:16px"><div class="live-card-title" style="margin-bottom:10px">Game Info</div><div style="background:var(--card);border-radius:8px;padding:10px">';bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)giHtml+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else giHtml+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--orange);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text)">'+val+'</span></div>';});giHtml+='</div></div>';}
     document.getElementById('liveGameInfo').innerHTML=giHtml;
+    document.getElementById('liveRefreshTime').textContent='Last updated: '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+' · Auto-refreshes every 5 min';
   }catch(e){document.getElementById('liveHeader').innerHTML='<div class="error">Could not load live game data</div>';}
 }
 
@@ -864,9 +864,9 @@ function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementB
       </div>
     </div>
     <div class="last-play-box" id="liveLastPlay"></div>
-    <div class="live-refresh-time" id="liveRefreshTime"></div>
     <div id="liveBoxscore"></div>
     <div id="liveGameInfo"></div>
+    <div class="live-refresh-time" id="liveRefreshTime"></div>
   </div>
 </div>
 </body>
