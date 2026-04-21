@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.23</title>
+<title>Mets Tracker v1.24</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -156,7 +156,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.23</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.24</div>
       </div>
     </div>
   </nav>
@@ -379,8 +379,8 @@ function getSeriesInfo(g){
   var sn=g.seriesGameNumber||(g.seriesSummary&&g.seriesSummary.seriesGameNumber);
   var total=g.gamesInSeries||(g.seriesSummary&&g.seriesSummary.gamesInSeries);
   var desc=g.seriesSummary&&g.seriesSummary.seriesStatus?g.seriesSummary.seriesStatus:null;
-  if(sn&&total)return'Game '+sn+' of '+total+(desc?' · '+desc:'');
-  if(!scheduleData.length)return null;
+  if(sn&&total&&desc)return'Game '+sn+' of '+total+' · '+desc;
+  if(!scheduleData.length)return sn&&total?'Game '+sn+' of '+total:null;
   var oppId=g.teams.home.team.id===activeTeam.id?g.teams.away.team.id:g.teams.home.team.id;
   var venueId=g.venue&&g.venue.id,gameDateStr=g.gameDate.split('T')[0];
   var series=scheduleData.filter(function(s){
@@ -388,14 +388,15 @@ function getSeriesInfo(g){
     var sVenue=s.venue&&s.venue.id,daysDiff=Math.abs((new Date(s.gameDate.split('T')[0])-new Date(gameDateStr))/86400000);
     return sOpp===oppId&&sVenue===venueId&&daysDiff<=4;
   }).sort(function(a,b){return new Date(a.gameDate)-new Date(b.gameDate);});
-  if(series.length<2)return null;
-  var gameNum=series.findIndex(function(s){return s.gamePk===g.gamePk;})+1,myW=0,oppW=0;
+  if(!sn&&series.length<2)return null;
+  var gameNum=sn||(series.findIndex(function(s){return s.gamePk===g.gamePk;})+1);
+  var gameTotal=total||series.length,myW=0,oppW=0;
   series.forEach(function(s){if(s.status.abstractGameState!=='Final')return;var myT=s.teams.home.team.id===activeTeam.id?s.teams.home:s.teams.away;if(myT.isWinner)myW++;else oppW++;});
   var recStr='';
   if(myW>oppW)recStr=' · '+activeTeam.short+' lead '+myW+'-'+oppW;
   else if(oppW>myW){var oN=g.teams.home.team.id===activeTeam.id?g.teams.away.team.teamName:g.teams.home.team.teamName;recStr=' · '+oN+' lead '+oppW+'-'+myW;}
   else if(myW>0)recStr=' · Tied '+myW+'-'+myW;
-  return'Game '+gameNum+' of '+series.length+recStr;
+  return'Game '+gameNum+' of '+gameTotal+recStr;
 }
 
 function renderNextGame(g,label){
