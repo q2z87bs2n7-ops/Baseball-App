@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker</title>
+<title>Mets Tracker v1.18</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -787,7 +787,7 @@ async function loadLeagueMatchups(){
       var grad='background:linear-gradient(to right,'+ap+' 0%,#111827 50%,'+hp+' 100%);border:1px solid rgba(255,255,255,.12)';
       var clickable=(status==='Live'||status==='Final'),onclick=clickable?'onclick="showLiveGame('+g.gamePk+')" style="cursor:pointer"':'style="cursor:default"';
       var statusHtml='';
-      if(status==='Live')statusHtml='<div style="font-size:.65rem;color:#ff4444;font-weight:700;margin-bottom:4px">● '+detailed+'</div>';
+      if(status==='Live'){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'Bot ':'Top ')+g.linescore.currentInning:'In Progress';statusHtml='<div style="font-size:.65rem;color:#ff4444;font-weight:700;margin-bottom:4px">● LIVE · '+inn+'</div>';}
       else if(status==='Final')statusHtml='<div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">FINAL</div>';
       else{var t=new Date(g.gameDate);statusHtml='<div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">'+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';}
       var scoreOrVs=(status==='Live'||status==='Final')?'<span style="font-size:1.1rem;font-weight:900;color:#fff">'+(away.score!=null?away.score:0)+'</span><span style="color:var(--muted);margin:0 4px;font-size:.8rem">—</span><span style="font-size:1.1rem;font-weight:900;color:#fff">'+(home.score!=null?home.score:0)+'</span>':'<span style="color:var(--muted);font-size:.8rem">vs</span>';
