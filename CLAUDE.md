@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
 
-**Current version:** v1.36
+**Current version:** v1.37
 **File:** `mets-app.html`
 **Default team:** New York Mets (id: 121)
 
@@ -168,7 +168,7 @@ Three-column layout: Leaders | Roster | Player Stats
 
 **Players list** — 40-man roster (hitting/pitching/fielding tabs). Includes IL players (10-day, 60-day) and anyone on the 40-man, not just the active 26. Jersey number and position shown. On load and on tab switch, the first player in the list is **automatically selected** so the Player Stats panel is never empty.
 
-**Player Stats panel** — updates title to the selected player's name. Shows `#34 · Catcher` subtitle. Full stat grid: Hitting (12 stats, 4-col), Pitching (12 stats, 4-col), Fielding (6 stats, 3-col). Source: `/people/{id}/stats`
+**Player Stats panel** — updates title to the selected player's name. Shows player headshot (100px wide, fixed 130px height placeholder to prevent layout shift; Cloudinary fallback to generic silhouette), `#34 · Catcher` subtitle, then full stat grid: Hitting (12 stats, 4-col), Pitching (12 stats, 4-col), Fielding (6 stats, 3-col). Source: `/people/{id}/stats`; headshots from `img.mlbstatic.com`.
 
 Source: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats` (via `fetchAllPlayerStats` for cache, individual fetch on click)
 
@@ -222,8 +222,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - **Invert Colours** — slide toggle; swaps primary and secondary colours; works with theme override
 - **Media Tab** — slide toggle, defaults off; shows/hides Media section in nav
 - Panel closes on click outside
-- Version number at bottom (e.g. `v1.36`)
-- All settings reset to defaults on page reload (persistence via localStorage planned — see backlog)
+- All settings persist across page reloads via `localStorage` (team, theme, invert, media tab)
+- Version number at bottom (e.g. `v1.37`)
 
 ---
 
@@ -298,18 +298,18 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 ## Feature Backlog
 
-- [ ] Persist user settings (team, theme override, invert, media tab) across page reloads via localStorage
+- [ ] iPhone layout optimisation
 - [ ] Cache live game batter/pitcher stats per matchup
 - [ ] Fix live header text colour accessibility (`--accent-text`)
 - [ ] Team-aware W/L/Live badges
-- [ ] Mobile/iPad layout optimisation
 - [ ] News fallback source (MLB RSS)
-- [ ] Player headshots (MLB API serves them at `img.mlbstatic.com`)
-- [ ] Pitcher matchup preview on upcoming games
 - [ ] Last 10 games record widget
 - [ ] Dynamic season year
 - [ ] QC all 30 team YouTube channel IDs
 - [ ] Consider more reliable CORS proxy for YouTube RSS
+- [x] Persist user settings via localStorage — team, theme, invert, media tab (v1.37)
+- [x] Player headshots in stats panel with layout-shift-free placeholder (v1.37)
+- [x] Probable pitcher hydration fix — no longer shows TBD when pitchers are announced (v1.37)
 - [x] Schedule tab auto-loads on first visit (`scheduleLoaded` flag — v1.31)
 - [x] Auto-select first player in stats; player name in card title (v1.32)
 - [x] Stats tab shows 40-man roster (includes IL players) instead of active 26-man only (v1.33)
@@ -325,3 +325,4 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - [x] Color Theme override dropdown in settings — pick any team's colours independently of active team (v1.36)
 - [x] Invert Colours toggle in settings — swaps primary and secondary colours (v1.36)
 - [x] Settings panel closes on click outside (v1.36)
+- [x] iPad responsive layout — CSS grid classes + media queries at ≤1024px and ≤767px (v1.35)
