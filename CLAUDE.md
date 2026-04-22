@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
 
-**Current version:** v1.34.1
+**Current version:** v1.35
 **File:** `mets-app.html`
 **Default team:** New York Mets (id: 121)
 
