@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.36.7</title>
+<title>Mets Tracker v1.37.1</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -98,6 +98,8 @@
   .linescore-table td:first-child{text-align:left;font-weight:600;min-width:120px}
   .linescore-table td.rhe{font-weight:800;color:var(--orange)}
   .game-notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .media-layout{display:grid;grid-template-columns:25% 75%;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px}
+  .league-leaders-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .game-note-box{background:var(--card);border-radius:8px;padding:10px}
   .game-note-label{font-size:.68rem;text-transform:uppercase;color:var(--orange);font-weight:700;margin-bottom:6px}
   .game-note-val{font-size:.85rem;color:var(--text)}
@@ -140,6 +142,16 @@
   @media(max-width:767px){
     .grid2{grid-template-columns:1fr}
   }
+  @media(max-width:480px){
+    nav{flex-wrap:nowrap;overflow-x:auto}
+    nav button{padding:6px 8px;font-size:.78rem;white-space:nowrap}
+    .stat-grid{grid-template-columns:repeat(2,1fr)}
+    .game-notes-grid{grid-template-columns:1fr}
+    .media-layout{grid-template-columns:1fr}
+    .league-leaders-grid{grid-template-columns:1fr}
+    .card{padding:12px}
+    .cal-day{min-height:50px;padding:4px}
+  }
 </style>
 </head>
 <body>
@@ -181,7 +193,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.36.7</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.37.1</div>
       </div>
     </div>
   </nav>
@@ -852,7 +864,7 @@ async function fetchLiveGame(){
 const MLB_FALLBACK_UC='UCoLrcjPV5tBJkzGBFm-6_sA';
 function loadMedia(){
   var uc=activeTeam.youtubeUC||MLB_FALLBACK_UC,teamName=activeTeam.youtubeUC?activeTeam.name:'MLB',channelUrl='https://www.youtube.com/channel/'+uc,grad='background:linear-gradient(135deg,'+activeTeam.primary+' 0%,#001233 100%)';
-  document.getElementById('mediaCard').innerHTML='<div style="'+grad+';border-radius:12px 12px 0 0;padding:16px 20px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:2px">📺 Official Channel</div><div style="font-size:1.1rem;font-weight:800;color:#fff">'+teamName+'</div></div><a href="'+channelUrl+'" target="_blank" style="font-size:.78rem;color:rgba(255,255,255,.7);text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px">Open in YouTube ↗</a></div><div style="display:grid;grid-template-columns:25% 75%;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px"><div id="mediaList" style="overflow-y:auto;max-height:520px;border-right:1px solid var(--border);background:var(--card)"><div class="loading">Loading videos...</div></div><div style="background:#000"><iframe id="mediaPlayer" width="100%" height="520" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="display:block"></iframe></div></div>';
+  document.getElementById('mediaCard').innerHTML='<div style="'+grad+';border-radius:12px 12px 0 0;padding:16px 20px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:2px">📺 Official Channel</div><div style="font-size:1.1rem;font-weight:800;color:#fff">'+teamName+'</div></div><a href="'+channelUrl+'" target="_blank" style="font-size:.78rem;color:rgba(255,255,255,.7);text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px">Open in YouTube ↗</a></div><div class="media-layout"><div id="mediaList" style="overflow-y:auto;max-height:520px;border-right:1px solid var(--border);background:var(--card)"><div class="loading">Loading videos...</div></div><div style="background:#000"><iframe id="mediaPlayer" width="100%" height="520" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="display:block"></iframe></div></div>';
   loadMediaFeed(uc);
 }
 var mediaEnabled=false;
@@ -906,7 +918,7 @@ async function loadLeagueNews(){var el=document.getElementById('leagueNews');el.
 var LEAGUE_HIT_STATS=[{label:'HR',cats:'homeRuns',decimals:0},{label:'AVG',cats:'avg',decimals:3},{label:'OPS',cats:'onBasePlusSlugging',decimals:3},{label:'RBI',cats:'runsBattedIn',decimals:0}];
 var LEAGUE_PIT_STATS=[{label:'SO',cats:'strikeouts',decimals:0},{label:'WHIP',cats:'walksAndHitsPerInningPitched',decimals:2},{label:'ERA',cats:'earnedRunAverage',decimals:2},{label:'W',cats:'wins',decimals:0}];
 async function loadLeagueLeaders(){var el=document.getElementById('leagueLeaders');el.innerHTML='<div class="loading">Loading leaders...</div>';var stats=leagueLeaderTab==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS,group=leagueLeaderTab;try{var cats=stats.map(function(s){return s.cats;}).join(',');var r=await fetch(MLB_BASE+'/stats/leaders?leaderCategories='+cats+'&season='+SEASON+'&leaderGameTypes=R&limit=10&statGroup='+group+'&hydrate=person');var d=await r.json(),leaderMap={};(d.leagueLeaders||[]).forEach(function(cat,i){if(stats[i])leaderMap[stats[i].cats]=cat.leaders||[];});leagueLeadersCache[leagueLeaderTab]=leaderMap;renderLeagueLeaders(leaderMap,stats);}catch(e){el.innerHTML='<div class="error">Could not load leaders</div>';}}
-function renderLeagueLeaders(leaderMap,stats){var el=document.getElementById('leagueLeaders'),html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';stats.forEach(function(s){var leaders=leaderMap[s.cats]||[];html+='<div style="background:var(--card2);border-radius:8px;padding:10px"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--orange);margin-bottom:8px">'+s.label+'</div>';if(!leaders.length)html+='<div style="color:var(--muted);font-size:.8rem">No data</div>';leaders.forEach(function(l,i){var val=l.value;if(val!=null){var n=parseFloat(val);if(!isNaN(n))val=n.toFixed(s.decimals);}html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:.78rem"><div style="display:flex;gap:6px;align-items:center"><span style="color:var(--orange);font-weight:700;width:16px">'+(i+1)+'</span><span>'+((l.person&&l.person.fullName)||'—')+'</span></div><span style="font-weight:700;color:var(--text)">'+val+'</span></div>';});html+='</div>';});el.innerHTML=html+'</div>';}
+function renderLeagueLeaders(leaderMap,stats){var el=document.getElementById('leagueLeaders'),html='<div class="league-leaders-grid">';stats.forEach(function(s){var leaders=leaderMap[s.cats]||[];html+='<div style="background:var(--card2);border-radius:8px;padding:10px"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--orange);margin-bottom:8px">'+s.label+'</div>';if(!leaders.length)html+='<div style="color:var(--muted);font-size:.8rem">No data</div>';leaders.forEach(function(l,i){var val=l.value;if(val!=null){var n=parseFloat(val);if(!isNaN(n))val=n.toFixed(s.decimals);}html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:.78rem"><div style="display:flex;gap:6px;align-items:center"><span style="color:var(--orange);font-weight:700;width:16px">'+(i+1)+'</span><span>'+((l.person&&l.person.fullName)||'—')+'</span></div><span style="font-weight:700;color:var(--text)">'+val+'</span></div>';});html+='</div>';});el.innerHTML=html+'</div>';}
 function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementById('leagueHitTab').classList.toggle('active',tab==='hitting');document.getElementById('leaguePitTab').classList.toggle('active',tab==='pitching');var cached=leagueLeadersCache[tab],stats=tab==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS;if(cached&&Object.keys(cached).length)renderLeagueLeaders(cached,stats);else loadLeagueLeaders();}
 
 (async function(){
