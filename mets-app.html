@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.31</title>
+<title>Mets Tracker v1.32</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -156,7 +156,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.31</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.32</div>
       </div>
     </div>
   </nav>
@@ -246,7 +246,7 @@
       </div>
       <div class="player-list" id="playerList"><div class="loading">Loading roster...</div></div>
     </div>
-    <div class="card"><div class="card-title">Player Stats</div><div id="playerStats"><div style="color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center">Select a player to view stats</div></div></div>
+    <div class="card"><div class="card-title" id="playerStatsTitle">Player Stats</div><div id="playerStats"><div class="loading">Loading...</div></div></div>
   </div>
 </div>
 
@@ -703,6 +703,7 @@ async function loadRoster(){
     rosterData.hitting=roster.filter(function(p){return p.position&&['P','TWP'].indexOf(p.position.abbreviation)===-1;});
     rosterData.pitching=roster.filter(function(p){return p.position&&(p.position.abbreviation==='P'||p.position.abbreviation==='TWP');});
     rosterData.fielding=rosterData.hitting.slice();renderPlayerList();fetchAllPlayerStats();
+    if(rosterData.hitting.length)selectPlayer(rosterData.hitting[0].person.id,'hitting');
   }catch(e){document.getElementById('playerList').innerHTML='<div class="error">Could not load roster</div>';}
 }
 function renderPlayerList(){
@@ -711,17 +712,26 @@ function renderPlayerList(){
   players.forEach(function(p){var sel=selectedPlayer&&selectedPlayer.person&&selectedPlayer.person.id===p.person.id;html+='<div class="player-item'+(sel?' selected':'')+'" onclick="selectPlayer('+p.person.id+',\''+currentRosterTab+'\')">'+'<div><div class="player-name">'+p.person.fullName+'</div><div class="player-pos">#'+(p.jerseyNumber||'—')+' · '+(p.position&&p.position.name?p.position.name:'—')+'</div></div><span style="color:var(--muted);font-size:.8rem">›</span></div>';});
   document.getElementById('playerList').innerHTML=html;
 }
-function switchRosterTab(tab,btn){currentRosterTab=tab;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');renderPlayerList();document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center">Select a player to view stats</div>';}
+function switchRosterTab(tab,btn){currentRosterTab=tab;selectedPlayer=null;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');var players=rosterData[tab]||[];if(players.length)selectPlayer(players[0].person.id,tab);else{renderPlayerList();document.getElementById('playerStatsTitle').textContent='Player Stats';document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center">No players available</div>';}}
 async function selectPlayer(id,type){
-  selectedPlayer={person:{id:id}};renderPlayerList();document.getElementById('playerStats').innerHTML='<div class="loading">Loading stats...</div>';
+  var playerObj=(rosterData[type]||[]).find(function(p){return p.person.id===id;})||{person:{id:id}};
+  selectedPlayer=playerObj;renderPlayerList();
+  document.getElementById('playerStatsTitle').textContent=playerObj.person&&playerObj.person.fullName?playerObj.person.fullName:'Player Stats';
+  document.getElementById('playerStats').innerHTML='<div class="loading">Loading stats...</div>';
   try{var group=type==='pitching'?'pitching':type==='fielding'?'fielding':'hitting';var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group);var d=await r.json();var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;if(!stats){document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);padding:20px 0;text-align:center">No '+SEASON+' stats available yet</div>';return;}renderPlayerStats(stats,group);}catch(e){document.getElementById('playerStats').innerHTML='<div class="error">Could not load stats</div>';}
 }
 function renderPlayerStats(s,group){
+  var num=selectedPlayer&&selectedPlayer.jerseyNumber?'#'+selectedPlayer.jerseyNumber:'';
+  var pos=selectedPlayer&&selectedPlayer.position&&selectedPlayer.position.name?selectedPlayer.position.name:'';
+  var sub=(num&&pos)?num+' · '+pos:(num||pos);
+  var html=sub?'<div style="font-size:.78rem;color:var(--muted);margin-bottom:10px">'+sub+'</div>':'';
   var boxes=[];
   if(group==='hitting')boxes=[{v:fmt(s.avg),l:'AVG'},{v:s.homeRuns,l:'HR'},{v:s.rbi,l:'RBI'},{v:fmt(s.ops),l:'OPS'},{v:s.hits,l:'H'},{v:s.doubles,l:'2B'},{v:s.triples,l:'3B'},{v:s.strikeOuts,l:'K'},{v:s.baseOnBalls,l:'BB'},{v:s.runs,l:'R'},{v:s.stolenBases,l:'SB'},{v:s.plateAppearances,l:'PA'}];
   else if(group==='pitching')boxes=[{v:fmt(s.era),l:'ERA'},{v:fmt(s.whip),l:'WHIP'},{v:s.strikeOuts,l:'K'},{v:s.wins+'-'+s.losses,l:'W-L'},{v:fmt(s.inningsPitched,1),l:'IP'},{v:s.hits,l:'H'},{v:s.baseOnBalls,l:'BB'},{v:s.homeRuns,l:'HR'},{v:fmt(s.strikeoutWalkRatio),l:'K/BB'},{v:fmt(s.strikeoutsPer9Inn),l:'K/9'},{v:fmt(s.walksPer9Inn),l:'BB/9'},{v:s.gamesStarted,l:'GS'}];
   else boxes=[{v:fmt(s.fielding,3),l:'FPCT'},{v:s.putOuts,l:'PO'},{v:s.assists,l:'A'},{v:s.errors,l:'E'},{v:s.chances,l:'TC'},{v:s.doublePlays,l:'DP'}];
-  var html='<div class="stat-grid">';boxes.forEach(function(b){html+='<div class="stat-box"><div class="stat-val">'+(b.v!=null?b.v:'—')+'</div><div class="stat-lbl">'+b.l+'</div></div>';});
+  var cols=group==='fielding'?3:4;
+  html+='<div class="stat-grid" style="grid-template-columns:repeat('+cols+',1fr)">';
+  boxes.forEach(function(b){html+='<div class="stat-box"><div class="stat-val">'+(b.v!=null?b.v:'—')+'</div><div class="stat-lbl">'+b.l+'</div></div>';});
   document.getElementById('playerStats').innerHTML=html+'</div>';
 }
 
