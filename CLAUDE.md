@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
 
-**Current version:** v1.35
+**Current version:** v1.36
 **File:** `mets-app.html`
 **Default team:** New York Mets (id: 121)
 
@@ -217,11 +217,13 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 ---
 
 ### ⚙️ Settings
-- Dropdown of all 30 MLB teams grouped by division
-- Switching team reloads all data, reapplies theme, resets all caches
-- Media Tab toggle — slide toggle, defaults off
-- Version number at bottom of panel (e.g. `v1.33`)
-- Resets to Mets on page reload (no persistence by design)
+- **Select Team** — dropdown of all 30 MLB teams grouped by division; switching reloads all data, reapplies theme, resets all caches
+- **Color Theme** — dropdown of all 30 teams + "Default (Follow Team)"; overrides colours independently of the active team; persists across team switches
+- **Invert Colours** — slide toggle; swaps primary and secondary colours; works with theme override
+- **Media Tab** — slide toggle, defaults off; shows/hides Media section in nav
+- Panel closes on click outside
+- Version number at bottom (e.g. `v1.36`)
+- All settings reset to defaults on page reload (persistence via localStorage planned — see backlog)
 
 ---
 
@@ -297,7 +299,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 ## Feature Backlog
 
 - [ ] Persist user settings (team, theme override, invert, media tab) across page reloads via localStorage
-- [ ] Cache live game batcher/pitcher stats per matchup
+- [ ] Cache live game batter/pitcher stats per matchup
 - [ ] Fix live header text colour accessibility (`--accent-text`)
 - [ ] Team-aware W/L/Live badges
 - [ ] Mobile/iPad layout optimisation
@@ -319,3 +321,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - [x] Nav works from live view — showSection closes live view first
 - [x] Version number in settings panel
 - [x] Giants/Orioles dark accent fix — luminance floor enforced
+- [x] Nav team logo (SVG from mlbstatic.com) replaces ⚾ emoji; team name only, no "Tracker" suffix (v1.36)
+- [x] Color Theme override dropdown in settings — pick any team's colours independently of active team (v1.36)
+- [x] Invert Colours toggle in settings — swaps primary and secondary colours (v1.36)
+- [x] Settings panel closes on click outside (v1.36)
