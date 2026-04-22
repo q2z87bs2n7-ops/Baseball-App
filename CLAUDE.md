@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
 
-**Current version:** v1.37
+**Current version:** v1.38
 **File:** `mets-app.html`
 **Default team:** New York Mets (id: 121)
 
@@ -62,12 +62,16 @@ let selectedPlayer = null              // full roster object — includes person
 **Responsive breakpoints** (single `@media` block at end of `<style>`):
 - `≤1024px` (iPad landscape + portrait): `.grid3` and `.live-grid` collapse to 1 column; `.matchup-grid` goes 4→2 cols; header wraps; `.main` padding reduced to 12px
 - `≤767px` (portrait / phone): `.grid2` also collapses to 1 column
+- `≤480px` (iPhone): nav becomes fixed bottom icon bar (emoji only, `.nav-label` hidden); header `position:static` scrolls away; settings-wrap is a direct `<header>` child (not inside `<nav>`) so it scrolls with the header; `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.card` padding 12px; `.cal-day` min-height 50px; `.main` and `.live-view` get `padding-bottom:72px` to clear the fixed bar
 
 **Layout utility classes:**
 - `.grid2` — 2-column grid, 1fr 1fr, 16px gap. Collapses at 767px.
 - `.grid3` — 3-column grid, 1fr 1fr 1fr, 16px gap. Collapses at 1024px. (Stats section)
 - `.matchup-grid` — 4-column grid, repeat(4,1fr), 10px gap. Goes 2-col at 1024px. (League matchups)
 - `.live-grid` — unequal 3-col (1fr 1.2fr 1.4fr). Collapses at 1024px. (Live game view)
+- `.media-layout` — 25%/75% grid for media tab (video list + player). Collapses to 1-col at 480px.
+- `.league-leaders-grid` — 2-col grid for league leader panels. Collapses to 1-col at 480px.
+- `.nav-label` — wraps nav button text. `display:none` at ≤480px so only emoji icons show in the bottom bar.
 
 **Rule:** All layout grids must use CSS classes, not inline `style=` grid definitions — so the `@media` block can override them without touching HTML.
 
@@ -270,12 +274,11 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 1. **Live game — stats not caching** — season stats for batter/pitcher re-fetched on every refresh. Should cache and only re-fetch when matchup changes.
 2. **Live game — header text colour** — score text in live header not using `--accent-text`. May be invisible for some team colour combinations.
 3. **Badges not team-aware** — W/L (green/red) and Live (red) badges are hardcoded colours.
-4. **Mobile/iPad layout** — not reviewed or optimised.
-5. **News fallback** — if ESPN API is CORS-blocked, no fallback source.
-6. **Around the League leaders index mapping** — empirically derived, fragile. Re-test if API response order changes.
-7. **allorigins.win proxy** — no SLA, free service. Retry logic (3 attempts, 1s gap) mitigates failures.
-8. **YouTube channel IDs** — 27 of 30 `youtubeUC` values unverified. QC needed each offseason.
-9. **Today's date uses local time** — works for EST but worth noting for other timezones.
+4. **News fallback** — if ESPN API is CORS-blocked, no fallback source.
+5. **Around the League leaders index mapping** — empirically derived, fragile. Re-test if API response order changes.
+6. **allorigins.win proxy** — no SLA, free service. Retry logic (3 attempts, 1s gap) mitigates failures.
+7. **YouTube channel IDs** — 27 of 30 `youtubeUC` values unverified. QC needed each offseason.
+8. **Today's date uses local time** — works for EST but worth noting for other timezones.
 
 ---
 
@@ -298,7 +301,6 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 ## Feature Backlog
 
-- [ ] iPhone layout optimisation
 - [ ] Cache live game batter/pitcher stats per matchup
 - [ ] Fix live header text colour accessibility (`--accent-text`)
 - [ ] Team-aware W/L/Live badges
@@ -307,6 +309,9 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - [ ] Dynamic season year
 - [ ] QC all 30 team YouTube channel IDs
 - [ ] Consider more reliable CORS proxy for YouTube RSS
+- [ ] Today's matchup cards — visible separator between games (deferred)
+- [x] iPhone layout — fixed bottom icon nav bar, scrollable header, settings scrolls with header (v1.38)
+- [x] Extract inline grid styles to CSS classes (.media-layout, .league-leaders-grid) for responsive control (v1.38)
 - [x] Persist user settings via localStorage — team, theme, invert, media tab (v1.37)
 - [x] Player headshots in stats panel with layout-shift-free placeholder (v1.37)
 - [x] Probable pitcher hydration fix — no longer shows TBD when pitchers are announced (v1.37)
