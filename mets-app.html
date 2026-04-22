@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.37.1</title>
+<title>Mets Tracker v1.37.2</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -143,8 +143,13 @@
     .grid2{grid-template-columns:1fr}
   }
   @media(max-width:480px){
-    nav{flex-wrap:nowrap;overflow-x:auto}
-    nav button{padding:6px 8px;font-size:.78rem;white-space:nowrap}
+    nav{position:fixed;bottom:0;left:0;right:0;background:var(--blue);border-top:2px solid var(--orange);justify-content:space-around;gap:0;flex-wrap:nowrap;padding:6px 0;z-index:100}
+    nav button{flex:1;padding:4px 2px;font-size:1.2rem;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .nav-label{display:none}
+    .settings-wrap{position:fixed;top:0;right:0;height:60px;display:flex;align-items:center;padding-right:12px;z-index:150}
+    .settings-panel{top:60px}
+    .main{padding-bottom:72px}
+    .live-view{padding-bottom:72px}
     .stat-grid{grid-template-columns:repeat(2,1fr)}
     .game-notes-grid{grid-template-columns:1fr}
     .media-layout{grid-template-columns:1fr}
@@ -158,13 +163,13 @@
 <header>
   <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span></div>
   <nav>
-    <button class="active" onclick="showSection('home',this)">🏠 Home</button>
-    <button onclick="showSection('schedule',this)">📅 Schedule</button>
-    <button onclick="showSection('standings',this)">🏆 Standings</button>
-    <button onclick="showSection('stats',this)">📊 Stats</button>
-    <button onclick="showSection('news',this)">📰 News</button>
-    <button onclick="showSection('media',this)" id="mediaNavBtn" style="display:none">📺 Media</button>
-    <button onclick="showSection('league',this)">🌐 Around the League</button>
+    <button class="active" onclick="showSection('home',this)">🏠<span class="nav-label"> Home</span></button>
+    <button onclick="showSection('schedule',this)">📅<span class="nav-label"> Schedule</span></button>
+    <button onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
+    <button onclick="showSection('stats',this)">📊<span class="nav-label"> Stats</span></button>
+    <button onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
+    <button onclick="showSection('media',this)" id="mediaNavBtn" style="display:none">📺<span class="nav-label"> Media</span></button>
+    <button onclick="showSection('league',this)">🌐<span class="nav-label"> Around the League</span></button>
     <div class="settings-wrap">
       <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
       <div class="settings-panel" id="settingsPanel">
@@ -193,7 +198,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.37.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.37.2</div>
       </div>
     </div>
   </nav>
