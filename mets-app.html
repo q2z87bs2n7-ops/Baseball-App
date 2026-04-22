@@ -828,13 +828,9 @@ async function selectPlayer(id,type){
   try{var group=type==='pitching'?'pitching':type==='fielding'?'fielding':'hitting';var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group);var d=await r.json();var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;if(!stats){document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);padding:20px 0;text-align:center">No '+SEASON+' stats available yet</div>';return;}renderPlayerStats(stats,group);}catch(e){document.getElementById('playerStats').innerHTML='<div class="error">Could not load stats</div>';}
 }
 function renderPlayerStats(s,group){
-  var num=selectedPlayer&&selectedPlayer.jerseyNumber?'#'+selectedPlayer.jerseyNumber:'';
-  var pos=selectedPlayer&&selectedPlayer.position&&selectedPlayer.position.name?selectedPlayer.position.name:'';
-  var sub=(num&&pos)?num+' · '+pos:(num||pos);
   var pid=selectedPlayer&&selectedPlayer.person&&selectedPlayer.person.id;
   var jerseyOverlay=(selectedPlayer&&selectedPlayer.jerseyNumber)?'<div style="position:absolute;bottom:4px;right:4px;background:var(--accent);color:var(--accent-text);font-size:.72rem;font-weight:800;padding:2px 7px;border-radius:10px;line-height:1.2">#'+selectedPlayer.jerseyNumber+'</div>':'';
   var html=pid?'<div style="width:100px;height:130px;margin:0 auto 10px;border-radius:8px;background:var(--card2);position:relative"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current" style="width:100%;height:100%;object-fit:contain;object-position:top;display:block">'+jerseyOverlay+'</div>':'';
-  html+=sub?'<div style="font-size:.78rem;color:var(--muted);margin-bottom:10px;text-align:center">'+sub+'</div>':'';
   var boxes=[];
   if(group==='hitting')boxes=[{v:fmt(s.avg),l:'AVG'},{v:s.homeRuns,l:'HR'},{v:s.rbi,l:'RBI'},{v:fmt(s.ops),l:'OPS'},{v:s.hits,l:'H'},{v:s.doubles,l:'2B'},{v:s.triples,l:'3B'},{v:s.strikeOuts,l:'K'},{v:s.baseOnBalls,l:'BB'},{v:s.runs,l:'R'},{v:s.stolenBases,l:'SB'},{v:s.plateAppearances,l:'PA'}];
   else if(group==='pitching')boxes=[{v:fmt(s.era),l:'ERA'},{v:fmt(s.whip),l:'WHIP'},{v:s.strikeOuts,l:'K'},{v:s.wins+'-'+s.losses,l:'W-L'},{v:fmt(s.inningsPitched,1),l:'IP'},{v:s.hits,l:'H'},{v:s.baseOnBalls,l:'BB'},{v:s.homeRuns,l:'HR'},{v:fmt(s.strikeoutWalkRatio),l:'K/BB'},{v:fmt(s.strikeoutsPer9Inn),l:'K/9'},{v:fmt(s.walksPer9Inn),l:'BB/9'},{v:s.gamesStarted,l:'GS'}];
