@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.35.2</title>
+<title>Mets Tracker v1.35.3</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -166,6 +166,15 @@
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔄 Invert Colours</div>
+            <div style="font-size:.68rem;color:var(--muted)">Swap primary &amp; secondary</div>
+          </div>
+          <div onclick="toggleInvert()" id="invertToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+            <div id="invertToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">📺 Media Tab</div>
             <div style="font-size:.68rem;color:var(--muted)">Show in navigation</div>
           </div>
@@ -173,7 +182,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.35.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.35.3</div>
       </div>
     </div>
   </nav>
@@ -327,25 +336,26 @@ const TEAMS=[
   {id:140,espnId:13,name:'Texas Rangers',short:'Rangers',division:'American League West',league:'AL',primary:'#003278',secondary:'#C0111F',youtubeUC:'UCZjXWMvOrhc91chSDPDUspA'},
 ];
 
-let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null;
+let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false;
 
 function fmt(v,d){d=d===undefined?3:d;if(v==null||v==='')return'—';var n=parseFloat(v);if(isNaN(n))return v;return n.toFixed(d);}
 function fmtDateTime(ds){var d=new Date(ds);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 
 function applyTeamTheme(team){
   var ct=themeOverride||team;
+  var cp=themeInvert?ct.secondary:ct.primary,cs=themeInvert?ct.primary:ct.secondary;
   var lum=function(hex){hex=hex.replace('#','');var n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;r=r<=0.03928?r/12.92:Math.pow((r+0.055)/1.055,2.4);g=g<=0.03928?g/12.92:Math.pow((g+0.055)/1.055,2.4);b=b<=0.03928?b/12.92:Math.pow((b+0.055)/1.055,2.4);return 0.2126*r+0.7152*g+0.0722*b;};
-  var l1=lum(ct.primary),l2=lum(ct.secondary),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?ct.secondary:'#ffffff',accentLum=lum(accent);
+  var l1=lum(cp),l2=lum(cs),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?cs:'#ffffff',accentLum=lum(accent);
   if(accentLum<0.05)accent='#ffffff',accentLum=1;
   var accentText=accentLum>0.4?'#111827':'#ffffff';
   var hueOf=function(hex){hex=hex.replace('#','');var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
   var hslHex=function(h,s,l){s/=100;l/=100;var a=s*Math.min(l,1-l),f=function(n){var k=(n+h/30)%12,c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};return'#'+f(0)+f(8)+f(4);};
-  var h=hueOf(ct.primary);
+  var h=hueOf(cp);
   document.documentElement.style.setProperty('--dark',hslHex(h,50,18));
   document.documentElement.style.setProperty('--card',hslHex(h,45,22));
   document.documentElement.style.setProperty('--card2',hslHex(h,40,26));
   document.documentElement.style.setProperty('--border',hslHex(h,35,30));
-  document.documentElement.style.setProperty('--blue',ct.primary);
+  document.documentElement.style.setProperty('--blue',cp);
   document.documentElement.style.setProperty('--orange',accent);
   document.documentElement.style.setProperty('--accent-text',accentText);
   document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
@@ -364,6 +374,14 @@ function buildThemeSelect(){
 
 function switchTheme(val){
   themeOverride=val==='0'?null:TEAMS.find(t=>t.id===parseInt(val));
+  applyTeamTheme(activeTeam);
+}
+
+function toggleInvert(){
+  themeInvert=!themeInvert;
+  var t=document.getElementById('invertToggle'),k=document.getElementById('invertToggleKnob');
+  t.style.background=themeInvert?'var(--blue)':'var(--border)';
+  k.style.left=themeInvert?'21px':'3px';
   applyTeamTheme(activeTeam);
 }
 
