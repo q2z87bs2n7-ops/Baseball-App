@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.38.2</title>
+<title>Mets Tracker v1.38.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -20,11 +20,11 @@
   .settings-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:1rem}
   .settings-panel{display:none;position:absolute;top:44px;right:0;background:#0a0f1e;border:1px solid var(--border);border-radius:0 0 12px 12px;padding:16px;width:260px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
   .settings-panel.open{display:block}
-  .main{padding:20px;max-width:1200px;margin:0 auto}
+  .main{padding:20px;max-width:1360px;margin:0 auto}
   .section{display:none}.section.active{display:block}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-  .matchup-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .matchup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
   .card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:12px}
   .loading{color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center}
@@ -59,6 +59,8 @@
   .player-pos{color:var(--muted);font-size:.78rem}
   .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
   .stat-box{background:var(--card2);border-radius:8px;padding:12px;text-align:center}
+  .stat-box.hero{grid-column:span 2;padding:14px 16px}
+  .stat-box.hero .stat-val{font-size:2.2rem;letter-spacing:-.02em}
   .stat-val{font-size:1.4rem;font-weight:800;color:var(--accent)}
   .stat-lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-top:2px}
   .stat-tabs{display:flex;gap:6px;margin-bottom:14px}
@@ -76,7 +78,7 @@
   .news-title a:hover{color:var(--accent)}
   .refresh-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:.75rem;float:right}
   .refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
-  .wc-note{font-size:.75rem;color:var(--muted);margin-bottom:8px;font-style:italic}
+  .wc-note{font-size:.75rem;color:var(--muted);margin-bottom:8px}
   select{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:.85rem;cursor:pointer}
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
   .cal-header{text-align:center;font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;padding:6px 0}
@@ -203,7 +205,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.38.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.38.3</div>
       </div>
     </div>
   </div>
@@ -460,7 +462,7 @@ function renderGameBig(g,label){
   var status=g.status.abstractGameState,detailed=g.status.detailedState,style=gameGradient(g),badge='',scoreHtml='',metaHtml='';
   if(status==='Final'){var mW=myTeam.isWinner;badge='<span class="badge badge-final">FINAL</span> <span class="badge '+(mW?'badge-w':'badge-l')+'">'+(mW?'W':'L')+'</span>';scoreHtml='<div class="teams"><div><div class="team-name">'+away.team.teamName+'</div><div class="score">'+(away.score!=null?away.score:'-')+'</div></div><div class="vs">—</div><div><div class="team-name">'+home.team.teamName+'</div><div class="score">'+(home.score!=null?home.score:'-')+'</div></div></div>';}
   else if(status==='Live'){badge='<span class="badge badge-live">● LIVE '+detailed+'</span>';scoreHtml='<div class="teams"><div><div class="team-name">'+away.team.teamName+'</div><div class="score">'+(away.score!=null?away.score:0)+'</div></div><div class="vs">—</div><div><div class="team-name">'+home.team.teamName+'</div><div class="score">'+(home.score!=null?home.score:0)+'</div></div></div>';metaHtml='<div style="margin-top:8px"><button onclick="showLiveGame('+g.gamePk+')" style="background:'+activeTeam.secondary+';border:none;color:'+(activeTeam.secondary==='#ffffff'?'#000000':'#ffffff')+';padding:8px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem">▶ Watch Live</button></div>';}
-  else{badge='<span class="badge badge-upcoming">UPCOMING</span>';scoreHtml='<div class="teams"><div><div class="team-name" style="font-size:1rem;color:rgba(255,255,255,.6)">vs</div><div class="team-name" style="font-size:1.6rem">'+opp.team.teamName+'</div></div></div>';metaHtml='<div class="game-meta">'+(teamHome?'🏟️ Home':'✈️ Away')+' &nbsp;|&nbsp; '+fmtDateTime(g.gameDate)+'</div>';}
+  else{badge=(label&&/TODAY/i.test(label))?'':'<span class="badge badge-upcoming">UPCOMING</span>';scoreHtml='<div class="teams"><div><div class="team-name" style="font-size:1.05rem;color:rgba(255,255,255,.82);font-weight:700;letter-spacing:.04em">'+(teamHome?'vs':'@')+'</div><div class="team-name" style="font-size:1.6rem">'+opp.team.teamName+'</div></div></div>';metaHtml='<div class="game-meta">'+(teamHome?'🏟️ Home':'✈️ Away')+' &nbsp;|&nbsp; '+fmtDateTime(g.gameDate)+'</div>';}
   return'<div class="game-big" style="'+style+'"><div class="card-title" style="color:rgba(255,255,255,.8)">'+label+' '+badge+'</div>'+scoreHtml+metaHtml+'</div>';
 }
 
@@ -492,15 +494,15 @@ function getSeriesInfo(g){
 function renderNextGame(g,label){
   var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===activeTeam.id,opp=teamHome?away:home;
   var status=g.status.abstractGameState,style=gameGradient(g),seriesInfo=getSeriesInfo(g);
-  var seriesHtml=seriesInfo?'<div style="font-size:.72rem;color:rgba(255,255,255,.65);margin-top:6px;font-style:italic">'+seriesInfo+'</div>':'';
+  var seriesHtml=seriesInfo?'<div style="font-size:.8rem;color:rgba(255,255,255,.85);margin-top:8px;font-weight:500">'+seriesInfo+'</div>':'';
   var badge='',scoreHtml='',metaHtml='';
   if(status==='Live'){
     badge='<span class="badge badge-live">● LIVE</span>';
     scoreHtml='<div class="teams"><div><div class="team-name">'+away.team.teamName+'</div><div class="score">'+(away.score!=null?away.score:0)+'</div></div><div class="vs">—</div><div><div class="team-name">'+home.team.teamName+'</div><div class="score">'+(home.score!=null?home.score:0)+'</div></div></div>';
     metaHtml='<div style="margin-top:8px"><button onclick="showLiveGame('+g.gamePk+')" style="background:'+activeTeam.secondary+';border:none;color:'+(activeTeam.secondary==='#ffffff'?'#000000':'#ffffff')+';padding:8px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem">▶ Watch Live</button></div>';
   }else{
-    badge='<span class="badge badge-upcoming">UPCOMING</span>';
-    scoreHtml='<div class="teams"><div><div class="team-name" style="font-size:1rem;color:rgba(255,255,255,.6)">'+(teamHome?'vs':'@')+'</div><div class="team-name" style="font-size:1.6rem">'+opp.team.teamName+'</div></div></div>';
+    badge='';
+    scoreHtml='<div class="teams"><div><div class="team-name" style="font-size:1.05rem;color:rgba(255,255,255,.82);font-weight:700;letter-spacing:.04em">'+(teamHome?'vs':'@')+'</div><div class="team-name" style="font-size:1.6rem">'+opp.team.teamName+'</div></div></div>';
     metaHtml='<div class="game-meta">'+(teamHome?'🏟️ Home':'✈️ Away')+' &nbsp;|&nbsp; '+fmtDateTime(g.gameDate)+'</div>';
   }
   return'<div class="game-big" style="'+style+'"><div class="card-title" style="color:rgba(255,255,255,.8)">'+label+' '+badge+'</div>'+scoreHtml+metaHtml+seriesHtml+'</div>';
@@ -562,7 +564,7 @@ async function loadNextGame(){
     var myW=0,oppW=0;
     nextSeries.forEach(function(g){if(g.status.abstractGameState!=='Final')return;var my=g.teams.home.team.id===activeTeam.id?g.teams.home:g.teams.away;if(my.isWinner)myW++;else oppW++;});
     var recHtml='';
-    if(myW+oppW>0){var recStr=myW>oppW?activeTeam.short+' lead '+myW+'-'+oppW:oppW>myW?oppTeam.teamName+' lead '+oppW+'-'+myW:'Tied '+myW+'-'+oppW;recHtml='<span style="font-size:.72rem;color:rgba(255,255,255,.7);margin-left:8px;font-style:italic">· '+recStr+'</span>';}
+    if(myW+oppW>0){var recStr=myW>oppW?activeTeam.short+' lead '+myW+'-'+oppW:oppW>myW?oppTeam.teamName+' lead '+oppW+'-'+myW:'Tied '+myW+'-'+oppW;recHtml='<span style="font-size:.8rem;color:rgba(255,255,255,.85);margin-left:8px;font-weight:500">· '+recStr+'</span>';}
     var venue=first.venue&&first.venue.name?first.venue.name:'';
     var html='<div class="game-big" style="'+style+';text-align:left">';
     html+='<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px"><div class="card-title" style="color:rgba(255,255,255,.8);margin-bottom:0">NEXT SERIES</div><div style="font-size:.72rem;color:rgba(255,255,255,.6)">'+dateRange+'</div></div>';
@@ -576,7 +578,7 @@ async function loadNextGame(){
       if(status==='Final'){var w=myT.isWinner;rightCol='<span class="badge '+(w?'badge-w':'badge-l')+'" style="font-size:.7rem">'+(w?'W':'L')+' '+myT.score+'-'+oppT.score+'</span>';}
       else if(status==='Live'){rightCol='<span class="badge badge-live" style="font-size:.7rem">● LIVE '+myT.score+'-'+oppT.score+'</span>';}
       else{rightCol='<span style="font-size:.8rem;color:rgba(255,255,255,.7)">'+gDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</span>';}
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:rgba(0,0,0,.25);border-radius:8px;margin-bottom:'+(idx<nextSeries.length-1?'6':'0')+'px">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);border-radius:8px;margin-bottom:'+(idx<nextSeries.length-1?'6':'0')+'px">';
       html+='<div style="font-size:.8rem;color:rgba(255,255,255,.8)">Game '+(idx+1)+' &nbsp;<span style="color:rgba(255,255,255,.45)">'+dayLabel+'</span></div>'+rightCol+'</div>';
     });
     html+='</div>';
@@ -615,7 +617,7 @@ function renderCalendar(){
     var inner='<div class="cal-day-num">'+day+'</div>';
     if(g){
       var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===activeTeam.id,opp=teamHome?away:home,myT=teamHome?home:away,status=g.status.abstractGameState;
-      inner+='<div class="cal-game-info"><div class="cal-ha">'+(teamHome?'vs':'@')+'</div><div class="cal-opp">'+opp.team.teamName+'</div>';
+      inner+='<div class="cal-game-info"><div class="cal-opp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span class="cal-ha">'+(teamHome?'vs ':'@ ')+'</span>'+opp.team.teamName+'</div>';
       if(status==='Final'){var mW=myT.isWinner,sc=myT.score+'-'+opp.score;inner+='<span class="cal-result '+(mW?'cal-w':'cal-l')+'">'+(mW?'W':'L')+' '+sc+'</span>';}
       else if(status==='Live')inner+='<span class="cal-result" style="background:#ff4444;color:#fff">LIVE</span>';
       else{var t=new Date(g.gameDate);inner+='<div class="cal-upcoming">'+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';}
@@ -810,7 +812,8 @@ function renderPlayerStats(s,group){
   var pos=selectedPlayer&&selectedPlayer.position&&selectedPlayer.position.name?selectedPlayer.position.name:'';
   var sub=(num&&pos)?num+' · '+pos:(num||pos);
   var pid=selectedPlayer&&selectedPlayer.person&&selectedPlayer.person.id;
-  var html=pid?'<div style="width:100px;height:130px;margin:0 auto 10px;border-radius:8px;background:var(--card2)"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current" style="width:100%;height:100%;object-fit:contain;object-position:top;display:block"></div>':'';
+  var jerseyOverlay=(selectedPlayer&&selectedPlayer.jerseyNumber)?'<div style="position:absolute;bottom:4px;right:4px;background:var(--accent);color:var(--accent-text);font-size:.72rem;font-weight:800;padding:2px 7px;border-radius:10px;line-height:1.2">#'+selectedPlayer.jerseyNumber+'</div>':'';
+  var html=pid?'<div style="width:100px;height:130px;margin:0 auto 10px;border-radius:8px;background:var(--card2);position:relative"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current" style="width:100%;height:100%;object-fit:contain;object-position:top;display:block">'+jerseyOverlay+'</div>':'';
   html+=sub?'<div style="font-size:.78rem;color:var(--muted);margin-bottom:10px;text-align:center">'+sub+'</div>':'';
   var boxes=[];
   if(group==='hitting')boxes=[{v:fmt(s.avg),l:'AVG'},{v:s.homeRuns,l:'HR'},{v:s.rbi,l:'RBI'},{v:fmt(s.ops),l:'OPS'},{v:s.hits,l:'H'},{v:s.doubles,l:'2B'},{v:s.triples,l:'3B'},{v:s.strikeOuts,l:'K'},{v:s.baseOnBalls,l:'BB'},{v:s.runs,l:'R'},{v:s.stolenBases,l:'SB'},{v:s.plateAppearances,l:'PA'}];
@@ -818,7 +821,7 @@ function renderPlayerStats(s,group){
   else boxes=[{v:fmt(s.fielding,3),l:'FPCT'},{v:s.putOuts,l:'PO'},{v:s.assists,l:'A'},{v:s.errors,l:'E'},{v:s.chances,l:'TC'},{v:s.doublePlays,l:'DP'}];
   var cols=group==='fielding'?3:4;
   html+='<div class="stat-grid" style="grid-template-columns:repeat('+cols+',1fr)">';
-  boxes.forEach(function(b){html+='<div class="stat-box"><div class="stat-val">'+(b.v!=null?b.v:'—')+'</div><div class="stat-lbl">'+b.l+'</div></div>';});
+  boxes.forEach(function(b,i){html+='<div class="stat-box'+(i===0?' hero':'')+'"><div class="stat-val">'+(b.v!=null?b.v:'—')+'</div><div class="stat-lbl">'+b.l+'</div></div>';});
   document.getElementById('playerStats').innerHTML=html+'</div>';
 }
 
