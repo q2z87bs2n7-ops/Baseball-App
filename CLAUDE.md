@@ -17,7 +17,7 @@ A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. 
 4. **Break changes into small steps** — confirm each works before proceeding
 5. **Git branching** — all changes go to `claude/review-readme-cx0F3` first; only merge to `main` when explicitly asked. Push with `git push -u origin claude/review-readme-cx0F3`
 6. **Debug code** — wrap temporary logging in `// DEBUG START` / `// DEBUG END` for easy removal
-7. **Version every change** — bump both the `<title>` tag and the in-app settings panel version string on every confirmed change (e.g. v1.32 → v1.33)
+7. **Version every change** — bump both the `<title>` tag and the in-app settings panel version string on every commit. Use `v1.xx.yy` format: increment `yy` for each commit on a branch (v1.33.1, v1.33.2…); increment `xx` and drop the patch on merge to main (v1.34).
 8. **No rewrites** — never rewrite large sections. Targeted edits only.
 
 ---
