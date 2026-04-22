@@ -296,7 +296,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 ## Feature Backlog
 
-- [ ] Cache live game batter/pitcher stats per matchup
+- [ ] Persist user settings (team, theme override, invert, media tab) across page reloads via localStorage
+- [ ] Cache live game batcher/pitcher stats per matchup
 - [ ] Fix live header text colour accessibility (`--accent-text`)
 - [ ] Team-aware W/L/Live badges
 - [ ] Mobile/iPad layout optimisation

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.35</title>
+<title>Mets Tracker v1.35.5</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -144,7 +144,7 @@
 </head>
 <body>
 <header>
-  <div class="logo">⚾ <span>METS</span>&nbsp;TRACKER</div>
+  <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span></div>
   <nav>
     <button class="active" onclick="showSection('home',this)">🏠 Home</button>
     <button onclick="showSection('schedule',this)">📅 Schedule</button>
@@ -158,7 +158,20 @@
       <div class="settings-panel" id="settingsPanel">
         <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--orange);margin-bottom:10px">Select Team</div>
         <select id="teamSelect" onchange="switchTeam(this.value)" style="width:100%"></select>
-        <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Resets to Mets on page reload.</div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--orange);margin-bottom:10px">Color Theme</div>
+          <select id="themeSelect" onchange="switchTheme(this.value)" style="width:100%"></select>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Override team colours.</div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔄 Invert Colours</div>
+            <div style="font-size:.68rem;color:var(--muted)">Swap primary &amp; secondary</div>
+          </div>
+          <div onclick="toggleInvert()" id="invertToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+            <div id="invertToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
+          </div>
+        </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">📺 Media Tab</div>
@@ -168,7 +181,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.35</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.35.5</div>
       </div>
     </div>
   </nav>
@@ -322,31 +335,55 @@ const TEAMS=[
   {id:140,espnId:13,name:'Texas Rangers',short:'Rangers',division:'American League West',league:'AL',primary:'#003278',secondary:'#C0111F',youtubeUC:'UCZjXWMvOrhc91chSDPDUspA'},
 ];
 
-let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null;
+let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false;
 
 function fmt(v,d){d=d===undefined?3:d;if(v==null||v==='')return'—';var n=parseFloat(v);if(isNaN(n))return v;return n.toFixed(d);}
 function fmtDateTime(ds){var d=new Date(ds);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
 
 function applyTeamTheme(team){
+  var ct=themeOverride||team;
+  var cp=themeInvert?ct.secondary:ct.primary,cs=themeInvert?ct.primary:ct.secondary;
   var lum=function(hex){hex=hex.replace('#','');var n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;r=r<=0.03928?r/12.92:Math.pow((r+0.055)/1.055,2.4);g=g<=0.03928?g/12.92:Math.pow((g+0.055)/1.055,2.4);b=b<=0.03928?b/12.92:Math.pow((b+0.055)/1.055,2.4);return 0.2126*r+0.7152*g+0.0722*b;};
-  var l1=lum(team.primary),l2=lum(team.secondary),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?team.secondary:'#ffffff',accentLum=lum(accent);
+  var l1=lum(cp),l2=lum(cs),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?cs:'#ffffff',accentLum=lum(accent);
   if(accentLum<0.05)accent='#ffffff',accentLum=1;
   var accentText=accentLum>0.4?'#111827':'#ffffff';
   var hueOf=function(hex){hex=hex.replace('#','');var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
   var hslHex=function(h,s,l){s/=100;l/=100;var a=s*Math.min(l,1-l),f=function(n){var k=(n+h/30)%12,c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};return'#'+f(0)+f(8)+f(4);};
-  var h=hueOf(team.primary);
+  var h=hueOf(cp);
   document.documentElement.style.setProperty('--dark',hslHex(h,50,18));
   document.documentElement.style.setProperty('--card',hslHex(h,45,22));
   document.documentElement.style.setProperty('--card2',hslHex(h,40,26));
   document.documentElement.style.setProperty('--border',hslHex(h,35,30));
-  document.documentElement.style.setProperty('--blue',team.primary);
+  document.documentElement.style.setProperty('--blue',cp);
   document.documentElement.style.setProperty('--orange',accent);
   document.documentElement.style.setProperty('--accent-text',accentText);
-  document.querySelector('.logo').innerHTML='⚾ <span>'+team.short.toUpperCase()+'</span>&nbsp;TRACKER';
+  document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
   document.title=team.short+' Tracker';
 }
 
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
+document.addEventListener('click',function(e){if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');});
+
+function buildThemeSelect(){
+  var sel=document.getElementById('themeSelect');sel.innerHTML='<option value="0">Default (Follow Team)</option>';var lastDiv='';
+  TEAMS.forEach(function(t){
+    if(t.division!==lastDiv){var og=document.createElement('optgroup');og.label=t.division;sel.appendChild(og);lastDiv=t.division;}
+    var opt=document.createElement('option');opt.value=t.id;opt.textContent=t.name;sel.lastChild.appendChild(opt);
+  });
+}
+
+function switchTheme(val){
+  themeOverride=val==='0'?null:TEAMS.find(t=>t.id===parseInt(val));
+  applyTeamTheme(activeTeam);
+}
+
+function toggleInvert(){
+  themeInvert=!themeInvert;
+  var t=document.getElementById('invertToggle'),k=document.getElementById('invertToggleKnob');
+  t.style.background=themeInvert?'var(--blue)':'var(--border)';
+  k.style.left=themeInvert?'21px':'3px';
+  applyTeamTheme(activeTeam);
+}
 
 function buildTeamSelect(){
   var sel=document.getElementById('teamSelect');sel.innerHTML='';var lastDiv='';
@@ -868,7 +905,7 @@ async function loadLeagueLeaders(){var el=document.getElementById('leagueLeaders
 function renderLeagueLeaders(leaderMap,stats){var el=document.getElementById('leagueLeaders'),html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';stats.forEach(function(s){var leaders=leaderMap[s.cats]||[];html+='<div style="background:var(--card2);border-radius:8px;padding:10px"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--orange);margin-bottom:8px">'+s.label+'</div>';if(!leaders.length)html+='<div style="color:var(--muted);font-size:.8rem">No data</div>';leaders.forEach(function(l,i){var val=l.value;if(val!=null){var n=parseFloat(val);if(!isNaN(n))val=n.toFixed(s.decimals);}html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:.78rem"><div style="display:flex;gap:6px;align-items:center"><span style="color:var(--orange);font-weight:700;width:16px">'+(i+1)+'</span><span>'+((l.person&&l.person.fullName)||'—')+'</span></div><span style="font-weight:700;color:var(--text)">'+val+'</span></div>';});html+='</div>';});el.innerHTML=html+'</div>';}
 function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementById('leagueHitTab').classList.toggle('active',tab==='hitting');document.getElementById('leaguePitTab').classList.toggle('active',tab==='pitching');var cached=leagueLeadersCache[tab],stats=tab==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS;if(cached&&Object.keys(cached).length)renderLeagueLeaders(cached,stats);else loadLeagueLeaders();}
 
-(async function(){buildTeamSelect();applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();})();
+(async function(){buildTeamSelect();buildThemeSelect();applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();})();
 </script>
 
 <div class="live-view" id="liveView">
