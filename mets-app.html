@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.28</title>
+<title>Mets Tracker v1.29</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -156,7 +156,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.28</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.29</div>
       </div>
     </div>
   </nav>
@@ -321,10 +321,10 @@ function applyTeamTheme(team){
   var hueOf=function(hex){hex=hex.replace('#','');var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
   var hslHex=function(h,s,l){s/=100;l/=100;var a=s*Math.min(l,1-l),f=function(n){var k=(n+h/30)%12,c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};return'#'+f(0)+f(8)+f(4);};
   var h=hueOf(team.primary);
-  document.documentElement.style.setProperty('--dark',hslHex(h,50,8));
-  document.documentElement.style.setProperty('--card',hslHex(h,45,12));
-  document.documentElement.style.setProperty('--card2',hslHex(h,40,16));
-  document.documentElement.style.setProperty('--border',hslHex(h,35,20));
+  document.documentElement.style.setProperty('--dark',hslHex(h,50,18));
+  document.documentElement.style.setProperty('--card',hslHex(h,45,22));
+  document.documentElement.style.setProperty('--card2',hslHex(h,40,26));
+  document.documentElement.style.setProperty('--border',hslHex(h,35,30));
   document.documentElement.style.setProperty('--blue',team.primary);
   document.documentElement.style.setProperty('--orange',accent);
   document.documentElement.style.setProperty('--accent-text',accentText);
