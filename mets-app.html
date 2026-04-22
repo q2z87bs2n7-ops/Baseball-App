@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.33.2</title>
+<title>Mets Tracker v1.34</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -156,7 +156,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.33.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.34</div>
       </div>
     </div>
   </nav>
@@ -703,12 +703,8 @@ async function loadRoster(){
       fetch(MLB_BASE+'/teams/'+activeTeam.id+'/stats?stats=season&season='+SEASON+'&group=pitching&gameType=R')
     ]);
     var [hd,pd]=await Promise.all([hr.json(),pr.json()]);
-    // DEBUG START
-    console.log('hitting response status:',hr.status,'data:',JSON.stringify(hd).slice(0,300));
-    console.log('pitching response status:',pr.status,'data:',JSON.stringify(pd).slice(0,300));
-    // DEBUG END
-    var hitSplits=(hd.stats&&hd.stats[0]&&hd.stats[0].splits)||[];
-    var pitSplits=(pd.stats&&pd.stats[0]&&pd.stats[0].splits)||[];
+    var hitSplits=((hd.stats&&hd.stats[0]&&hd.stats[0].splits)||[]).filter(function(sp){return sp.player&&sp.player.id;});
+    var pitSplits=((pd.stats&&pd.stats[0]&&pd.stats[0].splits)||[]).filter(function(sp){return sp.player&&sp.player.id;});
     var toPlayer=function(sp){return{person:sp.player,jerseyNumber:null,position:sp.position||{}};};
     rosterData.hitting=hitSplits.map(toPlayer);
     rosterData.pitching=pitSplits.map(toPlayer);
@@ -717,9 +713,7 @@ async function loadRoster(){
     statsCache.pitching=pitSplits.map(function(sp){return{player:sp.player,position:sp.position||{},stat:sp.stat};});
     renderPlayerList();loadLeaders();
     if(rosterData.hitting.length)selectPlayer(rosterData.hitting[0].person.id,'hitting');
-  // DEBUG START
-  }catch(e){console.error('loadRoster error:',e);document.getElementById('playerList').innerHTML='<div class="error">Could not load players</div>';}
-  // DEBUG END
+  }catch(e){document.getElementById('playerList').innerHTML='<div class="error">Could not load players</div>';}
 }
 function renderPlayerList(){
   var players=rosterData[currentRosterTab]||[];if(!players.length){document.getElementById('playerList').innerHTML='<div class="loading">No players found</div>';return;}
