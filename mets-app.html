@@ -703,6 +703,10 @@ async function loadRoster(){
       fetch(MLB_BASE+'/teams/'+activeTeam.id+'/stats?stats=season&season='+SEASON+'&group=pitching&gameType=R')
     ]);
     var [hd,pd]=await Promise.all([hr.json(),pr.json()]);
+    // DEBUG START
+    console.log('hitting response status:',hr.status,'data:',JSON.stringify(hd).slice(0,300));
+    console.log('pitching response status:',pr.status,'data:',JSON.stringify(pd).slice(0,300));
+    // DEBUG END
     var hitSplits=(hd.stats&&hd.stats[0]&&hd.stats[0].splits)||[];
     var pitSplits=(pd.stats&&pd.stats[0]&&pd.stats[0].splits)||[];
     var toPlayer=function(sp){return{person:sp.player,jerseyNumber:null,position:sp.position||{}};};
@@ -713,7 +717,9 @@ async function loadRoster(){
     statsCache.pitching=pitSplits.map(function(sp){return{player:sp.player,position:sp.position||{},stat:sp.stat};});
     renderPlayerList();loadLeaders();
     if(rosterData.hitting.length)selectPlayer(rosterData.hitting[0].person.id,'hitting');
-  }catch(e){document.getElementById('playerList').innerHTML='<div class="error">Could not load players</div>';}
+  // DEBUG START
+  }catch(e){console.error('loadRoster error:',e);document.getElementById('playerList').innerHTML='<div class="error">Could not load players</div>';}
+  // DEBUG END
 }
 function renderPlayerList(){
   var players=rosterData[currentRosterTab]||[];if(!players.length){document.getElementById('playerList').innerHTML='<div class="loading">No players found</div>';return;}
