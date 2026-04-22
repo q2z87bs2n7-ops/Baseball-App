@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.38.1</title>
+<title>Mets Tracker v1.38.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -13,9 +13,9 @@
   .logo{display:flex;align-items:center;gap:10px;font-size:1.2rem;font-weight:700;color:var(--header-text)}
   .logo span{color:var(--accent)}
   nav{display:flex;gap:4px;align-items:center;margin-left:auto}
-  nav button{background:none;border:none;color:rgba(255,255,255,.7);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:500;transition:.2s}
+  nav button{background:none;border:none;color:rgba(255,255,255,.7);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:500;transition:.2s;white-space:nowrap}
   nav button:hover{background:rgba(255,255,255,.1);color:#fff}
-  nav button.active{background:var(--orange);color:var(--accent-text)}
+  nav button.active{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
   .settings-wrap{position:relative;margin-left:4px}
   .settings-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:1rem}
   .settings-panel{display:none;position:absolute;top:44px;right:0;background:#0a0f1e;border:1px solid var(--border);border-radius:0 0 12px 12px;padding:16px;width:260px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
@@ -39,8 +39,8 @@
   .badge-live{background:#ff4444;color:#fff;animation:pulse 1.5s infinite}
   .badge-final{background:#444;color:#ccc}
   .badge-upcoming{background:rgba(0,0,0,.4);color:#fff}
-  .badge-w{background:#22c55e;color:#fff}
-  .badge-l{background:#ef4444;color:#fff}
+  .badge-w{background:rgba(34,197,94,.15);color:#7dd89e;border:1px solid rgba(34,197,94,.55)}
+  .badge-l{background:rgba(239,68,68,.12);color:#f08c8c;border:1px solid rgba(239,68,68,.5)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   .game-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);font-size:.88rem}
   .game-row:last-child{border-bottom:none}
@@ -49,8 +49,9 @@
   .standings-table th{color:var(--accent);font-size:.75rem;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
   .standings-table td{padding:9px 10px;border-bottom:1px solid rgba(30,45,74,.5)}
   .standings-table tr.active-row td{background:color-mix(in srgb,var(--accent) 8%,transparent);font-weight:600}
+  .standings-table tr.active-row td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   .standings-table tr:last-child td{border-bottom:none}
-  .div-header{background:var(--blue);color:#fff;font-weight:700;font-size:.8rem;padding:6px 10px;border-radius:6px 6px 0 0;margin-top:16px}
+  .div-header{background:transparent;color:var(--accent);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;padding:14px 0 6px;border-bottom:1px solid var(--border);margin-top:16px}
   .player-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center}
   .player-item:hover{background:rgba(255,255,255,.04)}
   .player-item.selected{background:color-mix(in srgb,var(--accent) 10%,transparent);border-left:3px solid var(--accent)}
@@ -65,6 +66,9 @@
   .stat-tab.active{background:var(--orange);border-color:var(--orange);color:var(--accent-text)}
   .news-item{padding:14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
   .news-item:hover{background:rgba(255,255,255,.03)}
+  .news-item:first-child{padding:16px 14px 18px}
+  .news-item:first-child .news-dot{display:none}
+  .news-item:first-child .news-title{font-size:1.05rem;font-weight:600;line-height:1.35}
   .news-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;margin-top:6px;flex-shrink:0}
   .news-title{font-size:.9rem;font-weight:500;line-height:1.4}
   .news-meta{font-size:.75rem;color:var(--muted);margin-top:4px}
@@ -93,7 +97,7 @@
   .boxscore-wrap{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px}
   .boxscore-title{font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--text)}
   .linescore-table{width:100%;border-collapse:collapse;font-size:.78rem;overflow-x:auto;display:block}
-  .linescore-table th{background:var(--blue);color:#fff;padding:5px 8px;text-align:center;min-width:24px}
+  .linescore-table th{background:transparent;color:var(--accent);padding:5px 8px;text-align:center;min-width:24px;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
   .linescore-table td{padding:5px 8px;text-align:center;border-bottom:1px solid var(--border)}
   .linescore-table tr:last-child td{border-bottom:none}
   .linescore-table td:first-child{text-align:left;font-weight:600;min-width:120px}
@@ -199,7 +203,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.38.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.38.2</div>
       </div>
     </div>
   </div>
@@ -446,8 +450,8 @@ function showSection(id,btn){
 
 function gameGradient(g){
   var aD=TEAMS.find(t=>t.id===g.teams.away.team.id),hD=TEAMS.find(t=>t.id===g.teams.home.team.id);
-  var ap=aD?aD.primary:activeTeam.primary,as=aD?aD.secondary:activeTeam.secondary,hp=hD?hD.primary:activeTeam.primary,hs=hD?hD.secondary:activeTeam.secondary;
-  return'background:linear-gradient(to right,'+ap+' 0%,'+as+' 25%,#111827 50%,'+hs+' 75%,'+hp+' 100%);border:2px solid rgba(255,255,255,.15)';
+  var ap=aD?aD.primary:activeTeam.primary,hp=hD?hD.primary:activeTeam.primary;
+  return'background:linear-gradient(to right,'+ap+' 0%,#111827 50%,'+hp+' 100%);border:1px solid rgba(255,255,255,.1)';
 }
 function defaultGradient(){return'background:linear-gradient(135deg,'+activeTeam.primary+',#001233);border:2px solid '+activeTeam.secondary;}
 
@@ -715,7 +719,7 @@ async function loadStandings(){
 
 function standingsTable(teams){
   var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
-  teams.forEach(function(t,i){var isActive=t.team.id===activeTeam.id;html+='<tr class="'+(isActive?'active-row':'')+'"><td>'+(i+1)+'</td><td>'+(isActive?'● ':'')+'<strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+t.gamesBack+'</td></tr>';});
+  teams.forEach(function(t,i){var isActive=t.team.id===activeTeam.id;html+='<tr class="'+(isActive?'active-row':'')+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+t.gamesBack+'</td></tr>';});
   return html+'</tbody></table>';
 }
 function renderDivStandings(divMap){var f=Object.values(divMap).find(function(d){return d.name===activeTeam.division;});document.getElementById('nlEast').innerHTML=f?standingsTable(f.teams):'<div class="error">Division not found</div>';}
@@ -727,7 +731,7 @@ function renderNLWC(divMap){
   var wc=allLeague.filter(function(t){return!leaders.has(t.team.id);}).sort(function(a,b){return parseFloat(b.winningPercentage)-parseFloat(a.winningPercentage);}).slice(0,9);
   var top=wc[0],topW=top?top.wins:0,topL=top?top.losses:0;
   var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
-  wc.forEach(function(t,i){var isActive=t.team.id===activeTeam.id,gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--orange)':'';html+='<tr class="'+(isActive?'active-row':'')+'" style="'+cutoff+'"><td>'+(i+1)+'</td><td>'+(isActive?'● ':'')+'<strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
+  wc.forEach(function(t,i){var isActive=t.team.id===activeTeam.id,gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--accent)':'';html+='<tr class="'+(isActive?'active-row':'')+'" style="'+cutoff+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
   html+='</tbody></table><div style="font-size:.72rem;color:var(--accent);margin-top:6px">── Wild Card cutoff line</div>';
   document.getElementById('nlWC').innerHTML=html;
 }
@@ -738,7 +742,7 @@ function renderFullStandings(divMap){
   var html='';
   primarySorted.concat(secondary).forEach(function(div){
     html+='<div class="div-header">'+div.name+'</div><table class="standings-table"><thead><tr><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
-    div.teams.forEach(function(t){var isActive=t.team.id===activeTeam.id;html+='<tr class="'+(isActive?'active-row':'')+'"><td>'+(isActive?'● ':'')+'<strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+t.gamesBack+'</td></tr>';});
+    div.teams.forEach(function(t){var isActive=t.team.id===activeTeam.id;html+='<tr class="'+(isActive?'active-row':'')+'"><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+t.gamesBack+'</td></tr>';});
     html+='</tbody></table>';
   });
   document.getElementById('fullStandings').innerHTML=html;
@@ -747,7 +751,7 @@ function renderHomeStandings(divMap){
   var f=Object.values(divMap).find(function(d){return d.name===activeTeam.division;});
   if(!f){document.getElementById('homeStandings').innerHTML='<div class="error">No data</div>';return;}
   var html='<table class="standings-table"><thead><tr><th>Team</th><th>W</th><th>L</th><th>GB</th></tr></thead><tbody>';
-  f.teams.forEach(function(t){var isActive=t.team.id===activeTeam.id;html+='<tr class="'+(isActive?'active-row':'')+'"><td>'+(isActive?'● ':'')+'<strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.gamesBack+'</td></tr>';});
+  f.teams.forEach(function(t){var isActive=t.team.id===activeTeam.id;html+='<tr class="'+(isActive?'active-row':'')+'"><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.gamesBack+'</td></tr>';});
   document.getElementById('homeStandings').innerHTML=html+'</tbody></table>';
 }
 
