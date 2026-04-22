@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
 
-**Current version:** v1.32
+**Current version:** v1.33
 **File:** `mets-app.html`
 **Default team:** New York Mets (id: 121)
 
@@ -38,7 +38,7 @@ let scheduleData = []                  // populated by loadSchedule() or cold-lo
 let scheduleLoaded = false             // true only after full-season fetch completes
 let rosterData = { hitting, pitching, fielding }
 let statsCache = { hitting, pitching }
-let selectedPlayer = null              // full roster object — includes person, position, jerseyNumber
+let selectedPlayer = null              // full roster object — includes person, position, jerseyNumber (jerseyNumber is null when loaded from team stats endpoint)
 ```
 
 ### Navigation
@@ -73,7 +73,8 @@ let selectedPlayer = null              // full roster object — includes person
 | `/game/{pk}/linescore` | ✅ | Live and completed games |
 | `/game/{pk}/boxscore` | ✅ | Player stats for live and completed games |
 | `/standings` | ✅ | No season param needed |
-| `/teams/{id}/roster` | ✅ | Active roster |
+| `/teams/{id}/roster` | ✅ | Roster by type (active, 40Man, etc.) — no longer used for Stats tab |
+| `/teams/{id}/stats` | ✅ | Season stats for all players who played; used by Stats tab. Includes `player`, `position`, `stat` per split. No `jerseyNumber`. |
 | `/people/{id}/stats` | ✅ | Individual player season stats |
 | `/stats/leaders` | ✅ | Requires `statGroup` param — omitting it mixes hitting/pitching data |
 | `/game/{pk}/feed/live` | ❌ | 404s — do not use. Use linescore instead. |
@@ -152,13 +153,13 @@ Source: `/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,d
 ### 📊 Stats
 Three-column layout: Leaders | Roster | Player Stats
 
-**Leaders panel** — dropdown to select stat, hitting/pitching tabs, top 10 ranked players. Clicking a player loads their stats. Source: cached from `fetchAllPlayerStats()`
+**Leaders panel** — dropdown to select stat, hitting/pitching tabs, top 10 ranked players. Clicking a player loads their stats. Source: `statsCache`, populated by `loadRoster()`.
 
-**Roster list** — active roster with hitting/pitching/fielding tabs. On load and on tab switch, the first player in the list is **automatically selected** so the Player Stats panel is never empty.
+**Players list** — all players who recorded stats during the season (hitting/pitching/fielding tabs). Includes IL players, call-ups, and traded players — anyone with stats. Jersey numbers show as `—` (not available from this endpoint). On load and on tab switch, the first player in the list is **automatically selected** so the Player Stats panel is never empty.
 
-**Player Stats panel** — updates title to the selected player's name. Shows `#34 · Catcher` subtitle. Full stat grid: Hitting (12 stats, 4-col), Pitching (12 stats, 4-col), Fielding (6 stats, 3-col). Source: `/people/{id}/stats`
+**Player Stats panel** — updates title to the selected player's name. Shows `#— · Catcher` subtitle (jersey number unavailable). Full stat grid: Hitting (12 stats, 4-col), Pitching (12 stats, 4-col), Fielding (6 stats, 3-col). Source: `/people/{id}/stats`
 
-Source: `/teams/{id}/roster` + `/people/{id}/stats`
+Source: `/teams/{id}/stats?stats=season&group=hitting` + `group=pitching` (both parallel) + `/people/{id}/stats` for individual click
 
 ---
 
@@ -208,7 +209,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - Dropdown of all 30 MLB teams grouped by division
 - Switching team reloads all data, reapplies theme, resets all caches
 - Media Tab toggle — slide toggle, defaults off
-- Version number at bottom of panel (e.g. `v1.32`)
+- Version number at bottom of panel (e.g. `v1.33`)
 - Resets to Mets on page reload (no persistence by design)
 
 ---
@@ -230,8 +231,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 | `buildBoxscore(players)` | Global — builds batting + pitching tables from boxscore players object. Used by both historical and live game views |
 | `switchBoxTab(bsId, side)` | Switches active tab in a boxscore panel |
 | `loadStandings()` | Fetches standings, calls all four render functions |
-| `loadRoster()` | Fetches active roster, splits hitting/pitching/fielding, auto-selects first hitter |
-| `fetchAllPlayerStats()` | Batch fetches season stats for all roster players, populates statsCache |
+| `loadRoster()` | Fetches season hitting + pitching stats in parallel from `/teams/{id}/stats`; builds rosterData and statsCache in one round-trip; auto-selects first hitter |
+| `fetchAllPlayerStats()` | Legacy — no longer called. Was N+1 individual stat fetches; replaced by inline population in `loadRoster()` |
 | `loadLeaders()` | Sorts and renders team leader list from statsCache |
 | `switchRosterTab(tab, btn)` | Switches roster tab, auto-selects first player of new tab |
 | `selectPlayer(id, type)` | Looks up full player object from rosterData, updates card title, fetches and renders season stats |
@@ -297,6 +298,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - [ ] Consider more reliable CORS proxy for YouTube RSS
 - [x] Schedule tab auto-loads on first visit (`scheduleLoaded` flag — v1.31)
 - [x] Auto-select first player in stats; player name in card title (v1.32)
+- [x] Stats tab shows all season players (IL, call-ups, traded) via `/teams/{id}/stats` — not just active roster (v1.33)
 - [x] Next Game / Next Series home cards
 - [x] Team-aware backgrounds (hue from primary, all bg vars dynamic)
 - [x] Series record on cold load (±7 day fetch in loadTodayGame)
