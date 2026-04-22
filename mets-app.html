@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.34</title>
+<title>Mets Tracker v1.35</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -22,6 +22,8 @@
   .main{padding:20px;max-width:1200px;margin:0 auto}
   .section{display:none}.section.active{display:block}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .matchup-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
   .card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--orange);margin-bottom:12px}
   .loading{color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center}
@@ -128,6 +130,16 @@
   .live-refresh-time{font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
   .back-btn{background:none;border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;margin-bottom:16px}
   .back-btn:hover{border-color:var(--orange);color:var(--orange)}
+  @media(max-width:1024px){
+    .grid3,.live-grid{grid-template-columns:1fr}
+    .matchup-grid{grid-template-columns:1fr 1fr}
+    .main{padding:12px}
+    header{height:auto;min-height:60px;padding:8px 16px;flex-wrap:wrap;gap:6px}
+    nav{flex-wrap:wrap}
+  }
+  @media(max-width:767px){
+    .grid2{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
@@ -156,7 +168,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.34</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.35</div>
       </div>
     </div>
   </nav>
@@ -204,7 +216,7 @@
 </div>
 
 <div id="stats" class="section">
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+  <div class="grid3">
     <div class="card">
       <div class="card-title">Leaders</div>
       <div class="stat-tabs" style="margin-bottom:10px">
@@ -830,7 +842,7 @@ async function loadLeagueMatchups(){
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+today+'&hydrate=linescore,team');var d=await r.json(),games=[];
     (d.dates||[]).forEach(function(dt){games=games.concat(dt.games||[]);});
     if(!games.length){el.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">No games scheduled today</div>';return;}
-    var html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">';
+    var html='<div class="matchup-grid">';
     games.forEach(function(g){
       var home=g.teams.home,away=g.teams.away,status=g.status.abstractGameState,detailed=g.status.detailedState;
       var awayD=TEAMS.find(function(t){return t.id===away.team.id;}),homeD=TEAMS.find(function(t){return t.id===home.team.id;});

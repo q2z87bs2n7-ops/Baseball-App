@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
 
-**Current version:** v1.34
+**Current version:** v1.35
 **File:** `mets-app.html`
 **Default team:** New York Mets (id: 121)
 
@@ -58,6 +58,18 @@ let selectedPlayer = null              // full roster object — includes person
 | `--border` | Borders — hsl(teamHue, 35%, 30%) |
 
 **Accent luminance floor:** if the computed accent has luminance < 0.05 (near-black, e.g. Giants/Orioles secondary `#27251F`), it is forced to `#ffffff`.
+
+**Responsive breakpoints** (single `@media` block at end of `<style>`):
+- `≤1024px` (iPad landscape + portrait): `.grid3` and `.live-grid` collapse to 1 column; `.matchup-grid` goes 4→2 cols; header wraps; `.main` padding reduced to 12px
+- `≤767px` (portrait / phone): `.grid2` also collapses to 1 column
+
+**Layout utility classes:**
+- `.grid2` — 2-column grid, 1fr 1fr, 16px gap. Collapses at 767px.
+- `.grid3` — 3-column grid, 1fr 1fr 1fr, 16px gap. Collapses at 1024px. (Stats section)
+- `.matchup-grid` — 4-column grid, repeat(4,1fr), 10px gap. Goes 2-col at 1024px. (League matchups)
+- `.live-grid` — unequal 3-col (1fr 1.2fr 1.4fr). Collapses at 1024px. (Live game view)
+
+**Rule:** All layout grids must use CSS classes, not inline `style=` grid definitions — so the `@media` block can override them without touching HTML.
 
 **Fixed neutrals** (not team-aware):
 - `--text: #e8eaf0` — body text
