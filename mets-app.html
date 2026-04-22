@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.35</title>
+<title>Mets Tracker v1.35.1</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -144,7 +144,7 @@
 </head>
 <body>
 <header>
-  <div class="logo">⚾ <span>METS</span>&nbsp;TRACKER</div>
+  <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span></div>
   <nav>
     <button class="active" onclick="showSection('home',this)">🏠 Home</button>
     <button onclick="showSection('schedule',this)">📅 Schedule</button>
@@ -168,7 +168,7 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.35</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.35.1</div>
       </div>
     </div>
   </nav>
@@ -342,7 +342,7 @@ function applyTeamTheme(team){
   document.documentElement.style.setProperty('--blue',team.primary);
   document.documentElement.style.setProperty('--orange',accent);
   document.documentElement.style.setProperty('--accent-text',accentText);
-  document.querySelector('.logo').innerHTML='⚾ <span>'+team.short.toUpperCase()+'</span>&nbsp;TRACKER';
+  document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
   document.title=team.short+' Tracker';
 }
 
