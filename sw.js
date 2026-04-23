@@ -1,5 +1,7 @@
-const CACHE = 'mlb-v1';
+const CACHE = 'mlb-v2'; // bump this version on every deploy to force cache refresh
 const SHELL = ['./', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
+const ICON  = new URL('./icons/icon-192.png', self.location).href;
+const START = new URL('./', self.location).href;
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
@@ -7,7 +9,12 @@ self.addEventListener('install', function(e) {
 });
 
 self.addEventListener('activate', function(e) {
-  e.waitUntil(clients.claim());
+  // Delete any cache whose name doesn't match the current CACHE version
+  e.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(keys.filter(function(k) { return k !== CACHE; }).map(function(k) { return caches.delete(k); }));
+    }).then(function() { return clients.claim(); })
+  );
 });
 
 self.addEventListener('fetch', function(e) {
@@ -22,11 +29,11 @@ self.addEventListener('push', function(e) {
   var title = data.title || 'MLB Tracker';
   var opts = {
     body: data.body || 'Game starting soon!',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: ICON,
+    badge: ICON,
     tag: data.tag || 'mlb-game',
     renotify: true,
-    data: { url: '/' }
+    data: { url: START }
   };
   e.waitUntil(self.registration.showNotification(title, opts));
 });
@@ -36,6 +43,6 @@ self.addEventListener('notificationclick', function(e) {
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(ws) {
     var w = ws.find(function(w) { return w.url.includes(self.location.origin); });
     if (w) return w.focus();
-    return clients.openWindow('/');
+    return clients.openWindow(START);
   }));
 });
