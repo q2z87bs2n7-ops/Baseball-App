@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Baseball App — Mobile, iPad & Icon Mocks</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  html,body{margin:0;padding:0;background:#0a0a0a;color:#e8eaf0;font-family:system-ui,-apple-system,sans-serif}
+  * { box-sizing:border-box }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="mocks/theme.jsx"></script>
+<script type="text/babel" src="mocks/mobile-nav.jsx"></script>
+<script type="text/babel" src="mocks/ipad-header.jsx"></script>
+<script type="text/babel" src="mocks/mobile-calendar.jsx"></script>
+<script type="text/babel" src="mocks/pwa-icons.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const { DesignCanvas, DCSection, DCArtboard } = window;
+const TEAMS = window.TEAMS;
+
+// sampled teams to showcase edge cases:
+// mets = bright-accent baseline; pirates = gold secondary (works);
+// marlins = light-primary header-text edge case; cardinals = dark-on-dark accent failure.
+const featured = ['mets','pirates','marlins','cardinals'];
+
+function App(){
+  return (
+    <DesignCanvas title="Baseball App — Mobile, iPad & Icon mocks">
+
+      <DCSection id="bottom-nav" title="1. Mobile bottom nav — current vs redesign" subtitle="T5–T10: safe-area inset, labels back on, softer border, bigger tap targets, themed active state. Shown across 4 team themes to verify contrast.">
+        {featured.map(k=>(
+          <DCArtboard key={`cur-${k}`} id={`nav-cur-${k}`} label={`${TEAMS[k].name} — current`} width={400} height={780}>
+            <window.PhoneShell team={TEAMS[k]} title="Current v1.40">
+              <window.CurrentNav team={TEAMS[k]}/>
+            </window.PhoneShell>
+          </DCArtboard>
+        ))}
+        {featured.map(k=>(
+          <DCArtboard key={`new-${k}`} id={`nav-new-${k}`} label={`${TEAMS[k].name} — redesign`} width={400} height={780}>
+            <window.PhoneShell team={TEAMS[k]} title="Proposed">
+              <window.RedesignNav team={TEAMS[k]}/>
+            </window.PhoneShell>
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection id="ipad-header" title="2. iPad portrait header — current wraps, redesign holds one line" subtitle="T11–T15: shorter labels, logo-only at narrow widths, team chip in header (not buried in settings), sticky header. Shown at ~820px (iPad 10.9 portrait).">
+        {featured.map(k=>(
+          <DCArtboard key={`ip-cur-${k}`} id={`ip-cur-${k}`} label={`${TEAMS[k].name} — current (wraps)`} width={870} height={380}>
+            <window.IpadShell team={TEAMS[k]} title="Current v1.40" warn="nav wraps, settings drops">
+              <window.CurrentIpadHeader team={TEAMS[k]}/>
+            </window.IpadShell>
+          </DCArtboard>
+        ))}
+        {featured.map(k=>(
+          <DCArtboard key={`ip-new-${k}`} id={`ip-new-${k}`} label={`${TEAMS[k].name} — redesign`} width={870} height={380}>
+            <window.IpadShell team={TEAMS[k]} title="Proposed">
+              <window.RedesignIpadHeader team={TEAMS[k]}/>
+            </window.IpadShell>
+          </DCArtboard>
+        ))}
+        {featured.slice(0,2).map(k=>(
+          <DCArtboard key={`ip-compact-${k}`} id={`ip-compact-${k}`} label={`${TEAMS[k].name} — compact fallback (<768px iPad)`} width={820} height={380}>
+            <window.IpadShell team={TEAMS[k]} title="Compact (narrow tablet)">
+              <window.CompactIpadHeader team={TEAMS[k]}/>
+            </window.IpadShell>
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection id="calendar" title="3. Mobile calendar — list view replaces cramped grid" subtitle="T1–T4: at 375px, a 7-col grid with game info stuffed into 50px cells is unreadable. List view groups by week, adds sticky month header, leaves room for swipe gestures.">
+        {featured.slice(0,2).map(k=>(
+          <DCArtboard key={`cal-cur-${k}`} id={`cal-cur-${k}`} label={`${TEAMS[k].name} — current grid`} width={400} height={780}>
+            <window.PhoneShell team={TEAMS[k]} title="Current v1.40">
+              <div style={{position:'absolute', inset:'76px 0 0 0', overflow:'auto'}}>
+                <window.CurrentCalendar team={TEAMS[k]}/>
+              </div>
+            </window.PhoneShell>
+          </DCArtboard>
+        ))}
+        {featured.slice(0,2).map(k=>(
+          <DCArtboard key={`cal-new-${k}`} id={`cal-new-${k}`} label={`${TEAMS[k].name} — list redesign`} width={400} height={780}>
+            <window.PhoneShell team={TEAMS[k]} title="Proposed list view">
+              <div style={{position:'absolute', inset:'76px 0 0 0', overflow:'auto'}}>
+                <window.RedesignCalendar team={TEAMS[k]}/>
+              </div>
+            </window.PhoneShell>
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection id="icons" title="4. PWA icon concepts — team-neutral" subtitle="6 directions, all on a stable neutral/navy field with a warm accent. The installed icon stays constant; only the in-app theme follows the selected team.">
+        <DCArtboard id="icons-main" label="All 14 directions + masked preview + homescreen context" width={1200} height={1720}>
+          <window.IconShowcase/>
+        </DCArtboard>
+      </DCSection>
+
+    </DesignCanvas>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
