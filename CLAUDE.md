@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.42.2
+**Current version:** v1.43
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -182,7 +182,7 @@ Monthly calendar grid (Sun–Sat), navigable with ◀ ▶ arrows. Today highligh
 
 `scheduleLoaded` flag controls whether `loadSchedule()` is called on tab visit. This flag was introduced because `scheduleData` can be pre-populated by the cold-load ±7 day fetch, which previously prevented the full season from ever loading.
 
-**Mobile calendar (≤480px):** cells show day number + colour-coded dot only (`.cal-dot`: green=W, red=L, pulsing red=Live, accent=upcoming). Tapping a game cell shows a fixed-position `.cal-tooltip` above the cell with opponent, short date, and result/time badge — data from `scheduleData`, no API call. Tooltip dismisses on tap outside. Desktop detail panel (`#gameDetail`) is bypassed on mobile.
+**Mobile calendar (≤480px):** cells show day number + colour-coded dot only (`.cal-dot`: green=W, red=L, pulsing red=Live, accent=upcoming). Tapping a game cell shows a fixed-position `.cal-tooltip` above the cell with opponent, short date, and result/time badge — data from `scheduleData`, no API call. Tooltip dismisses on tap outside. The `#gameDetail` panel below the calendar is also populated with full boxscore/linescore/game info (same as desktop).
 
 **Clicking a completed game** (desktop) expands detail panel:
 - Boxscore — tabbed by team. Batting (AB, H, R, RBI, BB, K, HR) and Pitching (IP, H, R, ER, BB, K, HR, PC). Only players with AB > 0 or IP > 0.
@@ -283,7 +283,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 | `loadSchedule()` | Fetches full season, sets `scheduleLoaded=true`, renders calendar |
 | `renderCalendar()` | Draws monthly calendar grid from scheduleData |
 | `changeMonth(dir)` | Navigates calendar month, calls renderCalendar |
-| `selectCalGame(gamePk, evt)` | On mobile (≤480px): shows `.cal-tooltip` above tapped cell with opponent/date/result from `scheduleData` (no API call), returns early. On desktop: loads linescore + boxscore into `#gameDetail` panel. |
+| `selectCalGame(gamePk, evt)` | On mobile (≤480px): shows `.cal-tooltip` above tapped cell with opponent/date/result from `scheduleData` (no API call), then falls through to also populate `#gameDetail`. On desktop: loads linescore + boxscore into `#gameDetail` panel. |
 | `buildBoxscore(players)` | Global — builds batting + pitching tables from boxscore players object. Used by both historical and live game views |
 | `switchBoxTab(bsId, side)` | Switches active tab in a boxscore panel |
 | `loadStandings()` | Fetches standings, calls all four render functions |
@@ -403,7 +403,8 @@ On every commit that changes app content, bump **three** things:
 - [x] Jersey # overlay pill on player headshot (v1.39)
 - [x] Leader stat filter pills above select dropdowns (v1.39)
 - [x] Opposition-forward home cards — 5-col Next Game, ghosted Next Series (v1.39.1)
-- [x] iPhone horizontal scroll fix — `html{overflow-x:hidden}` + `.live-view` side padding zeroed + `.game-big{padding:16px}` (v1.42.2)
+- [x] Mobile calendar game stats fix — tap now shows tooltip AND populates #gameDetail panel below (v1.43)
+- [x] iPhone horizontal scroll fix — `html{overflow-x:hidden}` + `.live-view` side padding zeroed + `.game-big{padding:16px}` (v1.42)
 - [x] Today card live state: remove LIVE duplication from label, replace red badge-live pill with subtle inline dot + inning indicator (v1.42.1)
 - [x] Mobile calendar: dot indicators + tap tooltip (v1.41.4)
 - [x] Mobile nav: short labels back, backdrop-blur bg, safe-area padding, accent underline active (v1.41.1)
