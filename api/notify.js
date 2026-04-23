@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     const home = game.teams.home.team.teamName;
     const payload = JSON.stringify({
       title: '⚾ Game Starting',
-      body: `${away} @ ${home} — first pitch now`,
+      body: `${away} @ ${home}`,
       tag: `game-${game.gamePk}`
     });
 
