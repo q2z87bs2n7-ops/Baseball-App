@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.40
+**Current version:** v1.41.4
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -29,7 +29,7 @@ A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. 
 index.html              — main app (HTML + CSS + JS, all inline)
 sw.js                   — service worker (PWA caching + push event handling)
 manifest.json           — PWA manifest (install metadata, icons)
-icons/                  — app icons (icon-192.png, icon-512.png)
+icons/                  — app icons (icon-192.png, icon-512.png, icon-180.png, icon-maskable-512.png, favicon.svg, icon-mono.svg)
 api/subscribe.js        — Vercel serverless: store/remove push subscriptions in Upstash Redis
 api/notify.js           — Vercel serverless: check MLB schedule, fire push notifications
 .github/workflows/      — notify-cron.yml: GitHub Actions cron (*/5 * * * *) pings /api/notify
@@ -87,8 +87,9 @@ let selectedPlayer = null              // full roster object — includes person
 
 **Responsive breakpoints** (single `@media` block at end of `<style>`):
 - `≤1024px` (iPad landscape + portrait): `.grid3` and `.live-grid` collapse to 1 column; `.matchup-grid` goes 3→2 cols; header wraps; `.main` padding reduced to 12px
+- `≤1024px and ≥481px` (tablet band only): header `flex-wrap:nowrap` (prevents wrapping bug); `.logo span` hidden (SVG stays); nav icon-only (`.nav-label` hidden); `.settings-wrap` flex-shrink:0 stays right-aligned; header position:sticky
 - `≤767px` (portrait / phone): `.grid2` also collapses to 1 column; `.card-cap` shrinks to 40px; `.series-ghost` shrinks to 220px
-- `≤480px` (iPhone): nav becomes fixed bottom icon bar (emoji only, `.nav-label` hidden); header `position:static` scrolls away; settings-wrap is a direct `<header>` child (not inside `<nav>`) so it scrolls with the header; `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.card` padding 12px; `.cal-day` min-height 50px; `.main` and `.live-view` get `padding-bottom:72px` to clear the fixed bar
+- `≤480px` (iPhone): nav becomes fixed bottom bar with short labels visible (`.nav-label` shown at 9.5px); nav bg is `color-mix(--blue 94%)` with backdrop-blur and soft 1px border-top; active state uses accent top-underline (`inset 0 2px 0 var(--accent)`); safe-area inset bottom padding; `.team-chip` hidden; header `position:static` scrolls away; `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.card` padding 12px; `.cal-day` min-height 44px, `.cal-game-info` hidden, `.cal-dot` shown; `.main` and `.live-view` get `padding-bottom:calc(72px + env(safe-area-inset-bottom))`
 
 **Layout utility classes:**
 - `.grid2` — 2-column grid, 1fr 1fr, 16px gap. Collapses at 767px.
@@ -97,7 +98,8 @@ let selectedPlayer = null              // full roster object — includes person
 - `.live-grid` — unequal 3-col (1fr 1.2fr 1.4fr). Collapses at 1024px. (Live game view)
 - `.media-layout` — 25%/75% grid for media tab (video list + player). Collapses to 1-col at 480px.
 - `.league-leaders-grid` — 2-col grid for league leader panels. Collapses to 1-col at 480px.
-- `.nav-label` — wraps nav button text. `display:none` at ≤480px so only emoji icons show in the bottom bar.
+- `.nav-label` — wraps nav button text. Visible at ≤480px at 9.5px (short labels: Home/Sched/Stand/Stats/News/League). Hidden at ≤1024px tablet band (icons only).
+- `.team-chip` — static team name pill in header between logo and nav. Shown at ≥481px, hidden at ≤480px. Updated by `applyTeamTheme`. Not a dropdown — no click handler.
 - `.matchup-card` — subtle card surface inside matchup grid: rgba(0,0,0,.18) bg, 1px solid rgba(255,255,255,.05) border, 8px radius. :hover darkens slightly. Replaces per-card team gradient.
 - `.card-cap` — 56px team logo img used in home cards. Shrinks to 40px at ≤767px.
 - `.series-ghost` — 300px absolutely-positioned ghosted opp logo in Next Series card, opacity .12. Shrinks to 220px at ≤767px.
@@ -180,7 +182,9 @@ Monthly calendar grid (Sun–Sat), navigable with ◀ ▶ arrows. Today highligh
 
 `scheduleLoaded` flag controls whether `loadSchedule()` is called on tab visit. This flag was introduced because `scheduleData` can be pre-populated by the cold-load ±7 day fetch, which previously prevented the full season from ever loading.
 
-**Clicking a completed game** expands detail panel:
+**Mobile calendar (≤480px):** cells show day number + colour-coded dot only (`.cal-dot`: green=W, red=L, pulsing red=Live, accent=upcoming). Tapping a game cell shows a fixed-position `.cal-tooltip` above the cell with opponent, short date, and result/time badge — data from `scheduleData`, no API call. Tooltip dismisses on tap outside. Desktop detail panel (`#gameDetail`) is bypassed on mobile.
+
+**Clicking a completed game** (desktop) expands detail panel:
 - Boxscore — tabbed by team. Batting (AB, H, R, RBI, BB, K, HR) and Pitching (IP, H, R, ER, BB, K, HR, PC). Only players with AB > 0 or IP > 0.
 - Linescore — inning-by-inning R/H/E
 - Game Summary — all `bs.info` label/value pairs (WP, weather, attendance, umpires)
@@ -270,7 +274,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 | Function | Purpose |
 |---|---|
-| `applyTeamTheme(team)` | Sets 9 CSS vars (--blue, --orange, --accent, --header-text, --accent-text, --dark, --card, --card2, --border), persists to localStorage.mlb_theme_vars, updates logo and page title |
+| `applyTeamTheme(team)` | Sets 9 CSS vars (--blue, --orange, --accent, --header-text, --accent-text, --dark, --card, --card2, --border), persists to localStorage.mlb_theme_vars, updates logo, page title, theme-color meta, and `.team-chip` text |
 | `switchTeam(teamId)` | Resets all state and reloads all data for new team |
 | `loadTodayGame()` | Left home card — fetches ±7 day window on cold load for series record |
 | `getSeriesInfo(g)` | Returns series string e.g. `"Game 2 of 3 · Mets lead 1-0"`. API desc first, scheduleData fallback |
@@ -279,7 +283,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 | `loadSchedule()` | Fetches full season, sets `scheduleLoaded=true`, renders calendar |
 | `renderCalendar()` | Draws monthly calendar grid from scheduleData |
 | `changeMonth(dir)` | Navigates calendar month, calls renderCalendar |
-| `selectCalGame(gamePk)` | Loads linescore + boxscore for a clicked calendar game |
+| `selectCalGame(gamePk, evt)` | On mobile (≤480px): shows `.cal-tooltip` above tapped cell with opponent/date/result from `scheduleData` (no API call), returns early. On desktop: loads linescore + boxscore into `#gameDetail` panel. |
 | `buildBoxscore(players)` | Global — builds batting + pitching tables from boxscore players object. Used by both historical and live game views |
 | `switchBoxTab(bsId, side)` | Switches active tab in a boxscore panel |
 | `loadStandings()` | Fetches standings, calls all four render functions |
@@ -323,7 +327,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - `sw.js` — install caches app shell (`./`, `./manifest.json`, `./icons/*`); activate cleans old caches; fetch handler is cache-first for same-origin; push and notificationclick handlers
 - **All paths in manifest, sw.js, and `<head>` are relative** (no leading `/`) — GitHub Pages serves the app at `/Baseball-App/` so absolute paths break
 - `applyTeamTheme()` updates `<meta name="theme-color">` with the active team primary colour
-- Icons are placeholder PNGs (navy + baseball design) — swap `icons/icon-192.png` and `icons/icon-512.png` any time
+- Icons: Diamond design (top-down baseball field, navy `#0F1B33` bg, warm `#E85D1F` accent). Files: `icon-512.png` (any), `icon-192.png` (any), `icon-180.png` (apple-touch-icon), `icon-maskable-512.png` (maskable), `icon-mono.svg` (monochrome iOS 16.4+), `favicon.svg` (browser tab). `manifest.json` has separate entries for `any`/`maskable`/`monochrome` purposes; `orientation: "any"` for iPad landscape.
 
 ### Push Notifications
 - Toggle in Settings panel: **🔔 Game Start Alerts** — persisted to `localStorage('mlb_push')`
@@ -381,7 +385,6 @@ On every commit that changes app content, bump **three** things:
 ## Feature Backlog
 
 - [ ] Push notification team filter — currently fires for any MLB game start; add per-user team preference stored with subscription in Redis
-- [ ] PWA icons — replace placeholder navy/baseball PNGs with proper branded artwork
 - [ ] Clean up KV naming — rename `const kv` variable to `redis` in all three api files; rename env vars `KV_REST_API_URL`/`KV_REST_API_TOKEN` to clearer Upstash-prefixed names in both code and Vercel dashboard (env var names were auto-generated by Vercel's Upstash integration)
 - [ ] Rename `--blue`/`--orange` CSS vars to `--primary`/`--secondary` — names are misleading for non-blue/orange teams
 - [ ] Cache live game batter/pitcher stats per matchup
@@ -400,6 +403,10 @@ On every commit that changes app content, bump **three** things:
 - [x] Jersey # overlay pill on player headshot (v1.39)
 - [x] Leader stat filter pills above select dropdowns (v1.39)
 - [x] Opposition-forward home cards — 5-col Next Game, ghosted Next Series (v1.39.1)
+- [x] Mobile calendar: dot indicators + tap tooltip (v1.41.4)
+- [x] Mobile nav: short labels back, backdrop-blur bg, safe-area padding, accent underline active (v1.41.1)
+- [x] iPad portrait header: stays one line, team chip added, logo wordmark collapses (v1.41.2)
+- [x] Diamond PWA icon set — team-neutral, maskable/monochrome/favicon variants (v1.41.3)
 - [x] PWA install support — manifest, service worker, icons, apple meta tags (v1.40)
 - [x] Web Push game-start notifications — Vercel + Upstash Redis + GitHub Actions cron (v1.40)
 - [x] Game Start Alerts toggle in Settings panel (v1.40)
