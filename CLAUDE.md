@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
 
-**Current version:** v1.38
+**Current version:** v1.40
 **File:** `mets-app.html`
 **Default team:** New York Mets (id: 121)
 
@@ -45,7 +45,7 @@ let selectedPlayer = null              // full roster object — includes person
 `showSection(id, btn)` — shows/hides sections by toggling `.active` class. Sections: `home`, `schedule`, `standings`, `stats`, `news`, `media`, `league`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
 
 ### Team theming
-`applyTeamTheme(team)` sets seven CSS variables dynamically:
+`applyTeamTheme(team)` sets nine CSS variables dynamically:
 
 | Variable | Value |
 |---|---|
@@ -56,28 +56,39 @@ let selectedPlayer = null              // full roster object — includes person
 | `--card` | Card background — hsl(teamHue, 45%, 22%) |
 | `--card2` | Secondary card / input — hsl(teamHue, 40%, 26%) |
 | `--border` | Borders — hsl(teamHue, 35%, 30%) |
+| `--accent` | Contrast-safe accent for text/borders on dark surfaces — raw secondary if lum≥0.18 && contrast≥3.0 on --card, else HSL-lightened to L=65%, else #FFB273 |
+| `--header-text` | Text colour on header gradient — #0a0f1e if primary luminance > 0.5, else #ffffff |
 
 **Accent luminance floor:** if the computed accent has luminance < 0.05 (near-black, e.g. Giants/Orioles secondary `#27251F`), it is forced to `#ffffff`.
 
+**Split-brain rule:** on-dark accent text and borders use `--accent`; solid brand fills use `--orange`.
+
+**Theme persistence (T32):** `applyTeamTheme` writes `{--dark, --card, --card2, --border, --blue, --orange, --accent, --accent-text, --header-text}` to `localStorage.mlb_theme_vars`. An inline `<script>` in `<head>` reads and applies these vars before `<style>` renders, preventing flash-of-wrong-theme on reload.
+
 **Responsive breakpoints** (single `@media` block at end of `<style>`):
-- `≤1024px` (iPad landscape + portrait): `.grid3` and `.live-grid` collapse to 1 column; `.matchup-grid` goes 4→2 cols; header wraps; `.main` padding reduced to 12px
-- `≤767px` (portrait / phone): `.grid2` also collapses to 1 column
+- `≤1024px` (iPad landscape + portrait): `.grid3` and `.live-grid` collapse to 1 column; `.matchup-grid` goes 3→2 cols; header wraps; `.main` padding reduced to 12px
+- `≤767px` (portrait / phone): `.grid2` also collapses to 1 column; `.card-cap` shrinks to 40px; `.series-ghost` shrinks to 220px
 - `≤480px` (iPhone): nav becomes fixed bottom icon bar (emoji only, `.nav-label` hidden); header `position:static` scrolls away; settings-wrap is a direct `<header>` child (not inside `<nav>`) so it scrolls with the header; `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.card` padding 12px; `.cal-day` min-height 50px; `.main` and `.live-view` get `padding-bottom:72px` to clear the fixed bar
 
 **Layout utility classes:**
 - `.grid2` — 2-column grid, 1fr 1fr, 16px gap. Collapses at 767px.
 - `.grid3` — 3-column grid, 1fr 1fr 1fr, 16px gap. Collapses at 1024px. (Stats section)
-- `.matchup-grid` — 4-column grid, repeat(4,1fr), 10px gap. Goes 2-col at 1024px. (League matchups)
+- `.matchup-grid` — 3-column grid, repeat(3,1fr), 8px gap. Goes 2-col at 1024px, 1-col at 480px. (League matchups)
 - `.live-grid` — unequal 3-col (1fr 1.2fr 1.4fr). Collapses at 1024px. (Live game view)
 - `.media-layout` — 25%/75% grid for media tab (video list + player). Collapses to 1-col at 480px.
 - `.league-leaders-grid` — 2-col grid for league leader panels. Collapses to 1-col at 480px.
 - `.nav-label` — wraps nav button text. `display:none` at ≤480px so only emoji icons show in the bottom bar.
+- `.matchup-card` — subtle card surface inside matchup grid: rgba(0,0,0,.18) bg, 1px solid rgba(255,255,255,.05) border, 8px radius. :hover darkens slightly. Replaces per-card team gradient.
+- `.card-cap` — 56px team logo img used in home cards. Shrinks to 40px at ≤767px.
+- `.series-ghost` — 300px absolutely-positioned ghosted opp logo in Next Series card, opacity .12. Shrinks to 220px at ≤767px.
+- `.sub-kicker` — secondary label utility: .68rem, weight 700, .1em letter-spacing, var(--muted) colour.
+- `.stat-box.hero` — first stat in each group spans 2 columns, `.stat-val` at 2.2rem.
 
 **Rule:** All layout grids must use CSS classes, not inline `style=` grid definitions — so the `@media` block can override them without touching HTML.
 
 **Fixed neutrals** (not team-aware):
 - `--text: #e8eaf0` — body text
-- `--muted: #8892a4` — muted/secondary text
+- `--muted: #9aa0a8` — muted/secondary text
 
 ---
 
@@ -106,13 +117,15 @@ let selectedPlayer = null              // full roster object — includes person
 ```css
 --blue          /* team primary — header, active nav */
 --orange        /* team accent — highlights, badges, card titles */
+--accent        /* contrast-safe accent for text/borders on dark — computed per-team */
+--header-text   /* text on header gradient — #0a0f1e or #ffffff based on primary luminance */
 --accent-text   /* text ON --orange surfaces */
 --dark          /* page background */
 --card          /* card background */
 --card2         /* secondary card / input background */
 --border        /* borders */
 --text          /* #e8eaf0 — body text (fixed) */
---muted         /* #8892a4 — secondary text (fixed) */
+--muted         /* #9aa0a8 — secondary text (fixed) */
 ```
 
 ---
@@ -129,10 +142,12 @@ Series info below via `getSeriesInfo(g)`:
 - On cold load, `loadTodayGame` fetches a ±7 day schedule window to populate `scheduleData` before rendering, so series record is available immediately without visiting the Schedule tab
 - Shows: `"Game 2 of 3 · Mets lead 1-0"`
 
+Layout is a 5-column inline row — [opp cap] [opp name/score] [—] [my name/score] [my cap]. Cap logos from `mlbstatic.com/team-logos/{teamId}.svg` with `onerror` fallback SVG. Status kicker (TODAY/date) centred at top; series info left + Watch Live button right in bottom row. Handles live (with scores), upcoming (no scores, date-time right), and final states.
+
 **Right card — "Next Series"** (`#nextGame`, `loadNextGame()`)
 - Fetches 28 days of schedule; groups games into series (same opponent + same venue + within 4 days)
 - Finds the **second** series with any non-Final game (i.e. the series after the current/active one, not the current one)
-- Gradient card with stacked game rows (time / W-L score / LIVE)
+- 3-stop gradient (opp-primary → #111827 55% → active-team-primary). Large ghosted opp logo (300px, opacity:.12, position:absolute bottom-right). Main row: 64px cap + VS/AT kicker / opponent name at 40px weight-900 / venue + game count. Below: 3-column game strip (day abbrev + time per cell) replacing stacked rows. Opponent name colour guarded by `pickHeaderText(oppPrimary)` for light-primary teams.
 
 **Division Snapshot** — compact standings for active team's division. Source: `/standings`
 
@@ -172,14 +187,14 @@ Three-column layout: Leaders | Roster | Player Stats
 
 **Players list** — 40-man roster (hitting/pitching/fielding tabs). Includes IL players (10-day, 60-day) and anyone on the 40-man, not just the active 26. Jersey number and position shown. On load and on tab switch, the first player in the list is **automatically selected** so the Player Stats panel is never empty.
 
-**Player Stats panel** — updates title to the selected player's name. Shows player headshot (100px wide, fixed 130px height placeholder to prevent layout shift; Cloudinary fallback to generic silhouette), `#34 · Catcher` subtitle, then full stat grid: Hitting (12 stats, 4-col), Pitching (12 stats, 4-col), Fielding (6 stats, 3-col). Source: `/people/{id}/stats`; headshots from `img.mlbstatic.com`.
+**Player Stats panel** — updates title to the selected player's name. Shows player headshot (100px wide, fixed 130px height placeholder to prevent layout shift; Cloudinary fallback to generic silhouette) with jersey number overlay pill; then full stat grid: Hitting (12 stats, 4-col), Pitching (12 stats, 4-col), Fielding (6 stats, 3-col). First stat per group gets `.hero` class — spans 2 columns, stat value at 2.2rem. Source: `/people/{id}/stats`; headshots from `img.mlbstatic.com`.
 
 Source: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats` (via `fetchAllPlayerStats` for cache, individual fetch on click)
 
 ---
 
 ### 🌐 Around the League
-- **Today's Matchups** — all MLB games, 4-per-row grid. Live games show inning (e.g. `"● LIVE · Top 5"`). Clickable → live game view. Source: `/schedule?sportId=1&date={today}&hydrate=linescore,team` + standings for records
+- **Today's Matchups** — all MLB games, 3-per-row grid. Each cell is a `.matchup-card` with subtle surface (no per-card team gradient). Live games show inning (e.g. `"● LIVE · Top 5"`). Clickable → live game view. Source: `/schedule?sportId=1&date={today}&hydrate=linescore,team` + standings for records
 - **MLB News** — MLB-wide headlines, no team filter. Source: ESPN News API
 - **Stat Leaders** — hitting/pitching tabs, 2×2 grid, top 10 per stat. Source: `/stats/leaders` with `statGroup` param
 
@@ -235,7 +250,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 | Function | Purpose |
 |---|---|
-| `applyTeamTheme(team)` | Sets all 7 CSS vars, logo, page title for active team |
+| `applyTeamTheme(team)` | Sets 9 CSS vars (--blue, --orange, --accent, --header-text, --accent-text, --dark, --card, --card2, --border), persists to localStorage.mlb_theme_vars, updates logo and page title |
 | `switchTeam(teamId)` | Resets all state and reloads all data for new team |
 | `loadTodayGame()` | Left home card — fetches ±7 day window on cold load for series record |
 | `getSeriesInfo(g)` | Returns series string e.g. `"Game 2 of 3 · Mets lead 1-0"`. API desc first, scheduleData fallback |
@@ -266,6 +281,14 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 | `gameGradient(g)` | Returns inline style string for two-team colour gradient |
 | `hueOf(hex)` | Extracts HSL hue (0–360) from a hex colour string |
 | `hslHex(h, s, l)` | Converts HSL values to hex colour string |
+| `relLuminance(hex)` | WCAG relative luminance of a hex colour |
+| `contrastRatio(hexA, hexB)` | WCAG contrast ratio between two hex colours |
+| `hslLighten(hex, targetL)` | Keep hue/sat, push L to targetL (0–1) |
+| `pickAccent(secondaryHex, cardHex)` | Returns contrast-safe `--accent` value for a team |
+| `pickHeaderText(primaryHex)` | Returns `#0a0f1e` or `#ffffff` for header text |
+| `capImgError(el, primary, secondary, letter)` | `onerror` handler — swaps broken logo img to fallback SVG circle |
+| `teamCapImg(teamId, name, primary, secondary, cls)` | Returns `<img>` tag for team cap logo with fallback |
+| `selectLeaderPill(group, stat, btn)` | Sets leader stat select + active pill, calls `loadLeaders()` |
 
 ---
 
@@ -273,12 +296,13 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 1. **Live game — stats not caching** — season stats for batter/pitcher re-fetched on every refresh. Should cache and only re-fetch when matchup changes.
 2. **Live game — header text colour** — score text in live header not using `--accent-text`. May be invisible for some team colour combinations.
-3. **Badges not team-aware** — W/L (green/red) and Live (red) badges are hardcoded colours.
+3. **Badges partially resolved** — W/L badges are now outlined neutral pills (green/red tint, not solid). Live badge remains hardcoded red.
 4. **News fallback** — if ESPN API is CORS-blocked, no fallback source.
 5. **Around the League leaders index mapping** — empirically derived, fragile. Re-test if API response order changes.
 6. **allorigins.win proxy** — no SLA, free service. Retry logic (3 attempts, 1s gap) mitigates failures.
 7. **YouTube channel IDs** — 27 of 30 `youtubeUC` values unverified. QC needed each offseason.
 8. **Today's date uses local time** — works for EST but worth noting for other timezones.
+9. **Logo fallback coverage** — `capImgError()` SVG fallback used in home cards only; Around the League matchup cards have no logos.
 
 ---
 
@@ -309,7 +333,15 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - [ ] Dynamic season year
 - [ ] QC all 30 team YouTube channel IDs
 - [ ] Consider more reliable CORS proxy for YouTube RSS
-- [ ] Today's matchup cards — visible separator between games (deferred)
+- [x] --accent / --header-text theme vars, cross-team contrast safety (v1.39)
+- [x] Theme flash prevention — localStorage pre-render hydration (v1.39)
+- [x] W/L outlined neutral badge pills; cal LIVE pill (v1.39)
+- [x] Nav active state soft pill; header text via --header-text (v1.39)
+- [x] Hero stat box (first stat spans 2-col at 2.2rem) (v1.39)
+- [x] Jersey # overlay pill on player headshot (v1.39)
+- [x] Leader stat filter pills above select dropdowns (v1.39)
+- [x] Opposition-forward home cards — 5-col Next Game, ghosted Next Series (v1.39.1)
+- [x] Today's matchup subtle card surfaces, 3-col grid (v1.40)
 - [x] iPhone layout — fixed bottom icon nav bar, scrollable header, settings scrolls with header (v1.38)
 - [x] Extract inline grid styles to CSS classes (.media-layout, .league-leaders-grid) for responsive control (v1.38)
 - [x] Persist user settings via localStorage — team, theme, invert, media tab (v1.37)
