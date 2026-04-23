@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.43.1</title>
+<title>MLB Tracker v1.43.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -159,8 +159,6 @@
   .matchup-role{font-size:.65rem;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:4px}
   .matchup-name{font-size:.95rem;font-weight:700;margin-bottom:4px;color:var(--text)}
   .matchup-stats{font-size:.75rem;color:var(--muted)}
-  .last-play-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
-  .last-play-text{font-size:.9rem;color:var(--text);line-height:1.5}
   .live-refresh-time{font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
   .back-btn{background:none;border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;margin-bottom:16px}
   .back-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -259,7 +257,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.43.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.43.2</div>
       </div>
     </div>
   </div>
@@ -990,8 +988,6 @@ async function fetchLiveGame(){
     lsHtml+='<th style="border-left:2px solid var(--border)">R</th><th>H</th><th>E</th></tr></thead><tbody>';
     ['away','home'].forEach(function(side){var name=side==='away'?(awayTeam.abbreviation||'Away'):(homeTeam.abbreviation||'Home');lsHtml+='<tr><td>'+name+'</td>';innings.forEach(function(inn){lsHtml+='<td>'+(inn[side]&&inn[side].runs!=null?inn[side].runs:'—')+'</td>';});var tot=ls.teams&&ls.teams[side]?ls.teams[side]:{};lsHtml+='<td class="rhe" style="border-left:2px solid var(--border)">'+(tot.runs!=null?tot.runs:'—')+'</td><td class="rhe">'+(tot.hits!=null?tot.hits:'—')+'</td><td class="rhe">'+(tot.errors!=null?tot.errors:'—')+'</td></tr>';});
     lsHtml+='</tbody></table></div>';document.getElementById('liveLinescore').innerHTML=lsHtml;
-    var onDeck=offense.onDeck?' · On Deck: '+offense.onDeck.fullName:'';
-    document.getElementById('liveLastPlay').innerHTML='<div class="live-card-title">At Bat</div><div class="last-play-text">'+(batter.fullName||'—')+onDeck+'</div>';
     var awayPlayers=bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{},homePlayers=bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{};
     var awayAbbr=awayTeam.abbreviation||awayTeam.name||'Away',homeAbbr=homeTeam.abbreviation||homeTeam.name||'Home';
     document.getElementById('liveBoxscore').innerHTML='<div class="boxscore-wrap" style="margin-top:16px"><div class="live-card-title" style="margin-bottom:10px">Box Score</div><div style="display:flex;gap:6px;margin-bottom:10px"><button onclick="switchBoxTab(\'live_bs\',\'away\')" id="live_bs_away_btn" style="background:var(--orange);color:var(--accent-text);border:none;padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:700">'+awayAbbr+'</button><button onclick="switchBoxTab(\'live_bs\',\'home\')" id="live_bs_home_btn" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem">'+homeAbbr+'</button></div><div id="live_bs_away">'+buildBoxscore(awayPlayers)+'</div><div id="live_bs_home" style="display:none">'+buildBoxscore(homePlayers)+'</div></div>';
@@ -1152,7 +1148,6 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
         <div id="liveLinescore"><div class="loading">Loading...</div></div>
       </div>
     </div>
-    <div class="last-play-box" id="liveLastPlay"></div>
     <div id="liveBoxscore"></div>
     <div id="liveGameInfo"></div>
     <div class="live-refresh-time" id="liveRefreshTime"></div>
