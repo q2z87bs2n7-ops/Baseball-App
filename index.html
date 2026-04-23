@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mets Tracker v1.38</title>
+<title>MLB Tracker v1.38.1</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MLB Tracker">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="theme-color" content="#002D72" id="themeColorMeta">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--blue:#002D72;--orange:#FF5910;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#8892a4;--border:#1e2d4a}
@@ -198,7 +204,16 @@
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.38</div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔔 Game Start Alerts</div>
+            <div style="font-size:.68rem;color:var(--muted)" id="pushStatusText">Off</div>
+          </div>
+          <div onclick="togglePush()" id="pushToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+            <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.38.1</div>
       </div>
     </div>
   </div>
@@ -376,6 +391,7 @@ function applyTeamTheme(team){
   document.documentElement.style.setProperty('--accent-text',accentText);
   document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
   document.title=team.short+' Tracker';
+  var tcm=document.getElementById('themeColorMeta');if(tcm)tcm.setAttribute('content',cp);
 }
 
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
@@ -926,6 +942,50 @@ async function loadLeagueLeaders(){var el=document.getElementById('leagueLeaders
 function renderLeagueLeaders(leaderMap,stats){var el=document.getElementById('leagueLeaders'),html='<div class="league-leaders-grid">';stats.forEach(function(s){var leaders=leaderMap[s.cats]||[];html+='<div style="background:var(--card2);border-radius:8px;padding:10px"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--orange);margin-bottom:8px">'+s.label+'</div>';if(!leaders.length)html+='<div style="color:var(--muted);font-size:.8rem">No data</div>';leaders.forEach(function(l,i){var val=l.value;if(val!=null){var n=parseFloat(val);if(!isNaN(n))val=n.toFixed(s.decimals);}html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:.78rem"><div style="display:flex;gap:6px;align-items:center"><span style="color:var(--orange);font-weight:700;width:16px">'+(i+1)+'</span><span>'+((l.person&&l.person.fullName)||'—')+'</span></div><span style="font-weight:700;color:var(--text)">'+val+'</span></div>';});html+='</div>';});el.innerHTML=html+'</div>';}
 function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementById('leagueHitTab').classList.toggle('active',tab==='hitting');document.getElementById('leaguePitTab').classList.toggle('active',tab==='pitching');var cached=leagueLeadersCache[tab],stats=tab==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS;if(cached&&Object.keys(cached).length)renderLeagueLeaders(cached,stats);else loadLeagueLeaders();}
 
+// Push notification config — set API_BASE to your Vercel URL, VAPID_PUBLIC_KEY to your generated key
+const API_BASE='';
+const VAPID_PUBLIC_KEY='';
+
+function urlBase64ToUint8Array(b64){var pad='='.repeat((4-b64.length%4)%4),raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
+
+async function subscribeToPush(){
+  try{
+    var reg=await navigator.serviceWorker.ready;
+    var sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    await fetch((API_BASE||'')+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});
+    localStorage.setItem('mlb_push','1');
+    document.getElementById('pushStatusText').textContent='On — all game starts';
+  }catch(err){
+    document.getElementById('pushToggle').style.background='var(--border)';
+    document.getElementById('pushToggleKnob').style.left='3px';
+    document.getElementById('pushStatusText').textContent='Permission denied';
+  }
+}
+
+async function unsubscribeFromPush(){
+  try{
+    var reg=await navigator.serviceWorker.ready;
+    var sub=await reg.pushManager.getSubscription();
+    if(sub){await sub.unsubscribe();await fetch((API_BASE||'')+'/api/subscribe',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})});}
+  }catch(e){}
+  localStorage.removeItem('mlb_push');
+  document.getElementById('pushStatusText').textContent='Off';
+}
+
+function togglePush(){
+  var tog=document.getElementById('pushToggle'),knob=document.getElementById('pushToggleKnob');
+  var enabled=localStorage.getItem('mlb_push')==='1';
+  if(!enabled){
+    if(!('serviceWorker' in navigator&&'PushManager' in window)){document.getElementById('pushStatusText').textContent='Not supported on this browser';return;}
+    if(!VAPID_PUBLIC_KEY){document.getElementById('pushStatusText').textContent='Push not configured yet';return;}
+    tog.style.background='var(--orange)';knob.style.left='21px';
+    subscribeToPush();
+  }else{
+    tog.style.background='var(--border)';knob.style.left='3px';
+    unsubscribeFromPush();
+  }
+}
+
 (async function(){
   var sv=function(k){return localStorage.getItem(k);};
   if(sv('mlb_team'))activeTeam=TEAMS.find(t=>t.id===parseInt(sv('mlb_team')))||activeTeam;
@@ -936,8 +996,11 @@ function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementB
   if(sv('mlb_theme'))document.getElementById('themeSelect').value=sv('mlb_theme');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--blue)';ik.style.left='21px';}
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='inline-block';mt.style.background='var(--orange)';mk.style.left='21px';}
+  if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--orange)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On — all game starts';}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
 })();
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}
 </script>
 
 <div class="live-view" id="liveView">
