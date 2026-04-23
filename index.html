@@ -23,7 +23,7 @@
   nav button{background:none;border:none;color:color-mix(in srgb,var(--header-text) 70%,transparent);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:500;transition:.2s;white-space:nowrap}
   nav button:hover{background:rgba(255,255,255,.1);color:var(--header-text)}
   nav button.active{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
-  .team-chip{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1);padding:6px 12px;border-radius:20px;color:var(--header-text);font-size:12px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+  .team-chip{display:none;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1);padding:6px 12px;border-radius:20px;color:var(--header-text);font-size:12px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
   .settings-wrap{position:relative;margin-left:4px}
   .settings-btn{background:none;border:1px solid rgba(255,255,255,.2);color:color-mix(in srgb,var(--header-text) 80%,transparent);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:1rem}
   .settings-panel{display:none;position:absolute;top:44px;right:0;background:#0a0f1e;border:1px solid var(--border);border-radius:0 0 12px 12px;padding:16px;width:260px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
@@ -174,6 +174,7 @@
   @media(max-width:1024px) and (min-width:481px){
     header{flex-wrap:nowrap;position:sticky;top:0;z-index:50;padding:10px 16px}
     .logo span{display:none}
+    .team-chip{display:block}
     nav{flex-wrap:nowrap;gap:2px}
     nav button{padding:8px 10px;font-size:1.1rem}
     nav button .nav-label{display:none}
@@ -216,8 +217,8 @@
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
   <nav>
     <button class="active" onclick="showSection('home',this)">🏠<span class="nav-label"> Home</span></button>
-    <button onclick="showSection('schedule',this)">📅<span class="nav-label"> Sched</span></button>
-    <button onclick="showSection('standings',this)">🏆<span class="nav-label"> Stand</span></button>
+    <button onclick="showSection('schedule',this)">📅<span class="nav-label"> Schedule</span></button>
+    <button onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
     <button onclick="showSection('stats',this)">📊<span class="nav-label"> Stats</span></button>
     <button onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
     <button onclick="showSection('media',this)" id="mediaNavBtn" style="display:none">📺<span class="nav-label"> Media</span></button>
