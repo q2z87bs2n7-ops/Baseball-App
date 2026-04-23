@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.42</title>
+<title>MLB Tracker v1.42.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -255,7 +255,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.42</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.42.1</div>
       </div>
     </div>
   </div>
@@ -575,7 +575,7 @@ function renderNextGame(g,label){
   var oppKicker=teamHome?'VS':'AT';
   var myKicker=teamHome?'HOME':'AWAY';
   var topBadge='';
-  if(status==='Live'){topBadge='<span class="badge badge-live" style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff4444;flex-shrink:0"></span>LIVE</span>';}
+  if(status==='Live'){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'▼ ':'▲ ')+g.linescore.currentInning+' · ':'';topBadge='<span style="font-size:.72rem;font-weight:700;color:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:5px">'+inn+'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff4444;animation:pulse 1.5s infinite;flex-shrink:0"></span>LIVE</span>';}
   else if(status==='Final'){var mW=my.isWinner;topBadge='<span class="badge badge-final">FINAL</span> <span class="badge '+(mW?'badge-w':'badge-l')+'">'+(mW?'W':'L')+'</span>';}
   var bottomRight='';
   if(status==='Live'){bottomRight='<button onclick="showLiveGame('+g.gamePk+')" style="background:var(--orange);border:none;color:var(--accent-text);padding:8px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem">▶ Watch Live</button>';}
@@ -608,7 +608,7 @@ async function loadTodayGame(){
     var upcomingToday=todayGames.find(function(g){return g.status.abstractGameState==='Preview'||g.status.abstractGameState==='Scheduled';});
     var gameToRender=liveGame||upcomingToday;
     if(gameToRender&&!scheduleData.length){try{var gd=new Date(gameToRender.gameDate),s7=new Date(gd);s7.setDate(gd.getDate()-7);var e7=new Date(gd);e7.setDate(gd.getDate()+7);var fmtD=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};var sr=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+fmtD(s7)+'&endDate='+fmtD(e7)+'&teamId='+activeTeam.id+'&hydrate=team,linescore');var srd=await sr.json();(srd.dates||[]).forEach(function(dt){dt.games.forEach(function(g){scheduleData.push(g);});});}catch(e){}}
-    if(liveGame){document.getElementById('todayGame').innerHTML=renderNextGame(liveGame,'TODAY — LIVE');return;}
+    if(liveGame){document.getElementById('todayGame').innerHTML=renderNextGame(liveGame,'TODAY');return;}
     if(upcomingToday){document.getElementById('todayGame').innerHTML=renderNextGame(upcomingToday,'TODAY');return;}
     var end=new Date();end.setDate(end.getDate()+14);
     var tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
