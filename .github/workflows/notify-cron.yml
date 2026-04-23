@@ -1,0 +1,19 @@
+name: Game Start Notifications
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # every 5 minutes UTC
+  workflow_dispatch:        # manual trigger for testing
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping notify endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.NOTIFY_URL }}" \
+            -H "x-notify-token: ${{ secrets.NOTIFY_SECRET }}")
+          echo "Response status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Unexpected status $STATUS" && exit 1
+          fi
