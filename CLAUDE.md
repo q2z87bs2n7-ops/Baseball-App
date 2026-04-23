@@ -33,6 +33,8 @@ icons/                  — app icons (icon-192.png, icon-512.png)
 api/subscribe.js        — Vercel serverless: store/remove push subscriptions in Upstash Redis
 api/notify.js           — Vercel serverless: check MLB schedule, fire push notifications
 .github/workflows/      — notify-cron.yml: GitHub Actions cron (*/5 * * * *) pings /api/notify
+                          test-push.yml: manual workflow_dispatch to fire a test push to all subscribers
+api/test-push.js        — Vercel serverless: sends a test push immediately (bypasses game schedule check)
 vercel.json             — Vercel function config (maxDuration)
 package.json            — web-push + @upstash/redis dependencies (for Vercel functions only)
 ```
@@ -327,7 +329,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - Toggle in Settings panel: **🔔 Game Start Alerts** — persisted to `localStorage('mlb_push')`
 - `togglePush()` / `subscribeToPush()` / `unsubscribeFromPush()` / `urlBase64ToUint8Array()` in `index.html`
 - Subscription POSTed to `${API_BASE}/api/subscribe` → stored in Upstash Redis under key `push:<b64-endpoint-hash>`
-- `api/notify.js` checks MLB schedule, notifies for any game starting within 10 minutes, deduplicates via `notified:<gamePk>` key (24h TTL), auto-removes stale subscriptions (410/404 responses)
+- `api/notify.js` checks MLB schedule, notifies for games starting within 10 minutes **or started up to 2 minutes ago** (cron may fire after scheduled start), deduplicates via `notified:<gamePk>` key (24h TTL), auto-removes stale subscriptions (410/404 responses)
+- `api/test-push.js` sends a real push to all subscribers immediately — use the **Test Push Notification** GitHub Actions workflow (workflow_dispatch) to trigger it for QC
 - Redis env vars injected by Vercel/Upstash integration: `KV_REST_API_URL` and `KV_REST_API_TOKEN`
 
 ### VAPID Keys (do not regenerate without re-subscribing all devices)
