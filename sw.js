@@ -1,5 +1,5 @@
 const CACHE = 'mlb-v1';
-const SHELL = ['/', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
+const SHELL = ['./', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
