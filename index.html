@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.41.3</title>
+<title>MLB Tracker v1.41.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -110,6 +110,15 @@
   .cal-w{background:rgba(34,197,94,.15);color:#7dd89e;border-color:rgba(34,197,94,.5)}
   .cal-l{background:rgba(239,68,68,.12);color:#f08c8c;border-color:rgba(239,68,68,.45)}
   .cal-upcoming{color:var(--muted);font-size:.68rem}
+  .cal-dot{display:none;width:6px;height:6px;border-radius:50%;margin:2px auto 0}
+  .cal-dot-w{background:#4ade80}
+  .cal-dot-l{background:#f87171}
+  .cal-dot-live{background:#f87171;animation:pulse 1.2s infinite}
+  .cal-dot-up{background:var(--accent)}
+  .cal-tooltip{display:none;position:fixed;z-index:300;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none}
+  .cal-tooltip.open{display:block}
+  .cal-tt-opp{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px}
+  .cal-tt-date{font-size:.72rem;color:var(--muted);margin-bottom:8px}
   .boxscore-wrap{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px}
   .boxscore-title{font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--text)}
   .linescore-table{width:100%;border-collapse:collapse;font-size:.78rem;overflow-x:auto;display:block}
@@ -189,7 +198,9 @@
     .media-layout{grid-template-columns:1fr}
     .league-leaders-grid{grid-template-columns:1fr}
     .card{padding:12px}
-    .cal-day{min-height:50px;padding:4px}
+    .cal-day{min-height:44px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+    .cal-game-info{display:none}
+    .cal-dot{display:block}
     .matchup-grid{grid-template-columns:1fr}
   }
 </style>
@@ -244,7 +255,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.41.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.41.4</div>
       </div>
     </div>
   </div>
@@ -452,7 +463,10 @@ function applyTeamTheme(team){
 }
 
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
-document.addEventListener('click',function(e){if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');});
+document.addEventListener('click',function(e){
+  if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');
+  var tt=document.getElementById('calTooltip');if(tt&&tt.classList.contains('open')&&!e.target.closest('.cal-day'))tt.classList.remove('open');
+});
 
 function buildThemeSelect(){
   var sel=document.getElementById('themeSelect');sel.innerHTML='<option value="0">Default (Follow Team)</option>';var lastDiv='';
@@ -699,7 +713,7 @@ function renderCalendar(){
     var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0'),g=gameByDate[ds];
     var isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===day;
     var classes='cal-day'+(g?' has-game':'')+(isToday?' today':'')+(g&&g.gamePk===selectedGamePk?' selected':'');
-    var onclick=g?'onclick="selectCalGame('+g.gamePk+')"':'';
+    var onclick=g?'onclick="selectCalGame('+g.gamePk+',event)"':'';
     var inner='<div class="cal-day-num">'+day+'</div>';
     if(g){
       var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===activeTeam.id,opp=teamHome?away:home,myT=teamHome?home:away,status=g.status.abstractGameState;
@@ -708,6 +722,8 @@ function renderCalendar(){
       else if(status==='Live')inner+='<span class="cal-result" style="background:rgba(239,68,68,.15);color:#f08c8c;border:1px solid rgba(239,68,68,.5)">LIVE</span>';
       else{var t=new Date(g.gameDate);inner+='<div class="cal-upcoming">'+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';}
       inner+='</div>';
+      var dotCls='cal-dot '+(status==='Final'?(myT.isWinner?'cal-dot-w':'cal-dot-l'):status==='Live'?'cal-dot-live':'cal-dot-up');
+      inner+='<span class="'+dotCls+'"></span>';
     }
     html+='<div class="'+classes+'" '+onclick+'>'+inner+'</div>';
   }
@@ -735,9 +751,27 @@ function buildBoxscore(players){
   return t+'</tbody></table></div></div>';
 }
 
-async function selectCalGame(gamePk){
+async function selectCalGame(gamePk,evt){
+  var cellRect=evt?evt.currentTarget.getBoundingClientRect():null;
   selectedGamePk=gamePk;renderCalendar();
   var g=scheduleData.find(function(x){return x.gamePk===gamePk;});if(!g)return;
+  if(cellRect&&window.innerWidth<=480){
+    var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===activeTeam.id;
+    var opp=teamHome?away:home,myT=teamHome?home:away,status=g.status.abstractGameState;
+    var gameDate=new Date(g.gameDate);
+    var dateStr=gameDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    var badgeHtml='';
+    if(status==='Final'){var mW=myT.isWinner,sc=myT.score+'-'+opp.score;badgeHtml='<span class="cal-result '+(mW?'cal-w':'cal-l')+'">'+(mW?'W':'L')+' '+sc+'</span>';}
+    else if(status==='Live')badgeHtml='<span class="cal-result" style="background:rgba(239,68,68,.15);color:#f08c8c;border:1px solid rgba(239,68,68,.5)">● LIVE</span>';
+    else badgeHtml='<span style="font-size:.8rem;color:var(--accent)">'+gameDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</span>';
+    var tt=document.getElementById('calTooltip');
+    tt.innerHTML='<div class="cal-tt-opp">'+(teamHome?'vs ':'@ ')+opp.team.teamName+'</div><div class="cal-tt-date">'+dateStr+'</div>'+badgeHtml;
+    var ttW=190,left=cellRect.left+cellRect.width/2-ttW/2;
+    left=Math.max(8,Math.min(left,window.innerWidth-ttW-8));
+    tt.style.cssText='left:'+left+'px;top:'+(cellRect.top-8)+'px;transform:translateY(-100%);min-width:'+ttW+'px';
+    tt.classList.add('open');
+    return;
+  }
   var status=g.status.abstractGameState,detail=document.getElementById('gameDetail');
   detail.innerHTML='<div class="loading">Loading game details...</div>';
   if(status!=='Final'&&status!=='Live'){
@@ -1121,5 +1155,6 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
     <div class="live-refresh-time" id="liveRefreshTime"></div>
   </div>
 </div>
+<div id="calTooltip" class="cal-tooltip"></div>
 </body>
 </html>
