@@ -1,6 +1,6 @@
 {
   "name": "MLB Tracker",
-  "short_name": "MLB",
+  "short_name": "MLB Tracker",
   "description": "Live MLB scores, schedule, standings, and stats.",
   "start_url": "./",
   "scope": "./",
