@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.42
+**Current version:** v1.42.1
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -156,7 +156,7 @@ let selectedPlayer = null              // full roster object — includes person
 
 ### 🏠 Home
 **Left card — "Next Game"** (`#todayGame`, `loadTodayGame()`)
-Priority order: (1) live game today → score + "▶ Watch Live" button, (2) upcoming game today → "TODAY" label + time, (3) next upcoming game → date label.
+Priority order: (1) live game today → score + "▶ Watch Live" button + inline `▼ 9 · ● LIVE` inning indicator (no red pill), (2) upcoming game today → "TODAY" label + time, (3) next upcoming game → date label.
 
 Series info below via `getSeriesInfo(g)`:
 - Tries API fields first: `seriesGameNumber`, `gamesInSeries`, `seriesSummary.seriesStatus`
@@ -403,6 +403,7 @@ On every commit that changes app content, bump **three** things:
 - [x] Jersey # overlay pill on player headshot (v1.39)
 - [x] Leader stat filter pills above select dropdowns (v1.39)
 - [x] Opposition-forward home cards — 5-col Next Game, ghosted Next Series (v1.39.1)
+- [x] Today card live state: remove LIVE duplication from label, replace red badge-live pill with subtle inline dot + inning indicator (v1.42.1)
 - [x] Mobile calendar: dot indicators + tap tooltip (v1.41.4)
 - [x] Mobile nav: short labels back, backdrop-blur bg, safe-area padding, accent underline active (v1.41.1)
 - [x] iPad portrait header: stays one line, team chip added, logo wordmark collapses (v1.41.2)
