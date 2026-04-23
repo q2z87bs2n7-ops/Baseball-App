@@ -1,10 +1,10 @@
 # MLB Tracker — Project Handoff
 
 ## What This Is
-A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies, no package.json. The entire app lives in one file.
+A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
 **Current version:** v1.40
-**File:** `mets-app.html`
+**File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
 ---
@@ -15,17 +15,35 @@ A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. 
 2. **Surgical edits only** — smallest possible change; do not reformat or reorganise surrounding code
 3. **No changes without explicit user approval** — show old/new before applying
 4. **Break changes into small steps** — confirm each works before proceeding
-5. **Git branching** — all changes go to `claude/review-readme-cx0F3` first; only merge to `main` when explicitly asked. Push with `git push -u origin claude/review-readme-cx0F3`
+5. **Git branching** — all changes go to a `claude/` branch first; only merge to `main` when explicitly asked
 6. **Debug code** — wrap temporary logging in `// DEBUG START` / `// DEBUG END` for easy removal
-7. **Version every change** — bump both the `<title>` tag and the in-app settings panel version string on every commit. Use `v1.xx.yy` format: increment `yy` for each commit on a branch (v1.33.1, v1.33.2…); increment `xx` and drop the patch on merge to main (v1.34).
+7. **Version every change** — bump both the `<title>` tag and the in-app settings panel version string on every commit. Use `v1.xx.yy` format: increment `yy` for each commit on a branch (v1.33.1, v1.33.2…); increment `xx` and drop the patch on merge to main (v1.34). **Also bump `CACHE` in `sw.js`** (e.g. `mlb-v4` → `mlb-v5`) on every commit that changes app content — this forces the PWA to update for installed users.
 8. **No rewrites** — never rewrite large sections. Targeted edits only.
 
 ---
 
 ## Architecture Overview
 
+### Repo structure
+```
+index.html              — main app (HTML + CSS + JS, all inline)
+sw.js                   — service worker (PWA caching + push event handling)
+manifest.json           — PWA manifest (install metadata, icons)
+icons/                  — app icons (icon-192.png, icon-512.png)
+api/subscribe.js        — Vercel serverless: store/remove push subscriptions in Upstash Redis
+api/notify.js           — Vercel serverless: check MLB schedule, fire push notifications
+.github/workflows/      — notify-cron.yml: GitHub Actions cron (*/5 * * * *) pings /api/notify
+vercel.json             — Vercel function config (maxDuration)
+package.json            — web-push + @upstash/redis dependencies (for Vercel functions only)
+```
+
+### Deployment
+- **Static app (index.html, sw.js, manifest, icons)**: GitHub Pages — `main` branch, root directory
+- **Push API (`/api/*`)**: Vercel Hobby — `https://baseball-app-sigma.vercel.app`
+- **Cron trigger**: GitHub Actions (free) pings `/api/notify` every 5 minutes
+
 ### Single file, all inline
-Everything — HTML, CSS, JavaScript — is in `mets-app.html`. No imports, no modules, no external scripts. Edit the file, push to branch, done.
+Everything — HTML, CSS, JavaScript — is in `index.html`. No imports, no modules, no external scripts for the app itself. Edit the file, push to branch, done.
 
 ### Key global state
 ```javascript
@@ -289,6 +307,40 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 | `capImgError(el, primary, secondary, letter)` | `onerror` handler — swaps broken logo img to fallback SVG circle |
 | `teamCapImg(teamId, name, primary, secondary, cls)` | Returns `<img>` tag for team cap logo with fallback |
 | `selectLeaderPill(group, stat, btn)` | Sets leader stat select + active pill, calls `loadLeaders()` |
+| `togglePush()` | Reads current push state, calls subscribe or unsubscribe, updates toggle UI |
+| `subscribeToPush()` | Registers push subscription via PushManager, POSTs to `/api/subscribe`, saves `mlb_push` to localStorage |
+| `unsubscribeFromPush()` | Unsubscribes PushManager, DELETEs from `/api/subscribe`, removes `mlb_push` from localStorage |
+| `urlBase64ToUint8Array(b64)` | Converts VAPID public key from URL-safe base64 to Uint8Array for PushManager |
+
+---
+
+## PWA & Push Notifications (added v1.40)
+
+### PWA
+- `manifest.json` — `display: standalone`, `start_url: "./"`, `scope: "./"` (relative paths required for GitHub Pages subdirectory)
+- `sw.js` — install caches app shell (`./`, `./manifest.json`, `./icons/*`); activate cleans old caches; fetch handler is cache-first for same-origin; push and notificationclick handlers
+- **All paths in manifest, sw.js, and `<head>` are relative** (no leading `/`) — GitHub Pages serves the app at `/Baseball-App/` so absolute paths break
+- `applyTeamTheme()` updates `<meta name="theme-color">` with the active team primary colour
+- Icons are placeholder PNGs (navy + baseball design) — swap `icons/icon-192.png` and `icons/icon-512.png` any time
+
+### Push Notifications
+- Toggle in Settings panel: **🔔 Game Start Alerts** — persisted to `localStorage('mlb_push')`
+- `togglePush()` / `subscribeToPush()` / `unsubscribeFromPush()` / `urlBase64ToUint8Array()` in `index.html`
+- Subscription POSTed to `${API_BASE}/api/subscribe` → stored in Upstash Redis under key `push:<b64-endpoint-hash>`
+- `api/notify.js` checks MLB schedule, notifies for any game starting within 10 minutes, deduplicates via `notified:<gamePk>` key (24h TTL), auto-removes stale subscriptions (410/404 responses)
+- Redis env vars injected by Vercel/Upstash integration: `KV_REST_API_URL` and `KV_REST_API_TOKEN`
+
+### VAPID Keys (do not regenerate without re-subscribing all devices)
+- Public key is hardcoded in `index.html` as `VAPID_PUBLIC_KEY` constant
+- Private key is in Vercel env var `VAPID_PRIVATE_KEY` only — never in code
+- `VAPID_SUBJECT` = operator email in Vercel env vars
+- `NOTIFY_TOKEN` (Vercel) must match `NOTIFY_SECRET` (GitHub Actions secret) — authenticates cron calls to `/api/notify`
+
+### Update workflow (PWA-specific)
+On every commit that changes app content, bump **three** things:
+1. `<title>` version string in `index.html`
+2. Settings panel version string in `index.html`
+3. `CACHE` constant in `sw.js` (e.g. `mlb-v4` → `mlb-v5`) — forces cache refresh for installed PWA users
 
 ---
 
@@ -325,6 +377,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 ## Feature Backlog
 
+- [ ] Push notification team filter — currently fires for any MLB game start; add per-user team preference stored with subscription in Redis
+- [ ] PWA icons — replace placeholder navy/baseball PNGs with proper branded artwork
 - [ ] Rename `--blue`/`--orange` CSS vars to `--primary`/`--secondary` — names are misleading for non-blue/orange teams
 - [ ] Cache live game batter/pitcher stats per matchup
 - [ ] Fix live header text colour accessibility (`--accent-text`)
@@ -342,6 +396,9 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 - [x] Jersey # overlay pill on player headshot (v1.39)
 - [x] Leader stat filter pills above select dropdowns (v1.39)
 - [x] Opposition-forward home cards — 5-col Next Game, ghosted Next Series (v1.39.1)
+- [x] PWA install support — manifest, service worker, icons, apple meta tags (v1.40)
+- [x] Web Push game-start notifications — Vercel + Upstash Redis + GitHub Actions cron (v1.40)
+- [x] Game Start Alerts toggle in Settings panel (v1.40)
 - [x] Today's matchup subtle card surfaces, 3-col grid (v1.40)
 - [x] iPhone layout — fixed bottom icon nav bar, scrollable header, settings scrolls with header (v1.38)
 - [x] Extract inline grid styles to CSS classes (.media-layout, .league-leaders-grid) for responsive control (v1.38)
