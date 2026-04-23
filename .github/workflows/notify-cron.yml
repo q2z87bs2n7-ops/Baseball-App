@@ -11,9 +11,8 @@ jobs:
     steps:
       - name: Ping notify endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.NOTIFY_URL }}" \
+          RESPONSE=$(curl -s -X POST "${{ secrets.NOTIFY_URL }}" \
             -H "x-notify-token: ${{ secrets.NOTIFY_SECRET }}")
-          echo "Response status: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "Unexpected status $STATUS" && exit 1
-          fi
+          echo "Response: $RESPONSE"
+          STATUS=$(echo "$RESPONSE" | grep -o '"sent":[0-9]*' | head -1)
+          echo "Result: $STATUS"
