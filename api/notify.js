@@ -26,13 +26,14 @@ export default async function handler(req, res) {
   }
 
   const now = Date.now();
-  const WINDOW_MS = 10 * 60 * 1000; // notify for games starting within 10 minutes
+  const WINDOW_MS = 10 * 60 * 1000;  // notify up to 10 min before first pitch
+  const LOOKBACK_MS = 2 * 60 * 1000; // also catch games that just started (cron may fire late)
 
   const upcoming = games.filter(g => {
     const state = g.status?.abstractGameState;
-    if (state !== 'Preview' && state !== 'Scheduled') return false;
+    if (state === 'Final') return false;
     const diff = new Date(g.gameDate).getTime() - now;
-    return diff >= 0 && diff <= WINDOW_MS;
+    return diff >= -LOOKBACK_MS && diff <= WINDOW_MS;
   });
 
   if (!upcoming.length) return res.json({ sent: 0, reason: 'no games starting soon' });
