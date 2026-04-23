@@ -231,7 +231,7 @@
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px">Color Theme</div>
           <select id="themeSelect" onchange="switchTheme(this.value)" style="width:100%"></select>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Override team colours.</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Override team colours</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
@@ -1072,7 +1072,7 @@ async function subscribeToPush(){
     var sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
     await fetch((API_BASE||'')+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});
     localStorage.setItem('mlb_push','1');
-    document.getElementById('pushStatusText').textContent='On — all game starts';
+    document.getElementById('pushStatusText').textContent='On';
   }catch(err){
     document.getElementById('pushToggle').style.background='var(--border)';
     document.getElementById('pushToggleKnob').style.left='3px';
@@ -1114,7 +1114,7 @@ function togglePush(){
   if(sv('mlb_theme'))document.getElementById('themeSelect').value=sv('mlb_theme');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--blue)';ik.style.left='21px';}
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='inline-block';mt.style.background='var(--orange)';mk.style.left='21px';}
-  if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--orange)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On — all game starts';}
+  if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--orange)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
 })();
 
