@@ -325,6 +325,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 
 ## Feature Backlog
 
+- [ ] Rename `--blue`/`--orange` CSS vars to `--primary`/`--secondary` — names are misleading for non-blue/orange teams
 - [ ] Cache live game batter/pitcher stats per matchup
 - [ ] Fix live header text colour accessibility (`--accent-text`)
 - [ ] Team-aware W/L/Live badges
