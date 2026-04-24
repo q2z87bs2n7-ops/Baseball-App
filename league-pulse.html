@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.3-dev</title>
+<title>League Pulse — MLB Live Feed · v0.4-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -150,6 +150,43 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* ── Mode toggle ────────────────────────────────────────────────────────────── */
+
+#modeToggle {
+  display: flex;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.mode-btn.active {
+  background: color-mix(in srgb, var(--accent) 22%, var(--card));
+  color: var(--accent);
+}
+
+.mode-btn:not(.active):hover {
+  background: var(--card);
+  color: var(--text);
 }
 
 /* ── Alert stack ────────────────────────────────────────────────────────────── */
@@ -710,7 +747,10 @@ html, body {
   <div class="header-right">
     <span id="liveCount">—</span>
     <span id="lastUpdate"></span>
-    <span class="mock-badge" id="mockBadge" style="display:none">⚡ Mock</span>
+    <div id="modeToggle">
+      <button class="mode-btn active" id="btnMockMode" onclick="switchMode(false)">⚡ Mock</button>
+      <button class="mode-btn" id="btnLiveMode" onclick="switchMode(true)">● Live</button>
+    </div>
   </div>
 </div>
 
@@ -909,7 +949,7 @@ const MOCK_DATA = {
 };
 
 // ── Config ───────────────────────────────────────────────────────────────────
-const MOCK_MODE = true;
+let mockMode = true;
 const MLB_BASE  = 'https://statsapi.mlb.com/api/v1';
 
 // ── Theme utilities (ported from index.html) ─────────────────────────────────
@@ -957,15 +997,37 @@ let alertId        = 0;
 
 // ── Entry point ──────────────────────────────────────────────────────────────
 function init() {
-  if (MOCK_MODE) initMock();
-  else           initReal();
+  document.getElementById('btnMockMode').classList.toggle('active',  mockMode);
+  document.getElementById('btnLiveMode').classList.toggle('active', !mockMode);
+  if (mockMode) initMock();
+  else          initReal();
+}
+
+function switchMode(toReal) {
+  mockMode = !toReal;
+  document.getElementById('btnMockMode').classList.toggle('active',  !toReal);
+  document.getElementById('btnLiveMode').classList.toggle('active',   toReal);
+
+  if (mockTimerId) { clearInterval(mockTimerId); mockTimerId = null; }
+  feedItems       = [];
+  gameStates      = {};
+  enabledGames    = new Set();
+  mockPlayPtrs    = {};
+  mockGameQueue   = [];
+  playedMockPlays = 0;
+  totalMockPlays  = 0;
+  document.getElementById('feed').innerHTML       = '';
+  document.getElementById('alertStack').innerHTML = '';
+  updateFeedEmpty();
+
+  if (toReal) initReal();
+  else        initMock();
 }
 
 // ── Mock init ────────────────────────────────────────────────────────────────
 function initMock() {
   applyLeaguePulseTheme(TC[121].primary, '#FF5910'); // Mets as default mock scheme
-  document.getElementById('mockBadge').style.display = '';
-  document.getElementById('mockBar').style.display   = '';
+  document.getElementById('mockBar').style.display = '';
 
   totalMockPlays  = 0;
   playedMockPlays = 0;
@@ -1502,6 +1564,7 @@ function updateMockProgress() {
 
 // ── Real polling ──────────────────────────────────────────────────────────────
 function initReal() {
+  document.getElementById('mockBar').style.display = 'none';
   applyLeaguePulseTheme('#002D72', '#FF5910'); // Mets default; swap for other teams
   poll();
   setInterval(poll, 60000);
