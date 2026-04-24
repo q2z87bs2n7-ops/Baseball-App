@@ -8,23 +8,33 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --dark:   #0f1520;
-  --card:   #161e2e;
-  --card2:  #1c2540;
-  --border: #253050;
+  /* ── Team theme vars — overwritten by applyLeaguePulseTheme() on init ── */
+  --primary:      #002D72;   /* Mets navy (default) */
+  --secondary:    #FF5910;   /* Mets orange (default) */
+  --accent:       #FF5910;   /* contrast-safe accent on dark surfaces */
+  --header-text:  #ffffff;   /* text on primary-coloured surfaces */
+  --accent-text:  #111827;   /* text on --secondary surfaces */
+  /* ── Derived dark palette — also overwritten by applyLeaguePulseTheme() */
+  --dark:   #0d1a40;
+  --card:   #111f47;
+  --card2:  #172550;
+  --border: #1f3161;
+  /* ── Fixed neutrals ─────────────────────────────────────────────────── */
   --text:   #e8eaf0;
-  --muted:  #7a8299;
-  --scoring-bg: rgba(220, 60, 40, 0.10);
-  --scoring-border: rgba(220, 60, 40, 0.28);
-  --hr-bg:  rgba(255, 155, 30, 0.10);
-  --hr-border: rgba(255, 155, 30, 0.28);
-  --risp-accent: rgba(255, 200, 0, 0.55);
-  --status-bg: rgba(80, 140, 255, 0.08);
-  --status-border: rgba(80, 140, 255, 0.22);
-  --header-h: 56px;
-  --ticker-h: 50px;
+  --muted:  #9aa0a8;
+  /* ── Semantic feed colours (fixed — not team-aware) ─────────────────── */
+  --scoring-bg:     rgba(220, 60,  40,  0.10);
+  --scoring-border: rgba(220, 60,  40,  0.28);
+  --hr-bg:          rgba(255, 155, 30,  0.10);
+  --hr-border:      rgba(255, 155, 30,  0.28);
+  --risp-accent:    rgba(255, 200, 0,   0.55);
+  --status-bg:      rgba(80,  140, 255, 0.08);
+  --status-border:  rgba(80,  140, 255, 0.22);
+  /* ── Layout ──────────────────────────────────────────────────────────── */
+  --header-h:  56px;
+  --ticker-h:  50px;
   --mockbar-h: 48px;
-  --radius: 10px;
+  --radius:    10px;
 }
 
 html, body {
@@ -72,8 +82,8 @@ html, body {
   top: 0;
   z-index: 100;
   height: var(--header-h);
-  background: rgba(10, 14, 28, 0.97);
-  border-bottom: 1px solid var(--border);
+  background: var(--dark);
+  border-bottom: 2px solid var(--primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -224,7 +234,7 @@ html, body {
   top: var(--header-h);
   z-index: 90;
   height: var(--ticker-h);
-  background: rgba(8, 12, 24, 0.98);
+  background: var(--dark);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -493,7 +503,7 @@ html, body {
   left: 0;
   right: 0;
   height: var(--mockbar-h);
-  background: rgba(8, 12, 24, 0.98);
+  background: var(--dark);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -532,9 +542,9 @@ html, body {
 }
 
 .mock-btn.active {
-  background: rgba(79, 157, 232, 0.18);
-  border-color: rgba(79, 157, 232, 0.45);
-  color: #6ab4f0;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
 }
 
 .mock-progress {
@@ -766,6 +776,37 @@ const MOCK_DATA = {
 const MOCK_MODE = true;
 const MLB_BASE  = 'https://statsapi.mlb.com/api/v1';
 
+// ── Theme utilities (ported from index.html) ─────────────────────────────────
+function relLuminance(hex){hex=hex.replace('#','');var n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;r=r<=0.03928?r/12.92:Math.pow((r+0.055)/1.055,2.4);g=g<=0.03928?g/12.92:Math.pow((g+0.055)/1.055,2.4);b=b<=0.03928?b/12.92:Math.pow((b+0.055)/1.055,2.4);return 0.2126*r+0.7152*g+0.0722*b;}
+function contrastRatio(hexA,hexB){var lA=relLuminance(hexA),lB=relLuminance(hexB);return(Math.max(lA,lB)+0.05)/(Math.min(lA,lB)+0.05);}
+function hslHex(h,s,l){s/=100;l/=100;var a=s*Math.min(l,1-l),f=function(n){var k=(n+h/30)%12,c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};return'#'+f(0)+f(8)+f(4);}
+function hslLighten(hex,targetL){hex=hex.replace('#','');var n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),h=0,s=0,l=(max+min)/2;if(max!==min){var d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return hslHex(Math.round(h*360),Math.round(s*100),Math.round(targetL*100));}
+function pickAccent(secondaryHex,cardHex){var sLum=relLuminance(secondaryHex),cCon=contrastRatio(secondaryHex,cardHex);if(sLum>=0.18&&cCon>=3.0)return secondaryHex;var lifted=hslLighten(secondaryHex,0.65);if(contrastRatio(lifted,cardHex)>=3.0)return lifted;return'#FFB273';}
+function pickHeaderText(primaryHex){return relLuminance(primaryHex)>0.5?'#0a0f1e':'#ffffff';}
+
+function applyLeaguePulseTheme(primaryHex, secondaryHex) {
+  var hueOf = function(hex){hex=hex.replace('#','');var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
+  var h       = hueOf(primaryHex);
+  var cardHex = hslHex(h, 45, 22);
+  var l1 = relLuminance(primaryHex), l2 = relLuminance(secondaryHex);
+  var ratio   = (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+  var accent  = ratio >= 3 ? secondaryHex : '#ffffff';
+  if (relLuminance(accent) < 0.05) accent = '#ffffff';
+  var accentText  = relLuminance(accent) > 0.4 ? '#111827' : '#ffffff';
+  var safeAccent  = pickAccent(accent, cardHex);
+  var headerText  = pickHeaderText(primaryHex);
+  var root = document.documentElement;
+  root.style.setProperty('--primary',     primaryHex);
+  root.style.setProperty('--secondary',   accent);
+  root.style.setProperty('--accent',      safeAccent);
+  root.style.setProperty('--accent-text', accentText);
+  root.style.setProperty('--header-text', headerText);
+  root.style.setProperty('--dark',   hslHex(h, 50, 18));
+  root.style.setProperty('--card',   cardHex);
+  root.style.setProperty('--card2',  hslHex(h, 40, 26));
+  root.style.setProperty('--border', hslHex(h, 35, 30));
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 let gameStates     = {};   // gamePk -> game state object
 let feedItems      = [];   // all feed items, newest first
@@ -785,6 +826,7 @@ function init() {
 
 // ── Mock init ────────────────────────────────────────────────────────────────
 function initMock() {
+  applyLeaguePulseTheme(TC[121].primary, '#FF5910'); // Mets as default mock scheme
   document.getElementById('mockBadge').style.display = '';
   document.getElementById('mockBar').style.display   = '';
 
@@ -1205,6 +1247,7 @@ function updateMockProgress() {
 
 // ── Real polling ──────────────────────────────────────────────────────────────
 function initReal() {
+  applyLeaguePulseTheme('#002D72', '#FF5910'); // Mets default; swap for other teams
   poll();
   setInterval(poll, 60000);
 }
