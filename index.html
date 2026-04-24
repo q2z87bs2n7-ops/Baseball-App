@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.58.1</title>
+<title>MLB Tracker v1.58.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -240,12 +240,12 @@
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px">Color Theme</div>
           <select id="themeSelect" onchange="switchTheme(this.value)" style="width:100%"></select>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Override team colours</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Override Team Colours</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔄 Invert Colours</div>
-            <div style="font-size:.68rem;color:var(--muted)">Swap primary &amp; secondary</div>
+            <div style="font-size:.68rem;color:var(--muted)">Swap Primary &amp; Secondary</div>
           </div>
           <div onclick="toggleInvert()" id="invertToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="invertToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
@@ -254,7 +254,7 @@
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">📺 Media Tab</div>
-            <div style="font-size:.68rem;color:var(--muted)">Show in navigation</div>
+            <div style="font-size:.68rem;color:var(--muted)">Show In Navigation</div>
           </div>
           <div onclick="toggleMedia()" id="mediaToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
@@ -269,7 +269,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.58.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.58.2</div>
       </div>
     </div>
   </div>
@@ -1105,7 +1105,7 @@ async function subscribeToPush(){
   }catch(err){
     document.getElementById('pushToggle').style.background='var(--border)';
     document.getElementById('pushToggleKnob').style.left='3px';
-    document.getElementById('pushStatusText').textContent='Permission denied';
+    document.getElementById('pushStatusText').textContent='Permission Denied';
   }
 }
 
@@ -1123,8 +1123,8 @@ function togglePush(){
   var tog=document.getElementById('pushToggle'),knob=document.getElementById('pushToggleKnob');
   var enabled=localStorage.getItem('mlb_push')==='1';
   if(!enabled){
-    if(!('serviceWorker' in navigator&&'PushManager' in window)){document.getElementById('pushStatusText').textContent='Not supported on this browser';return;}
-    if(!VAPID_PUBLIC_KEY){document.getElementById('pushStatusText').textContent='Push not configured yet';return;}
+    if(!('serviceWorker' in navigator&&'PushManager' in window)){document.getElementById('pushStatusText').textContent='Not Supported On This Browser';return;}
+    if(!VAPID_PUBLIC_KEY){document.getElementById('pushStatusText').textContent='Push Not Configured Yet';return;}
     tog.style.background='var(--secondary)';knob.style.left='21px';
     subscribeToPush();
   }else{
