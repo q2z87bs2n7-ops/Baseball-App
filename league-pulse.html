@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.1-dev</title>
+<title>League Pulse — MLB Live Feed · v0.2-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -280,6 +280,22 @@ html, body {
 
 .ticker-game.status-preview {
   opacity: 0.75;
+}
+
+/* Feed filter state on ticker chips */
+.ticker-game.feed-enabled {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.ticker-game.feed-disabled {
+  opacity: 0.32;
+  filter: grayscale(0.4);
+}
+.ticker-game.status-live.feed-disabled {
+  border-color: var(--border);
+}
+
+.feed-item.feed-hidden {
+  display: none;
 }
 
 .ticker-live-dot {
@@ -814,6 +830,7 @@ function applyLeaguePulseTheme(primaryHex, secondaryHex) {
 // ── State ────────────────────────────────────────────────────────────────────
 let gameStates     = {};   // gamePk -> game state object
 let feedItems      = [];   // all feed items, newest first
+let enabledGames   = new Set(); // gamePks whose plays are shown in the feed
 let mockPlayPtrs   = {};   // gamePk -> index of next play to emit
 let mockGameQueue  = [];   // rotating round-robin of gamePks
 let mockTimerId    = null;
@@ -864,6 +881,8 @@ function initMock() {
     totalMockPlays += (MOCK_DATA.plays[g.gamePk] || []).length;
     mockGameQueue.push(g.gamePk);
   });
+
+  enabledGames = new Set(Object.keys(gameStates).map(Number));
 
   renderTicker();
   renderFeed();
@@ -921,7 +940,8 @@ function renderTicker() {
 
     var dot = isLive ? '<div class="ticker-live-dot"></div>' : '';
 
-    html += '<div class="ticker-game ' + statusClass + '" onclick="scrollToGame(' + g.gamePk + ')">'
+    var filterClass = enabledGames.has(g.gamePk) ? ' feed-enabled' : ' feed-disabled';
+    html += '<div class="ticker-game ' + statusClass + filterClass + '" onclick="toggleGame(' + g.gamePk + ')">'
           + dot
           + '<span class="ticker-score">' + g.awayAbbr + '&nbsp;<strong>' + g.awayScore + '</strong></span>'
           + '<span class="ticker-divider">·</span>'
@@ -977,18 +997,43 @@ function scrollToGame(gamePk) {
   if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
+function toggleGame(gamePk) {
+  gamePk = +gamePk;
+  if (enabledGames.has(gamePk)) {
+    enabledGames.delete(gamePk);
+    document.querySelectorAll('[data-gamepk="' + gamePk + '"]').forEach(function(el) {
+      el.classList.add('feed-hidden');
+    });
+  } else {
+    enabledGames.add(gamePk);
+    document.querySelectorAll('[data-gamepk="' + gamePk + '"]').forEach(function(el) {
+      el.classList.remove('feed-hidden');
+    });
+  }
+  updateFeedEmpty();
+  renderTicker();
+}
+
+function updateFeedEmpty() {
+  var feed = document.getElementById('feed');
+  var hasVisible = !!feed.querySelector('.feed-item:not(.feed-hidden)');
+  document.getElementById('feedEmpty').style.display = hasVisible ? 'none' : '';
+}
+
 // ── Feed ─────────────────────────────────────────────────────────────────────
 function addFeedItem(gamePk, data) {
   var item = {gamePk: gamePk, data: data, ts: new Date()};
   feedItems.unshift(item);
-  prependFeedItem(item);
-  document.getElementById('feedEmpty').style.display = 'none';
+  var el = prependFeedItem(item);
+  if (!enabledGames.has(+gamePk)) el.classList.add('feed-hidden');
+  updateFeedEmpty();
 }
 
 function prependFeedItem(item) {
-  var el  = buildFeedEl(item);
+  var el   = buildFeedEl(item);
   var feed = document.getElementById('feed');
   feed.insertBefore(el, feed.firstChild);
+  return el;
 }
 
 function buildFeedEl(item) {
@@ -1079,9 +1124,11 @@ function renderFeed() {
   var feed = document.getElementById('feed');
   feed.innerHTML = '';
   feedItems.forEach(function(item) {
-    feed.appendChild(buildFeedEl(item));
+    var el = buildFeedEl(item);
+    if (!enabledGames.has(+item.gamePk)) el.classList.add('feed-hidden');
+    feed.appendChild(el);
   });
-  document.getElementById('feedEmpty').style.display = feedItems.length ? 'none' : '';
+  updateFeedEmpty();
 }
 
 // ── Alerts ────────────────────────────────────────────────────────────────────
@@ -1246,6 +1293,7 @@ function resetMock() {
   if (mockTimerId) { clearInterval(mockTimerId); mockTimerId = null; }
   feedItems       = [];
   gameStates      = {};
+  enabledGames    = new Set();
   mockPlayPtrs    = {};
   mockGameQueue   = [];
   playedMockPlays = 0;
@@ -1317,6 +1365,7 @@ async function poll() {
           playCount:   0,
           gameTime:    gameTime,
         };
+        enabledGames.add(pk);
       } else {
         var prev = gameStates[pk];
         if (gameTime) prev.gameTime = gameTime;
