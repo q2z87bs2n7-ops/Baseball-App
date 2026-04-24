@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.44</title>
+<title>MLB Tracker v1.44.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -159,6 +159,11 @@
   .matchup-role{font-size:.65rem;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:4px}
   .matchup-name{font-size:.95rem;font-weight:700;margin-bottom:4px;color:var(--text)}
   .matchup-stats{font-size:.75rem;color:var(--muted)}
+  .play-log-inning{font-size:.68rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding:8px 0 4px;border-bottom:1px solid var(--border);margin-bottom:2px}
+  .play-log-group{margin-bottom:4px}
+  .play-log-entry{font-size:.82rem;color:var(--text);padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.4}
+  .play-log-scoring{color:var(--accent);font-weight:600}
+  .play-log-score{font-size:.72rem;color:var(--muted);font-weight:400;margin-left:6px}
   .live-refresh-time{font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
   .back-btn{background:none;border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;margin-bottom:16px}
   .back-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -257,7 +262,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.44</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.44.1</div>
       </div>
     </div>
   </div>
@@ -996,6 +1001,35 @@ async function fetchLiveGame(){
     document.getElementById('liveGameInfo').innerHTML=giHtml;
     document.getElementById('liveRefreshTime').textContent='Last updated: '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+' · Auto-refreshes every 5 min';
   }catch(e){document.getElementById('liveHeader').innerHTML='<div class="error">Could not load live game data</div>';}
+  fetchPlayByPlay();
+}
+async function fetchPlayByPlay(){
+  try{
+    var r=await fetch(MLB_BASE+'/game/'+liveGamePk+'/playByPlay');
+    var data=await r.json();
+    var plays=(data.allPlays||[]).filter(function(p){return p.about&&p.about.isComplete;});
+    if(!plays.length){document.getElementById('livePlayByPlay').innerHTML='';return;}
+    var html='<div class="boxscore-wrap" style="margin-top:16px"><div class="live-card-title" style="margin-bottom:10px">Play Log</div>';
+    var reversed=plays.slice().reverse();
+    var lastKey=null;
+    reversed.forEach(function(play){
+      var inn=play.about.inning,half=play.about.halfInning==='top'?'▲':'▼';
+      var key=half+inn;
+      var ord=inn===1?'1st':inn===2?'2nd':inn===3?'3rd':inn+'th';
+      if(key!==lastKey){
+        if(lastKey!==null)html+='</div>';
+        html+='<div class="play-log-inning">'+half+' '+ord+'</div><div class="play-log-group">';
+        lastKey=key;
+      }
+      var isScore=play.about.isScoringPlay;
+      var desc=(play.result.description||'—').replace(/\.$/,'');
+      var score=isScore?'<span class="play-log-score">'+play.result.awayScore+'-'+play.result.homeScore+'</span>':'';
+      html+='<div class="play-log-entry'+(isScore?' play-log-scoring':'')+'">'+(isScore?'🔴 ':'')+desc+(score?' · '+score:'')+'</div>';
+    });
+    if(lastKey!==null)html+='</div>';
+    html+='</div>';
+    document.getElementById('livePlayByPlay').innerHTML=html;
+  }catch(e){}
 }
 
 const MLB_FALLBACK_UC='UCoLrcjPV5tBJkzGBFm-6_sA';
@@ -1148,6 +1182,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
         <div id="liveLinescore"><div class="loading">Loading...</div></div>
       </div>
     </div>
+    <div id="livePlayByPlay"></div>
     <div id="liveBoxscore"></div>
     <div id="liveGameInfo"></div>
     <div class="live-refresh-time" id="liveRefreshTime"></div>
