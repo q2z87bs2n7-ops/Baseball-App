@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.45.4
+**Current version:** v1.46
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -376,7 +376,7 @@ On every commit that changes app content, bump **three** things:
 |---|---|---|
 | `SEASON = 2026` | Must update each season | Derive from system date or MLB API |
 | Team colours in TEAMS array | Teams rebrand | Verify each offseason |
-| ESPN team IDs | Different system from MLB IDs, manually mapped | Build dynamic mapping |
+| ESPN team IDs | Different system from MLB IDs, manually mapped | Verified against ESPN API Apr 2026 — all 30 correct as of v1.46; re-verify each offseason |
 | `WC_SPOTS = 3` | Rule change risk | Already a named const |
 | ESPN API endpoint | Unofficial, undocumented | Monitor for breakage |
 | MLB Stats API base URL | Unofficial | Watch for deprecation |
