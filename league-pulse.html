@@ -242,10 +242,14 @@ html, body {
   padding: 0 12px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
-#gameTicker::-webkit-scrollbar { display: none; }
+#gameTicker::-webkit-scrollbar        { height: 3px; }
+#gameTicker::-webkit-scrollbar-track  { background: transparent; }
+#gameTicker::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
+#gameTicker::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 .ticker-game {
   flex-shrink: 0;
@@ -883,21 +887,37 @@ function renderTicker() {
     return;
   }
 
+  // Sort: Live first (most-progressed left), then Preview, then Final.
+  // Within Live: bottom of inning X > top of inning X; tiebreak alphabetical by away abbr.
+  // Within Preview/Final: alphabetical by away abbr.
+  var statusOrder = {Live: 0, Preview: 1, Final: 2};
+  states.sort(function(a, b) {
+    var aSt = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 1;
+    var bSt = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 1;
+    if (aSt !== bSt) return aSt - bSt;
+    if (a.status === 'Live') {
+      var aP = a.inning * 2 + (a.halfInning === 'bottom' ? 1 : 0);
+      var bP = b.inning * 2 + (b.halfInning === 'bottom' ? 1 : 0);
+      if (bP !== aP) return bP - aP;   // higher progress = further left
+    }
+    return a.awayAbbr.localeCompare(b.awayAbbr);
+  });
+
   var html = '';
   states.forEach(function(g) {
     var isLive  = g.status === 'Live';
     var isFinal = g.status === 'Final';
-    var isPre   = g.status === 'Preview';
+    var isPre   = !isLive && !isFinal;
 
     var statusClass = isLive  ? 'status-live'
                     : isFinal ? 'status-final'
-                    : isPre   ? 'status-preview'
-                    : '';
+                    : 'status-preview';
 
     var half   = g.halfInning === 'top' ? '▲' : '▼';
+    // Preview: show scheduled time if available, otherwise PRE
     var innStr = isLive  ? (half + g.inning)
                : isFinal ? 'FINAL'
-               : 'PRE';
+               : g.gameTime ? g.gameTime : 'PRE';
 
     var dot = isLive ? '<div class="ticker-live-dot"></div>' : '';
 
@@ -1269,6 +1289,14 @@ async function poll() {
       var homeTc    = TC[home.team.id] || {primary:'#444'};
       var ls        = g.linescore || {};
 
+      // Format scheduled time for preview display (e.g. "7:05 PM")
+      var gameTime = null;
+      if (g.gameDate) {
+        try {
+          gameTime = new Date(g.gameDate).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+        } catch(e) {}
+      }
+
       if (!gameStates[pk]) {
         gameStates[pk] = {
           gamePk:      pk,
@@ -1287,9 +1315,11 @@ async function poll() {
           halfInning:  (ls.inningHalf     || 'Top').toLowerCase(),
           outs:        ls.outs            || 0,
           playCount:   0,
+          gameTime:    gameTime,
         };
       } else {
         var prev = gameStates[pk];
+        if (gameTime) prev.gameTime = gameTime;
         // Status-change feed events
         if (prev.status !== newStatus) {
           if (newStatus === 'Live') {
