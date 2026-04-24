@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.57.1</title>
+<title>MLB Tracker v1.57.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -269,7 +269,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.57.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.57.2</div>
       </div>
     </div>
   </div>
@@ -975,11 +975,15 @@ function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').
 function closeLiveView(){clearInterval(liveInterval);liveInterval=null;liveGamePk=null;document.getElementById('liveView').classList.remove('active');document.querySelector('.main').style.display='block';}
 async function fetchLiveGame(){
   try{
-    var responses=await Promise.all([fetch(MLB_BASE+'/game/'+liveGamePk+'/linescore'),fetch(MLB_BASE+'/game/'+liveGamePk+'/boxscore')]);
-    var ls=await responses[0].json(),bs=await responses[1].json();
+    var responses=await Promise.all([fetch(MLB_BASE+'/game/'+liveGamePk+'/linescore'),fetch(MLB_BASE+'/game/'+liveGamePk+'/boxscore'),fetch(MLB_BASE+'/schedule?gamePk='+liveGamePk)]);
+    var ls=await responses[0].json(),bs=await responses[1].json(),sd=await responses[2].json();
+    var gameState=(sd.dates&&sd.dates[0]&&sd.dates[0].games&&sd.dates[0].games[0])?sd.dates[0].games[0].status.abstractGameState:'Live';
+    var isFinal=gameState==='Final';
     var homeTeam=bs.teams&&bs.teams.home&&bs.teams.home.team?bs.teams.home.team:{},awayTeam=bs.teams&&bs.teams.away&&bs.teams.away.team?bs.teams.away.team:{};
     var inningHalf=ls.isTopInning?'▲':'▼',inning=ls.currentInning||'—';
-    var headerHtml='<div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-bottom:8px">'+inningHalf+' '+inning+' &nbsp;·&nbsp; <span style="color:#ff4444;font-weight:700">● LIVE</span></div>';
+    var headerHtml=isFinal
+      ?'<div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-bottom:8px">FINAL</div>'
+      :'<div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-bottom:8px">'+inningHalf+' '+inning+' &nbsp;·&nbsp; <span style="color:#ff4444;font-weight:700">● LIVE</span></div>';
     headerHtml+='<div class="live-score"><div class="live-team"><div class="live-team-name">'+(awayTeam.abbreviation||awayTeam.name||'Away')+'</div><div class="live-team-score">'+(ls.teams&&ls.teams.away?ls.teams.away.runs:0)+'</div></div><div style="font-size:1.5rem;color:var(--muted)">—</div><div class="live-team"><div class="live-team-name">'+(homeTeam.abbreviation||homeTeam.name||'Home')+'</div><div class="live-team-score">'+(ls.teams&&ls.teams.home?ls.teams.home.runs:0)+'</div></div></div>';
     document.getElementById('liveHeader').innerHTML=headerHtml;
     var balls=ls.balls||0,strikes=ls.strikes||0,outs=ls.outs||0,bHtml='',sHtml='',oHtml='';
@@ -1008,7 +1012,8 @@ async function fetchLiveGame(){
     var giHtml='';
     if(bs.info&&bs.info.length){giHtml='<div class="boxscore-wrap" style="margin-top:16px"><div class="live-card-title" style="margin-bottom:10px">Game Info</div><div style="background:var(--card);border-radius:8px;padding:10px">';bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)giHtml+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else giHtml+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--accent);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text);overflow-wrap:break-word;min-width:0;flex:1">'+val+'</span></div>';});giHtml+='</div></div>';}
     document.getElementById('liveGameInfo').innerHTML=giHtml;
-    document.getElementById('liveRefreshTime').textContent='Last updated: '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+' · Auto-refreshes every 5 min';
+    if(isFinal){if(liveInterval){clearInterval(liveInterval);liveInterval=null;}document.getElementById('liveRefreshTime').textContent='Game Final';}
+    else document.getElementById('liveRefreshTime').textContent='Last updated: '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+' · Auto-refreshes every 5 min';
   }catch(e){document.getElementById('liveHeader').innerHTML='<div class="error">Could not load live game data</div>';}
   fetchPlayByPlay();
 }
