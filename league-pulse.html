@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.1</title>
+<title>League Pulse — MLB Live Feed · v0.1-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -577,10 +577,10 @@ html, body {
 <div id="mockBar" style="display:none">
   <span class="mock-badge">⚡ Mock</span>
   <span class="mock-bar-label">Speed:</span>
-  <button class="mock-btn active" id="btnNormal">Normal</button>
-  <button class="mock-btn" id="btnFast">Fast</button>
-  <button class="mock-btn" id="btnSkip">Skip ▶</button>
-  <button class="mock-btn" id="btnReset">↺ Reset</button>
+  <button class="mock-btn active" id="btnNormal" onclick="setMockSpeed(6000, this)">Normal</button>
+  <button class="mock-btn" id="btnFast" onclick="setMockSpeed(1500, this)">Fast</button>
+  <button class="mock-btn" id="btnSkip" onclick="skipMockPlay()">Skip ▶</button>
+  <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
   <span class="mock-progress" id="mockProgress"></span>
 </div>
 
@@ -1031,9 +1031,287 @@ function dismissAlert(el) {
   setTimeout(function() { el.remove(); }, 300);
 }
 
-// ── Placeholder stubs (filled in step 5) ─────────────────────────────────────
-function mockTick() { /* step 5 */ }
-function initReal() { /* step 5 */ }
+// ── Mock engine ───────────────────────────────────────────────────────────────
+function mockTick() {
+  var pks     = mockGameQueue;
+  var found   = false;
+  var n       = pks.length;
+
+  for (var i = 0; i < n; i++) {
+    var pk    = pks.shift();
+    pks.push(pk);                                   // rotate
+
+    var plays = MOCK_DATA.plays[pk] || [];
+    var ptr   = mockPlayPtrs[pk] || 0;
+
+    if (ptr < plays.length) {
+      advanceMockGame(pk, plays[ptr]);
+      mockPlayPtrs[pk] = ptr + 1;
+      playedMockPlays++;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    // All plays exhausted — wrap up any still-live games
+    Object.values(gameStates).forEach(function(g) {
+      if (g.status === 'Live') {
+        g.status = 'Final';
+        addFeedItem(g.gamePk, {
+          type:  'status',
+          icon:  '🏁',
+          label: 'Game Final',
+          sub:   g.awayAbbr + ' ' + g.awayScore + ', ' + g.homeAbbr + ' ' + g.homeScore,
+        });
+      }
+    });
+    if (mockTimerId) { clearInterval(mockTimerId); mockTimerId = null; }
+    renderTicker();
+  }
+
+  updateMockProgress();
+  updateHeader();
+}
+
+function advanceMockGame(gamePk, play) {
+  var g = gameStates[gamePk];
+  if (!g) return;
+
+  // Game-start sentinel
+  if (play.event === '__GAME_START__') {
+    g.status = 'Live';
+    addFeedItem(gamePk, {
+      type:  'status',
+      icon:  '⚾',
+      label: 'Game underway!',
+      sub:   g.awayAbbr + ' @ ' + g.homeAbbr,
+    });
+    renderTicker();
+    return;
+  }
+
+  // Update game state
+  g.awayScore  = play.aScore;
+  g.homeScore  = play.hScore;
+  g.inning     = play.inn;
+  g.halfInning = play.half;
+  g.outs       = play.outs;
+
+  // Classify
+  var playClass = play.event === 'Home Run' ? 'homerun'
+                : play.scoring              ? 'scoring'
+                : play.risp                 ? 'risp'
+                : 'normal';
+
+  addFeedItem(gamePk, {
+    type:       'play',
+    event:      play.event,
+    desc:       play.desc,
+    scoring:    play.scoring,
+    awayScore:  play.aScore,
+    homeScore:  play.hScore,
+    inning:     play.inn,
+    halfInning: play.half,
+    outs:       play.outs,
+    risp:       play.risp,
+    playClass:  playClass,
+  });
+
+  // Alerts for notable events
+  var teamColor = play.half === 'top' ? g.awayPrimary : g.homePrimary;
+  if (play.event === 'Home Run') {
+    showAlert({
+      icon:     '💥',
+      event:    'HOME RUN · ' + g.awayAbbr + ' ' + play.aScore + ', ' + g.homeAbbr + ' ' + play.hScore,
+      desc:     play.desc,
+      color:    teamColor,
+      duration: 6000,
+    });
+  } else if (play.scoring) {
+    showAlert({
+      icon:     '🔴',
+      event:    'RUN SCORES · ' + g.awayAbbr + ' ' + play.aScore + ', ' + g.homeAbbr + ' ' + play.hScore,
+      desc:     play.desc,
+      color:    teamColor,
+      duration: 4000,
+    });
+  }
+
+  renderTicker();
+}
+
+// ── Mock controls ─────────────────────────────────────────────────────────────
+function setMockSpeed(ms, btn) {
+  mockSpeedMs = ms;
+  document.querySelectorAll('.mock-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  startMockTick();
+}
+
+function skipMockPlay() {
+  mockTick();
+}
+
+function resetMock() {
+  if (mockTimerId) { clearInterval(mockTimerId); mockTimerId = null; }
+  feedItems       = [];
+  gameStates      = {};
+  mockPlayPtrs    = {};
+  mockGameQueue   = [];
+  playedMockPlays = 0;
+  totalMockPlays  = 0;
+  document.getElementById('feed').innerHTML       = '';
+  document.getElementById('alertStack').innerHTML = '';
+  document.getElementById('feedEmpty').style.display = '';
+  // Reset speed buttons — Normal active by default
+  document.querySelectorAll('.mock-btn').forEach(function(b) { b.classList.remove('active'); });
+  var btnNormal = document.getElementById('btnNormal');
+  if (btnNormal) { btnNormal.classList.add('active'); mockSpeedMs = 6000; }
+  initMock();
+}
+
+function updateMockProgress() {
+  document.getElementById('mockProgress').textContent =
+    playedMockPlays + ' / ' + totalMockPlays + ' plays';
+}
+
+// ── Real polling ──────────────────────────────────────────────────────────────
+function initReal() {
+  poll();
+  setInterval(poll, 60000);
+}
+
+async function poll() {
+  var dateStr = localDateStr(new Date());
+  try {
+    var r = await fetch(MLB_BASE + '/schedule?sportId=1&date=' + dateStr + '&hydrate=linescore,team');
+    var d = await r.json();
+    var games = (d.dates || []).flatMap(function(dt) { return dt.games || []; });
+
+    games.forEach(function(g) {
+      var pk        = g.gamePk;
+      var newStatus = g.status.abstractGameState;
+      var detailed  = g.status.detailedState || '';
+      var away      = g.teams.away;
+      var home      = g.teams.home;
+      var awayTc    = TC[away.team.id] || {primary:'#444'};
+      var homeTc    = TC[home.team.id] || {primary:'#444'};
+      var ls        = g.linescore || {};
+
+      if (!gameStates[pk]) {
+        gameStates[pk] = {
+          gamePk:      pk,
+          awayId:      away.team.id,
+          homeId:      home.team.id,
+          awayAbbr:    away.team.abbreviation,
+          homeAbbr:    home.team.abbreviation,
+          awayName:    away.team.name,
+          homeName:    home.team.name,
+          awayPrimary: awayTc.primary,
+          homePrimary: homeTc.primary,
+          awayScore:   away.score  || 0,
+          homeScore:   home.score  || 0,
+          status:      newStatus,
+          inning:      ls.currentInning   || 1,
+          halfInning:  (ls.inningHalf     || 'Top').toLowerCase(),
+          outs:        ls.outs            || 0,
+          playCount:   0,
+        };
+      } else {
+        var prev = gameStates[pk];
+        // Status-change feed events
+        if (prev.status !== newStatus) {
+          if (newStatus === 'Live') {
+            addFeedItem(pk, {type:'status', icon:'⚾', label:'Game underway!',
+              sub: prev.awayAbbr + ' @ ' + prev.homeAbbr});
+          }
+          if (newStatus === 'Final') {
+            addFeedItem(pk, {type:'status', icon:'🏁', label:'Game Final',
+              sub: prev.awayAbbr + ' ' + (away.score||0) + ', ' + prev.homeAbbr + ' ' + (home.score||0)});
+          }
+          if (detailed.toLowerCase().indexOf('delay') !== -1) {
+            addFeedItem(pk, {type:'status', icon:'🌧️', label:'Game Delayed', sub: detailed});
+          }
+        }
+        prev.status     = newStatus;
+        prev.awayScore  = away.score  || 0;
+        prev.homeScore  = home.score  || 0;
+        prev.inning     = ls.currentInning   || prev.inning;
+        prev.halfInning = (ls.inningHalf     || 'Top').toLowerCase();
+        prev.outs       = ls.outs            || 0;
+      }
+    });
+
+    // Fetch play-by-play for every live game in parallel
+    var liveGames = games.filter(function(g) {
+      return g.status.abstractGameState === 'Live';
+    });
+    await Promise.all(liveGames.map(function(g) { return pollGamePlays(g.gamePk); }));
+
+    renderTicker();
+    updateHeader();
+  } catch(e) {
+    console.error('poll error', e);
+  }
+}
+
+async function pollGamePlays(gamePk) {
+  try {
+    var r     = await fetch(MLB_BASE + '/game/' + gamePk + '/playByPlay');
+    var data  = await r.json();
+    var g     = gameStates[gamePk];
+    if (!g) return;
+
+    var plays     = (data.allPlays || []).filter(function(p) { return p.about && p.about.isComplete; });
+    var lastCount = g.playCount || 0;
+    var newPlays  = plays.slice(lastCount);
+
+    newPlays.forEach(function(play) {
+      var event      = (play.result && play.result.event)       || '';
+      var isScoringP = (play.about  && play.about.isScoringPlay)|| false;
+      var aScore     = (play.result && play.result.awayScore != null) ? play.result.awayScore : g.awayScore;
+      var hScore     = (play.result && play.result.homeScore != null) ? play.result.homeScore : g.homeScore;
+      var inning     = (play.about  && play.about.inning)       || g.inning;
+      var halfInning = (play.about  && play.about.halfInning)   || g.halfInning;
+      var outs       = (play.count  && play.count.outs)         || 0;
+      var desc       = (play.result && play.result.description) || '—';
+
+      // RISP: any runner who started on 2nd or 3rd before this play
+      var runners  = play.runners || [];
+      var hasRISP  = runners.some(function(r) {
+        return r.movement && (r.movement.start === '2B' || r.movement.start === '3B');
+      });
+
+      var playClass = event === 'Home Run' ? 'homerun'
+                    : isScoringP           ? 'scoring'
+                    : hasRISP              ? 'risp'
+                    : 'normal';
+
+      addFeedItem(gamePk, {
+        type:'play', event:event, desc:desc,
+        scoring:isScoringP, awayScore:aScore, homeScore:hScore,
+        inning:inning, halfInning:halfInning, outs:outs,
+        risp:hasRISP, playClass:playClass,
+      });
+
+      var teamColor = halfInning === 'top' ? g.awayPrimary : g.homePrimary;
+      if (event === 'Home Run') {
+        showAlert({icon:'💥',
+          event:'HOME RUN · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
+          desc:desc, color:teamColor, duration:6000});
+      } else if (isScoringP) {
+        showAlert({icon:'🔴',
+          event:'RUN SCORES · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
+          desc:desc, color:teamColor, duration:4000});
+      }
+    });
+
+    g.playCount = plays.length;
+  } catch(e) { /* silent — one game failure must not break others */ }
+}
 
 // ── Start ────────────────────────────────────────────────────────────────────
 init();
