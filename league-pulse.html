@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>League Pulse — MLB Live Feed · v0.1</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --dark:   #0f1520;
+  --card:   #161e2e;
+  --card2:  #1c2540;
+  --border: #253050;
+  --text:   #e8eaf0;
+  --muted:  #7a8299;
+  --scoring-bg: rgba(220, 60, 40, 0.10);
+  --scoring-border: rgba(220, 60, 40, 0.28);
+  --hr-bg:  rgba(255, 155, 30, 0.10);
+  --hr-border: rgba(255, 155, 30, 0.28);
+  --risp-accent: rgba(255, 200, 0, 0.55);
+  --status-bg: rgba(80, 140, 255, 0.08);
+  --status-border: rgba(80, 140, 255, 0.22);
+  --header-h: 56px;
+  --ticker-h: 50px;
+  --mockbar-h: 48px;
+  --radius: 10px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--dark);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ── Keyframes ─────────────────────────────────────────────────────────────── */
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(224, 48, 48, 0.65); }
+  70%  { box-shadow: 0 0 0 9px rgba(224, 48, 48, 0);    }
+  100% { box-shadow: 0 0 0 0   rgba(224, 48, 48, 0);    }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0)    scale(1);    }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.96); }
+}
+
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+
+@keyframes progress-drain {
+  from { width: 100%; }
+  to   { width: 0%;   }
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+#header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--header-h);
+  background: rgba(10, 14, 28, 0.97);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.pulse-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+#pulseDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #555;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+#pulseDot.live {
+  background: #e03030;
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+#liveCount {
+  font-weight: 600;
+  color: var(--text);
+}
+
+#lastUpdate {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  #lastUpdate { display: inline; }
+}
+
+.mock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(255, 210, 0, 0.12);
+  border: 1px solid rgba(255, 210, 0, 0.30);
+  color: #ffd000;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Alert stack ────────────────────────────────────────────────────────────── */
+
+#alertStack {
+  position: fixed;
+  top: calc(var(--header-h) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  width: min(500px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.alert-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-left: 3px solid #e03030;
+  border-radius: var(--radius);
+  padding: 10px 14px 12px;
+  pointer-events: auto;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  animation: toast-in 0.28s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.alert-toast.dismissing {
+  animation: toast-out 0.28s ease forwards;
+}
+
+.alert-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.alert-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-event {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.35;
+  animation: progress-drain var(--toast-duration, 5s) linear forwards;
+}
+
+/* ── Game ticker ────────────────────────────────────────────────────────────── */
+
+#gameTicker {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 90;
+  height: var(--ticker-h);
+  background: rgba(8, 12, 24, 0.98);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+#gameTicker::-webkit-scrollbar { display: none; }
+
+.ticker-game {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.ticker-game:hover {
+  background: var(--card2);
+}
+
+.ticker-game.status-live {
+  border-color: rgba(224, 48, 48, 0.35);
+}
+
+.ticker-game.status-final {
+  opacity: 0.55;
+}
+
+.ticker-game.status-preview {
+  opacity: 0.75;
+}
+
+.ticker-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e03030;
+  flex-shrink: 0;
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+.ticker-score {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ticker-score strong {
+  font-weight: 800;
+}
+
+.ticker-divider {
+  font-size: 11px;
+  color: var(--border);
+  font-weight: 500;
+}
+
+.ticker-inning {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ticker-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+/* ── Feed wrap ──────────────────────────────────────────────────────────────── */
+
+#feedWrap {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 14px 12px calc(var(--mockbar-h) + 24px);
+}
+
+#feedEmpty {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--muted);
+}
+
+#feedEmpty .empty-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 14px;
+  opacity: 0.6;
+}
+
+#feedEmpty .empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+#feedEmpty .empty-sub {
+  font-size: 13px;
+}
+
+/* ── Feed items ─────────────────────────────────────────────────────────────── */
+
+.feed-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 13px;
+  margin-bottom: 6px;
+  animation: feed-in 0.28s ease;
+}
+
+/* Scoring play — warm red tint */
+.feed-item.scoring {
+  background: var(--scoring-bg);
+  border-color: var(--scoring-border);
+}
+
+/* Home run — amber tint, slightly elevated */
+.feed-item.homerun {
+  background: var(--hr-bg);
+  border-color: var(--hr-border);
+}
+
+/* RISP — yellow left accent stripe */
+.feed-item.risp {
+  border-left: 3px solid var(--risp-accent);
+}
+
+/* Game status change — centred, blue tint */
+.feed-item.status-change {
+  background: var(--status-bg);
+  border-color: var(--status-border);
+  text-align: center;
+  padding: 10px 16px;
+}
+
+/* ── Feed item internals ────────────────────────────────────────────────────── */
+
+.feed-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.feed-game-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.feed-team-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.feed-sep {
+  color: var(--border);
+}
+
+.feed-time {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.risp-tag {
+  display: inline-block;
+  background: rgba(255, 200, 0, 0.14);
+  color: #ffd000;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.feed-play {
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.feed-item.homerun .feed-play {
+  font-weight: 600;
+}
+
+.feed-score-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* Status change layout */
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.status-icon {
+  font-size: 16px;
+}
+
+.status-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.status-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Mock controls bar ──────────────────────────────────────────────────────── */
+
+#mockBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--mockbar-h);
+  background: rgba(8, 12, 24, 0.98);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mock-bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.mock-btn {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.mock-btn:hover {
+  background: var(--border);
+}
+
+.mock-btn.active {
+  background: rgba(79, 157, 232, 0.18);
+  border-color: rgba(79, 157, 232, 0.45);
+  color: #6ab4f0;
+}
+
+.mock-progress {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .mock-bar-label { display: none; }
+  #feedWrap { padding-left: 8px; padding-right: 8px; }
+  .pulse-brand { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<div id="header">
+  <div class="pulse-brand">
+    <div id="pulseDot"></div>
+    League Pulse
+  </div>
+  <div class="header-right">
+    <span id="liveCount">—</span>
+    <span id="lastUpdate"></span>
+    <span class="mock-badge" id="mockBadge" style="display:none">⚡ Mock</span>
+  </div>
+</div>
+
+<!-- ── Alert stack ────────────────────────────────────────────────────────── -->
+<div id="alertStack"></div>
+
+<!-- ── Game ticker ────────────────────────────────────────────────────────── -->
+<div id="gameTicker">
+  <span class="ticker-empty">No games loaded</span>
+</div>
+
+<!-- ── Main feed ──────────────────────────────────────────────────────────── -->
+<div id="feedWrap">
+  <div id="feedEmpty">
+    <span class="empty-icon">⚾</span>
+    <div class="empty-title">League Pulse</div>
+    <div class="empty-sub">Live play-by-play from every game will appear here</div>
+  </div>
+  <div id="feed"></div>
+</div>
+
+<!-- ── Mock controls bar ──────────────────────────────────────────────────── -->
+<div id="mockBar" style="display:none">
+  <span class="mock-badge">⚡ Mock</span>
+  <span class="mock-bar-label">Speed:</span>
+  <button class="mock-btn active" id="btnNormal">Normal</button>
+  <button class="mock-btn" id="btnFast">Fast</button>
+  <button class="mock-btn" id="btnSkip">Skip ▶</button>
+  <button class="mock-btn" id="btnReset">↺ Reset</button>
+  <span class="mock-progress" id="mockProgress"></span>
+</div>
+
+</body>
+</html>
