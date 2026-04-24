@@ -69,9 +69,9 @@ let selectedPlayer = null              // full roster object — includes person
 
 | Variable | Value |
 |---|---|
-| `--blue` | Team primary colour — header, active nav |
-| `--orange` | Team accent — secondary if contrast ≥ 3:1 AND luminance ≥ 0.05, else `#ffffff` |
-| `--accent-text` | Text ON `--orange` surfaces — black or white based on luminance |
+| `--primary` | Team primary colour — header, active nav |
+| `--secondary` | Team accent — secondary if contrast ≥ 3:1 AND luminance ≥ 0.05, else `#ffffff` |
+| `--accent-text` | Text ON `--secondary` surfaces — black or white based on luminance |
 | `--dark` | Page background — hsl(teamHue, 50%, 18%) |
 | `--card` | Card background — hsl(teamHue, 45%, 22%) |
 | `--card2` | Secondary card / input — hsl(teamHue, 40%, 26%) |
@@ -81,15 +81,15 @@ let selectedPlayer = null              // full roster object — includes person
 
 **Accent luminance floor:** if the computed accent has luminance < 0.05 (near-black, e.g. Giants/Orioles secondary `#27251F`), it is forced to `#ffffff`.
 
-**Split-brain rule:** on-dark accent text and borders use `--accent`; solid brand fills use `--orange`.
+**Split-brain rule:** on-dark accent text and borders use `--accent`; solid brand fills use `--secondary`.
 
-**Theme persistence (T32):** `applyTeamTheme` writes `{--dark, --card, --card2, --border, --blue, --orange, --accent, --accent-text, --header-text}` to `localStorage.mlb_theme_vars`. An inline `<script>` in `<head>` reads and applies these vars before `<style>` renders, preventing flash-of-wrong-theme on reload.
+**Theme persistence (T32):** `applyTeamTheme` writes `{--dark, --card, --card2, --border, --primary, --secondary, --accent, --accent-text, --header-text}` to `localStorage.mlb_theme_vars`. An inline `<script>` in `<head>` reads and applies these vars before `<style>` renders, preventing flash-of-wrong-theme on reload.
 
 **Responsive breakpoints** (single `@media` block at end of `<style>`):
 - `≤1024px` (iPad landscape + portrait): `.grid3` and `.live-grid` collapse to 1 column; `.matchup-grid` goes 3→2 cols; header wraps; `.main` padding reduced to 12px
 - `≤1024px and ≥481px` (tablet band only): header `flex-wrap:nowrap` (prevents wrapping bug); `.logo span` hidden (SVG stays); nav icon-only (`.nav-label` hidden); `.settings-wrap` flex-shrink:0 stays right-aligned; header position:sticky
 - `≤767px` (portrait / phone): `.grid2` also collapses to 1 column; `.card-cap` shrinks to 40px; `.series-ghost` shrinks to 220px
-- `≤480px` (iPhone): `html,body{overflow-x:hidden}` prevents page-level horizontal scroll (both required — iOS Safari has independent scroll contexts for `html` and `body`); nav becomes fixed bottom bar with short labels visible (`.nav-label` shown at 9.5px); nav bg is `color-mix(--blue 94%)` with backdrop-blur and soft 1px border-top; active state uses accent top-underline (`inset 0 2px 0 var(--accent)`); safe-area inset bottom padding; `.team-chip` hidden; header `position:static` scrolls away; `.game-big{padding:16px}` (down from 24px — gives content more room on narrow screens); `.live-view` side padding zeroed (`padding-left:0;padding-right:0`) — inner wrapper div already provides `padding:20px`, removing the duplicate outer padding that made the live score too tight; `.ng-grid{gap:8px}`, `.ng-name{font-size:18px}`, `.ng-score{font-size:26px}` — shrinks the 5-column Next Game card grid on narrow viewports (long team names like "Atlanta Braves" at 26px bold overflowed on 375–390px phones); `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.card` padding 12px; `.cal-day` min-height 44px, `.cal-game-info` hidden, `.cal-dot` shown; `.main` and `.live-view` get `padding-bottom:calc(72px + env(safe-area-inset-bottom))`
+- `≤480px` (iPhone): `html,body{overflow-x:hidden}` prevents page-level horizontal scroll (both required — iOS Safari has independent scroll contexts for `html` and `body`); nav becomes fixed bottom bar with short labels visible (`.nav-label` shown at 9.5px); nav bg is `color-mix(--primary 94%)` with backdrop-blur and soft 1px border-top; active state uses accent top-underline (`inset 0 2px 0 var(--accent)`); safe-area inset bottom padding; `.team-chip` hidden; header `position:static` scrolls away; `.game-big{padding:16px}` (down from 24px — gives content more room on narrow screens); `.live-view` side padding zeroed (`padding-left:0;padding-right:0`) — inner wrapper div already provides `padding:20px`, removing the duplicate outer padding that made the live score too tight; `.ng-grid{gap:8px}`, `.ng-name{font-size:18px}`, `.ng-score{font-size:26px}` — shrinks the 5-column Next Game card grid on narrow viewports (long team names like "Atlanta Braves" at 26px bold overflowed on 375–390px phones); `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.card` padding 12px; `.cal-day` min-height 44px, `.cal-game-info` hidden, `.cal-dot` shown; `.main` and `.live-view` get `padding-bottom:calc(72px + env(safe-area-inset-bottom))`
 
 **Layout utility classes:**
 - `.grid2` — 2-column grid, 1fr 1fr, 16px gap. Collapses at 767px.
@@ -139,11 +139,11 @@ let selectedPlayer = null              // full roster object — includes person
 
 ## CSS Variables Quick Reference
 ```css
---blue          /* team primary — header, active nav */
---orange        /* team accent — highlights, badges, card titles */
+--primary       /* team primary — header, active nav */
+--secondary     /* team accent — highlights, badges, card titles */
 --accent        /* contrast-safe accent for text/borders on dark — computed per-team */
 --header-text   /* text on header gradient — #0a0f1e or #ffffff based on primary luminance */
---accent-text   /* text ON --orange surfaces */
+--accent-text   /* text ON --secondary surfaces */
 --dark          /* page background */
 --card          /* card background */
 --card2         /* secondary card / input background */
@@ -277,7 +277,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 
 | Function | Purpose |
 |---|---|
-| `applyTeamTheme(team)` | Sets 9 CSS vars (--blue, --orange, --accent, --header-text, --accent-text, --dark, --card, --card2, --border), persists to localStorage.mlb_theme_vars, updates logo, page title, theme-color meta, and `.team-chip` text |
+| `applyTeamTheme(team)` | Sets 9 CSS vars (--primary, --secondary, --accent, --header-text, --accent-text, --dark, --card, --card2, --border), persists to localStorage.mlb_theme_vars, updates logo, page title, theme-color meta, and `.team-chip` text |
 | `switchTeam(teamId)` | Resets all state and reloads all data for new team |
 | `loadTodayGame()` | Left home card — fetches ±7 day window on cold load for series record |
 | `getSeriesInfo(g)` | Returns series string e.g. `"Game 2 of 3 · Mets lead 1-0"`. API desc first, scheduleData fallback |
@@ -391,7 +391,7 @@ On every commit that changes app content, bump **three** things:
 - [ ] Switch cron trigger from GitHub Actions to Vercel Cron (`vercel.json`) — GitHub Actions scheduled workflows are unreliable on free tier (fires ~once per hour in practice vs every 5 min as configured), making game-start alerts miss most windows; Vercel Cron runs directly on the same infra as the notify function and is more reliable
 - [ ] Push notification team filter — currently fires for any MLB game start; add per-user team preference stored with subscription in Redis
 - [ ] Clean up KV naming — rename `const kv` variable to `redis` in all three api files; rename env vars `KV_REST_API_URL`/`KV_REST_API_TOKEN` to clearer Upstash-prefixed names in both code and Vercel dashboard (env var names were auto-generated by Vercel's Upstash integration)
-- [ ] Rename `--blue`/`--orange` CSS vars to `--primary`/`--secondary` — names are misleading for non-blue/orange teams
+- [x] Rename `--blue`/`--orange` CSS vars to `--primary`/`--secondary` — names are misleading for non-blue/orange teams (v1.45.1)
 - [ ] Cache live game batter/pitcher stats per matchup
 - [ ] Fix live header text colour accessibility (`--accent-text`)
 - [ ] Team-aware W/L/Live badges
