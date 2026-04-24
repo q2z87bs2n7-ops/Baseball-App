@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.57</title>
+<title>MLB Tracker v1.57.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -269,7 +269,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.57</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.57.1</div>
       </div>
     </div>
   </div>
@@ -383,7 +383,17 @@
 
 <div id="league" class="section">
   <div class="card" style="margin-bottom:16px">
-    <div class="card-title">⚾ Today's Matchups <button class="refresh-btn" onclick="loadLeagueView()">↻ Refresh</button></div>
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>⚾ <span id="matchupDayLabel">Today's</span> Matchups</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div class="stat-tabs" style="margin:0">
+          <button class="stat-tab" id="matchupYest" onclick="switchMatchupDay(-1,this)">Yesterday</button>
+          <button class="stat-tab active" id="matchupToday" onclick="switchMatchupDay(0,this)">Today</button>
+          <button class="stat-tab" id="matchupTomor" onclick="switchMatchupDay(1,this)">Tomorrow</button>
+        </div>
+        <button class="refresh-btn" onclick="loadLeagueMatchups()">↻ Refresh</button>
+      </div>
+    </div>
     <div id="leagueMatchups"><div class="loading">Loading today's games...</div></div>
   </div>
   <div class="grid2">
@@ -1057,16 +1067,19 @@ async function loadMediaFeed(uc){
 function renderMediaList(){var listEl=document.getElementById('mediaList');if(!listEl)return;var html='';mediaVideos.forEach(function(v){var sel=v.videoId===selectedVideoId;html+='<div onclick="selectMediaVideo(\''+v.videoId+'\')" style="cursor:pointer;padding:10px;border-bottom:1px solid var(--border);background:'+(sel?'color-mix(in srgb,var(--accent) 12%,transparent)':'transparent')+';'+(sel?'border-left:3px solid var(--accent)':'border-left:3px solid transparent')+'"><img src="'+v.thumb+'" style="width:100%;border-radius:4px;margin-bottom:6px;display:block" loading="lazy"/><div style="font-size:.72rem;font-weight:600;color:'+(sel?'var(--accent)':'var(--text)')+';line-height:1.3;margin-bottom:3px">'+v.title+'</div><div style="font-size:.65rem;color:var(--muted)">'+v.date+'</div></div>';});listEl.innerHTML=html;}
 function selectMediaVideo(videoId){selectedVideoId=videoId;var player=document.getElementById('mediaPlayer');if(player)player.src='https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay=1&rel=0';renderMediaList();}
 
-var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={};
-async function loadLeagueView(){await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();}
+var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={},leagueMatchupOffset=0;
+async function loadLeagueView(){leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();}
 async function loadLeagueStandings(){try{var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team');var d=await r.json();leagueStandingsMap={};(d.records||[]).forEach(function(rec){(rec.teamRecords||[]).forEach(function(t){leagueStandingsMap[t.team.id]={w:t.wins,l:t.losses};});});}catch(e){}}
 async function loadLeagueMatchups(){
-  var el=document.getElementById('leagueMatchups');el.innerHTML='<div class="loading">Loading today\'s games...</div>';
-  var now=new Date(),today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var el=document.getElementById('leagueMatchups');
+  var dayLabels=["Yesterday's","Today's","Tomorrow's"],dayLabel=dayLabels[leagueMatchupOffset+1];
+  el.innerHTML='<div class="loading">Loading '+dayLabel+' games...</div>';
+  var now=new Date();now.setDate(now.getDate()+leagueMatchupOffset);
+  var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   try{
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+today+'&hydrate=linescore,team');var d=await r.json(),games=[];
+    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team');var d=await r.json(),games=[];
     (d.dates||[]).forEach(function(dt){games=games.concat(dt.games||[]);});
-    if(!games.length){el.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">No games scheduled today</div>';return;}
+    if(!games.length){el.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">No games scheduled '+dayLabel.replace("'s","")+'</div>';return;}
     var html='<div class="matchup-grid">';
     games.forEach(function(g){
       var home=g.teams.home,away=g.teams.away,status=g.status.abstractGameState,detailed=g.status.detailedState;
@@ -1082,7 +1095,15 @@ async function loadLeagueMatchups(){
       html+='<div style="display:flex;align-items:center;justify-content:center;gap:6px"><div style="text-align:center">'+teamCapImg(away.team.id,away.team.teamName,awayD.primary||'#333',awayD.secondary||'#fff','matchup-cap')+'<div style="font-size:.8rem;font-weight:700;color:#fff">'+(away.team.abbreviation||away.team.teamName)+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(awayRec?'('+awayRec.w+'-'+awayRec.l+')':'')+'</div></div>'+scoreOrVs+'<div style="text-align:center">'+teamCapImg(home.team.id,home.team.teamName,homeD.primary||'#333',homeD.secondary||'#fff','matchup-cap')+'<div style="font-size:.8rem;font-weight:700;color:#fff">'+(home.team.abbreviation||home.team.teamName)+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(homeRec?'('+homeRec.w+'-'+homeRec.l+')':'')+'</div></div></div></div>';
     });
     el.innerHTML=html+'</div>';
-  }catch(e){el.innerHTML='<div class="error">Could not load today\'s games</div>';}
+  }catch(e){el.innerHTML='<div class="error">Could not load games</div>';}
+}
+function switchMatchupDay(offset,btn){
+  leagueMatchupOffset=offset;
+  ['matchupYest','matchupToday','matchupTomor'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  var labels=["Yesterday's","Today's","Tomorrow's"],lbl=document.getElementById('matchupDayLabel');
+  if(lbl)lbl.textContent=labels[offset+1];
+  loadLeagueMatchups();
 }
 async function loadLeagueNews(){var el=document.getElementById('leagueNews');el.innerHTML='<div class="loading">Loading...</div>';try{var r=await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=15');var d=await r.json(),articles=(d.articles||[]).filter(function(a){return a.headline;}).slice(0,10);if(!articles.length)throw new Error('none');var html='';articles.forEach(function(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';html+='<div class="news-item"><div class="news-dot"></div><div><div class="news-title"><a href="'+link+'" target="_blank">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';});el.innerHTML=html;}catch(e){el.innerHTML='<div class="error">News unavailable (ESPN API may be blocked by browser).</div>';}}
 var LEAGUE_HIT_STATS=[{label:'HR',cats:'homeRuns',decimals:0},{label:'AVG',cats:'avg',decimals:3},{label:'OPS',cats:'onBasePlusSlugging',decimals:3},{label:'RBI',cats:'runsBattedIn',decimals:0}];
