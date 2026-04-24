@@ -277,12 +277,16 @@
 <div class="main">
 <div id="home" class="section active">
   <!-- DEBUG START: live badge preview -->
-  <div class="card" style="padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Live badge preview →</span>
-    <span class="badge badge-live">● LIVE · Top 5</span>
-    <span class="badge badge-w">W</span>
-    <span class="badge badge-l">L</span>
-    <span style="font-size:.7rem;color:var(--muted)">(switch teams in Settings to QC)</span>
+  <div class="card" style="padding:16px;margin-bottom:16px">
+    <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Live badge — current vs new (switch teams to QC)</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <span style="font-size:.7rem;color:var(--muted);width:52px">Current</span>
+      <span class="badge" style="background:#ff4444;color:#fff;animation:pulse 1.5s infinite">● LIVE · Top 5</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:.7rem;color:var(--muted);width:52px">New</span>
+      <span class="badge badge-live">● LIVE · Top 5</span>
+    </div>
   </div>
   <!-- DEBUG END -->
   <div class="grid2" style="margin-bottom:16px">
