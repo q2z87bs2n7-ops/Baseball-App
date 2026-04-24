@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.43.1
+**Current version:** v1.45
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -126,7 +126,8 @@ let selectedPlayer = null              // full roster object — includes person
 | `/teams/{id}/roster` | ✅ | Roster by type — Stats tab uses `rosterType=40Man` to include IL players. `active` only returns the 26-man. `/teams/{id}/stats` returns team aggregate only, not per-player. |
 | `/people/{id}/stats` | ✅ | Individual player season stats |
 | `/stats/leaders` | ✅ | Requires `statGroup` param — omitting it mixes hitting/pitching data |
-| `/game/{pk}/feed/live` | ❌ | 404s — do not use. Use linescore instead. |
+| `/game/{pk}/playByPlay` | ✅ | Completed at-bat log for live/finished games. Returns `allPlays[]`, `scoringPlays[]`, `playsByInning[]`. Use this for play-by-play display — lighter than feed/live. |
+| `/game/{pk}/feed/live` | ⚠️ | **v1 path 404s.** Use `v1.1` (`statsapi.mlb.com/api/v1.1/game/{pk}/feed/live`) — returns full GUMBO object (plays + linescore + boxscore in one call). Large payload (~500KB). Companion endpoints: `/feed/live/timestamps` and `/feed/live/diffPatch` for efficient polling. |
 | ESPN News API | ⚠️ | Unofficial, may be CORS-blocked in some browsers |
 | YouTube RSS via allorigins.win | ⚠️ | Public proxy, no SLA. 3-attempt retry in place. Media tab only. |
 
@@ -250,13 +251,14 @@ Triggered from Home card or Around the League matchup grid.
 - **Count & Runners** — balls/strikes/outs dots, SVG diamond with runners in team accent colour
 - **Current Matchup** — batter (name + AVG/OBP/OPS) and pitcher (name + ERA/WHIP + today's game line: IP/H/ER/K/PC from boxscore)
 - **Linescore** — live inning-by-inning R/H/E
+- **Play Log** — every completed at-bat for the whole game, grouped by inning half, most recent first. Scoring plays highlighted in `--accent` with score badge (e.g. `🔴 Pete Alonso homers … · 3-2`). Fetched separately from `playByPlay` endpoint on each refresh.
 - **Box Score** — tabbed away/home batting and pitching tables
 - **Game Info** — weather, attendance, umpires from `bs.info`
 - **Last updated timestamp** at bottom
 - Auto-refresh every 5 minutes; manual ↻ Refresh button
 - ← Back returns to Home; nav buttons also close the live view
 
-Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` — returns 404)
+Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}/playByPlay` (v1 path — do NOT use `feed/live` v1, it 404s)
 
 ---
 
@@ -298,7 +300,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` (NOT `feed/live` 
 | `loadLeagueMatchups()` | Today's all-team schedule grid with live inning display |
 | `loadLeagueLeaders()` | Fetches /stats/leaders, maps by index to LEAGUE_*_STATS arrays |
 | `showLiveGame(gamePk)` | Hides main, shows live view, starts auto-refresh |
-| `fetchLiveGame()` | Polls linescore + boxscore; renders score, count, matchup, linescore, box score, game info |
+| `fetchLiveGame()` | Polls linescore + boxscore; renders score, count, matchup, linescore, box score, game info. Calls `fetchPlayByPlay()` on each refresh. |
+| `fetchPlayByPlay()` | Fetches `/game/{gamePk}/playByPlay`; renders completed at-bat log grouped by inning half into `#livePlayByPlay`. Scoring plays highlighted. Silent no-op on error. |
 | `closeLiveView()` | Clears refresh interval, hides live view, restores main |
 | `showSection(id, btn)` | Switches sections; calls closeLiveView() first if live view is active |
 | `loadMedia()` | Builds media card HTML, calls loadMediaFeed |
@@ -405,6 +408,8 @@ On every commit that changes app content, bump **three** things:
 - [x] Jersey # overlay pill on player headshot (v1.39)
 - [x] Leader stat filter pills above select dropdowns (v1.39)
 - [x] Opposition-forward home cards — 5-col Next Game, ghosted Next Series (v1.39.1)
+- [x] Live game play-by-play log — every at-bat result grouped by inning, scoring plays highlighted (v1.45)
+- [x] Remove redundant At Bat card from live game view — Current Matchup already shows batter (v1.44)
 - [x] Mobile calendar game stats fix — tap now shows tooltip AND populates #gameDetail panel below (v1.43)
 - [x] iPhone horizontal scroll fix — `html{overflow-x:hidden}` + `.live-view` side padding zeroed + `.game-big{padding:16px}` (v1.42)
 - [x] Home screen horizontal scroll fix — `html,body{overflow-x:hidden}` + `.ng-grid`/`.ng-name`/`.ng-score` mobile font overrides on Next Game card (v1.43.1)
