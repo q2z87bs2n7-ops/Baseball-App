@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.45.5</title>
+<title>MLB Tracker v1.45.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -268,7 +268,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.45.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.45.6</div>
       </div>
     </div>
   </div>
@@ -624,7 +624,8 @@ async function loadTodayGame(){
     if(liveGame){document.getElementById('todayGame').innerHTML=renderNextGame(liveGame,'TODAY');return;}
     if(upcomingToday){document.getElementById('todayGame').innerHTML=renderNextGame(upcomingToday,'TODAY');return;}
     var end=new Date();end.setDate(end.getDate()+14);
-    var r2=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+today+'&endDate='+end.toISOString().split('T')[0]+'&teamId='+activeTeam.id+'&hydrate=linescore,team,seriesStatus,gameInfo');
+    var endStr=end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
+    var r2=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+today+'&endDate='+endStr+'&teamId='+activeTeam.id+'&hydrate=linescore,team,seriesStatus,gameInfo');
     var d2=await r2.json(),nextGame=null;
     for(var i=0;i<(d2.dates||[]).length;i++){var u=(d2.dates[i].games||[]).find(function(g){return g.status.abstractGameState==='Preview'||g.status.abstractGameState==='Scheduled';});if(u){nextGame=u;break;}}
     if(!nextGame){document.getElementById('todayGame').innerHTML='<div class="game-big" style="'+defaultGradient()+'"><div class="card-title">NEXT GAME</div><div style="color:rgba(255,255,255,.6);margin:16px 0">No upcoming games found</div></div>';return;}
@@ -639,7 +640,8 @@ async function loadNextGame(){
   try{
     var now=new Date(),today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
     var end=new Date();end.setDate(end.getDate()+28);
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+today+'&endDate='+end.toISOString().split('T')[0]+'&teamId='+activeTeam.id+'&hydrate=team,linescore,venue,probablePitcher');
+    var endStr=end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
+    var r=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+today+'&endDate='+endStr+'&teamId='+activeTeam.id+'&hydrate=team,linescore,venue,probablePitcher');
     var d=await r.json(),allGames=[];
     (d.dates||[]).forEach(function(dt){dt.games.forEach(function(g){allGames.push(g);});});
     var seriesList=[],used=new Set();

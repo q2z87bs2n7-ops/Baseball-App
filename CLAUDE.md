@@ -365,7 +365,7 @@ On every commit that changes app content, bump **three** things:
 5. **Around the League leaders index mapping** — empirically derived, fragile. Re-test if API response order changes.
 6. **allorigins.win proxy** — no SLA, free service. Retry logic (3 attempts, 1s gap) mitigates failures.
 7. **YouTube channel IDs** — 27 of 30 `youtubeUC` values unverified. QC needed each offseason.
-8. **Today's date uses local time** — works for EST but worth noting for other timezones.
+8. **Date strings use local time** — all `startDate`/`endDate` params in `index.html` are built from `getFullYear`/`getMonth`/`getDate` (local). Avoid `toISOString().split('T')[0]` for date params — it returns UTC and will be one day ahead after ~8 PM ET, causing games to be skipped (fixed v1.45.5). `api/notify.js` intentionally uses UTC since it runs on Vercel servers and compares timestamps, not dates.
 9. **Logo fallback coverage** — `capImgError()` SVG fallback used in home cards only; Around the League matchup cards have no logos.
 
 ---
