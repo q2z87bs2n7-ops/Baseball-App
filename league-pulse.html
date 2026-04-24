@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.4-dev</title>
+<title>League Pulse — MLB Live Feed · v0.5-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -727,6 +727,133 @@ html, body {
   flex-shrink: 0;
 }
 
+/* ── Sound button + panel ────────────────────────────────────────────────────── */
+
+#btnSound {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#btnSound:hover { background: var(--card2); }
+
+#soundPanel {
+  position: fixed;
+  top: calc(var(--header-h) + 6px);
+  right: 12px;
+  width: 270px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 150;
+  overflow: hidden;
+}
+
+.sound-panel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px 11px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sound-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sound-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  font-family: inherit;
+}
+.sound-close:hover { background: var(--card2); color: var(--text); }
+
+.sound-rows { padding: 6px 0 4px; }
+
+.sound-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 15px;
+  gap: 12px;
+}
+
+.sound-row.master-row {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+  padding-bottom: 11px;
+}
+
+.sound-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sound-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+/* Dim per-event rows when master is off */
+.sound-rows.master-off .sound-row:not(.master-row) {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Pill toggle */
+.sound-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.sound-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+.sound-knob {
+  position: absolute;
+  inset: 0;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.sound-knob::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s, background 0.2s;
+}
+.sound-toggle input:checked + .sound-knob {
+  background: color-mix(in srgb, var(--accent) 22%, var(--card));
+  border-color: var(--accent);
+}
+.sound-toggle input:checked + .sound-knob::after {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 480px) {
@@ -747,9 +874,68 @@ html, body {
   <div class="header-right">
     <span id="liveCount">—</span>
     <span id="lastUpdate"></span>
+    <button id="btnSound" onclick="toggleSoundPanel()" title="Sound alerts">🔊</button>
     <div id="modeToggle">
       <button class="mode-btn active" id="btnMockMode" onclick="switchMode(false)">⚡ Mock</button>
       <button class="mode-btn" id="btnLiveMode" onclick="switchMode(true)">● Live</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sound settings panel ───────────────────────────────────────────────── -->
+<div id="soundPanel" style="display:none">
+  <div class="sound-panel-hd">
+    <span class="sound-panel-title">Sound Alerts</span>
+    <button class="sound-close" onclick="toggleSoundPanel()">✕</button>
+  </div>
+  <div class="sound-rows" id="soundRows">
+    <div class="sound-row master-row">
+      <div>
+        <div class="sound-label">Master</div>
+        <div class="sound-sub">Enable all sound alerts</div>
+      </div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('master',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
+    <div class="sound-row">
+      <div class="sound-label">💥 Home Run</div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('hr',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
+    <div class="sound-row">
+      <div class="sound-label">🔴 Run Scores</div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('run',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
+    <div class="sound-row">
+      <div>
+        <div class="sound-label">⚡ RISP</div>
+        <div class="sound-sub">Runners in scoring position</div>
+      </div>
+      <label class="sound-toggle">
+        <input type="checkbox" onchange="setSoundPref('risp',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
+    <div class="sound-row">
+      <div class="sound-label">⚾ Game Start</div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('gameStart',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
+    <div class="sound-row">
+      <div class="sound-label">🏁 Game End</div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('gameEnd',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
     </div>
   </div>
 </div>
@@ -999,6 +1185,17 @@ let alertId        = 0;
 function init() {
   document.getElementById('btnMockMode').classList.toggle('active',  mockMode);
   document.getElementById('btnLiveMode').classList.toggle('active', !mockMode);
+
+  document.addEventListener('click', function(e) {
+    var panel = document.getElementById('soundPanel');
+    var btn   = document.getElementById('btnSound');
+    if (panel.style.display !== 'none'
+        && !panel.contains(e.target)
+        && !btn.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
+
   if (mockMode) initMock();
   else          initReal();
 }
@@ -1440,6 +1637,7 @@ function mockTick() {
     // All plays exhausted — wrap up any still-live games
     Object.values(gameStates).forEach(function(g) {
       if (g.status === 'Live') {
+        playSound('gameEnd');
         g.status = 'Final';
         addFeedItem(g.gamePk, {
           type:  'status',
@@ -1470,6 +1668,7 @@ function advanceMockGame(gamePk, play) {
       label: 'Game underway!',
       sub:   g.awayAbbr + ' @ ' + g.homeAbbr,
     });
+    playSound('gameStart');
     renderTicker();
     return;
   }
@@ -1501,7 +1700,7 @@ function advanceMockGame(gamePk, play) {
     playClass:  playClass,
   });
 
-  // Alerts for notable events
+  // Alerts + sounds for notable events
   var teamColor = play.half === 'top' ? g.awayPrimary : g.homePrimary;
   if (play.event === 'Home Run') {
     showAlert({
@@ -1511,6 +1710,7 @@ function advanceMockGame(gamePk, play) {
       color:    teamColor,
       duration: 6000,
     });
+    playSound('hr');
   } else if (play.scoring) {
     showAlert({
       icon:     '🔴',
@@ -1519,6 +1719,9 @@ function advanceMockGame(gamePk, play) {
       color:    teamColor,
       duration: 4000,
     });
+    playSound('run');
+  } else if (play.risp) {
+    playSound('risp');
   }
 
   renderTicker();
@@ -1625,10 +1828,12 @@ async function poll() {
           if (newStatus === 'Live') {
             addFeedItem(pk, {type:'status', icon:'⚾', label:'Game underway!',
               sub: prev.awayAbbr + ' @ ' + prev.homeAbbr});
+            playSound('gameStart');
           }
           if (newStatus === 'Final') {
             addFeedItem(pk, {type:'status', icon:'🏁', label:'Game Final',
               sub: prev.awayAbbr + ' ' + (away.score||0) + ', ' + prev.homeAbbr + ' ' + (home.score||0)});
+            playSound('gameEnd');
           }
           if (detailed.toLowerCase().indexOf('delay') !== -1) {
             addFeedItem(pk, {type:'status', icon:'🌧️', label:'Game Delayed', sub: detailed});
@@ -1700,15 +1905,112 @@ async function pollGamePlays(gamePk) {
         showAlert({icon:'💥',
           event:'HOME RUN · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
           desc:desc, color:teamColor, duration:6000});
+        playSound('hr');
       } else if (isScoringP) {
         showAlert({icon:'🔴',
           event:'RUN SCORES · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
           desc:desc, color:teamColor, duration:4000});
+        playSound('run');
+      } else if (hasRISP) {
+        playSound('risp');
       }
     });
 
     g.playCount = plays.length;
   } catch(e) { /* silent — one game failure must not break others */ }
+}
+
+// ── Sound settings ───────────────────────────────────────────────────────────
+var soundSettings = {
+  master:    true,
+  hr:        true,
+  run:       true,
+  risp:      false,   // off by default — most frequent event
+  gameStart: true,
+  gameEnd:   true,
+};
+
+function toggleSoundPanel() {
+  var p = document.getElementById('soundPanel');
+  p.style.display = p.style.display === 'none' ? '' : 'none';
+}
+
+function setSoundPref(key, val) {
+  soundSettings[key] = val;
+  if (key === 'master') {
+    document.getElementById('soundRows').classList.toggle('master-off', !val);
+  }
+}
+
+function playSound(type) {
+  if (!soundSettings.master || !soundSettings[type]) return;
+  if      (type === 'hr')        playHrSound();
+  else if (type === 'run')       playRunSound();
+  else if (type === 'risp')      playRispSound();
+  else if (type === 'gameStart') playGameStartSound();
+  else if (type === 'gameEnd')   playGameEndSound();
+}
+
+// _beep: notes = [{freq, start, dur, vol, wave}]
+function _beep(notes) {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    notes.forEach(function(n) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = n.wave || 'sine';
+      osc.frequency.value = n.freq;
+      var t = ctx.currentTime + (n.start || 0);
+      gain.gain.setValueAtTime(n.vol || 0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + n.dur);
+      osc.start(t);
+      osc.stop(t + n.dur + 0.02);
+    });
+    var maxEnd = notes.reduce(function(m, n) { return Math.max(m, (n.start||0) + n.dur); }, 0);
+    setTimeout(function() { try { ctx.close(); } catch(e) {} }, (maxEnd + 1.2) * 1000);
+  } catch(e) {}
+}
+
+// Ascending major arpeggio C5-E5-G5-C6
+function playHrSound() {
+  _beep([
+    {freq:523,  start:0,    dur:0.30, vol:0.18},
+    {freq:659,  start:0.07, dur:0.28, vol:0.18},
+    {freq:784,  start:0.14, dur:0.28, vol:0.18},
+    {freq:1047, start:0.21, dur:0.42, vol:0.18},
+  ]);
+}
+
+// Two rising notes G4→B4
+function playRunSound() {
+  _beep([
+    {freq:392, start:0,    dur:0.18, vol:0.15},
+    {freq:494, start:0.13, dur:0.25, vol:0.15},
+  ]);
+}
+
+// Soft high triangle ping A5
+function playRispSound() {
+  _beep([{freq:880, start:0, dur:0.12, vol:0.08, wave:'triangle'}]);
+}
+
+// Bright two-note rise C5→G5
+function playGameStartSound() {
+  _beep([
+    {freq:523, start:0,    dur:0.22, vol:0.16},
+    {freq:784, start:0.18, dur:0.38, vol:0.16},
+  ]);
+}
+
+// Three-note descend G5→E5→C5
+function playGameEndSound() {
+  _beep([
+    {freq:784, start:0,    dur:0.25, vol:0.14},
+    {freq:659, start:0.22, dur:0.25, vol:0.14},
+    {freq:523, start:0.44, dur:0.45, vol:0.14},
+  ]);
 }
 
 // ── Start ────────────────────────────────────────────────────────────────────
