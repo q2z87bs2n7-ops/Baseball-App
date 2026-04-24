@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.50</title>
+<title>MLB Tracker v1.51</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -268,7 +268,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.50</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.51</div>
       </div>
     </div>
   </div>
@@ -1047,7 +1047,9 @@ async function fetchPlayByPlay(){
 
 const MLB_FALLBACK_UC='UCoLrcjPV5tBJkzGBFm-6_sA';
 function loadMedia(){
-  var uc=activeTeam.youtubeUC||MLB_FALLBACK_UC,teamName=activeTeam.youtubeUC?activeTeam.name:'MLB',channelUrl='https://www.youtube.com/channel/'+uc,grad='background:linear-gradient(135deg,'+activeTeam.primary+' 0%,#001233 100%)';
+  var uc=activeTeam.youtubeUC||MLB_FALLBACK_UC,teamName=activeTeam.youtubeUC?activeTeam.name:'MLB',channelUrl='https://www.youtube.com/channel/'+uc;
+  var themeTeam=themeOverride||activeTeam,bannerColor=themeInvert?themeTeam.secondary:themeTeam.primary;
+  var grad='background:linear-gradient(135deg,'+bannerColor+' 0%,#001233 100%)';
   document.getElementById('mediaCard').innerHTML='<div style="'+grad+';border-radius:12px 12px 0 0;padding:16px 20px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:2px">📺 Official Channel</div><div style="font-size:1.1rem;font-weight:800;color:#fff">'+teamName+'</div></div><a href="'+channelUrl+'" target="_blank" style="font-size:.78rem;color:rgba(255,255,255,.7);text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px">Open in YouTube ↗</a></div><div class="media-layout"><div id="mediaList" style="overflow-y:auto;max-height:520px;border-right:1px solid var(--border);background:var(--card)"><div class="loading">Loading videos...</div></div><div style="background:#000"><iframe id="mediaPlayer" width="100%" height="520" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="display:block"></iframe></div></div>';
   loadMediaFeed(uc);
 }
@@ -1155,7 +1157,7 @@ function togglePush(){
   buildTeamSelect();buildThemeSelect();
   if(sv('mlb_theme'))document.getElementById('themeSelect').value=sv('mlb_theme');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
-  if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='inline-block';mt.style.background='var(--secondary)';mk.style.left='21px';}
+  if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='';mt.style.background='var(--secondary)';mk.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
 })();
