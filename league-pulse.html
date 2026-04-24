@@ -748,6 +748,167 @@ const MOCK_DATA = {
     ],
   },
 };
+
+// ── Config ───────────────────────────────────────────────────────────────────
+const MOCK_MODE = true;
+const MLB_BASE  = 'https://statsapi.mlb.com/api/v1';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let gameStates     = {};   // gamePk -> game state object
+let feedItems      = [];   // all feed items, newest first
+let mockPlayPtrs   = {};   // gamePk -> index of next play to emit
+let mockGameQueue  = [];   // rotating round-robin of gamePks
+let mockTimerId    = null;
+let mockSpeedMs    = 6000;
+let totalMockPlays = 0;
+let playedMockPlays= 0;
+let alertId        = 0;
+
+// ── Entry point ──────────────────────────────────────────────────────────────
+function init() {
+  if (MOCK_MODE) initMock();
+  else           initReal();
+}
+
+// ── Mock init ────────────────────────────────────────────────────────────────
+function initMock() {
+  document.getElementById('mockBadge').style.display = '';
+  document.getElementById('mockBar').style.display   = '';
+
+  totalMockPlays  = 0;
+  playedMockPlays = 0;
+  gameStates      = {};
+  mockPlayPtrs    = {};
+  mockGameQueue   = [];
+
+  MOCK_DATA.games.forEach(function(g) {
+    var away = TC[g.awayId] || {primary:'#444', abbr:'???', name:'Unknown'};
+    var home = TC[g.homeId] || {primary:'#444', abbr:'???', name:'Unknown'};
+    gameStates[g.gamePk] = {
+      gamePk:      g.gamePk,
+      awayId:      g.awayId,
+      homeId:      g.homeId,
+      awayAbbr:    away.abbr,
+      homeAbbr:    home.abbr,
+      awayName:    away.name,
+      homeName:    home.name,
+      awayPrimary: away.primary,
+      homePrimary: home.primary,
+      awayScore:   0,
+      homeScore:   0,
+      status:      g.status,   // 'Live' | 'Preview' | 'Final'
+      inning:      1,
+      halfInning:  'top',
+      outs:        0,
+    };
+    mockPlayPtrs[g.gamePk] = 0;
+    totalMockPlays += (MOCK_DATA.plays[g.gamePk] || []).length;
+    mockGameQueue.push(g.gamePk);
+  });
+
+  renderTicker();
+  renderFeed();
+  updateHeader();
+  startMockTick();
+}
+
+function startMockTick() {
+  if (mockTimerId) clearInterval(mockTimerId);
+  mockTimerId = setInterval(mockTick, mockSpeedMs);
+  setTimeout(mockTick, 400);
+}
+
+// ── Game ticker ──────────────────────────────────────────────────────────────
+function renderTicker() {
+  var ticker = document.getElementById('gameTicker');
+  var states = Object.values(gameStates);
+
+  if (!states.length) {
+    ticker.innerHTML = '<span class="ticker-empty">No games loaded</span>';
+    return;
+  }
+
+  var html = '';
+  states.forEach(function(g) {
+    var isLive  = g.status === 'Live';
+    var isFinal = g.status === 'Final';
+    var isPre   = g.status === 'Preview';
+
+    var statusClass = isLive  ? 'status-live'
+                    : isFinal ? 'status-final'
+                    : isPre   ? 'status-preview'
+                    : '';
+
+    var half   = g.halfInning === 'top' ? '▲' : '▼';
+    var innStr = isLive  ? (half + g.inning)
+               : isFinal ? 'FINAL'
+               : 'PRE';
+
+    var dot = isLive ? '<div class="ticker-live-dot"></div>' : '';
+
+    html += '<div class="ticker-game ' + statusClass + '" onclick="scrollToGame(' + g.gamePk + ')">'
+          + dot
+          + '<span class="ticker-score">' + g.awayAbbr + '&nbsp;<strong>' + g.awayScore + '</strong></span>'
+          + '<span class="ticker-divider">·</span>'
+          + '<span class="ticker-score"><strong>' + g.homeScore + '</strong>&nbsp;' + g.homeAbbr + '</span>'
+          + '<span class="ticker-inning">' + innStr + '</span>'
+          + '</div>';
+  });
+
+  ticker.innerHTML = html;
+}
+
+// ── Header ───────────────────────────────────────────────────────────────────
+function updateHeader() {
+  var liveCount = Object.values(gameStates).filter(function(g) {
+    return g.status === 'Live';
+  }).length;
+
+  var dot = document.getElementById('pulseDot');
+  if (liveCount > 0) {
+    dot.classList.add('live');
+  } else {
+    dot.classList.remove('live');
+  }
+
+  document.getElementById('liveCount').textContent =
+    liveCount === 0 ? 'No games live'
+    : liveCount === 1 ? '1 game live'
+    : liveCount + ' games live';
+
+  var lu = document.getElementById('lastUpdate');
+  lu.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit', second: '2-digit'
+  });
+  lu.style.display = '';
+}
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function ordinal(n) {
+  if (n === 1) return '1st';
+  if (n === 2) return '2nd';
+  if (n === 3) return '3rd';
+  return n + 'th';
+}
+
+function localDateStr(d) {
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+}
+
+function scrollToGame(gamePk) {
+  var el = document.querySelector('[data-gamepk="' + gamePk + '"]');
+  if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ── Placeholder stubs (filled in later steps) ─────────────────────────────
+function renderFeed()       { /* step 4 */ }
+function mockTick()         { /* step 5 */ }
+function initReal()         { /* step 5 */ }
+
+// ── Start ────────────────────────────────────────────────────────────────────
+init();
 </script>
 
 </body>
