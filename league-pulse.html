@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.5-dev</title>
+<title>League Pulse — MLB Live Feed · v0.6-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1136,7 +1136,8 @@ const MOCK_DATA = {
 
 // ── Config ───────────────────────────────────────────────────────────────────
 let mockMode = true;
-const MLB_BASE  = 'https://statsapi.mlb.com/api/v1';
+const MLB_BASE      = 'https://statsapi.mlb.com/api/v1';
+const MLB_BASE_V1_1 = 'https://statsapi.mlb.com/api/v1.1';
 
 // ── Theme utilities (ported from index.html) ─────────────────────────────────
 function relLuminance(hex){hex=hex.replace('#','');var n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;r=r<=0.03928?r/12.92:Math.pow((r+0.055)/1.055,2.4);g=g<=0.03928?g/12.92:Math.pow((g+0.055)/1.055,2.4);b=b<=0.03928?b/12.92:Math.pow((b+0.055)/1.055,2.4);return 0.2126*r+0.7152*g+0.0722*b;}
@@ -1770,7 +1771,7 @@ function initReal() {
   document.getElementById('mockBar').style.display = 'none';
   applyLeaguePulseTheme('#002D72', '#FF5910'); // Mets default; swap for other teams
   poll();
-  setInterval(poll, 60000);
+  setInterval(poll, 15000);
 }
 
 async function poll() {
@@ -1815,9 +1816,10 @@ async function poll() {
           inning:      ls.currentInning   || 1,
           halfInning:  (ls.inningHalf     || 'Top').toLowerCase(),
           outs:        ls.outs            || 0,
-          playCount:   0,
-          gameTime:    gameTime,
-          venueName:   g.venue ? g.venue.name : null,
+          playCount:     0,
+          lastTimestamp: null,
+          gameTime:      gameTime,
+          venueName:     g.venue ? g.venue.name : null,
         };
         enabledGames.add(pk);
       } else {
@@ -1863,10 +1865,18 @@ async function poll() {
 
 async function pollGamePlays(gamePk) {
   try {
+    var g = gameStates[gamePk];
+    if (!g) return;
+
+    // Stale check: skip playByPlay fetch if the game state hasn't changed
+    var tsResp = await fetch(MLB_BASE_V1_1 + '/game/' + gamePk + '/feed/live/timestamps');
+    var tsData = await tsResp.json();
+    var latestTs = Array.isArray(tsData) ? tsData[tsData.length - 1] : null;
+    if (latestTs && latestTs === g.lastTimestamp) return;
+    if (latestTs) g.lastTimestamp = latestTs;
+
     var r     = await fetch(MLB_BASE + '/game/' + gamePk + '/playByPlay');
     var data  = await r.json();
-    var g     = gameStates[gamePk];
-    if (!g) return;
 
     var plays     = (data.allPlays || []).filter(function(p) { return p.about && p.about.isComplete; });
     var lastCount = g.playCount || 0;
