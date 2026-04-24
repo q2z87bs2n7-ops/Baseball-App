@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.54.2</title>
+<title>MLB Tracker v1.55</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -269,7 +269,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.54.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.55</div>
       </div>
     </div>
   </div>
@@ -277,19 +277,7 @@
 
 <div class="main">
 <div id="home" class="section active">
-  <!-- DEBUG START: live badge preview -->
-  <div class="card" style="padding:16px;margin-bottom:16px">
-    <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Live badge — current vs new (switch teams to QC)</div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-      <span style="font-size:.7rem;color:var(--muted);width:52px">Current</span>
-      <span class="badge" style="background:#ff4444;color:#fff;animation:pulse 1.5s infinite">● LIVE · Top 5</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:.7rem;color:var(--muted);width:52px">New</span>
-      <span class="badge badge-live">● LIVE · Top 5</span>
-    </div>
-  </div>
-  <!-- DEBUG END -->
+
   <div class="grid2" style="margin-bottom:16px">
     <div id="todayGame"><div class="loading">Loading next game...</div></div>
     <div id="nextGame"><div class="loading">Loading next series...</div></div>
