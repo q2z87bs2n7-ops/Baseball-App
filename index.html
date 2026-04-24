@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.59.2</title>
+<title>MLB Tracker v1.59.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -216,6 +216,7 @@
     .matchup-stats{word-break:break-word}
     .play-log-entry{word-break:break-word}
     .boxscore-wrap{padding:10px}
+    .matchup-day-controls{flex-shrink:1;flex-wrap:wrap;justify-content:flex-end}
   }
 </style>
 </head>
@@ -269,7 +270,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.59.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.59.3</div>
       </div>
     </div>
   </div>
@@ -387,7 +388,7 @@
   <div class="card" style="margin-bottom:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>⚾ <span id="matchupDayLabel">Today's</span> Matchups</span>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <div class="matchup-day-controls" style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <div class="stat-tabs" style="margin:0">
           <button class="stat-tab" id="matchupYest" onclick="switchMatchupDay(-1,this)">Yesterday</button>
           <button class="stat-tab active" id="matchupToday" onclick="switchMatchupDay(0,this)">Today</button>
