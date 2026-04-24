@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.2-dev</title>
+<title>League Pulse — MLB Live Feed · v0.3-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -367,6 +367,122 @@ html, body {
   font-size: 13px;
 }
 
+/* ── Empty state — upcoming games ───────────────────────────────────────────── */
+#feedEmpty.has-upcoming {
+  text-align: left;
+  padding: 20px 0;
+  color: var(--text);
+}
+
+.empty-upcoming-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.upcoming-hero {
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.upcoming-hero-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 10px;
+}
+
+.upcoming-matchup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.upcoming-cap {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55));
+}
+
+.upcoming-team-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.upcoming-at {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+}
+
+.upcoming-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 14px;
+  gap: 8px;
+}
+
+.upcoming-foot-time {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.upcoming-foot-venue {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  text-align: right;
+}
+
+.upcoming-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.upcoming-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.upcoming-card-cap {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+
+.upcoming-card-matchup {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.upcoming-card-time {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
 /* ── Feed items ─────────────────────────────────────────────────────────────── */
 
 .feed-item {
@@ -669,7 +785,7 @@ const MOCK_DATA = {
     {gamePk:1001, awayId:121, homeId:144, status:'Live'},
     {gamePk:1002, awayId:147, homeId:111, status:'Live'},
     {gamePk:1003, awayId:119, homeId:137, status:'Live'},
-    {gamePk:1004, awayId:117, homeId:140, status:'Preview'},
+    {gamePk:1004, awayId:117, homeId:140, status:'Preview', gameTime:'7:05 PM', venueName:'Globe Life Field'},
   ],
   plays: {
     // ── NYM @ ATL ─────────────────────────────────────────────────────────
@@ -876,6 +992,8 @@ function initMock() {
       inning:      1,
       halfInning:  'top',
       outs:        0,
+      gameTime:    g.gameTime  || null,
+      venueName:   g.venueName || null,
     };
     mockPlayPtrs[g.gamePk] = 0;
     totalMockPlays += (MOCK_DATA.plays[g.gamePk] || []).length;
@@ -1017,7 +1135,76 @@ function toggleGame(gamePk) {
 function updateFeedEmpty() {
   var feed = document.getElementById('feed');
   var hasVisible = !!feed.querySelector('.feed-item:not(.feed-hidden)');
+  if (!hasVisible) renderEmptyState();
   document.getElementById('feedEmpty').style.display = hasVisible ? 'none' : '';
+}
+
+function renderEmptyState() {
+  var el = document.getElementById('feedEmpty');
+
+  var upcoming = Object.values(gameStates).filter(function(g) {
+    return g.status === 'Preview' || g.status === 'Scheduled';
+  });
+
+  if (!upcoming.length) {
+    el.className = '';
+    el.innerHTML =
+      '<span class="empty-icon">⚾</span>'
+      + '<div class="empty-title">League Pulse</div>'
+      + '<div class="empty-sub">Live play-by-play from every game will appear here</div>';
+    return;
+  }
+
+  el.className = 'has-upcoming';
+
+  var hero = upcoming[0];
+  var rest = upcoming.slice(1);
+  var n    = upcoming.length;
+  var heroGrad = 'linear-gradient(90deg,'
+    + hero.awayPrimary + ' 0%,#111827 45%,'
+    + hero.homePrimary + ' 100%)';
+
+  var html =
+    '<div class="empty-upcoming-label">TODAY &middot; ' + n
+    + (n === 1 ? ' UPCOMING GAME' : ' UPCOMING GAMES') + '</div>'
+    + '<div class="upcoming-hero" style="background:' + heroGrad + '">'
+    + '<div class="upcoming-hero-kicker">NEXT UP</div>'
+    + '<div class="upcoming-matchup-row">'
+    + '<div style="display:flex;align-items:center;gap:9px">'
+    + '<img class="upcoming-cap" src="https://www.mlbstatic.com/team-logos/' + hero.awayId + '.svg"'
+    + ' onerror="this.style.display=\'none\'">'
+    + '<div class="upcoming-team-name">' + hero.awayAbbr + '</div>'
+    + '</div>'
+    + '<div class="upcoming-at">@</div>'
+    + '<div style="display:flex;align-items:center;gap:9px;flex-direction:row-reverse">'
+    + '<img class="upcoming-cap" src="https://www.mlbstatic.com/team-logos/' + hero.homeId + '.svg"'
+    + ' onerror="this.style.display=\'none\'">'
+    + '<div class="upcoming-team-name">' + hero.homeAbbr + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="upcoming-foot">'
+    + '<div class="upcoming-foot-time">' + (hero.gameTime || 'TBD') + '</div>'
+    + (hero.venueName ? '<div class="upcoming-foot-venue">' + hero.venueName + '</div>' : '')
+    + '</div>'
+    + '</div>';
+
+  if (rest.length) {
+    html += '<div class="upcoming-grid">';
+    rest.forEach(function(g) {
+      html +=
+        '<div class="upcoming-card">'
+        + '<img class="upcoming-card-cap" src="https://www.mlbstatic.com/team-logos/' + g.awayId + '.svg"'
+        + ' onerror="this.style.display=\'none\'">'
+        + '<div>'
+        + '<div class="upcoming-card-matchup">' + g.awayAbbr + ' @ ' + g.homeAbbr + '</div>'
+        + '<div class="upcoming-card-time">' + (g.gameTime || 'TBD') + '</div>'
+        + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
 }
 
 // ── Feed ─────────────────────────────────────────────────────────────────────
@@ -1300,7 +1487,7 @@ function resetMock() {
   totalMockPlays  = 0;
   document.getElementById('feed').innerHTML       = '';
   document.getElementById('alertStack').innerHTML = '';
-  document.getElementById('feedEmpty').style.display = '';
+  updateFeedEmpty();
   // Reset speed buttons — Normal active by default
   document.querySelectorAll('.mock-btn').forEach(function(b) { b.classList.remove('active'); });
   var btnNormal = document.getElementById('btnNormal');
@@ -1364,6 +1551,7 @@ async function poll() {
           outs:        ls.outs            || 0,
           playCount:   0,
           gameTime:    gameTime,
+          venueName:   g.venue ? g.venue.name : null,
         };
         enabledGames.add(pk);
       } else {
