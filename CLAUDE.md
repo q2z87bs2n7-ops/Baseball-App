@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.46
+**Current version:** v1.47
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -169,6 +169,8 @@ Series info below via `getSeriesInfo(g)`:
 
 Layout is a 5-column inline row — [opp cap] [opp name/score] [—] [my name/score] [my cap]. Cap logos from `mlbstatic.com/team-logos/{teamId}.svg` with `onerror` fallback SVG. Status kicker (TODAY/date) centred at top; series info left + Watch Live button right in bottom row. Handles live (with scores), upcoming (no scores, date-time right), and final states.
 
+Background is a 3-stop gradient: **opp primary → #111827 50% → active-team primary** — opponent colour always on the left (matching opp name position), active team colour always on the right (matching my team position). This is built directly from `oppD.primary`/`myD.primary` in `renderNextGame`, NOT via `gameGradient()` (which uses away→home order and would be wrong when the active team is away).
+
 **Right card — "Next Series"** (`#nextGame`, `loadNextGame()`)
 - Fetches 28 days of schedule; groups games into series (same opponent + same venue + within 4 days)
 - Finds the **second** series with any non-Final game (i.e. the series after the current/active one, not the current one)
@@ -307,7 +309,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `showSection(id, btn)` | Switches sections; calls closeLiveView() first if live view is active |
 | `loadMedia()` | Builds media card HTML, calls loadMediaFeed |
 | `loadMediaFeed(uc)` | Fetches YouTube RSS via allorigins proxy, 3-attempt retry |
-| `gameGradient(g)` | Returns inline style string for two-team colour gradient |
+| `gameGradient(g)` | Returns inline style string for two-team colour gradient (away primary → #111827 → home primary). Used by `renderGameBig` (schedule/history cards). **Not** used by `renderNextGame` — that card builds its own layout-aware gradient so opponent is always left and active team always right. |
 | `hueOf(hex)` | Extracts HSL hue (0–360) from a hex colour string |
 | `hslHex(h, s, l)` | Converts HSL values to hex colour string |
 | `relLuminance(hex)` | WCAG relative luminance of a hex colour |
