@@ -902,10 +902,138 @@ function scrollToGame(gamePk) {
   if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
-// ── Placeholder stubs (filled in later steps) ─────────────────────────────
-function renderFeed()       { /* step 4 */ }
-function mockTick()         { /* step 5 */ }
-function initReal()         { /* step 5 */ }
+// ── Feed ─────────────────────────────────────────────────────────────────────
+function addFeedItem(gamePk, data) {
+  var item = {gamePk: gamePk, data: data, ts: new Date()};
+  feedItems.unshift(item);
+  prependFeedItem(item);
+  document.getElementById('feedEmpty').style.display = 'none';
+}
+
+function prependFeedItem(item) {
+  var el  = buildFeedEl(item);
+  var feed = document.getElementById('feed');
+  feed.insertBefore(el, feed.firstChild);
+}
+
+function buildFeedEl(item) {
+  var el = document.createElement('div');
+  var g  = gameStates[item.gamePk];
+  var d  = item.data;
+
+  // ── Status-change item ────────────────────────────────────────────────────
+  if (d.type === 'status') {
+    el.className = 'feed-item status-change';
+    el.setAttribute('data-gamepk', item.gamePk);
+    el.innerHTML =
+      '<div class="status-row">'
+      + '<span class="status-icon">' + d.icon + '</span>'
+      + '<span class="status-label">' + d.label + '</span>'
+      + '<span class="status-sub">' + d.sub + '</span>'
+      + '</div>';
+    return el;
+  }
+
+  // ── Play item ─────────────────────────────────────────────────────────────
+  var cls = 'feed-item';
+  if      (d.playClass === 'homerun')  cls += ' homerun';
+  else if (d.playClass === 'scoring')  cls += ' scoring';
+  else if (d.playClass === 'risp')     cls += ' risp';
+  el.className = cls;
+  el.setAttribute('data-gamepk', item.gamePk);
+
+  var half    = d.halfInning === 'top' ? '▲' : '▼';
+  var innStr  = half + ordinal(d.inning);
+  var outsStr = d.outs === 1 ? '1 out' : d.outs + ' outs';
+  var timeStr = item.ts.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+
+  // Coloured team dots + score line
+  var metaHtml =
+    '<div class="feed-meta">'
+    + '<span class="feed-game-tag">'
+    + '<span class="feed-team-dot" style="background:' + g.awayPrimary + '"></span>'
+    + g.awayAbbr + '&nbsp;<strong>' + d.awayScore + '</strong>'
+    + '</span>'
+    + '<span class="feed-sep">·</span>'
+    + '<span class="feed-game-tag">'
+    + '<strong>' + d.homeScore + '</strong>&nbsp;' + g.homeAbbr
+    + '<span class="feed-team-dot" style="background:' + g.homePrimary + '"></span>'
+    + '</span>'
+    + '<span class="feed-sep">·</span>'
+    + '<span>' + innStr + '</span>'
+    + '<span class="feed-sep">·</span>'
+    + '<span>' + outsStr + '</span>'
+    + '<span class="feed-time">' + timeStr + '</span>'
+    + '</div>';
+
+  // Optional RISP tag (only when not already a scoring play)
+  var rispHtml = (d.risp && !d.scoring)
+    ? '<div class="risp-tag">RISP</div>'
+    : '';
+
+  // Play icon prefix
+  var icon = d.event === 'Home Run' ? '💥 '
+           : d.scoring              ? '🔴 '
+           : '';
+
+  // Score badge appended to scoring plays
+  var scoreBadge = d.scoring
+    ? '<span class="feed-score-badge">' + d.awayScore + '–' + d.homeScore + '</span>'
+    : '';
+
+  var playHtml =
+    '<div class="feed-play">' + icon + d.desc + scoreBadge + '</div>';
+
+  el.innerHTML = metaHtml + rispHtml + playHtml;
+  return el;
+}
+
+function renderFeed() {
+  var feed = document.getElementById('feed');
+  feed.innerHTML = '';
+  feedItems.forEach(function(item) {
+    feed.appendChild(buildFeedEl(item));
+  });
+  document.getElementById('feedEmpty').style.display = feedItems.length ? 'none' : '';
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+function showAlert(opts) {
+  var id       = ++alertId;
+  var icon     = opts.icon     || '🔔';
+  var evtLabel = opts.event    || '';
+  var desc     = opts.desc     || '';
+  var color    = opts.color    || '#e03030';
+  var duration = opts.duration || 5000;
+
+  var stack = document.getElementById('alertStack');
+  var el    = document.createElement('div');
+  el.className = 'alert-toast';
+  el.style.borderLeftColor = color;
+  el.style.setProperty('--toast-duration', duration + 'ms');
+  el.innerHTML =
+    '<span class="alert-icon">'  + icon     + '</span>'
+    + '<div class="alert-body">'
+    +   '<div class="alert-event">' + evtLabel + '</div>'
+    +   '<div class="alert-desc">'  + desc     + '</div>'
+    + '</div>'
+    + '<div class="alert-progress"></div>';
+
+  el.addEventListener('click', function() { dismissAlert(el); });
+  stack.appendChild(el);
+
+  setTimeout(function() { dismissAlert(el); }, duration);
+}
+
+function dismissAlert(el) {
+  if (!el.parentNode) return;
+  el.classList.add('dismissing');
+  setTimeout(function() { el.remove(); }, 300);
+}
+
+// ── Placeholder stubs (filled in step 5) ─────────────────────────────────────
+function mockTick() { /* step 5 */ }
+function initReal() { /* step 5 */ }
 
 // ── Start ────────────────────────────────────────────────────────────────────
 init();
