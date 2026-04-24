@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.57.2</title>
+<title>MLB Tracker v1.57.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -269,7 +269,7 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.57.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.57.3</div>
       </div>
     </div>
   </div>
@@ -1078,13 +1078,13 @@ async function loadLeagueStandings(){try{var r=await fetch(MLB_BASE+'/standings?
 async function loadLeagueMatchups(){
   var el=document.getElementById('leagueMatchups');
   var dayLabels=["Yesterday's","Today's","Tomorrow's"],dayLabel=dayLabels[leagueMatchupOffset+1];
-  el.innerHTML='<div class="loading">Loading '+dayLabel+' games...</div>';
+  el.style.transition='opacity 0.18s ease';el.style.opacity='0.3';
   var now=new Date();now.setDate(now.getDate()+leagueMatchupOffset);
   var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   try{
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team');var d=await r.json(),games=[];
     (d.dates||[]).forEach(function(dt){games=games.concat(dt.games||[]);});
-    if(!games.length){el.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">No games scheduled '+dayLabel.replace("'s","")+'</div>';return;}
+    if(!games.length){el.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">No games scheduled '+dayLabel.replace("'s","")+'</div>';requestAnimationFrame(function(){el.style.opacity='1';});return;}
     var html='<div class="matchup-grid">';
     games.forEach(function(g){
       var home=g.teams.home,away=g.teams.away,status=g.status.abstractGameState,detailed=g.status.detailedState;
@@ -1101,6 +1101,7 @@ async function loadLeagueMatchups(){
     });
     el.innerHTML=html+'</div>';
   }catch(e){el.innerHTML='<div class="error">Could not load games</div>';}
+  requestAnimationFrame(function(){el.style.opacity='1';});
 }
 function switchMatchupDay(offset,btn){
   leagueMatchupOffset=offset;
