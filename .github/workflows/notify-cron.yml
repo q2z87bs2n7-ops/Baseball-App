@@ -1,0 +1,18 @@
+name: Game Start Notifications
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # every 5 minutes UTC
+  workflow_dispatch:        # manual trigger for testing
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping notify endpoint
+        run: |
+          RESPONSE=$(curl -s -X POST "${{ secrets.NOTIFY_URL }}" \
+            -H "x-notify-token: ${{ secrets.NOTIFY_SECRET }}")
+          echo "Response: $RESPONSE"
+          STATUS=$(echo "$RESPONSE" | grep -o '"sent":[0-9]*' | head -1)
+          echo "Result: $STATUS"
