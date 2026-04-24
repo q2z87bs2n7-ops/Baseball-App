@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.58
+**Current version:** v1.59
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -298,7 +298,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `loadLeaders()` | Sorts and renders team leader list from statsCache |
 | `switchRosterTab(tab, btn)` | Switches roster tab, auto-selects first player of new tab |
 | `selectPlayer(id, type)` | Looks up full player object from rosterData, updates card title, fetches and renders season stats |
-| `renderPlayerStats(s, group)` | Renders stat grid with player position subtitle. 4-col for hitting/pitching, 3-col for fielding |
+| `renderPlayerStats(s, group)` | Renders stat grid with player position subtitle. 4-col for hitting/pitching, 3-col for fielding. Uses `fmtRate` for AVG/OPS/FPCT; ERA at 2dp; K/BB, K/9, BB/9 at 2dp; WHIP at 3dp. |
 | `loadLeagueView()` | Orchestrates all Around the League loads |
 | `loadLeagueMatchups()` | All-team schedule grid for the selected day (offset -1/0/1); fades content via opacity instead of replacing with a spinner to avoid layout jump |
 | `switchMatchupDay(offset, btn)` | Sets `leagueMatchupOffset`, updates active pill + `#matchupDayLabel`, calls `loadLeagueMatchups()` |
@@ -316,6 +316,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `relLuminance(hex)` | WCAG relative luminance of a hex colour |
 | `contrastRatio(hexA, hexB)` | WCAG contrast ratio between two hex colours |
 | `hslLighten(hex, targetL)` | Keep hue/sat, push L to targetL (0–1) |
+| `fmt(v, d)` | Formats a numeric stat to `d` decimal places (default 3); returns `—` for null/empty |
+| `fmtRate(v, d)` | Like `fmt` but strips the leading zero for values between 0 and 1 — e.g. `.312` not `0.312`. Use for AVG, OBP, OPS, FPCT. |
 | `pickAccent(secondaryHex, cardHex)` | Returns contrast-safe `--accent` value for a team |
 | `pickHeaderText(primaryHex)` | Returns `#0a0f1e` or `#ffffff` for header text |
 | `capImgError(el, primary, secondary, letter)` | `onerror` handler — swaps broken logo img to fallback SVG circle |
@@ -386,6 +388,17 @@ On every commit that changes app content, bump **three** things:
 
 ---
 
+## Stat Display Conventions
+
+| Category | Stats | Format | Rule |
+|---|---|---|---|
+| Rate (no leading zero) | AVG, OBP, SLG, OPS, FPCT | `.xxx` | `fmtRate(v)` — strips leading zero when 0 < val < 1 |
+| Traditional pitching | ERA | `z.xx` | `fmt(v, 2)` |
+| Traditional pitching | WHIP | `z.xxx` | `fmt(v)` (default 3dp) |
+| Per-9 / ratio | K/9, BB/9, K/BB | `z.xx` | `fmt(v, 2)` |
+| Innings pitched | IP | `x.x` | Pass-through string — tenths = outs, not fractions. Never parse/round. |
+| Counting | HR, RBI, H, K, BB, R, SB, PA, AB, W, L, SV, GS, ER, PC, E, PO, A, TC, DP | integer | Raw value, no `toFixed` |
+
 ## Feature Backlog
 
 - [ ] Switch cron trigger from GitHub Actions to Vercel Cron (`vercel.json`) — GitHub Actions scheduled workflows are unreliable on free tier (fires ~once per hour in practice vs every 5 min as configured), making game-start alerts miss most windows; Vercel Cron runs directly on the same infra as the notify function and is more reliable
@@ -397,6 +410,7 @@ On every commit that changes app content, bump **three** things:
 - [x] Team cap logos in Around the League matchup grid — `teamCapImg()` with `capImgError()` SVG fallback; drop-shadow for dark logo visibility (v1.55)
 - [x] Yesterday/Today/Tomorrow day toggle on Around the League matchups — opacity fade transition, resets to Today on tab open (v1.58)
 - [x] Live game view shows FINAL (not LIVE) for completed games — `/schedule?gamePk=` fetched in same `Promise.all`, stops auto-refresh when Final (v1.58)
+- [x] Standardise stat display formatting — `fmtRate` for no-leading-zero rate stats; ERA 2dp; WHIP 3dp everywhere; K/BB, K/9, BB/9 2dp (v1.59)
 - [ ] News fallback source (MLB RSS)
 - [ ] Last 10 games record widget
 - [ ] Dynamic season year
