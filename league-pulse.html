@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.6-dev</title>
+<title>League Pulse — MLB Live Feed · v0.7-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -417,7 +417,16 @@ html, body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+}
+
+.empty-hype {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 18px;
+  max-width: 500px;
 }
 
 .upcoming-hero {
@@ -1427,6 +1436,7 @@ function renderEmptyState() {
   var html =
     '<div class="empty-upcoming-label">TODAY &middot; ' + n
     + (n === 1 ? ' UPCOMING GAME' : ' UPCOMING GAMES') + '</div>'
+    + '<p class="empty-hype">Every scoring play, home run, and RISP moment &mdash; surfaces here the moment a game goes live.</p>'
     + '<div class="upcoming-hero" style="background:' + heroGrad + '">'
     + '<div class="upcoming-hero-kicker">NEXT UP</div>'
     + '<div class="upcoming-matchup-row">'
@@ -1858,6 +1868,7 @@ async function poll() {
 
     renderTicker();
     updateHeader();
+    updateFeedEmpty();
   } catch(e) {
     console.error('poll error', e);
   }
