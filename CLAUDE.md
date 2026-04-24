@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.55
+**Current version:** v1.58
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -223,7 +223,7 @@ Source: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats` (via `fetch
 ---
 
 ### 🌐 Around the League
-- **Today's Matchups** — all MLB games, 3-per-row grid. Each cell is a `.matchup-card` with subtle surface (no per-card team gradient). Live games show inning (e.g. `"● LIVE · Top 5"`). Clickable → live game view. Source: `/schedule?sportId=1&date={today}&hydrate=linescore,team` + standings for records
+- **Matchups** — all MLB games, 3-per-row grid. Day toggle (Yesterday | Today | Tomorrow) above the grid switches the date; active pill uses `--secondary`. Switching days fades existing content to opacity 0.3 (no layout jump) then fades new content in via `requestAnimationFrame`. State tracked in `leagueMatchupOffset` (-1/0/1); resets to 0 (Today) each time the League tab is opened. Each cell is a `.matchup-card` with subtle surface (no per-card team gradient). Live games show inning (e.g. `"● LIVE · Top 5"`). Clickable → live game view. Source: `/schedule?sportId=1&date={date}&hydrate=linescore,team` + standings for records
 - **MLB News** — MLB-wide headlines, no team filter. Source: ESPN News API
 - **Stat Leaders** — hitting/pitching tabs, 2×2 grid, top 10 per stat. Source: `/stats/leaders` with `statGroup` param
 
@@ -250,7 +250,7 @@ Team-specific headlines from ESPN. Manual refresh. Source: ESPN News API `?team=
 ### ⚾ Live Game View
 Triggered from Home card or Around the League matchup grid.
 
-- **Score header** — team abbreviations, current runs, inning indicator, LIVE badge
+- **Score header** — team abbreviations, current runs, and status line. Status is fetched via `/schedule?gamePk={pk}` (bundled in the same `Promise.all` as linescore + boxscore): `abstractGameState === 'Final'` → shows `FINAL`, stops auto-refresh interval, sets timestamp to "Game Final"; otherwise shows inning indicator + `● LIVE` badge. This means the live view correctly labels completed games opened from Yesterday's matchups.
 - **Count & Runners** — balls/strikes/outs dots, SVG diamond with runners in team accent colour
 - **Current Matchup** — batter (name + AVG/OBP/OPS) and pitcher (name + ERA/WHIP + today's game line: IP/H/ER/K/PC from boxscore)
 - **Linescore** — live inning-by-inning R/H/E
@@ -300,10 +300,11 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `selectPlayer(id, type)` | Looks up full player object from rosterData, updates card title, fetches and renders season stats |
 | `renderPlayerStats(s, group)` | Renders stat grid with player position subtitle. 4-col for hitting/pitching, 3-col for fielding |
 | `loadLeagueView()` | Orchestrates all Around the League loads |
-| `loadLeagueMatchups()` | Today's all-team schedule grid with live inning display |
+| `loadLeagueMatchups()` | All-team schedule grid for the selected day (offset -1/0/1); fades content via opacity instead of replacing with a spinner to avoid layout jump |
+| `switchMatchupDay(offset, btn)` | Sets `leagueMatchupOffset`, updates active pill + `#matchupDayLabel`, calls `loadLeagueMatchups()` |
 | `loadLeagueLeaders()` | Fetches /stats/leaders, maps by index to LEAGUE_*_STATS arrays |
 | `showLiveGame(gamePk)` | Hides main, shows live view, starts auto-refresh |
-| `fetchLiveGame()` | Polls linescore + boxscore; renders score, count, matchup, linescore, box score, game info. Calls `fetchPlayByPlay()` on each refresh. |
+| `fetchLiveGame()` | Polls linescore + boxscore + `/schedule?gamePk=` (one `Promise.all`); shows FINAL header and stops interval for completed games, otherwise shows inning + LIVE badge. Calls `fetchPlayByPlay()` on each refresh. |
 | `fetchPlayByPlay()` | Fetches `/game/{gamePk}/playByPlay`; renders completed at-bat log grouped by inning half into `#livePlayByPlay`. Scoring plays highlighted. Silent no-op on error. |
 | `closeLiveView()` | Clears refresh interval, hides live view, restores main |
 | `showSection(id, btn)` | Switches sections; calls closeLiveView() first if live view is active |
@@ -394,6 +395,8 @@ On every commit that changes app content, bump **three** things:
 - [x] Fix live header text colour — `.live-team-name` and `.live-team-score` now use `var(--header-text)` instead of hardcoded `#fff`/`--accent-text` (v1.54)
 - [x] Team-aware live badge — tinted/outlined using `--accent` (v1.53); W/L badges intentionally kept as fixed green/red (semantic meaning)
 - [x] Team cap logos in Around the League matchup grid — `teamCapImg()` with `capImgError()` SVG fallback; drop-shadow for dark logo visibility (v1.55)
+- [x] Yesterday/Today/Tomorrow day toggle on Around the League matchups — opacity fade transition, resets to Today on tab open (v1.58)
+- [x] Live game view shows FINAL (not LIVE) for completed games — `/schedule?gamePk=` fetched in same `Promise.all`, stops auto-refresh when Final (v1.58)
 - [ ] News fallback source (MLB RSS)
 - [ ] Last 10 games record widget
 - [ ] Dynamic season year
