@@ -424,7 +424,8 @@ html, body {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-left: 5px;
+  vertical-align: middle;
 }
 
 .feed-play {
@@ -442,11 +443,23 @@ html, body {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 2px 7px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   margin-left: 5px;
   vertical-align: middle;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Scoring team's side — full brightness + bold */
+.feed-score-scorer {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.feed-score-sep {
+  color: rgba(255, 255, 255, 0.25);
+  margin: 0 4px;
 }
 
 /* Status change layout */
@@ -966,25 +979,37 @@ function buildFeedEl(item) {
     + '<span class="feed-time">' + timeStr + '</span>'
     + '</div>';
 
-  // Optional RISP tag (only when not already a scoring play)
-  var rispHtml = (d.risp && !d.scoring)
-    ? '<div class="risp-tag">RISP</div>'
-    : '';
-
   // Play icon prefix
   var icon = d.event === 'Home Run' ? '💥 '
            : d.scoring              ? '🔴 '
            : '';
 
-  // Score badge appended to scoring plays
-  var scoreBadge = d.scoring
-    ? '<span class="feed-score-badge">' + d.awayScore + '–' + d.homeScore + '</span>'
+  // Score badge: AWAY N · N HOME — scoring side full-brightness, other side dimmed
+  var scoreBadge = '';
+  if (d.scoring) {
+    var awayScores = (d.halfInning === 'top');
+    var awayHtml = awayScores
+      ? '<span class="feed-score-scorer">' + g.awayAbbr + '&thinsp;' + d.awayScore + '</span>'
+      : g.awayAbbr + '&thinsp;' + d.awayScore;
+    var homeHtml = !awayScores
+      ? '<span class="feed-score-scorer">' + d.homeScore + '&thinsp;' + g.homeAbbr + '</span>'
+      : d.homeScore + '&thinsp;' + g.homeAbbr;
+    scoreBadge = '<span class="feed-score-badge">'
+      + awayHtml
+      + '<span class="feed-score-sep">·</span>'
+      + homeHtml
+      + '</span>';
+  }
+
+  // RISP inline badge — only on non-scoring plays (⚡ matches mock)
+  var rispBadge = (d.risp && !d.scoring)
+    ? '<span class="risp-tag">⚡ RISP</span>'
     : '';
 
   var playHtml =
-    '<div class="feed-play">' + icon + d.desc + scoreBadge + '</div>';
+    '<div class="feed-play">' + icon + d.desc + rispBadge + scoreBadge + '</div>';
 
-  el.innerHTML = metaHtml + rispHtml + playHtml;
+  el.innerHTML = metaHtml + playHtml;
   return el;
 }
 
