@@ -1984,10 +1984,11 @@ async function pollGamePlays(gamePk) {
       var outs       = (play.count  && play.count.outs)         || 0;
       var desc       = (play.result && play.result.description) || '—';
 
-      // RISP: any runner who started on 2nd or 3rd before this play
+      // RISP: runner standing on 2nd or 3rd at the END of the play
       var runners  = play.runners || [];
       var hasRISP  = runners.some(function(r) {
-        return r.movement && (r.movement.start === '2B' || r.movement.start === '3B');
+        return r.movement && !r.movement.isOut
+          && (r.movement.end === '2B' || r.movement.end === '3B');
       });
 
       var playClass = event === 'Home Run' ? 'homerun'
