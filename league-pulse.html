@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.9-dev</title>
+<title>League Pulse — MLB Live Feed · v0.9.1-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -23,8 +23,8 @@
   --text:   #e8eaf0;
   --muted:  #9aa0a8;
   /* ── Semantic feed colours (fixed — not team-aware) ─────────────────── */
-  --scoring-bg:     rgba(220, 60,  40,  0.10);
-  --scoring-border: rgba(220, 60,  40,  0.28);
+  --scoring-bg:     rgba(60,  190, 100, 0.10);
+  --scoring-border: rgba(60,  190, 100, 0.28);
   --hr-bg:          rgba(255, 155, 30,  0.10);
   --hr-border:      rgba(255, 155, 30,  0.28);
   --risp-accent:    rgba(255, 200, 0,   0.55);
@@ -472,7 +472,7 @@ html, body {
   border: 1px solid;
 }
 .hype-pill.hr      { background: rgba(255,155,30,0.12); border-color: rgba(255,155,30,0.35); color: #ffaa30; }
-.hype-pill.scoring { background: rgba(220,60,40,0.10);  border-color: rgba(220,60,40,0.30);  color: #e05040; }
+.hype-pill.scoring { background: rgba(60,190,100,0.10); border-color: rgba(60,190,100,0.30); color: #3dba5a; }
 .hype-pill.risp    { background: rgba(255,200,0,0.10);  border-color: rgba(255,200,0,0.30);  color: #ffd000; }
 .empty-hype-sub {
   font-size: 12px;
@@ -973,14 +973,14 @@ html, body {
     <span class="sound-panel-title">Sound Alerts</span>
     <button class="sound-close" onclick="toggleSoundPanel()">✕</button>
   </div>
-  <div class="sound-rows" id="soundRows">
+  <div class="sound-rows master-off" id="soundRows">
     <div class="sound-row master-row">
       <div>
         <div class="sound-label">Master</div>
         <div class="sound-sub">Enable all sound alerts</div>
       </div>
       <label class="sound-toggle">
-        <input type="checkbox" checked onchange="setSoundPref('master',this.checked)">
+        <input type="checkbox" onchange="setSoundPref('master',this.checked)">
         <span class="sound-knob"></span>
       </label>
     </div>
@@ -1001,7 +1001,7 @@ html, body {
     <div class="sound-row">
       <div class="sound-label">⚡ RISP</div>
       <label class="sound-toggle">
-        <input type="checkbox" onchange="setSoundPref('risp',this.checked)">
+        <input type="checkbox" checked onchange="setSoundPref('risp',this.checked)">
         <span class="sound-knob"></span>
       </label>
     </div>
@@ -1511,9 +1511,13 @@ function startCountdown(targetMs) {
     var diff = targetMs - Date.now();
     if (diff <= 0) {
       el.textContent = 'Starting now';
+    } else if (diff >= 3600000) {
+      var hrs  = Math.floor(diff / 3600000);
+      var mins = Math.ceil((diff % 3600000) / 60000);
+      el.textContent = 'First pitch in ' + hrs + 'h' + (mins > 0 ? ' ' + mins + 'm' : '');
     } else {
       var mins = Math.ceil(diff / 60000);
-      el.textContent = 'First pitch in ' + mins + (mins === 1 ? 'm' : 'm');
+      el.textContent = 'First pitch in ' + mins + 'm';
     }
   }
   tick();
@@ -1634,6 +1638,8 @@ function renderEmptyState() {
         + '<div class="upcoming-card-matchup">' + g.awayAbbr + ' @ ' + g.homeAbbr + '</div>'
         + '<div class="upcoming-card-time">' + (g.gameTime || 'TBD') + '</div>'
         + '</div>'
+        + '<img class="upcoming-card-cap" src="https://www.mlbstatic.com/team-logos/' + g.homeId + '.svg"'
+        + ' onerror="this.style.display=\'none\'" style="margin-left:auto">'
         + '</div>';
     });
     html += '</div>';
@@ -2178,10 +2184,10 @@ async function pollGamePlays(gamePk) {
 
 // ── Sound settings ───────────────────────────────────────────────────────────
 var soundSettings = {
-  master:    true,
+  master:    false,
   hr:        true,
   run:       true,
-  risp:      false,
+  risp:      true,
   dp:        true,
   tp:        true,
   gameStart: true,
