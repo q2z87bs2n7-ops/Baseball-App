@@ -493,14 +493,14 @@
 .pc-stat:last-child { border-right:none; }
 .pc-stat-val { font-size:1.2rem; font-weight:800; color:var(--accent); line-height:1.1; }
 .pc-stat-lbl { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-top:3px; }
-.pc-stat.pc-hr-highlight .pc-stat-val { color:#ffaa30; position:relative; }
-.pc-stat.pc-hr-highlight .pc-stat-val::after {
-  content:'+1'; position:absolute; top:-8px; right:-4px;
-  font-size:9px; font-weight:900; color:#ffaa30;
-  background:rgba(255,155,30,0.18); border:1px solid rgba(255,155,30,0.40);
-  border-radius:6px; padding:0 3px; line-height:1.5;
-  animation:plus-one-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+.pc-stat.pc-hr-highlight .pc-stat-val { color:#ffaa30; }
+@keyframes hr-count-up {
+  0%   { transform:scale(1);    color:#ffaa30; }
+  35%  { transform:scale(1.55); color:#fff; }
+  65%  { transform:scale(1.15); }
+  100% { transform:scale(1);    color:#ffaa30; }
 }
+.pc-stat-val.counting { animation:hr-count-up 0.45s cubic-bezier(0.34,1.56,0.64,1); }
 .pc-context { padding:8px 14px 4px; text-align:center; }
 .pc-context-pill {
   display:inline-block; background:rgba(255,155,30,0.12); border:1px solid rgba(255,155,30,0.30);
@@ -1387,6 +1387,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
   var hrCount = stat ? (stat.homeRuns != null ? stat.homeRuns : '—') : '—';
+  var hrPrev  = (typeof hrCount === 'number' && hrCount >= 1) ? hrCount - 1 : hrCount;
   var avg     = stat ? fmtRate(stat.avg) : '—';
   var ops     = stat ? fmtRate(stat.ops) : '—';
   var rbi     = stat ? (stat.rbi != null ? stat.rbi : '—') : '—';
@@ -1422,11 +1423,17 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
     + '<div class="pc-stats">'
     +   '<div class="pc-stat"><div class="pc-stat-val">' + avg + '</div><div class="pc-stat-lbl">AVG</div></div>'
     +   '<div class="pc-stat"><div class="pc-stat-val">' + ops + '</div><div class="pc-stat-lbl">OPS</div></div>'
-    +   '<div class="pc-stat pc-hr-highlight"><div class="pc-stat-val">' + hrCount + '</div><div class="pc-stat-lbl">HR</div></div>'
+    +   '<div class="pc-stat pc-hr-highlight"><div class="pc-stat-val pc-hr-val">' + hrPrev + '</div><div class="pc-stat-lbl">HR</div></div>'
     +   '<div class="pc-stat"><div class="pc-stat-val">' + rbi + '</div><div class="pc-stat-lbl">RBI</div></div>'
     + '</div>'
     + contextHtml
     + '<div class="pc-dismiss-hint">Tap anywhere to dismiss</div>';
+  if (typeof hrCount === 'number' && hrCount >= 1) {
+    setTimeout(function() {
+      var el = card.querySelector('.pc-hr-val');
+      if (el) { el.textContent = hrCount; el.classList.add('counting'); }
+    }, 500);
+  }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
   window._playerCardTimer = setTimeout(dismissPlayerCard, 5500);
 }
