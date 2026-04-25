@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.9.7-dev</title>
+<title>League Pulse — MLB Live Feed · v0.9.8-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1559,7 +1559,8 @@ function renderEmptyState() {
   var el = document.getElementById('feedEmpty');
 
   var upcoming = Object.values(gameStates).filter(function(g) {
-    return g.status === 'Preview' || g.status === 'Scheduled';
+    return g.status === 'Preview' || g.status === 'Scheduled'
+      || (g.status === 'Live' && g.detailedState !== 'In Progress');
   });
   // Sort by start time ascending so hero is always the earliest game
   upcoming.sort(function(a, b) {
