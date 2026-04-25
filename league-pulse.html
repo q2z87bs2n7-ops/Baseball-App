@@ -1958,9 +1958,9 @@ async function poll() {
           gameTime:      gameTime,
           gameDateMs:    gameDateMs,
           venueName:     g.venue ? g.venue.name : null,
-          onFirst:       !!(ls.offense && ls.offense.onFirst),
-          onSecond:      !!(ls.offense && ls.offense.onSecond),
-          onThird:       !!(ls.offense && ls.offense.onThird),
+          onFirst:       !!(ls.offense && ls.offense.first),
+          onSecond:      !!(ls.offense && ls.offense.second),
+          onThird:       !!(ls.offense && ls.offense.third),
         };
         enabledGames.add(pk);
       } else {
@@ -1995,9 +1995,9 @@ async function poll() {
         prev.inning     = ls.currentInning   || prev.inning;
         prev.halfInning = (ls.inningHalf     || 'Top').toLowerCase();
         prev.outs       = ls.outs            || 0;
-        prev.onFirst    = !!(ls.offense && ls.offense.onFirst);
-        prev.onSecond   = !!(ls.offense && ls.offense.onSecond);
-        prev.onThird    = !!(ls.offense && ls.offense.onThird);
+        prev.onFirst    = !!(ls.offense && ls.offense.first);
+        prev.onSecond   = !!(ls.offense && ls.offense.second);
+        prev.onThird    = !!(ls.offense && ls.offense.third);
       }
     });
 
