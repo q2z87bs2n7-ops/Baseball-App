@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.2.1</title>
+<title>MLB Tracker v2.2.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -509,7 +509,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.2.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.2.2</div>
       </div>
     </div>
   </div>
@@ -983,6 +983,20 @@ async function pollLeaguePulse() {
           onFirst:!!(ls.offense&&ls.offense.first), onSecond:!!(ls.offense&&ls.offense.second), onThird:!!(ls.offense&&ls.offense.third),
         };
         enabledGames.add(pk);
+        // Synthesise historical status items so they appear on first load (no sounds/alerts)
+        var g0=gameStates[pk], ts0=gameDateMs?new Date(gameDateMs):new Date();
+        if (newStatus==='Final') {
+          var isHistPpd=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
+          if (isHistPpd) {
+            addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
+          } else {
+            addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:g0.awayAbbr+' '+(away.score||0)+', '+g0.homeAbbr+' '+(home.score||0),playTime:gameDateMs?new Date(gameDateMs+4*60*60*1000):new Date()});
+          }
+        } else if (newStatus==='Live'&&detailed==='In Progress') {
+          addFeedItem(pk,{type:'status',icon:'⚾',label:'Game underway!',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
+        } else if (detailed.toLowerCase().indexOf('delay')!==-1) {
+          addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:detailed,playTime:ts0});
+        }
       } else {
         var prev=gameStates[pk];
         if (gameTime) prev.gameTime=gameTime; if (gameDateMs) prev.gameDateMs=gameDateMs;
