@@ -1898,13 +1898,7 @@ async function pollGamePlays(gamePk) {
 
     var plays     = (data.allPlays || []).filter(function(p) { return p.about && p.about.isComplete; });
     var lastCount = g.playCount || 0;
-
-    // On first load, silently catch up — no feed items, no alerts for history
-    if (lastCount === 0 && plays.length > 0) {
-      g.playCount = plays.length;
-      return;
-    }
-
+    var isHistory = (lastCount === 0 && plays.length > 0);
     var newPlays  = plays.slice(lastCount);
 
     newPlays.forEach(function(play) {
@@ -1940,19 +1934,22 @@ async function pollGamePlays(gamePk) {
         risp:hasRISP, playClass:playClass, playTime:playTime,
       });
 
-      var teamColor = halfInning === 'top' ? g.awayPrimary : g.homePrimary;
-      if (event === 'Home Run') {
-        showAlert({icon:'💥',
-          event:'HOME RUN · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
-          desc:desc, color:teamColor, duration:6000});
-        playSound('hr');
-      } else if (isScoringP) {
-        showAlert({icon:'🔴',
-          event:'RUN SCORES · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
-          desc:desc, color:teamColor, duration:4000});
-        playSound('run');
-      } else if (hasRISP) {
-        playSound('risp');
+      // No alerts or sounds for historical plays loaded on page open
+      if (!isHistory) {
+        var teamColor = halfInning === 'top' ? g.awayPrimary : g.homePrimary;
+        if (event === 'Home Run') {
+          showAlert({icon:'💥',
+            event:'HOME RUN · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
+            desc:desc, color:teamColor, duration:6000});
+          playSound('hr');
+        } else if (isScoringP) {
+          showAlert({icon:'🔴',
+            event:'RUN SCORES · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
+            desc:desc, color:teamColor, duration:4000});
+          playSound('run');
+        } else if (hasRISP) {
+          playSound('risp');
+        }
       }
     });
 
