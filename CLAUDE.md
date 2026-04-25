@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v1.61
+**Current version:** v2.1 (v1.61 was the final v1 release — v2.x began with the League Pulse merge)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -17,7 +17,7 @@ A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. 
 4. **Break changes into small steps** — confirm each works before proceeding
 5. **Git branching** — all changes go to a `claude/` branch first; only merge to `main` when explicitly asked
 6. **Debug code** — wrap temporary logging in `// DEBUG START` / `// DEBUG END` for easy removal
-7. **Version every change** — bump both the `<title>` tag and the in-app settings panel version string on every commit. Use `v1.xx.yy` format: increment `yy` for each commit on a branch (v1.33.1, v1.33.2…); increment `xx` and drop the patch on merge to main (v1.34). **Also bump `CACHE` in `sw.js`** (e.g. `mlb-v4` → `mlb-v5`) on every commit that changes app content — this forces the PWA to update for installed users.
+7. **Version every change** — bump both the `<title>` tag and the in-app settings panel version string on every commit. From v2.x onward: use `v2.x.y` format — increment `y` for each commit on a branch (v2.1.1, v2.1.2…); increment `x` and drop the patch on merge to main (v2.2). **Also bump `CACHE` in `sw.js`** (e.g. `mlb-v54` → `mlb-v55`) on every commit that changes app content — this forces the PWA to update for installed users.
 8. **No rewrites** — never rewrite large sections. Targeted edits only.
 
 ---
@@ -62,7 +62,9 @@ let selectedPlayer = null              // full roster object — includes person
 ```
 
 ### Navigation
-`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Sections: `home`, `schedule`, `standings`, `stats`, `news`, `media`, `league`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
+`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Sections: `home`, `schedule`, `standings`, `stats`, `news`, `media`, `league`, `pulse`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
+
+`pulse` is lazy-initialised: `initLeaguePulse()` fires only on the first navigation to the section via a `pulseInitialized` guard inside `showSection`. The sound panel click-outside handler is also registered at that point.
 
 ### Team theming
 `applyTeamTheme(team)` sets nine CSS variables dynamically:
@@ -273,9 +275,11 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **Color Theme** — dropdown of all 30 teams + "Default (Follow Team)"; overrides colours independently of the active team; persists across team switches
 - **Invert Colours** — slide toggle; swaps primary and secondary colours; works with theme override
 - **Media Tab** — slide toggle, defaults off; shows/hides Media section in nav
+- **⚡ Pulse: Mock Mode** — slide toggle (`id="pulseMockToggle"`); calls `togglePulseMockMode()`; persisted to `localStorage('mlb_pulse_mock')`; initialised in startup IIFE
+- **⚡ Pulse: Sound Alerts** — `🔊 Configure` button (`id="btnSound"`); calls `toggleSoundPanel()` to show/hide the floating `#soundPanel` overlay; `id` preserved so click-outside-to-dismiss handler still works
 - Panel closes on click outside
-- All settings persist across page reloads via `localStorage` (team, theme, invert, media tab)
-- Version number at bottom (e.g. `v1.37`)
+- All settings persist across page reloads via `localStorage` (team, theme, invert, media tab, pulse mock mode)
+- Version number at bottom
 
 ---
 
