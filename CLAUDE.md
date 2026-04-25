@@ -236,6 +236,34 @@ Source: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats` (via `fetch
 
 ---
 
+### ⚡ Pulse
+Global live MLB play-by-play feed — aggregates every scoring play, home run, and RISP moment across all simultaneous games in one chronological stream. Lazy-loaded on first nav to the section.
+
+**HTML structure (`#pulse` section):**
+- `#soundPanel` — `position:fixed` floating overlay, hidden by default; triggered by `🔊 Configure` in Settings
+- `#alertStack` — `position:fixed` toast stack for HR/run alerts
+- `#gameTicker` — `position:sticky` below header; horizontal scrollable chip bar
+- `#mockBar` — inline (not fixed); shown only when `pulseMockMode` is true
+- `#feedWrap > #feedEmpty + #feed` — empty/upcoming state and live play items
+
+**Ticker bar:** All games as scrollable horizontal chips. Sorted: Live (most-progressed inning first) → Preview/Scheduled (by `gameDateMs` asc) → Final (dimmed). Each chip shows away score · home score · inning or start time. Clicking a chip toggles that game's plays in the feed (`enabledGames` Set). When a live game has a runner on 2nd or 3rd (`g.onSecond || g.onThird`), the chip expands to a 2-row layout with a 28×24px base diamond SVG (`baseDiamondSvg()`).
+
+**Feed:** Newest plays at top. Each item shows: coloured team dots + score (meta row), inning + outs, play description, play-type badge (1B/2B/3B/BB/K/E/DP/TP), ⚡ RISP badge, and score badge on scoring plays (scoring side full brightness). Play classification drives visual treatment: `homerun` (amber tint), `scoring` (green tint), `risp` (yellow left stripe), `status-change` (blue tint, centred — game start/end/delay).
+
+**Empty state:** When no visible plays exist, `renderEmptyState()` renders a hype block + hero upcoming-game card (3-stop gradient, team caps, countdown timer via `startCountdown()`) + 2-col grid for remaining games. Falls back to plain `⚾ League Pulse` placeholder off-season.
+
+**Mock mode:** Controlled by `pulseMockMode` (toggle in Settings, persisted to `localStorage('mlb_pulse_mock')`). `MOCK_DATA` contains 4 games (NYM@ATL, NYY@BOS, LAD@SF, HOU@TEX) with ~55 scripted plays. Round-robin engine (`mockTick()`) advances one play per tick across games. Mock bar (Normal/Fast/Skip/Reset controls) is inline below the ticker.
+
+**Live mode:** `pollLeaguePulse()` fetches all games every 15s. Game-start fires only when `detailedState` transitions to `'In Progress'` (not on warmup). Timestamps stale check (`/api/v1.1/game/{pk}/feed/live/timestamps`) skips the playByPlay fetch when nothing has changed. On first poll, all pre-existing plays load as history with no alerts or sounds (`isHistory` flag), then sorted chronologically across games.
+
+**Sound alerts:** Web Audio API synthesized tones — no external files. Master defaults off. Events: HR (bat crack), Run (bell chime), RISP (heartbeat), DP (glove pops), TP (bugle fanfare), Game Start (organ riff), Game End (descending chime), Error (dirt thud). `playSound(type)` is the single call point — checks `soundSettings.master && soundSettings[type]`.
+
+**Migration notes:** League Pulse was built as standalone `league-pulse.html` (~2370 lines) then merged into `index.html`. Key changes on merge: `mockMode`→`pulseMockMode`, `init()`→`initLeaguePulse()`, `poll()`→`pollLeaguePulse()`; `TC` object replaced by `tcLookup(id)` (wraps `TEAMS.find`, uses `t.short` for abbr); all 6 colour utilities and `applyLeaguePulseTheme()` dropped (index.html copies used); standalone header dropped; mock bar changed from `position:fixed;bottom:0` to inline; sound/mock controls moved into Settings panel.
+
+Source: `/schedule?sportId=1&date={date}&hydrate=linescore,team` + `/game/{pk}/playByPlay` + `/api/v1.1/game/{pk}/feed/live/timestamps`
+
+---
+
 ### 📺 Media
 Hidden by default — enabled via Settings toggle (session only, resets on reload).
 - Team gradient header, two-panel layout: 25% video list / 75% player
