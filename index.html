@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.2</title>
+<title>MLB Tracker v2.2.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -509,7 +509,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.2.1</div>
       </div>
     </div>
   </div>
@@ -991,8 +991,9 @@ async function pollLeaguePulse() {
           playSound('gameStart');
         }
         if (prev.status!=='Final'&&newStatus==='Final') {
-          addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:prev.awayAbbr+' '+(away.score||0)+', '+prev.homeAbbr+' '+(home.score||0)});
-          playSound('gameEnd');
+          var isGamePostponed=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
+          if(isGamePostponed){addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:prev.awayAbbr+' @ '+prev.homeAbbr});}
+          else{addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:prev.awayAbbr+' '+(away.score||0)+', '+prev.homeAbbr+' '+(home.score||0)});playSound('gameEnd');}
         }
         if (detailed.toLowerCase().indexOf('delay')!==-1&&prev.detailedState.toLowerCase().indexOf('delay')===-1) {
           addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:detailed});
@@ -1068,7 +1069,8 @@ function renderTicker() {
     var isLive=g.status==='Live', isFinal=g.status==='Final';
     var sc=isLive?'status-live':isFinal?'status-final':'status-preview';
     var half=g.halfInning==='top'?'▲':'▼';
-    var innStr=isLive?(half+g.inning):isFinal?'FINAL':g.gameTime?g.gameTime:'PRE';
+    var isPostponed=isFinal&&(g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended');
+    var innStr=isLive?(half+g.inning):isPostponed?'PPD':isFinal?'FINAL':g.gameTime?g.gameTime:'PRE';
     var dot=isLive?'<div class="ticker-live-dot"></div>':'';
     var hasRisp=isLive&&(g.onSecond||g.onThird);
     var fc=enabledGames.has(g.gamePk)?' feed-enabled':' feed-disabled';
