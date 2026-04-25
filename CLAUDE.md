@@ -51,6 +51,7 @@ Everything — HTML, CSS, JavaScript — is in `index.html`. No imports, no modu
 ```javascript
 const SEASON = 2026                    // hardcoded — update each season
 const MLB_BASE = 'https://statsapi.mlb.com/api/v1'
+const MLB_BASE_V1_1 = 'https://statsapi.mlb.com/api/v1.1'  // Pulse only — v1 timestamps path 404s
 const TEAMS = [...]                    // 30 teams with colors, IDs, YouTube channel IDs
 
 let activeTeam = TEAMS.find(t => t.id === 121)   // defaults to Mets
@@ -59,6 +60,21 @@ let scheduleLoaded = false             // true only after full-season fetch comp
 let rosterData = { hitting, pitching, fielding }
 let statsCache = { hitting, pitching }
 let selectedPlayer = null              // full roster object — includes person, position, jerseyNumber (jerseyNumber is null when loaded from team stats endpoint)
+
+// ── ⚡ Pulse globals ──────────────────────────────────────────────────────────
+let pulseMockMode    = false           // persisted to localStorage('mlb_pulse_mock')
+let pulseInitialized = false           // lazy-init guard — set true on first Pulse nav
+let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayPrimary, homePrimary,
+                                      //   awayScore, homeScore, status, detailedState,
+                                      //   inning, halfInning, outs, playCount, lastTimestamp,
+                                      //   gameTime, gameDateMs, venueName, onFirst, onSecond, onThird }
+let feedItems        = []             // all feed items newest-first (never pruned)
+let enabledGames     = new Set()      // gamePks whose plays are visible in the feed
+let mockPlayPtrs     = {}, mockGameQueue = [], mockTimerId = null
+let mockSpeedMs      = 6000, totalMockPlays = 0, playedMockPlays = 0
+let countdownTimer   = null, alertId = 0, isFirstPoll = true, pollDateStr = null
+let soundSettings    = { master:false, hr:true, run:true, risp:true,
+                         dp:true, tp:true, gameStart:true, gameEnd:true, error:true }
 ```
 
 ### Navigation
@@ -133,6 +149,7 @@ let selectedPlayer = null              // full roster object — includes person
 | `/stats/leaders` | ✅ | Requires `statGroup` param — omitting it mixes hitting/pitching data |
 | `/game/{pk}/playByPlay` | ✅ | Completed at-bat log for live/finished games. Returns `allPlays[]`, `scoringPlays[]`, `playsByInning[]`. Use this for play-by-play display — lighter than feed/live. |
 | `/game/{pk}/feed/live` | ⚠️ | **v1 path 404s.** Use `v1.1` (`statsapi.mlb.com/api/v1.1/game/{pk}/feed/live`) — returns full GUMBO object (plays + linescore + boxscore in one call). Large payload (~500KB). Companion endpoints: `/feed/live/timestamps` and `/feed/live/diffPatch` for efficient polling. |
+| `/api/v1.1/game/{pk}/feed/live/timestamps` | ✅ | **Pulse only.** Returns array of timestamp strings; last element = most recent state change. Compare to stored `g.lastTimestamp` — if unchanged, skip the playByPlay fetch. **Must use `MLB_BASE_V1_1` — v1 path returns 404.** |
 | ESPN News API | ⚠️ | Unofficial, may be CORS-blocked in some browsers |
 | YouTube RSS via allorigins.win | ⚠️ | Public proxy, no SLA. 3-attempt retry in place. Media tab only. |
 
@@ -156,6 +173,16 @@ let selectedPlayer = null              // full roster object — includes person
 --border        /* borders */
 --text          /* #e8eaf0 — body text (fixed) */
 --muted         /* #9aa0a8 — secondary text (fixed) */
+
+/* ⚡ Pulse-specific (added v2.1) */
+--header-h      /* 60px — used by Pulse ticker sticky offset and soundPanel top position */
+--ticker-h      /* 50px — min-height of #gameTicker */
+--mockbar-h     /* 48px — height of #mockBar */
+--radius        /* 10px — shared border-radius for Pulse cards */
+--scoring-bg / --scoring-border   /* green tint for scoring play feed items */
+--hr-bg / --hr-border             /* amber tint for home run feed items */
+--risp-accent                     /* yellow — left border stripe on RISP feed items */
+--status-bg / --status-border     /* blue tint for status-change feed items */
 ```
 
 ---
