@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v1.59.4</title>
+<title>MLB Tracker v1.59.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -222,7 +222,7 @@
 </head>
 <body>
 <header>
-  <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px;filter:drop-shadow(0 0 3px rgba(255,255,255,.4))"> <span>METS</span></div>
+  <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span></div>
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
   <nav>
     <button class="active" onclick="showSection('home',this)">🏠<span class="nav-label"> Home</span></button>
@@ -485,7 +485,7 @@ function applyTeamTheme(team){
   document.documentElement.style.setProperty('--accent',safeAccent);
   document.documentElement.style.setProperty('--header-text',headerText);
   try{localStorage.setItem('mlb_theme_vars',JSON.stringify({'--dark':hslHex(h,50,18),'--card':cardHex,'--card2':hslHex(h,40,26),'--border':hslHex(h,35,30),'--primary':cp,'--secondary':accent,'--accent-text':accentText,'--accent':safeAccent,'--header-text':headerText}));}catch(e){}
-  document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px;filter:drop-shadow(0 0 3px rgba(255,255,255,.4))"> <span>'+team.short.toUpperCase()+'</span>';
+  document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
   document.title=team.short+' Tracker';
   var tcm=document.getElementById('themeColorMeta');if(tcm)tcm.setAttribute('content',cp);
   var chip=document.getElementById('teamChip');if(chip)chip.textContent=team.name.toUpperCase();
