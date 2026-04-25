@@ -389,6 +389,34 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `subscribeToPush()` | Registers push subscription via PushManager, POSTs to `/api/subscribe`, saves `mlb_push` to localStorage |
 | `unsubscribeFromPush()` | Unsubscribes PushManager, DELETEs from `/api/subscribe`, removes `mlb_push` from localStorage |
 | `urlBase64ToUint8Array(b64)` | Converts VAPID public key from URL-safe base64 to Uint8Array for PushManager |
+| `tcLookup(id)` | Returns `{ primary, abbr, name }` for a team ID by wrapping `TEAMS.find()`; replaces the standalone `TC` object from the League Pulse prototype. `abbr` maps to `t.short`. |
+| `initLeaguePulse()` | Pulse entry point — calls `initMock` or `initReal` based on `pulseMockMode` |
+| `switchMode(toReal)` | Tears down all Pulse state, resets DOM, calls `updatePulseMockToggleUI()`, then `initMock` or `initReal` |
+| `togglePulseMockMode()` | Flips `pulseMockMode`, persists to localStorage, updates Settings toggle UI, calls `switchMode` if already initialised |
+| `updatePulseMockToggleUI()` | Updates Settings panel toggle knob position and background for mock mode state |
+| `initMock()` | Shows mock bar, populates `gameStates` from `MOCK_DATA` via `tcLookup`, sets `enabledGames`, starts mock tick |
+| `initReal()` | Hides mock bar, calls `pollLeaguePulse()`, sets 15s poll interval |
+| `pollLeaguePulse()` | Fetches schedule, updates `gameStates` (incl. `detailedState`, base runners), fires game-start/delay events, runs `Promise.all(pollGamePlays)`, sorts feed on first poll |
+| `pollGamePlays(gamePk)` | Timestamps stale check → if changed, fetches `/playByPlay`, uses `isHistory` flag to suppress alerts/sounds for pre-existing plays |
+| `renderTicker()` | Sorts `gameStates` and rebuilds sticky ticker HTML; expanded RISP chip with base diamond SVG when `g.onSecond \|\| g.onThird` |
+| `updateHeader()` | No-op stub — call sites retained in mock/poll loops but body is empty (controls bar was removed) |
+| `baseDiamondSvg(on1,on2,on3)` | Returns 28×24px inline SVG diamond; occupied bases lit amber with glow |
+| `startCountdown(targetMs)` | 30s interval updating `#heroCountdown` with "First pitch in Xm" / "Starting now" |
+| `toggleGame(gamePk)` | Adds/removes gamePk from `enabledGames`, applies `feed-hidden` to DOM items, calls `updateFeedEmpty` + `renderTicker` |
+| `addFeedItem(gamePk, data)` | Prepends item to `feedItems` array and DOM; applies `feed-hidden` if game is disabled |
+| `buildFeedEl(item)` | Builds DOM element for a feed item — status-change items (game start/end/delay) or play items (with play-type badge, RISP badge, score badge) |
+| `updateFeedEmpty()` | Checks for visible feed items; calls `renderEmptyState()` if none; shows/hides `#feedEmpty` |
+| `renderEmptyState()` | Renders hype block + hero upcoming-game card (gradient, caps, countdown) + 2-col grid, or plain placeholder if no upcoming games |
+| `showAlert(opts)` | Creates and stacks a `position:fixed` toast; auto-dismisses after `opts.duration` ms |
+| `dismissAlert(el)` | Adds `.dismissing` class, removes element after 300ms transition |
+| `mockTick()` | Advances one play in round-robin order across `mockGameQueue`; marks remaining Live games Final when all plays exhausted |
+| `advanceMockGame(pk, play)` | Applies one mock play to `gameStates`, calls `addFeedItem`, fires alerts and sounds |
+| `setMockSpeed(ms, btn)` | Updates `mockSpeedMs`, restarts mock tick interval |
+| `resetMock()` | Clears all Pulse state and re-calls `initMock()` |
+| `toggleSoundPanel()` | Shows/hides `#soundPanel` overlay |
+| `setSoundPref(key, val)` | Updates `soundSettings[key]`; master toggle also applies `.master-off` to `#soundRows` |
+| `playSound(type)` | Checks `soundSettings.master && soundSettings[type]`, calls appropriate `playXxxSound()` |
+| `_makeCtx()` / `_closeCtx()` / `_osc()` / `_ns()` | Web Audio primitives — shared by all Pulse sound functions |
 
 ---
 
@@ -463,6 +491,18 @@ On every commit that changes app content, bump **three** things:
 
 ## Feature Backlog
 
+- [x] ⚡ Pulse — League-wide live play-by-play feed merged into index.html as lazy-loaded nav section (v2.1)
+- [x] ⚡ Pulse — Mock mode toggle and Sound Alerts trigger moved to Settings panel (v2.1)
+- [x] ⚡ Pulse — Mock bar inline (not fixed-position); no conflict with mobile nav (v2.1)
+- [x] ⚡ Pulse — Game-start fires on `detailedState === 'In Progress'` only, not warmup (v2.1)
+- [x] ⚡ Pulse — Timestamps stale check skips playByPlay fetch when game state unchanged (v2.1)
+- [x] ⚡ Pulse — Historical plays load on first poll without alerts/sounds; sorted chronologically across all games (v2.1)
+- [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
+- [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
+- [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
+- [ ] ⚡ Pulse — Persist `enabledGames` to localStorage (game filter survives reload)
+- [ ] ⚡ Pulse — 30-team colour QA across ticker chips and empty state gradients
+- [ ] ⚡ Pulse — Push notification integration for league-wide game-start alerts
 - [ ] Switch cron trigger from GitHub Actions to Vercel Cron (`vercel.json`) — GitHub Actions scheduled workflows are unreliable on free tier (fires ~once per hour in practice vs every 5 min as configured), making game-start alerts miss most windows; Vercel Cron runs directly on the same infra as the notify function and is more reliable
 - [ ] Push notification team filter — currently fires for any MLB game start; add per-user team preference stored with subscription in Redis
 - [ ] Clean up KV naming — rename `const kv` variable to `redis` in all three api files; rename env vars `KV_REST_API_URL`/`KV_REST_API_TOKEN` to clearer Upstash-prefixed names in both code and Vercel dashboard (env var names were auto-generated by Vercel's Upstash integration)
