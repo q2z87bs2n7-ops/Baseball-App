@@ -248,20 +248,6 @@
   to   { width: 0%;   }
 }
 
-#pulseControls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--muted);
-  min-height: 40px;
-  gap: 8px;
-}
-#pulseControls .pulse-live-count { font-weight: 600; color: var(--text); }
-#pulseLastUpdate { display: none; }
-@media (min-width: 480px) { #pulseLastUpdate { display: inline; } }
 
 .mock-badge {
   display: inline-flex;
@@ -437,8 +423,6 @@
 .mock-btn.active { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); }
 .mock-progress { margin-left: auto; font-size: 11px; color: var(--muted); flex-shrink: 0; }
 
-#btnSound { background: none; border: none; cursor: pointer; font-size: 15px; padding: 4px 6px; border-radius: 6px; line-height: 1; flex-shrink: 0; transition: background 0.15s; }
-#btnSound:hover { background: var(--card2); }
 #soundPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 270px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 150; overflow: hidden; }
 .sound-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
 .sound-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
@@ -517,6 +501,13 @@
           <div onclick="togglePulseMockMode()" id="pulseMockToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="pulseMockToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">⚡ Pulse: Sound Alerts</div>
+            <div style="font-size:.68rem;color:var(--muted)">Configure in-game sound notifications</div>
+          </div>
+          <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v1.61.3</div>
       </div>
@@ -665,11 +656,6 @@
 </div>
 
 <div id="pulse" class="section">
-  <div id="pulseControls">
-    <span class="pulse-live-count" id="pulseLiveCount">—</span>
-    <span id="pulseLastUpdate"></span>
-    <button id="btnSound" onclick="toggleSoundPanel()" title="Sound alerts">🔊</button>
-  </div>
   <div id="soundPanel" style="display:none">
     <div class="sound-panel-hd">
       <span class="sound-panel-title">Sound Alerts</span>
@@ -1106,13 +1092,7 @@ function renderTicker() {
   ticker.innerHTML=html;
 }
 
-function updateHeader() {
-  var liveCount=Object.values(gameStates).filter(function(g){return g.status==='Live';}).length;
-  document.getElementById('pulseLiveCount').textContent=liveCount===0?'No games live':liveCount===1?'1 game live':liveCount+' games live';
-  var lu=document.getElementById('pulseLastUpdate');
-  lu.textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'});
-  lu.style.display='';
-}
+function updateHeader() {}
 
 function ordinal(n){return n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th';}
 
