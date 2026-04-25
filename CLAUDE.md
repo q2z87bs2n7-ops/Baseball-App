@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.3 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items)
+**Current version:** v2.4 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -288,13 +288,15 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 
 **Live mode:** `pollLeaguePulse()` fetches all games every 15s. Game-start fires only when `detailedState` transitions to `'In Progress'` (not on warmup). Timestamps stale check (`/api/v1.1/game/{pk}/feed/live/timestamps`) skips the playByPlay fetch when nothing has changed. On first poll, all pre-existing plays load as history with no alerts or sounds (`isHistory` flag), then sorted chronologically across games.
 
-**Historical status items (v2.2):** When a game is first added to `gameStates` (initial creation path), a status feed item is synthesised silently based on current state — no sounds or alerts:
-- `Final` (non-PPD) → 🏁 "Game Final · AWAY X, HOME Y · Zh Mm" — `playTime` = `gameDateMs + linescore.gameDurationMinutes * 60000` (actual end time); falls back to `gameDateMs + 4h`
-- `Final` + PPD → 🌧️ "Game Postponed" — `playTime` = `gameDateMs`
+**Historical status items (v2.2/v2.3):** When a game is first added to `gameStates` (initial creation path), a status feed item is synthesised silently based on current state — no sounds or alerts:
+- `Final` (non-PPD) → 🏁 "Game Final · AWAY X, HOME Y · Zh Mm" — deferred to `pendingFinalItems`; plays are also fetched for the completed game; item is added at `lastPlay.ts + 60s` so it sorts after the final recorded play. Omitted entirely if no plays are found.
+- `Final` + PPD → 🌧️ "Game Postponed" — `playTime` = `gameDateMs`. Suppressed if `Date.now() < gameDateMs` (postponement announced before scheduled start — ticker chip still shows PPD immediately).
 - `Live` + `In Progress` → ⚾ "Game underway!" — `playTime` = `gameDateMs`
 - `detailedState` contains `'delay'` → 🌧️ "Game Delayed" — `playTime` = `gameDateMs`
 
-These items are only ever added once (subsequent polls use the update path). The `isFirstPoll` sort interleaves them with historical plays by timestamp.
+These items are only ever added once (subsequent polls use the update path). `pendingFinalItems` games are included in the `pollGamePlays` pass so plays are fetched before the Final item is positioned.
+
+**Feed sort order (v2.3):** `addFeedItem` maintains newest-first order on every insert — both in the `feedItems` array and in the DOM via `data-ts` attributes on each element. Late-arriving plays (old timestamp received in a later poll) are inserted at the correct chronological position instead of floating to the top.
 
 **Sound alerts:** Web Audio API synthesized tones — no external files. Master defaults off. Events: HR (bat crack), Run (bell chime), RISP (heartbeat), DP (glove pops), TP (bugle fanfare), Game Start (organ riff), Game End (descending chime), Error (dirt thud). `playSound(type)` is the single call point — checks `soundSettings.master && soundSettings[type]`.
 
@@ -409,14 +411,14 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `updatePulseMockToggleUI()` | Updates Settings panel toggle knob position and background for mock mode state |
 | `initMock()` | Shows mock bar, populates `gameStates` from `MOCK_DATA` via `tcLookup`, sets `enabledGames`, starts mock tick |
 | `initReal()` | Hides mock bar, calls `pollLeaguePulse()`, sets 15s poll interval |
-| `pollLeaguePulse()` | Fetches schedule, updates `gameStates` (incl. `detailedState`, base runners), fires game-start/delay/final/postponed events. On initial game creation synthesises historical status items (no sounds). Runs `Promise.all(pollGamePlays)` for live games, sorts feed on first poll. |
+| `pollLeaguePulse()` | Fetches schedule, updates `gameStates` (incl. `detailedState`, base runners), fires game-start/delay/final/postponed events. On initial game creation synthesises historical status items (no sounds). Runs `Promise.all(pollGamePlays)` for live games **and** completed games with pending Final items; positions 🏁 item after last play. Sorts feed on first poll. |
 | `pollGamePlays(gamePk)` | Timestamps stale check → if changed, fetches `/playByPlay`, uses `isHistory` flag to suppress alerts/sounds for pre-existing plays |
 | `renderTicker()` | Sorts `gameStates` and rebuilds sticky ticker HTML; expanded RISP chip with base diamond SVG when `g.onSecond \|\| g.onThird` |
 | `updateHeader()` | No-op stub — call sites retained in mock/poll loops but body is empty (controls bar was removed) |
 | `baseDiamondSvg(on1,on2,on3)` | Returns 28×24px inline SVG diamond; occupied bases lit amber with glow |
 | `startCountdown(targetMs)` | 30s interval updating `#heroCountdown` with "First pitch in Xm" / "Starting now" |
 | `toggleGame(gamePk)` | Adds/removes gamePk from `enabledGames`, applies `feed-hidden` to DOM items, calls `updateFeedEmpty` + `renderTicker` |
-| `addFeedItem(gamePk, data)` | Prepends item to `feedItems` array and DOM; applies `feed-hidden` if game is disabled |
+| `addFeedItem(gamePk, data)` | Inserts item into `feedItems` array and DOM in correct newest-first position (via `data-ts` attribute lookup); applies `feed-hidden` if game is disabled |
 | `buildFeedEl(item)` | Builds DOM element for a feed item — status-change items (game start/end/delay) or play items (with play-type badge, RISP badge, score badge) |
 | `updateFeedEmpty()` | Checks for visible feed items; calls `renderEmptyState()` if none; shows/hides `#feedEmpty` |
 | `renderEmptyState()` | Renders hype block + hero upcoming-game card (gradient, caps, countdown) + 2-col grid, or plain placeholder if no upcoming games |
@@ -516,6 +518,8 @@ On every commit that changes app content, bump **three** things:
 - [x] ⚡ Pulse — Ticker shows `PPD` instead of `FINAL` for postponed/cancelled/suspended games (v2.2)
 - [x] ⚡ Pulse — 🌧️ "Game Postponed" feed item fired instead of 🏁 "Game Final" + gameEnd sound for PPD transitions (v2.2)
 - [x] ⚡ Pulse — Historical status items synthesised on first load: Game Final (with `linescore.gameDurationMinutes` duration label + accurate end-time sort), Game Postponed, Game Underway, Game Delayed (v2.2)
+- [x] ⚡ Pulse — Game Final feed item anchored after last play timestamp (`pendingFinalItems` deferred insert); omitted if no plays found; PPD item suppressed before scheduled game time (v2.3)
+- [x] ⚡ Pulse — Feed items inserted at correct timestamp position on every poll; late-arriving plays no longer float to top (v2.3)
 - [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
 - [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
 - [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
