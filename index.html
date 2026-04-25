@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#002D72" id="themeColorMeta">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(255,155,30,0.10);--hr-border:rgba(255,155,30,0.28);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
+  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(255,145,20,0.18);--hr-border:rgba(255,145,20,0.55);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
   body{background:var(--dark);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
   header{background:linear-gradient(135deg,var(--primary) 0%,#001a4a 100%);border-bottom:1px solid rgba(255,255,255,.08);padding:0 20px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100}
   .logo{display:flex;align-items:center;gap:10px;font-size:1.2rem;font-weight:700;color:var(--header-text)}
@@ -383,7 +383,7 @@
 
 .feed-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 13px; margin-bottom: 6px; animation: feed-in 0.28s ease; }
 .feed-item.scoring { background: var(--scoring-bg); border-color: var(--scoring-border); }
-.feed-item.homerun { background: var(--hr-bg); border-color: var(--hr-border); }
+.feed-item.homerun { background: var(--hr-bg); border-color: var(--hr-border); border-left: 3px solid rgba(255,145,20,0.85); }
 .feed-item.risp { border-left: 3px solid var(--risp-accent); }
 .feed-item.status-change { background: var(--status-bg); border-color: var(--status-border); text-align: center; padding: 10px 16px; }
 .feed-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
@@ -986,7 +986,6 @@ function advanceMockGame(gamePk, play) {
     outs:play.outs,risp:play.risp,playClass:playClass});
   var teamColor=play.half==='top'?g.awayPrimary:g.homePrimary;
   if (play.event==='Home Run') {
-    showAlert({icon:'💥',event:'HOME RUN · '+g.awayAbbr+' '+play.aScore+', '+g.homeAbbr+' '+play.hScore,desc:play.desc,color:teamColor,duration:6000});
     playSound('hr');
     if (play.batterId) showPlayerCard(play.batterId, play.batterName||'', g.awayId, g.homeId, play.half, play.mockStats||null);
   } else if (play.scoring) {
@@ -1139,7 +1138,7 @@ async function pollGamePlays(gamePk) {
       addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime});
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
-        if (event==='Home Run'){showAlert({icon:'💥',event:'HOME RUN · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:6000});playSound('hr');if(batterId)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning);}
+        if (event==='Home Run'){playSound('hr');if(batterId)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning);}
         else if (isScoringP){showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
