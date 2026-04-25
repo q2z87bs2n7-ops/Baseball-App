@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.5</title>
+<title>MLB Tracker v2.5.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -509,7 +509,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.5.1</div>
       </div>
     </div>
   </div>
@@ -1673,12 +1673,16 @@ async function selectCalGame(gamePk,evt){
   var cellRect=evt?evt.currentTarget.getBoundingClientRect():null;
   selectedGamePk=gamePk;renderCalendar();
   var g=scheduleData.find(function(x){return x.gamePk===gamePk;});if(!g)return;
-  var isPostponed=g.status.detailedState==='Postponed'||g.status.detailedState==='Cancelled'||g.status.detailedState==='Suspended';
+  // Find all games on same local date (DH support)
+  var ds=localDateStr(new Date(g.gameDate));
+  var dayGames=scheduleData.filter(function(x){return localDateStr(new Date(x.gameDate))===ds;}).sort(function(a,b){return a.gamePk-b.gamePk;});
+  var isDH=dayGames.length>1;
   if(cellRect&&window.innerWidth<=480){
     var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===activeTeam.id;
     var opp=teamHome?away:home,myT=teamHome?home:away,status=g.status.abstractGameState;
+    var isPostponed=g.status.detailedState==='Postponed'||g.status.detailedState==='Cancelled'||g.status.detailedState==='Suspended';
     var gameDate=new Date(g.gameDate);
-    var dateStr=gameDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    var dateStr=gameDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})+(isDH?' · DH':'');
     var badgeHtml='';
     if(isPostponed)badgeHtml='<span class="cal-result" style="background:rgba(150,150,150,.15);color:var(--muted);border:1px solid rgba(150,150,150,.4)">PPD</span>';
     else if(status==='Final'){var mW=myT.isWinner,sc=(myT.score!=null&&opp.score!=null)?myT.score+'-'+opp.score:'?-?';badgeHtml='<span class="cal-result '+(mW?'cal-w':'cal-l')+'">'+(mW?'W':'L')+' '+sc+'</span>';}
@@ -1691,51 +1695,71 @@ async function selectCalGame(gamePk,evt){
     tt.style.cssText='left:'+left+'px;top:'+(cellRect.top-8)+'px;transform:translateY(-100%);min-width:'+ttW+'px';
     tt.classList.add('open');
   }
-  var status=g.status.abstractGameState,detail=document.getElementById('gameDetail');
+  var detail=document.getElementById('gameDetail');
   detail.innerHTML='<div class="loading">Loading game details...</div>';
+  try{
+    var panels=await Promise.all(dayGames.map(function(gm,idx){return buildGameDetailPanel(gm,isDH?idx+1:null);}));
+    detail.innerHTML=panels.join('');
+    detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){detail.innerHTML='<div class="error">Could not load game details</div>';}
+}
+
+async function buildGameDetailPanel(g,gameNum){
+  var home=g.teams.home,away=g.teams.away,gameDate=new Date(g.gameDate);
+  var status=g.status.abstractGameState,detailed=g.status.detailedState||'';
+  var isPostponed=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
+  var sep=gameNum>1?'<div style="height:1px;background:var(--border);margin:16px 0"></div>':'';
+  var label=gameNum?'<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:8px">Game '+gameNum+'</div>':'';
+  var title=away.team.teamName+' @ '+home.team.teamName;
   if(isPostponed){
-    var home=g.teams.home,away=g.teams.away,gameDate=new Date(g.gameDate);
-    var html='<div class="boxscore-wrap"><div class="boxscore-title">'+away.team.teamName+' @ '+home.team.teamName+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>';
-    html+='<div class="game-notes-grid"><div class="game-note-box"><div class="game-note-label">Status</div><div class="game-note-val" style="color:var(--muted)">'+g.status.detailedState+'</div></div>';
+    var html=sep+'<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>';
+    html+='<div class="game-notes-grid"><div class="game-note-box"><div class="game-note-label">Status</div><div class="game-note-val" style="color:var(--muted)">'+detailed+'</div></div>';
     html+='<div class="game-note-box"><div class="game-note-label">Venue</div><div class="game-note-val">'+(g.venue&&g.venue.name?g.venue.name:'TBD')+'</div></div></div></div>';
-    detail.innerHTML=html;detail.scrollIntoView({behavior:'smooth',block:'nearest'});return;
+    return html;
   }
   if(status!=='Final'&&status!=='Live'){
-    var home=g.teams.home,away=g.teams.away,gameDate=new Date(g.gameDate);
-    var html='<div class="boxscore-wrap"><div class="boxscore-title">'+away.team.teamName+' @ '+home.team.teamName+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' '+gameDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';
+    var html=sep+'<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' '+gameDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';
     html+='<div class="game-notes-grid"><div class="game-note-box"><div class="game-note-label">Location</div><div class="game-note-val">'+(g.venue&&g.venue.name?g.venue.name:'TBD')+'</div></div>';
     var awayPP=(away.probablePitcher&&away.probablePitcher.fullName)?away.probablePitcher.fullName:'TBD',homePP=(home.probablePitcher&&home.probablePitcher.fullName)?home.probablePitcher.fullName:'TBD';
     html+='<div class="game-note-box"><div class="game-note-label">Probable Pitchers</div><div class="game-note-val">'+away.team.teamName+': '+awayPP+'</div><div class="game-note-val">'+home.team.teamName+': '+homePP+'</div></div></div></div>';
-    detail.innerHTML=html;return;
+    return html;
   }
-  try{
-    var responses=await Promise.all([fetch(MLB_BASE+'/game/'+gamePk+'/linescore'),fetch(MLB_BASE+'/game/'+gamePk+'/boxscore')]);
-    var ls=await responses[0].json(),bs=await responses[1].json();
-    var home=g.teams.home,away=g.teams.away,gameDate=new Date(g.gameDate);
-    var html='<div class="boxscore-wrap"><div class="boxscore-title">'+away.team.teamName+' @ '+home.team.teamName+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>';
-    var innings=ls.innings||[];
-    html+='<div style="overflow-x:auto"><table class="linescore-table"><thead><tr><th></th>';
-    innings.forEach(function(inn){html+='<th>'+inn.num+'</th>';});
-    html+='<th style="border-left:2px solid var(--border)">R</th><th>H</th><th>E</th></tr></thead><tbody>';
-    html+='<tr><td>'+away.team.teamName+'</td>';innings.forEach(function(inn){html+='<td>'+(inn.away&&inn.away.runs!=null?inn.away.runs:'—')+'</td>';});
-    html+='<td class="rhe" style="border-left:2px solid var(--border)">'+(ls.teams&&ls.teams.away&&ls.teams.away.runs!=null?ls.teams.away.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.away&&ls.teams.away.hits!=null?ls.teams.away.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.away&&ls.teams.away.errors!=null?ls.teams.away.errors:'—')+'</td></tr>';
-    html+='<tr><td>'+home.team.teamName+'</td>';innings.forEach(function(inn){html+='<td>'+(inn.home&&inn.home.runs!=null?inn.home.runs:'—')+'</td>';});
-    html+='<td class="rhe" style="border-left:2px solid var(--border)">'+(ls.teams&&ls.teams.home&&ls.teams.home.runs!=null?ls.teams.home.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.hits!=null?ls.teams.home.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.errors!=null?ls.teams.home.errors:'—')+'</td></tr>';
-    html+='</tbody></table></div>';
-    var awayAbbr=away.team.abbreviation||away.team.teamName,homeAbbr=home.team.abbreviation||home.team.teamName;
-    var awayPlayers=bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{},homePlayers=bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{};
-    var awayBox=buildBoxscore(awayPlayers),homeBox=buildBoxscore(homePlayers),bsId='bs_'+gamePk;
-    html+='<div style="margin-top:12px"><div style="display:flex;gap:6px;margin-bottom:10px">';
-    html+='<button onclick="switchBoxTab(\''+bsId+'\',\'away\')" id="'+bsId+'_away_btn" style="background:var(--secondary);color:var(--accent-text);border:none;padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:700">'+awayAbbr+'</button>';
-    html+='<button onclick="switchBoxTab(\''+bsId+'\',\'home\')" id="'+bsId+'_home_btn" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem">'+homeAbbr+'</button></div>';
-    html+='<div id="'+bsId+'_away">'+awayBox+'</div><div id="'+bsId+'_home" style="display:none">'+homeBox+'</div></div>';
-    if(bs.info&&bs.info.length){
-      html+='<div style="margin-top:12px"><div class="game-note-label" style="margin-bottom:8px">Game Summary</div><div style="background:var(--card);border-radius:8px;padding:10px">';
-      bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)html+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else html+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--accent);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text)">'+val+'</span></div>';});
-      html+='</div></div>';
-    }
-    html+='</div>';detail.innerHTML=html;detail.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }catch(e){detail.innerHTML='<div class="error">Could not load game details</div>';}
+  if(status==='Live'){
+    var ls=g.linescore||{},half=ls.inningHalf||'Top',inn=ls.currentInning||'?';
+    var aScore=away.score!=null?away.score:0,hScore=home.score!=null?home.score:0;
+    var html=sep+'<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'</div>';
+    html+='<div class="game-notes-grid"><div class="game-note-box"><div class="game-note-label">Score</div><div class="game-note-val">'+away.team.teamName+' '+aScore+', '+home.team.teamName+' '+hScore+'</div></div>';
+    html+='<div class="game-note-box"><div class="game-note-label">Status</div><div class="game-note-val"><span style="color:#f08c8c">● LIVE</span> · '+half+' '+inn+'</div></div></div>';
+    html+='<button onclick="showLiveGame('+g.gamePk+')" style="margin-top:10px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.85rem;font-weight:700">▶ Watch Live</button></div>';
+    return html;
+  }
+  // Final — fetch linescore + boxscore
+  var responses=await Promise.all([fetch(MLB_BASE+'/game/'+g.gamePk+'/linescore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore')]);
+  var ls=await responses[0].json(),bs=await responses[1].json();
+  var html=sep+'<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>';
+  var innings=ls.innings||[];
+  html+='<div style="overflow-x:auto"><table class="linescore-table"><thead><tr><th></th>';
+  innings.forEach(function(inn){html+='<th>'+inn.num+'</th>';});
+  html+='<th style="border-left:2px solid var(--border)">R</th><th>H</th><th>E</th></tr></thead><tbody>';
+  html+='<tr><td>'+away.team.teamName+'</td>';innings.forEach(function(inn){html+='<td>'+(inn.away&&inn.away.runs!=null?inn.away.runs:'—')+'</td>';});
+  html+='<td class="rhe" style="border-left:2px solid var(--border)">'+(ls.teams&&ls.teams.away&&ls.teams.away.runs!=null?ls.teams.away.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.away&&ls.teams.away.hits!=null?ls.teams.away.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.away&&ls.teams.away.errors!=null?ls.teams.away.errors:'—')+'</td></tr>';
+  html+='<tr><td>'+home.team.teamName+'</td>';innings.forEach(function(inn){html+='<td>'+(inn.home&&inn.home.runs!=null?inn.home.runs:'—')+'</td>';});
+  html+='<td class="rhe" style="border-left:2px solid var(--border)">'+(ls.teams&&ls.teams.home&&ls.teams.home.runs!=null?ls.teams.home.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.hits!=null?ls.teams.home.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.errors!=null?ls.teams.home.errors:'—')+'</td></tr>';
+  html+='</tbody></table></div>';
+  var awayAbbr=away.team.abbreviation||away.team.teamName,homeAbbr=home.team.abbreviation||home.team.teamName;
+  var awayPlayers=bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{},homePlayers=bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{};
+  var awayBox=buildBoxscore(awayPlayers),homeBox=buildBoxscore(homePlayers),bsId='bs_'+g.gamePk;
+  html+='<div style="margin-top:12px"><div style="display:flex;gap:6px;margin-bottom:10px">';
+  html+='<button onclick="switchBoxTab(\''+bsId+'\',\'away\')" id="'+bsId+'_away_btn" style="background:var(--secondary);color:var(--accent-text);border:none;padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:700">'+awayAbbr+'</button>';
+  html+='<button onclick="switchBoxTab(\''+bsId+'\',\'home\')" id="'+bsId+'_home_btn" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem">'+homeAbbr+'</button></div>';
+  html+='<div id="'+bsId+'_away">'+awayBox+'</div><div id="'+bsId+'_home" style="display:none">'+homeBox+'</div></div>';
+  if(bs.info&&bs.info.length){
+    html+='<div style="margin-top:12px"><div class="game-note-label" style="margin-bottom:8px">Game Summary</div><div style="background:var(--card);border-radius:8px;padding:10px">';
+    bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)html+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else html+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--accent);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text)">'+val+'</span></div>';});
+    html+='</div></div>';
+  }
+  html+='</div>';
+  return html;
 }
 
 async function loadStandings(){
