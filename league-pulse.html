@@ -1190,6 +1190,7 @@ let mockSpeedMs    = 6000;
 let totalMockPlays = 0;
 let playedMockPlays= 0;
 let alertId        = 0;
+let isFirstPoll    = true; // used to sort feed by timestamp after history load
 
 // ── Entry point ──────────────────────────────────────────────────────────────
 function init() {
@@ -1223,6 +1224,7 @@ function switchMode(toReal) {
   mockGameQueue   = [];
   playedMockPlays = 0;
   totalMockPlays  = 0;
+  isFirstPoll     = true;
   document.getElementById('feed').innerHTML       = '';
   document.getElementById('alertStack').innerHTML = '';
   updateFeedEmpty();
@@ -1872,6 +1874,13 @@ async function poll() {
       return g.status.abstractGameState === 'Live';
     });
     await Promise.all(liveGames.map(function(g) { return pollGamePlays(g.gamePk); }));
+
+    // After initial history load, sort all feed items chronologically across games
+    if (isFirstPoll && feedItems.length > 0) {
+      feedItems.sort(function(a, b) { return b.ts - a.ts; }); // newest first
+      renderFeed();
+    }
+    isFirstPoll = false;
 
     renderTicker();
     updateHeader();
