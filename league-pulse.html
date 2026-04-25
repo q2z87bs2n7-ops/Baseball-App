@@ -33,7 +33,6 @@
   /* ── Layout ──────────────────────────────────────────────────────────── */
   --header-h:  56px;
   --ticker-h:  50px;
-  --mockbar-h: 48px;
   --radius:    10px;
 }
 
@@ -377,7 +376,7 @@ html, body {
 #feedWrap {
   max-width: 700px;
   margin: 0 auto;
-  padding: 14px 12px calc(var(--mockbar-h) + 24px);
+  padding: 14px 12px 24px;
 }
 
 #feedEmpty {
@@ -739,21 +738,27 @@ html, body {
 /* ── Sound button + panel ────────────────────────────────────────────────────── */
 
 #btnSound {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 15px;
-  padding: 4px 6px;
+  background: var(--card2);
+  border: 1px solid var(--border);
   border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text);
+  padding: 5px 10px;
   line-height: 1;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
-#btnSound:hover { background: var(--card2); }
+#btnSound:hover { background: var(--border); }
 
 #soundPanel {
   position: fixed;
-  top: calc(var(--header-h) + 6px);
+  top: calc(var(--header-h) + var(--ticker-h) + 54px);
   right: 12px;
   width: 270px;
   background: var(--card);
@@ -883,11 +888,6 @@ html, body {
   <div class="header-right">
     <span id="liveCount">—</span>
     <span id="lastUpdate"></span>
-    <button id="btnSound" onclick="toggleSoundPanel()" title="Sound alerts">🔊</button>
-    <div id="modeToggle">
-      <button class="mode-btn active" id="btnMockMode" onclick="switchMode(false)">⚡ Mock</button>
-      <button class="mode-btn" id="btnLiveMode" onclick="switchMode(true)">● Live</button>
-    </div>
   </div>
 </div>
 
@@ -957,14 +957,13 @@ html, body {
   <span class="ticker-empty">No games loaded</span>
 </div>
 
-<!-- ── Main feed ──────────────────────────────────────────────────────────── -->
-<div id="feedWrap">
-  <div id="feedEmpty">
-    <span class="empty-icon">⚾</span>
-    <div class="empty-title">League Pulse</div>
-    <div class="empty-sub">Live play-by-play from every game will appear here</div>
+<!-- ── Pulse controls (sound + mode toggle) ──────────────────────────────── -->
+<div id="pulseControls">
+  <button id="btnSound" onclick="toggleSoundPanel()" title="Sound alerts">🔊 Sounds</button>
+  <div id="modeToggle">
+    <button class="mode-btn" id="btnMockMode" onclick="switchMode(false)">⚡ Mock</button>
+    <button class="mode-btn" id="btnLiveMode" onclick="switchMode(true)">● Live</button>
   </div>
-  <div id="feed"></div>
 </div>
 
 <!-- ── Mock controls bar ──────────────────────────────────────────────────── -->
@@ -977,6 +976,18 @@ html, body {
   <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
   <span class="mock-progress" id="mockProgress"></span>
 </div>
+
+<!-- ── Main feed ──────────────────────────────────────────────────────────── -->
+<div id="feedWrap">
+  <div id="feedEmpty">
+    <span class="empty-icon">⚾</span>
+    <div class="empty-title">League Pulse</div>
+    <div class="empty-sub">Live play-by-play from every game will appear here</div>
+  </div>
+  <div id="feed"></div>
+</div>
+
+<!-- ── Mock controls bar ──────────────────────────────────────────────────── -->
 
 <script>
 // ── Team colours (all 30 MLB teams) ─────────────────────────────────────────
