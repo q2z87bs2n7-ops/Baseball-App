@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.9.1-dev</title>
+<title>League Pulse — MLB Live Feed · v0.9.2-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -569,6 +569,12 @@ html, body {
   gap: 9px;
 }
 
+.upcoming-card-logos {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .upcoming-card-cap {
   width: 26px;
   height: 26px;
@@ -992,7 +998,7 @@ html, body {
       </label>
     </div>
     <div class="sound-row">
-      <div class="sound-label">🔴 Run Scores</div>
+      <div class="sound-label">🟢 Run Scores</div>
       <label class="sound-toggle">
         <input type="checkbox" checked onchange="setSoundPref('run',this.checked)">
         <span class="sound-knob"></span>
@@ -1598,7 +1604,7 @@ function renderEmptyState() {
     + '<div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     + '<div class="empty-hype-pills">'
     + '<span class="hype-pill hr">💥 Home Runs</span>'
-    + '<span class="hype-pill scoring">🔴 Scoring Plays</span>'
+    + '<span class="hype-pill scoring">🟢 Scoring Plays</span>'
     + '<span class="hype-pill risp">⚡ RISP</span>'
     + '</div>'
     + '<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div>'
@@ -1632,14 +1638,16 @@ function renderEmptyState() {
     rest.forEach(function(g) {
       html +=
         '<div class="upcoming-card">'
+        + '<div class="upcoming-card-logos">'
         + '<img class="upcoming-card-cap" src="https://www.mlbstatic.com/team-logos/' + g.awayId + '.svg"'
         + ' onerror="this.style.display=\'none\'">'
+        + '<img class="upcoming-card-cap" src="https://www.mlbstatic.com/team-logos/' + g.homeId + '.svg"'
+        + ' onerror="this.style.display=\'none\'">'
+        + '</div>'
         + '<div>'
         + '<div class="upcoming-card-matchup">' + g.awayAbbr + ' @ ' + g.homeAbbr + '</div>'
         + '<div class="upcoming-card-time">' + (g.gameTime || 'TBD') + '</div>'
         + '</div>'
-        + '<img class="upcoming-card-cap" src="https://www.mlbstatic.com/team-logos/' + g.homeId + '.svg"'
-        + ' onerror="this.style.display=\'none\'" style="margin-left:auto">'
         + '</div>';
     });
     html += '</div>';
@@ -1719,7 +1727,7 @@ function buildFeedEl(item) {
 
   // Play icon prefix
   var icon = d.event === 'Home Run' ? '💥 '
-           : d.scoring              ? '🔴 '
+           : d.scoring              ? '🟢 '
            : '';
 
   // Score badge: AWAY N · N HOME — scoring side full-brightness, other side dimmed
@@ -1912,7 +1920,7 @@ function advanceMockGame(gamePk, play) {
     playSound('hr');
   } else if (play.scoring) {
     showAlert({
-      icon:     '🔴',
+      icon:     '🟢',
       event:    'RUN SCORES · ' + g.awayAbbr + ' ' + play.aScore + ', ' + g.homeAbbr + ' ' + play.hScore,
       desc:     play.desc,
       color:    teamColor,
@@ -2161,7 +2169,7 @@ async function pollGamePlays(gamePk) {
             desc:desc, color:teamColor, duration:6000});
           playSound('hr');
         } else if (isScoringP) {
-          showAlert({icon:'🔴',
+          showAlert({icon:'🟢',
             event:'RUN SCORES · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
             desc:desc, color:teamColor, duration:4000});
           playSound('run');
