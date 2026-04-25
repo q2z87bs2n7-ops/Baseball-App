@@ -814,7 +814,7 @@ let pulseMockMode=false,pulseInitialized=false;
 let gameStates={},feedItems=[],enabledGames=new Set();
 let mockPlayPtrs={},mockGameQueue=[],mockTimerId=null;
 let mockSpeedMs=6000,totalMockPlays=0,playedMockPlays=0;
-let countdownTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
+let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 
 function tcLookup(id){var t=TEAMS.find(function(t){return t.id===id;});return t?{primary:t.primary,abbr:t.short,name:t.name}:{primary:'#444',abbr:'???',name:'Unknown'};}
@@ -899,6 +899,7 @@ function switchMode(toReal) {
   pulseMockMode = !toReal;
   updatePulseMockToggleUI();
   if (mockTimerId)    { clearInterval(mockTimerId);    mockTimerId    = null; }
+  if (pulseTimer)     { clearInterval(pulseTimer);     pulseTimer     = null; }
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   feedItems=[]; gameStates={}; enabledGames=new Set();
   mockPlayPtrs={}; mockGameQueue=[]; playedMockPlays=0; totalMockPlays=0; isFirstPoll=true;
@@ -1022,7 +1023,7 @@ function initReal() {
   document.getElementById('mockBar').style.display='none';
   pollDateStr=localDateStr(new Date());
   pollLeaguePulse();
-  setInterval(pollLeaguePulse,15000);
+  pulseTimer=setInterval(pollLeaguePulse,15000);
 }
 
 async function pollLeaguePulse() {
