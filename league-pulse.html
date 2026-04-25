@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.9.4-dev</title>
+<title>League Pulse — MLB Live Feed · v0.9.5-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1623,11 +1623,13 @@ function renderEmptyState() {
         + '<div style="text-align:center">'
         + '<img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/' + g.awayId + '.svg" onerror="this.style.display=\'none\'">'
         + '<div style="font-size:.8rem;font-weight:700;color:#fff">' + g.awayAbbr + '</div>'
+        + '<div style="font-size:.62rem;color:rgba(255,255,255,.5)">' + (g.awayW != null ? '(' + g.awayW + '-' + g.awayL + ')' : '') + '</div>'
         + '</div>'
         + '<span style="color:var(--muted);font-size:.8rem">vs</span>'
         + '<div style="text-align:center">'
         + '<img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/' + g.homeId + '.svg" onerror="this.style.display=\'none\'">'
         + '<div style="font-size:.8rem;font-weight:700;color:#fff">' + g.homeAbbr + '</div>'
+        + '<div style="font-size:.62rem;color:rgba(255,255,255,.5)">' + (g.homeW != null ? '(' + g.homeW + '-' + g.homeL + ')' : '') + '</div>'
         + '</div>'
         + '</div>'
         + '</div>';
@@ -2014,6 +2016,10 @@ async function poll() {
           homePrimary:   homeTc.primary,
           awayScore:     away.score  || 0,
           homeScore:     home.score  || 0,
+          awayW:         away.leagueRecord ? away.leagueRecord.wins   : null,
+          awayL:         away.leagueRecord ? away.leagueRecord.losses : null,
+          homeW:         home.leagueRecord ? home.leagueRecord.wins   : null,
+          homeL:         home.leagueRecord ? home.leagueRecord.losses : null,
           status:        newStatus,
           detailedState: detailed,
           inning:        ls.currentInning   || 1,
