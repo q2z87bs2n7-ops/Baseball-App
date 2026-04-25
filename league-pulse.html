@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.9.6-dev</title>
+<title>League Pulse — MLB Live Feed · v0.9.7-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -2233,91 +2233,134 @@ function playSound(type) {
   else if (type === 'error')     playErrorSound();
 }
 
-// _beep: notes = [{freq, start, dur, vol, wave}]
-function _beep(notes) {
+// ── Audio primitives — share one AudioContext per sound event ─────────────────
+function _makeCtx() {
+  return new (window.AudioContext || window.webkitAudioContext)();
+}
+function _closeCtx(ctx, dur) {
+  setTimeout(function() { try { ctx.close(); } catch(e) {} }, (dur + 0.6) * 1000);
+}
+// Oscillator note — freq Hz, t0 offset s, dur s, vol 0-1, wave type, attack s
+function _osc(ctx, freq, t0, dur, vol, wave, attack) {
+  var osc = ctx.createOscillator();
+  var g   = ctx.createGain();
+  osc.connect(g); g.connect(ctx.destination);
+  osc.type = wave || 'sine';
+  osc.frequency.value = freq;
+  var at  = ctx.currentTime + t0;
+  var att = attack || 0.005;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(vol, at + att);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  osc.start(at); osc.stop(at + dur + 0.05);
+}
+// Filtered white-noise burst — t0 s, dur s, vol 0-1, attack s, filterType, filterFreq Hz, Q
+function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ) {
+  var len = Math.ceil(ctx.sampleRate * (dur + 0.1));
+  var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  var d   = buf.getChannelData(0);
+  for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  var src  = ctx.createBufferSource(); src.buffer = buf;
+  var filt = ctx.createBiquadFilter();
+  filt.type = filterType || 'bandpass';
+  filt.frequency.value = filterFreq || 1000;
+  filt.Q.value = filterQ !== undefined ? filterQ : 1;
+  var g = ctx.createGain();
+  src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+  var at  = ctx.currentTime + t0;
+  var att = attack || 0.003;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(vol, at + att);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  src.start(at); src.stop(at + dur + 0.05);
+}
+
+// HOME RUN — bat crack (impulsive highpass noise) + impact thud + crowd swell
+function playHrSound() {
   try {
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    notes.forEach(function(n) {
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = n.wave || 'sine';
-      osc.frequency.value = n.freq;
-      var t = ctx.currentTime + (n.start || 0);
-      gain.gain.setValueAtTime(n.vol || 0.15, t);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + n.dur);
-      osc.start(t);
-      osc.stop(t + n.dur + 0.02);
-    });
-    var maxEnd = notes.reduce(function(m, n) { return Math.max(m, (n.start||0) + n.dur); }, 0);
-    setTimeout(function() { try { ctx.close(); } catch(e) {} }, (maxEnd + 1.2) * 1000);
+    var ctx = _makeCtx();
+    _ns(ctx,  0,    0.07, 0.32, 0.001, 'highpass', 2200, 0.8); // crack transient
+    _ns(ctx,  0,    0.05, 0.22, 0.001, 'bandpass',  900, 3.0); // crack body
+    _osc(ctx, 140,  0,    0.06, 0.18,  'sine', 0.001);          // impact thud
+    _ns(ctx,  0.05, 0.90, 0.09, 0.08,  'lowpass',   300, 1.0); // crowd swell
+    _closeCtx(ctx, 1.2);
   } catch(e) {}
 }
 
-// Ascending major arpeggio C5-E5-G5-C6
-function playHrSound() {
-  _beep([
-    {freq:523,  start:0,    dur:0.30, vol:0.18},
-    {freq:659,  start:0.07, dur:0.28, vol:0.18},
-    {freq:784,  start:0.14, dur:0.28, vol:0.18},
-    {freq:1047, start:0.21, dur:0.42, vol:0.18},
-  ]);
-}
-
-// Two rising notes G4→B4
+// RUN SCORES — ascending bell chime C5 → E5 → G5
 function playRunSound() {
-  _beep([
-    {freq:392, start:0,    dur:0.18, vol:0.15},
-    {freq:494, start:0.13, dur:0.25, vol:0.15},
-  ]);
+  try {
+    var ctx = _makeCtx();
+    _osc(ctx, 523, 0,    0.55, 0.18, 'sine'); // C5
+    _osc(ctx, 659, 0.15, 0.50, 0.18, 'sine'); // E5
+    _osc(ctx, 784, 0.30, 0.60, 0.18, 'sine'); // G5
+    _closeCtx(ctx, 1.0);
+  } catch(e) {}
 }
 
-// Soft high triangle ping A5
+// RISP — heartbeat "lub-dub" (low filtered noise pulses)
 function playRispSound() {
-  _beep([{freq:880, start:0, dur:0.12, vol:0.08, wave:'triangle'}]);
+  try {
+    var ctx = _makeCtx();
+    _ns(ctx, 0,    0.10, 0.20, 0.003, 'lowpass', 180, 2.0); // lub
+    _ns(ctx, 0.13, 0.14, 0.16, 0.004, 'lowpass', 220, 1.5); // dub
+    _closeCtx(ctx, 0.4);
+  } catch(e) {}
 }
 
-// Bright two-note rise C5→G5
-function playGameStartSound() {
-  _beep([
-    {freq:523, start:0,    dur:0.22, vol:0.16},
-    {freq:784, start:0.18, dur:0.38, vol:0.16},
-  ]);
-}
-
-// Three-note descend G5→E5→C5
-function playGameEndSound() {
-  _beep([
-    {freq:784, start:0,    dur:0.25, vol:0.14},
-    {freq:659, start:0.22, dur:0.25, vol:0.14},
-    {freq:523, start:0.44, dur:0.45, vol:0.14},
-  ]);
-}
-
-// Flat dissonant drop — fielding error
-function playErrorSound() {
-  _beep([
-    {freq:466, start:0,    dur:0.14, vol:0.13},
-    {freq:349, start:0.11, dur:0.28, vol:0.13},
-  ]);
-}
-
-// Two descending notes — groaner for DP
+// DOUBLE PLAY — "Pop-Pop" two crisp glove-hit noise bursts
 function playDpSound() {
-  _beep([
-    {freq:440, start:0,    dur:0.18, vol:0.13},
-    {freq:330, start:0.15, dur:0.28, vol:0.13},
-  ]);
+  try {
+    var ctx = _makeCtx();
+    _ns(ctx, 0,    0.06, 0.28, 0.001, 'bandpass', 750, 5); // first pop
+    _ns(ctx, 0.10, 0.06, 0.28, 0.001, 'bandpass', 750, 5); // second pop
+    _closeCtx(ctx, 0.4);
+  } catch(e) {}
 }
 
-// Three quick descending notes — rarer, more dramatic for TP
+// TRIPLE PLAY — "Charge!" fanfare G4-C5-E5-G5 (triangle = bugle-like)
 function playTpSound() {
-  _beep([
-    {freq:523, start:0,    dur:0.16, vol:0.15},
-    {freq:415, start:0.13, dur:0.16, vol:0.15},
-    {freq:311, start:0.26, dur:0.32, vol:0.15},
-  ]);
+  try {
+    var ctx = _makeCtx();
+    _osc(ctx, 392, 0,    0.12, 0.17, 'triangle'); // G4
+    _osc(ctx, 523, 0.11, 0.12, 0.17, 'triangle'); // C5
+    _osc(ctx, 659, 0.22, 0.12, 0.17, 'triangle'); // E5
+    _osc(ctx, 784, 0.33, 0.32, 0.17, 'triangle'); // G5 held
+    _closeCtx(ctx, 0.8);
+  } catch(e) {}
+}
+
+// GAME START — stadium organ ascending riff C5-D5-E5-G5
+function playGameStartSound() {
+  try {
+    var ctx = _makeCtx();
+    _osc(ctx, 523, 0,    0.14, 0.16, 'triangle'); // C5
+    _osc(ctx, 587, 0.13, 0.14, 0.16, 'triangle'); // D5
+    _osc(ctx, 659, 0.26, 0.14, 0.16, 'triangle'); // E5
+    _osc(ctx, 784, 0.39, 0.38, 0.16, 'triangle'); // G5 held
+    _closeCtx(ctx, 1.0);
+  } catch(e) {}
+}
+
+// GAME END — terminal chime descending G5 → E5 → C5 (bell decay)
+function playGameEndSound() {
+  try {
+    var ctx = _makeCtx();
+    _osc(ctx, 784, 0,    0.65, 0.15, 'sine'); // G5
+    _osc(ctx, 659, 0.38, 0.65, 0.15, 'sine'); // E5
+    _osc(ctx, 523, 0.76, 0.80, 0.15, 'sine'); // C5
+    _closeCtx(ctx, 1.8);
+  } catch(e) {}
+}
+
+// ERROR — ball-hits-dirt: low thud (noise) + dull body (sine)
+function playErrorSound() {
+  try {
+    var ctx = _makeCtx();
+    _ns(ctx,  0,    0.18, 0.22, 0.003, 'lowpass', 160, 1.5); // dirt thud
+    _osc(ctx, 130,  0.02, 0.16, 0.10,  'sine');               // dull body
+    _closeCtx(ctx, 0.5);
+  } catch(e) {}
 }
 
 // ── Start ────────────────────────────────────────────────────────────────────
