@@ -923,12 +923,23 @@ html, body {
       </label>
     </div>
     <div class="sound-row">
-      <div>
-        <div class="sound-label">⚡ RISP</div>
-        <div class="sound-sub">Runners in scoring position</div>
-      </div>
+      <div class="sound-label">⚡ RISP</div>
       <label class="sound-toggle">
         <input type="checkbox" onchange="setSoundPref('risp',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
+    <div class="sound-row">
+      <div class="sound-label">🔀 Double Play</div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('dp',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
+    <div class="sound-row">
+      <div class="sound-label">🔀 Triple Play</div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('tp',this.checked)">
         <span class="sound-knob"></span>
       </label>
     </div>
@@ -1578,13 +1589,23 @@ function buildFeedEl(item) {
       + '</span>';
   }
 
-  // RISP inline badge — only on non-scoring plays (⚡ matches mock)
+  // RISP inline badge — only on non-scoring plays
   var rispBadge = (d.risp && !d.scoring)
     ? '<span class="risp-tag">⚡ RISP</span>'
     : '';
 
+  // Hit / walk / out-event badges
+  var evt = d.event || '';
+  var playBadge = '';
+  if      (evt === 'Single')                          playBadge = '<span class="play-tag hit-tag">1B</span>';
+  else if (evt === 'Double')                          playBadge = '<span class="play-tag hit-tag">2B</span>';
+  else if (evt === 'Triple')                          playBadge = '<span class="play-tag hit-tag">3B</span>';
+  else if (evt === 'Walk' || evt === 'Intent Walk')   playBadge = '<span class="play-tag walk-tag">BB</span>';
+  else if (evt.indexOf('Triple Play') !== -1)         playBadge = '<span class="play-tag tp-tag">TP</span>';
+  else if (evt.indexOf('Double Play') !== -1)         playBadge = '<span class="play-tag dp-tag">DP</span>';
+
   var playHtml =
-    '<div class="feed-play">' + icon + d.desc + rispBadge + scoreBadge + '</div>';
+    '<div class="feed-play">' + icon + d.desc + rispBadge + playBadge + scoreBadge + '</div>';
 
   el.innerHTML = metaHtml + playHtml;
   return el;
@@ -1744,6 +1765,17 @@ function advanceMockGame(gamePk, play) {
       duration: 4000,
     });
     playSound('run');
+  } else if (play.event && play.event.indexOf('Triple Play') !== -1) {
+    showAlert({
+      icon:     '🔀',
+      event:    'TRIPLE PLAY · ' + g.awayAbbr + ' @ ' + g.homeAbbr,
+      desc:     play.desc,
+      color:    '#9b59b6',
+      duration: 5000,
+    });
+    playSound('tp');
+  } else if (play.event && play.event.indexOf('Double Play') !== -1) {
+    playSound('dp');
   } else if (play.risp) {
     playSound('risp');
   }
@@ -1972,6 +2004,13 @@ async function pollGamePlays(gamePk) {
             event:'RUN SCORES · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore,
             desc:desc, color:teamColor, duration:4000});
           playSound('run');
+        } else if (event.indexOf('Triple Play') !== -1) {
+          showAlert({icon:'🔀',
+            event:'TRIPLE PLAY · ' + g.awayAbbr + ' @ ' + g.homeAbbr,
+            desc:desc, color:'#9b59b6', duration:5000});
+          playSound('tp');
+        } else if (event.indexOf('Double Play') !== -1) {
+          playSound('dp');
         } else if (hasRISP) {
           playSound('risp');
         }
@@ -1987,7 +2026,9 @@ var soundSettings = {
   master:    true,
   hr:        true,
   run:       true,
-  risp:      false,   // off by default — most frequent event
+  risp:      false,
+  dp:        true,
+  tp:        true,
   gameStart: true,
   gameEnd:   true,
 };
@@ -2009,6 +2050,8 @@ function playSound(type) {
   if      (type === 'hr')        playHrSound();
   else if (type === 'run')       playRunSound();
   else if (type === 'risp')      playRispSound();
+  else if (type === 'dp')        playDpSound();
+  else if (type === 'tp')        playTpSound();
   else if (type === 'gameStart') playGameStartSound();
   else if (type === 'gameEnd')   playGameEndSound();
 }
@@ -2072,6 +2115,23 @@ function playGameEndSound() {
     {freq:784, start:0,    dur:0.25, vol:0.14},
     {freq:659, start:0.22, dur:0.25, vol:0.14},
     {freq:523, start:0.44, dur:0.45, vol:0.14},
+  ]);
+}
+
+// Two descending notes — groaner for DP
+function playDpSound() {
+  _beep([
+    {freq:440, start:0,    dur:0.18, vol:0.13},
+    {freq:330, start:0.15, dur:0.28, vol:0.13},
+  ]);
+}
+
+// Three quick descending notes — rarer, more dramatic for TP
+function playTpSound() {
+  _beep([
+    {freq:523, start:0,    dur:0.16, vol:0.15},
+    {freq:415, start:0.13, dur:0.16, vol:0.15},
+    {freq:311, start:0.26, dur:0.32, vol:0.15},
   ]);
 }
 
