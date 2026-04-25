@@ -991,10 +991,8 @@ async function pollLeaguePulse() {
           if (isHistPpd) {
             if (!gameDateMs||Date.now()>=gameDateMs) addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
           } else {
-            var durMs=(ls.gameDurationMinutes||0)*60*1000;
-            var fallbackTs=gameDateMs?new Date(gameDateMs+(durMs||4*60*60*1000)):new Date();
             var durLabel=ls.gameDurationMinutes?'  ·  '+Math.floor(ls.gameDurationMinutes/60)+'h '+String(ls.gameDurationMinutes%60).padStart(2,'0')+'m':'';
-            pendingFinalItems[pk]={sub:g0.awayAbbr+' '+(away.score||0)+', '+g0.homeAbbr+' '+(home.score||0)+durLabel,fallbackTs:fallbackTs};
+            pendingFinalItems[pk]={sub:g0.awayAbbr+' '+(away.score||0)+', '+g0.homeAbbr+' '+(home.score||0)+durLabel};
           }
         } else if (newStatus==='Live'&&detailed==='In Progress') {
           addFeedItem(pk,{type:'status',icon:'⚾',label:'Game underway!',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
@@ -1028,8 +1026,7 @@ async function pollLeaguePulse() {
     Object.keys(pendingFinalItems).forEach(function(pk) {
       var pf=pendingFinalItems[pk];
       var gamePlays=feedItems.filter(function(fi){return fi.gamePk==pk&&fi.data&&fi.data.type==='play';});
-      var finalTs=gamePlays.length>0?new Date(gamePlays[0].ts.getTime()+60000):pf.fallbackTs;
-      addFeedItem(+pk,{type:'status',icon:'🏁',label:'Game Final',sub:pf.sub,playTime:finalTs});
+      if (gamePlays.length>0) addFeedItem(+pk,{type:'status',icon:'🏁',label:'Game Final',sub:pf.sub,playTime:new Date(gamePlays[0].ts.getTime()+60000)});
     });
     if (isFirstPoll&&feedItems.length>0){feedItems.sort(function(a,b){return b.ts-a.ts;});renderFeed();}
     isFirstPoll=false;
