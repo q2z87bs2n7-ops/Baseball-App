@@ -270,7 +270,7 @@ html, body {
   position: sticky;
   top: var(--header-h);
   z-index: 90;
-  height: var(--ticker-h);
+  min-height: var(--ticker-h);
   background: var(--dark);
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -329,6 +329,29 @@ html, body {
 }
 .ticker-game.status-live.feed-disabled {
   border-color: var(--border);
+}
+
+/* Expanded RISP chip — two rows */
+.ticker-game.has-risp {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px 10px 7px;
+  white-space: normal;
+}
+.ticker-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ticker-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.ticker-diamond {
+  flex-shrink: 0;
 }
 
 .feed-item.feed-hidden {
@@ -1360,14 +1383,33 @@ function renderTicker() {
 
     var dot = isLive ? '<div class="ticker-live-dot"></div>' : '';
 
+    var hasRisp = isLive && (g.onSecond || g.onThird);
     var filterClass = enabledGames.has(g.gamePk) ? ' feed-enabled' : ' feed-disabled';
-    html += '<div class="ticker-game ' + statusClass + filterClass + '" onclick="toggleGame(' + g.gamePk + ')">'
-          + dot
-          + '<span class="ticker-score">' + g.awayAbbr + '&nbsp;<strong>' + g.awayScore + '</strong></span>'
-          + '<span class="ticker-divider">·</span>'
-          + '<span class="ticker-score"><strong>' + g.homeScore + '</strong>&nbsp;' + g.homeAbbr + '</span>'
-          + '<span class="ticker-inning">' + innStr + '</span>'
-          + '</div>';
+    var rispClass   = hasRisp ? ' has-risp' : '';
+
+    if (hasRisp) {
+      // Expanded two-row chip: scores on top, diamond + inning on bottom
+      html += '<div class="ticker-game ' + statusClass + filterClass + rispClass + '" onclick="toggleGame(' + g.gamePk + ')">'
+            + '<div class="ticker-top">'
+            + dot
+            + '<span class="ticker-score">' + g.awayAbbr + '&nbsp;<strong>' + g.awayScore + '</strong></span>'
+            + '<span class="ticker-divider">·</span>'
+            + '<span class="ticker-score"><strong>' + g.homeScore + '</strong>&nbsp;' + g.homeAbbr + '</span>'
+            + '</div>'
+            + '<div class="ticker-bottom">'
+            + baseDiamondSvg(g.onFirst, g.onSecond, g.onThird)
+            + '<span class="ticker-inning">' + innStr + '</span>'
+            + '</div>'
+            + '</div>';
+    } else {
+      html += '<div class="ticker-game ' + statusClass + filterClass + '" onclick="toggleGame(' + g.gamePk + ')">'
+            + dot
+            + '<span class="ticker-score">' + g.awayAbbr + '&nbsp;<strong>' + g.awayScore + '</strong></span>'
+            + '<span class="ticker-divider">·</span>'
+            + '<span class="ticker-score"><strong>' + g.homeScore + '</strong>&nbsp;' + g.homeAbbr + '</span>'
+            + '<span class="ticker-inning">' + innStr + '</span>'
+            + '</div>';
+    }
   });
 
   ticker.innerHTML = html;
@@ -1404,6 +1446,22 @@ function ordinal(n) {
   if (n === 2) return '2nd';
   if (n === 3) return '3rd';
   return n + 'th';
+}
+
+function baseDiamondSvg(on1, on2, on3) {
+  var dim = 'rgba(255,255,255,0.18)';
+  var lit = '#ffd000';
+  var glow = 'filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
+  var s1 = on1 ? ' style="' + glow + '"' : '';
+  var s2 = on2 ? ' style="' + glow + '"' : '';
+  var s3 = on3 ? ' style="' + glow + '"' : '';
+  return '<svg class="ticker-diamond" width="28" height="24" viewBox="0 0 28 24" aria-hidden="true">'
+    + '<path d="M14,21 L24,12 L14,3 L4,12 Z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1.2"/>'
+    + '<circle cx="14" cy="21" r="2" fill="rgba(255,255,255,0.13)"/>'
+    + '<circle' + s1 + ' cx="24" cy="12" r="3" fill="' + (on1 ? lit : dim) + '"/>'
+    + '<circle' + s2 + ' cx="14" cy="3"  r="3" fill="' + (on2 ? lit : dim) + '"/>'
+    + '<circle' + s3 + ' cx="4"  cy="12" r="3" fill="' + (on3 ? lit : dim) + '"/>'
+    + '</svg>';
 }
 
 function localDateStr(d) {
@@ -1740,6 +1798,10 @@ function advanceMockGame(gamePk, play) {
   g.inning     = play.inn;
   g.halfInning = play.half;
   g.outs       = play.outs;
+  // Mock base state: approximate from risp flag (scoring plays clear bases)
+  g.onFirst  = false;
+  g.onSecond = !play.scoring && !!play.risp;
+  g.onThird  = false;
 
   // Classify
   var playClass = play.event === 'Home Run' ? 'homerun'
@@ -1896,6 +1958,9 @@ async function poll() {
           gameTime:      gameTime,
           gameDateMs:    gameDateMs,
           venueName:     g.venue ? g.venue.name : null,
+          onFirst:       !!(ls.offense && ls.offense.onFirst),
+          onSecond:      !!(ls.offense && ls.offense.onSecond),
+          onThird:       !!(ls.offense && ls.offense.onThird),
         };
         enabledGames.add(pk);
       } else {
@@ -1930,6 +1995,9 @@ async function poll() {
         prev.inning     = ls.currentInning   || prev.inning;
         prev.halfInning = (ls.inningHalf     || 'Top').toLowerCase();
         prev.outs       = ls.outs            || 0;
+        prev.onFirst    = !!(ls.offense && ls.offense.onFirst);
+        prev.onSecond   = !!(ls.offense && ls.offense.onSecond);
+        prev.onThird    = !!(ls.offense && ls.offense.onThird);
       }
     });
 
