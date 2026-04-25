@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.9.5-dev</title>
+<title>League Pulse — MLB Live Feed · v0.9.6-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -679,6 +679,8 @@ html, body {
 }
 .play-tag.hit-tag  { background: rgba(80,  200, 120, 0.14); color: #50c878; }
 .play-tag.walk-tag { background: rgba(100, 160, 255, 0.14); color: #6aacff; }
+.play-tag.k-tag    { background: rgba(150, 150, 170, 0.14); color: #9090b0; }
+.play-tag.err-tag  { background: rgba(255, 180,   0, 0.14); color: #ffb800; }
 .play-tag.dp-tag   { background: rgba(220, 100,  60, 0.14); color: #e06040; }
 .play-tag.tp-tag   { background: rgba(220,  60,  60, 0.18); color: #e03030; }
 
@@ -1019,6 +1021,13 @@ html, body {
         <span class="sound-knob"></span>
       </label>
     </div>
+    <div class="sound-row">
+      <div class="sound-label">⚠️ Error</div>
+      <label class="sound-toggle">
+        <input type="checkbox" checked onchange="setSoundPref('error',this.checked)">
+        <span class="sound-knob"></span>
+      </label>
+    </div>
   </div>
 </div>
 
@@ -1265,6 +1274,7 @@ let totalMockPlays = 0;
 let playedMockPlays= 0;
 let alertId        = 0;
 let isFirstPoll    = true; // used to sort feed by timestamp after history load
+let pollDateStr    = null; // date used for schedule fetch; locked while live games remain (midnight guard)
 
 // ── Entry point ──────────────────────────────────────────────────────────────
 function init() {
@@ -1731,10 +1741,7 @@ function buildFeedEl(item) {
       + '</span>';
   }
 
-  // RISP inline badge — only on non-scoring plays
-  var rispBadge = (d.risp && !d.scoring)
-    ? '<span class="risp-tag">⚡ RISP</span>'
-    : '';
+  var rispBadge = d.risp ? '<span class="risp-tag">⚡ RISP</span>' : '';
 
   // Hit / walk / out-event badges
   var evt = d.event || '';
@@ -1743,6 +1750,8 @@ function buildFeedEl(item) {
   else if (evt === 'Double')                          playBadge = '<span class="play-tag hit-tag">2B</span>';
   else if (evt === 'Triple')                          playBadge = '<span class="play-tag hit-tag">3B</span>';
   else if (evt === 'Walk' || evt === 'Intent Walk')   playBadge = '<span class="play-tag walk-tag">BB</span>';
+  else if (evt === 'Strikeout')                       playBadge = '<span class="play-tag k-tag">K</span>';
+  else if (evt.indexOf('Error') !== -1)               playBadge = '<span class="play-tag err-tag">E</span>';
   else if (evt.indexOf('Triple Play') !== -1)         playBadge = '<span class="play-tag tp-tag">TP</span>';
   else if (evt.indexOf('Double Play') !== -1)         playBadge = '<span class="play-tag dp-tag">DP</span>';
 
@@ -1922,6 +1931,8 @@ function advanceMockGame(gamePk, play) {
     playSound('tp');
   } else if (play.event && play.event.indexOf('Double Play') !== -1) {
     playSound('dp');
+  } else if (play.event && play.event.indexOf('Error') !== -1) {
+    playSound('error');
   } else if (play.risp) {
     playSound('risp');
   }
@@ -1971,12 +1982,17 @@ function updateMockProgress() {
 function initReal() {
   document.getElementById('mockBar').style.display = 'none';
   applyLeaguePulseTheme('#002D72', '#FF5910'); // Mets default; swap for other teams
+  pollDateStr = localDateStr(new Date());
   poll();
   setInterval(poll, 15000);
 }
 
 async function poll() {
-  var dateStr = localDateStr(new Date());
+  // Only advance to today's date when no games are currently live —
+  // prevents the feed resetting to empty after midnight during extra-inning games.
+  var hasLive = Object.values(gameStates).some(function(g) { return g.status === 'Live'; });
+  if (!hasLive) pollDateStr = localDateStr(new Date());
+  var dateStr = pollDateStr;
   try {
     var r = await fetch(MLB_BASE + '/schedule?sportId=1&date=' + dateStr + '&hydrate=linescore,team');
     var d = await r.json();
@@ -2168,6 +2184,8 @@ async function pollGamePlays(gamePk) {
           playSound('tp');
         } else if (event.indexOf('Double Play') !== -1) {
           playSound('dp');
+        } else if (event.indexOf('Error') !== -1) {
+          playSound('error');
         } else if (hasRISP) {
           playSound('risp');
         }
@@ -2188,6 +2206,7 @@ var soundSettings = {
   tp:        true,
   gameStart: true,
   gameEnd:   true,
+  error:     true,
 };
 
 function toggleSoundPanel() {
@@ -2211,6 +2230,7 @@ function playSound(type) {
   else if (type === 'tp')        playTpSound();
   else if (type === 'gameStart') playGameStartSound();
   else if (type === 'gameEnd')   playGameEndSound();
+  else if (type === 'error')     playErrorSound();
 }
 
 // _beep: notes = [{freq, start, dur, vol, wave}]
@@ -2272,6 +2292,14 @@ function playGameEndSound() {
     {freq:784, start:0,    dur:0.25, vol:0.14},
     {freq:659, start:0.22, dur:0.25, vol:0.14},
     {freq:523, start:0.44, dur:0.45, vol:0.14},
+  ]);
+}
+
+// Flat dissonant drop — fielding error
+function playErrorSound() {
+  _beep([
+    {freq:466, start:0,    dur:0.14, vol:0.13},
+    {freq:349, start:0.11, dur:0.28, vol:0.13},
   ]);
 }
 
