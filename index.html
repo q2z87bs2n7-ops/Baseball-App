@@ -1408,7 +1408,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
     }
   }
   var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">#' + jerseyNumber + '</div>' : '';
-  var hrLabel = hrCount !== '—' ? ' #' + hrCount : '';
+
   card.innerHTML = ''
     + '<div class="pc-header">'
     +   '<div class="pc-photo-wrap">'
@@ -1418,7 +1418,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
     +   '<div class="pc-identity">'
     +     '<div class="pc-name">' + batterName + '</div>'
     +     '<div class="pc-team">' + teamAbbr + '</div>'
-    +     '<div class="pc-event-badge">💥 HOME RUN' + hrLabel + '</div>'
+    +     '<div class="pc-event-badge">💥 HOME RUN!</div>'
     +   '</div>'
     + '</div>'
     + '<div class="pc-stats">'
