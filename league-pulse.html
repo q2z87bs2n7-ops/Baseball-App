@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>League Pulse — MLB Live Feed · v0.7-dev</title>
+<title>League Pulse — MLB Live Feed · v0.8-dev</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1144,7 +1144,7 @@ const MOCK_DATA = {
 };
 
 // ── Config ───────────────────────────────────────────────────────────────────
-let mockMode = true;
+let mockMode = false;
 const MLB_BASE      = 'https://statsapi.mlb.com/api/v1';
 const MLB_BASE_V1_1 = 'https://statsapi.mlb.com/api/v1.1';
 
@@ -1479,7 +1479,7 @@ function renderEmptyState() {
 
 // ── Feed ─────────────────────────────────────────────────────────────────────
 function addFeedItem(gamePk, data) {
-  var item = {gamePk: gamePk, data: data, ts: new Date()};
+  var item = {gamePk: gamePk, data: data, ts: data.playTime || new Date()};
   feedItems.unshift(item);
   var el = prependFeedItem(item);
   if (!enabledGames.has(+gamePk)) el.classList.add('feed-hidden');
@@ -1811,21 +1811,22 @@ async function poll() {
 
       if (!gameStates[pk]) {
         gameStates[pk] = {
-          gamePk:      pk,
-          awayId:      away.team.id,
-          homeId:      home.team.id,
-          awayAbbr:    away.team.abbreviation,
-          homeAbbr:    home.team.abbreviation,
-          awayName:    away.team.name,
-          homeName:    home.team.name,
-          awayPrimary: awayTc.primary,
-          homePrimary: homeTc.primary,
-          awayScore:   away.score  || 0,
-          homeScore:   home.score  || 0,
-          status:      newStatus,
-          inning:      ls.currentInning   || 1,
-          halfInning:  (ls.inningHalf     || 'Top').toLowerCase(),
-          outs:        ls.outs            || 0,
+          gamePk:        pk,
+          awayId:        away.team.id,
+          homeId:        home.team.id,
+          awayAbbr:      away.team.abbreviation,
+          homeAbbr:      home.team.abbreviation,
+          awayName:      away.team.name,
+          homeName:      home.team.name,
+          awayPrimary:   awayTc.primary,
+          homePrimary:   homeTc.primary,
+          awayScore:     away.score  || 0,
+          homeScore:     home.score  || 0,
+          status:        newStatus,
+          detailedState: detailed,
+          inning:        ls.currentInning   || 1,
+          halfInning:    (ls.inningHalf     || 'Top').toLowerCase(),
+          outs:          ls.outs            || 0,
           playCount:     0,
           lastTimestamp: null,
           gameTime:      gameTime,
@@ -1835,22 +1836,28 @@ async function poll() {
       } else {
         var prev = gameStates[pk];
         if (gameTime) prev.gameTime = gameTime;
-        // Status-change feed events
-        if (prev.status !== newStatus) {
-          if (newStatus === 'Live') {
-            addFeedItem(pk, {type:'status', icon:'⚾', label:'Game underway!',
-              sub: prev.awayAbbr + ' @ ' + prev.homeAbbr});
-            playSound('gameStart');
-          }
-          if (newStatus === 'Final') {
-            addFeedItem(pk, {type:'status', icon:'🏁', label:'Game Final',
-              sub: prev.awayAbbr + ' ' + (away.score||0) + ', ' + prev.homeAbbr + ' ' + (home.score||0)});
-            playSound('gameEnd');
-          }
-          if (detailed.toLowerCase().indexOf('delay') !== -1) {
-            addFeedItem(pk, {type:'status', icon:'🌧️', label:'Game Delayed', sub: detailed});
-          }
+
+        // Game underway: only fire when detailedState becomes "In Progress" — not on warmup
+        if (prev.detailedState !== 'In Progress' && detailed === 'In Progress') {
+          addFeedItem(pk, {type:'status', icon:'⚾', label:'Game underway!',
+            sub: prev.awayAbbr + ' @ ' + prev.homeAbbr});
+          playSound('gameStart');
         }
+
+        // Game final
+        if (prev.status !== 'Final' && newStatus === 'Final') {
+          addFeedItem(pk, {type:'status', icon:'🏁', label:'Game Final',
+            sub: prev.awayAbbr + ' ' + (away.score||0) + ', ' + prev.homeAbbr + ' ' + (home.score||0)});
+          playSound('gameEnd');
+        }
+
+        // Delay — can happen mid-game without a status change
+        if (detailed.toLowerCase().indexOf('delay') !== -1
+            && prev.detailedState.toLowerCase().indexOf('delay') === -1) {
+          addFeedItem(pk, {type:'status', icon:'🌧️', label:'Game Delayed', sub: detailed});
+        }
+
+        prev.detailedState = detailed;
         prev.status     = newStatus;
         prev.awayScore  = away.score  || 0;
         prev.homeScore  = home.score  || 0;
@@ -1891,6 +1898,13 @@ async function pollGamePlays(gamePk) {
 
     var plays     = (data.allPlays || []).filter(function(p) { return p.about && p.about.isComplete; });
     var lastCount = g.playCount || 0;
+
+    // On first load, silently catch up — no feed items, no alerts for history
+    if (lastCount === 0 && plays.length > 0) {
+      g.playCount = plays.length;
+      return;
+    }
+
     var newPlays  = plays.slice(lastCount);
 
     newPlays.forEach(function(play) {
@@ -1914,11 +1928,16 @@ async function pollGamePlays(gamePk) {
                     : hasRISP              ? 'risp'
                     : 'normal';
 
+      var playTime = null;
+      if (play.about && play.about.startTime) {
+        try { playTime = new Date(play.about.startTime); } catch(e) {}
+      }
+
       addFeedItem(gamePk, {
         type:'play', event:event, desc:desc,
         scoring:isScoringP, awayScore:aScore, homeScore:hScore,
         inning:inning, halfInning:halfInning, outs:outs,
-        risp:hasRISP, playClass:playClass,
+        risp:hasRISP, playClass:playClass, playTime:playTime,
       });
 
       var teamColor = halfInning === 'top' ? g.awayPrimary : g.homePrimary;
