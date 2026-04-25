@@ -1212,15 +1212,16 @@ function renderEmptyState() {
 
 function addFeedItem(gamePk,data) {
   var item={gamePk:gamePk,data:data,ts:data.playTime||new Date()};
-  feedItems.unshift(item);
-  var el=prependFeedItem(item);
-  if (!enabledGames.has(+gamePk)) el.classList.add('feed-hidden');
+  var idx=feedItems.findIndex(function(fi){return fi.ts<=item.ts;});
+  if(idx===-1) feedItems.push(item); else feedItems.splice(idx,0,item);
+  var el=buildFeedEl(item);
+  el.dataset.ts=item.ts.getTime();
+  if(!enabledGames.has(+gamePk)) el.classList.add('feed-hidden');
+  var feed=document.getElementById('feed');
+  var tsMs=item.ts.getTime();
+  var sibling=Array.from(feed.children).find(function(c){return +c.dataset.ts<tsMs;});
+  feed.insertBefore(el,sibling||null);
   updateFeedEmpty();
-}
-
-function prependFeedItem(item) {
-  var el=buildFeedEl(item), feed=document.getElementById('feed');
-  feed.insertBefore(el,feed.firstChild); return el;
 }
 
 function buildFeedEl(item) {
@@ -1268,7 +1269,7 @@ function buildFeedEl(item) {
 
 function renderFeed() {
   var feed=document.getElementById('feed'); feed.innerHTML='';
-  feedItems.forEach(function(item){var el=buildFeedEl(item);if(!enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);});
+  feedItems.forEach(function(item){var el=buildFeedEl(item);el.dataset.ts=item.ts.getTime();if(!enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);});
   updateFeedEmpty();
 }
 
