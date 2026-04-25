@@ -1,0 +1,16 @@
+name: Test Push Notification
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send test push to all subscribers
+        run: |
+          TEST_URL="${{ secrets.NOTIFY_URL }}"
+          TEST_URL="${TEST_URL/api\/notify/api\/test-push}"
+          RESPONSE=$(curl -s -X POST "$TEST_URL" \
+            -H "x-notify-token: ${{ secrets.NOTIFY_SECRET }}")
+          echo "Response: $RESPONSE"
