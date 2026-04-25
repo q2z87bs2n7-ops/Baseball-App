@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.1 (v1.61 was the final v1 release — v2.x began with the League Pulse merge)
+**Current version:** v2.2.3 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -157,6 +157,7 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
 - `abstractGameState`: `"Live"`, `"Final"`, `"Preview"`, `"Scheduled"` — both `Preview` and `Scheduled` mean upcoming; both are checked
 - Use `abstractGameState` (reliable). `detailedState` is more granular but less stable.
 - **Warmup exclusion (v1.61):** `abstractGameState` becomes `"Live"` ~20–30 min before first pitch (during warmup). The code now excludes `detailedState === 'Warmup'` and `detailedState === 'Pre-Game'` from all live-game logic — these states are treated as upcoming instead. Applied in `loadTodayGame`, `renderCalendar`, and `loadLeagueMatchups`.
+- **Postponed/Cancelled/Suspended (v2.2):** A `detailedState` of `'Postponed'`, `'Cancelled'`, or `'Suspended'` on a `Final` game means no score was recorded. These are treated as PPD throughout — calendar shows a grey `PPD` badge (not `L undefined-undefined`), Pulse ticker shows `PPD` instead of `FINAL`, `selectCalGame` renders a Postponed info card instead of fetching the linescore, and Pulse fires 🌧️ "Game Postponed" instead of 🏁 "Game Final".
 
 ---
 
@@ -219,12 +220,16 @@ Monthly calendar grid (Sun–Sat), navigable with ◀ ▶ arrows. Today highligh
 
 `scheduleLoaded` flag controls whether `loadSchedule()` is called on tab visit. This flag was introduced because `scheduleData` can be pre-populated by the cold-load ±7 day fetch, which previously prevented the full season from ever loading.
 
-**Mobile calendar (≤480px):** cells show day number + colour-coded dot only (`.cal-dot`: green=W, red=L, pulsing red=Live, accent=upcoming). Tapping a game cell shows a fixed-position `.cal-tooltip` above the cell with opponent, short date, and result/time badge — data from `scheduleData`, no API call. Tooltip dismisses on tap outside. The `#gameDetail` panel below the calendar is also populated with full boxscore/linescore/game info (same as desktop).
+**Doubleheaders (v2.2):** `renderCalendar` uses `gamesByDate` (array per date, sorted by gamePk) instead of the former single-game `gameByDate`. Cells with two games show a `DH` badge next to the opponent name and stacked `G1:` / `G2:` rows, each independently clickable. The outer cell onclick is suppressed for DH cells; individual row `onclick` uses `event.stopPropagation()`. Mobile dot logic: live > all-W > all-L > split/PPD/upcoming.
+
+**Mobile calendar (≤480px):** cells show day number + colour-coded dot only (`.cal-dot`: green=W, red=L, pulsing red=Live, accent=upcoming/PPD/split). Tapping a game cell shows a fixed-position `.cal-tooltip` above the cell with opponent, short date, and result/time/PPD badge — data from `scheduleData`, no API call. Tooltip dismisses on tap outside. The `#gameDetail` panel below the calendar is also populated with full boxscore/linescore/game info (same as desktop).
 
 **Clicking a completed game** (desktop) expands detail panel:
 - Boxscore — tabbed by team. Batting (AB, H, R, RBI, BB, K, HR) and Pitching (IP, H, R, ER, BB, K, HR, PC). Only players with AB > 0 or IP > 0.
-- Linescore — inning-by-inning R/H/E
-- Game Summary — all `bs.info` label/value pairs (WP, weather, attendance, umpires)
+- Linescore — inning-by-inning R/H/E. R/H/E cells use `!=null` guards (not just truthy) to avoid showing `undefined` for partial-data games.
+- Game Summary — all `bs.info` label/value pairs (WP, weather, attendance, umpires). Duration shown as `"T"` label.
+
+**Clicking a postponed/cancelled/suspended game** shows a Postponed info card (status + venue) — no linescore fetch attempted.
 
 **Clicking an upcoming game** shows: location, probable pitchers.
 
@@ -273,7 +278,7 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 - `#mockBar` — inline (not fixed); shown only when `pulseMockMode` is true
 - `#feedWrap > #feedEmpty + #feed` — empty/upcoming state and live play items
 
-**Ticker bar:** All games as scrollable horizontal chips. Sorted: Live (most-progressed inning first) → Preview/Scheduled (by `gameDateMs` asc) → Final (dimmed). Each chip shows away score · home score · inning or start time. Clicking a chip toggles that game's plays in the feed (`enabledGames` Set). When a live game has a runner on 2nd or 3rd (`g.onSecond || g.onThird`), the chip expands to a 2-row layout with a 28×24px base diamond SVG (`baseDiamondSvg()`).
+**Ticker bar:** All games as scrollable horizontal chips. Sorted: Live (most-progressed inning first) → Preview/Scheduled (by `gameDateMs` asc) → Final (dimmed). Each chip shows away score · home score · inning or start time. Final games with `detailedState` Postponed/Cancelled/Suspended show `PPD` instead of `FINAL`. Clicking a chip toggles that game's plays in the feed (`enabledGames` Set). When a live game has a runner on 2nd or 3rd (`g.onSecond || g.onThird`), the chip expands to a 2-row layout with a 28×24px base diamond SVG (`baseDiamondSvg()`).
 
 **Feed:** Newest plays at top. Each item shows: coloured team dots + score (meta row), inning + outs, play description, play-type badge (1B/2B/3B/BB/K/E/DP/TP), ⚡ RISP badge, and score badge on scoring plays (scoring side full brightness). Play classification drives visual treatment: `homerun` (amber tint), `scoring` (green tint), `risp` (yellow left stripe), `status-change` (blue tint, centred — game start/end/delay).
 
@@ -282,6 +287,14 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 **Mock mode:** Controlled by `pulseMockMode` (toggle in Settings, persisted to `localStorage('mlb_pulse_mock')`). `MOCK_DATA` contains 4 games (NYM@ATL, NYY@BOS, LAD@SF, HOU@TEX) with ~55 scripted plays. Round-robin engine (`mockTick()`) advances one play per tick across games. Mock bar (Normal/Fast/Skip/Reset controls) is inline below the ticker.
 
 **Live mode:** `pollLeaguePulse()` fetches all games every 15s. Game-start fires only when `detailedState` transitions to `'In Progress'` (not on warmup). Timestamps stale check (`/api/v1.1/game/{pk}/feed/live/timestamps`) skips the playByPlay fetch when nothing has changed. On first poll, all pre-existing plays load as history with no alerts or sounds (`isHistory` flag), then sorted chronologically across games.
+
+**Historical status items (v2.2):** When a game is first added to `gameStates` (initial creation path), a status feed item is synthesised silently based on current state — no sounds or alerts:
+- `Final` (non-PPD) → 🏁 "Game Final · AWAY X, HOME Y · Zh Mm" — `playTime` = `gameDateMs + linescore.gameDurationMinutes * 60000` (actual end time); falls back to `gameDateMs + 4h`
+- `Final` + PPD → 🌧️ "Game Postponed" — `playTime` = `gameDateMs`
+- `Live` + `In Progress` → ⚾ "Game underway!" — `playTime` = `gameDateMs`
+- `detailedState` contains `'delay'` → 🌧️ "Game Delayed" — `playTime` = `gameDateMs`
+
+These items are only ever added once (subsequent polls use the update path). The `isFirstPoll` sort interleaves them with historical plays by timestamp.
 
 **Sound alerts:** Web Audio API synthesized tones — no external files. Master defaults off. Events: HR (bat crack), Run (bell chime), RISP (heartbeat), DP (glove pops), TP (bugle fanfare), Game Start (organ riff), Game End (descending chime), Error (dirt thud). `playSound(type)` is the single call point — checks `soundSettings.master && soundSettings[type]`.
 
@@ -349,9 +362,9 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `renderNextGame(g, label)` | Renders the left home card HTML |
 | `loadNextGame()` | Right home card — finds and renders series after the current one |
 | `loadSchedule()` | Fetches full season, sets `scheduleLoaded=true`, renders calendar |
-| `renderCalendar()` | Draws monthly calendar grid from scheduleData |
+| `renderCalendar()` | Draws monthly calendar grid from scheduleData. Uses `gamesByDate` (array per date) to support doubleheaders — DH cells show G1/G2 rows each independently clickable. PPD/Cancelled/Suspended games show grey `PPD` badge. |
 | `changeMonth(dir)` | Navigates calendar month, calls renderCalendar |
-| `selectCalGame(gamePk, evt)` | On mobile (≤480px): shows `.cal-tooltip` above tapped cell with opponent/date/result from `scheduleData` (no API call), then falls through to also populate `#gameDetail`. On desktop: loads linescore + boxscore into `#gameDetail` panel. |
+| `selectCalGame(gamePk, evt)` | On mobile (≤480px): shows `.cal-tooltip` above tapped cell with opponent/date/result/PPD badge from `scheduleData` (no API call), then falls through to populate `#gameDetail`. On desktop: loads linescore + boxscore into `#gameDetail` panel. Postponed/Cancelled/Suspended games render a Postponed info card and return early — no linescore fetch. |
 | `buildBoxscore(players)` | Global — builds batting + pitching tables from boxscore players object. Used by both historical and live game views |
 | `switchBoxTab(bsId, side)` | Switches active tab in a boxscore panel |
 | `loadStandings()` | Fetches standings, calls all four render functions |
@@ -396,7 +409,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `updatePulseMockToggleUI()` | Updates Settings panel toggle knob position and background for mock mode state |
 | `initMock()` | Shows mock bar, populates `gameStates` from `MOCK_DATA` via `tcLookup`, sets `enabledGames`, starts mock tick |
 | `initReal()` | Hides mock bar, calls `pollLeaguePulse()`, sets 15s poll interval |
-| `pollLeaguePulse()` | Fetches schedule, updates `gameStates` (incl. `detailedState`, base runners), fires game-start/delay events, runs `Promise.all(pollGamePlays)`, sorts feed on first poll |
+| `pollLeaguePulse()` | Fetches schedule, updates `gameStates` (incl. `detailedState`, base runners), fires game-start/delay/final/postponed events. On initial game creation synthesises historical status items (no sounds). Runs `Promise.all(pollGamePlays)` for live games, sorts feed on first poll. |
 | `pollGamePlays(gamePk)` | Timestamps stale check → if changed, fetches `/playByPlay`, uses `isHistory` flag to suppress alerts/sounds for pre-existing plays |
 | `renderTicker()` | Sorts `gameStates` and rebuilds sticky ticker HTML; expanded RISP chip with base diamond SVG when `g.onSecond \|\| g.onThird` |
 | `updateHeader()` | No-op stub — call sites retained in mock/poll loops but body is empty (controls bar was removed) |
@@ -497,6 +510,12 @@ On every commit that changes app content, bump **three** things:
 - [x] ⚡ Pulse — Game-start fires on `detailedState === 'In Progress'` only, not warmup (v2.1)
 - [x] ⚡ Pulse — Timestamps stale check skips playByPlay fetch when game state unchanged (v2.1)
 - [x] ⚡ Pulse — Historical plays load on first poll without alerts/sounds; sorted chronologically across all games (v2.1)
+- [x] Calendar — Postponed/Cancelled/Suspended games show grey `PPD` badge instead of crashing to "L undefined-undefined"; `selectCalGame` renders info card, skips linescore fetch (v2.2)
+- [x] Calendar — Doubleheader support: `gamesByDate` array per date; DH cells show `DH` badge + stacked G1/G2 rows each independently clickable; dot reflects combined result (v2.2)
+- [x] Calendar — Linescore R/H/E null guards tightened (`!=null` per field) to prevent `undefined` display on partial-data games (v2.2)
+- [x] ⚡ Pulse — Ticker shows `PPD` instead of `FINAL` for postponed/cancelled/suspended games (v2.2)
+- [x] ⚡ Pulse — 🌧️ "Game Postponed" feed item fired instead of 🏁 "Game Final" + gameEnd sound for PPD transitions (v2.2)
+- [x] ⚡ Pulse — Historical status items synthesised on first load: Game Final (with `linescore.gameDurationMinutes` duration label + accurate end-time sort), Game Postponed, Game Underway, Game Delayed (v2.2)
 - [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
 - [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
 - [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
