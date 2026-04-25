@@ -298,6 +298,12 @@ Items are roughly prioritised. Items marked `[proto]` need design review before 
 - [ ] **Merge into index.html** — add League Pulse as a new nav section (`league-pulse` or `pulse`). The CSS variable system and TC/theme utilities already match; the main work is collapsing `league-pulse.html`'s JS into `index.html`'s function namespace and wiring up the nav button.
 - [ ] **Remove mock mode from production build** — `mockMode`, `MOCK_DATA`, mock controls bar, and mock engine functions should be stripped (or guarded behind a dev flag) before shipping in `index.html`.
 
+### Header / Controls UX
+- [ ] **Move sound button and mode toggle out of header** — both controls currently live in `.header-right`. Move them into a `#pulseControls` bar between the ticker and feed so the header shows only brand + live count. Mock controls bar should also move from `position:fixed` bottom to inline. Needs a design pass before implementing — the first attempt was reverted as the result wasn't satisfactory.
+- [ ] **Demo mode** — replace mock mode with a polished "Demo" mode users can trigger to understand the feed when no games are live. Requires significantly more mock play data before building. Do not design until mock dataset is expanded.
+- [ ] **Mobile sound** — Web Audio API tones are unreliable on iOS/iPadOS (autoplay policy). Revisit with real audio files or a user-gesture-gated unlock pattern.
+- [ ] **Countdown to first pitch for delayed games** — the countdown timer on the empty state uses the advertised start time; it has no way to reflect rain delays or pushbacks. Needs a strategy (e.g. poll `detailedState` and hide/update countdown when delay is detected).
+
 ### Infrastructure
 - [ ] **Push notification integration** — wire League Pulse game-start events to the existing push notification system (`api/notify.js` + Upstash Redis). Currently push fires for the active team only; League Pulse could offer league-wide alerts.
 - [ ] **Off-season / no-games state** — the plain `⚾ League Pulse` placeholder is fine but could show a "Next game" date or season start countdown when there are genuinely no games scheduled.
