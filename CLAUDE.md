@@ -78,7 +78,7 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
 ```
 
 ### Navigation
-`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Sections: `home`, `schedule`, `standings`, `stats`, `news`, `media`, `league`, `pulse`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
+`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `home`, `pulse`, `league`, `schedule`, `news`, `standings`, `stats`, `media`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
 
 `pulse` is lazy-initialised: `initLeaguePulse()` fires only on the first navigation to the section via a `pulseInitialized` guard inside `showSection`. The sound panel click-outside handler is also registered at that point.
 
@@ -119,7 +119,7 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
 - `.live-card` — card inside `.live-grid`. Has `min-width:0` (required — grid items default to `min-width:auto`, which lets table content push the track wider than `1fr` and break the layout on mobile)
 - `.media-layout` — 25%/75% grid for media tab (video list + player). Collapses to 1-col at 480px.
 - `.league-leaders-grid` — 2-col grid for league leader panels. Collapses to 1-col at 480px.
-- `.nav-label` — wraps nav button text. Visible at ≤480px at 9.5px (short labels: Home/Sched/Stand/Stats/News/League). Hidden at ≤1024px tablet band (icons only).
+- `.nav-label` — wraps nav button text. Visible at ≤480px at 9.5px (labels: Home/Pulse/League/Schedule/News/Standings/Stats/Media). Hidden at ≤1024px tablet band (icons only).
 - `.team-chip` — static team name pill in header between logo and nav. Shown at ≥481px, hidden at ≤480px. Updated by `applyTeamTheme`. Not a dropdown — no click handler.
 - `.matchup-card` — subtle card surface inside matchup grid: rgba(0,0,0,.18) bg, 1px solid rgba(255,255,255,.05) border, 8px radius. :hover darkens slightly. Replaces per-card team gradient.
 - `.card-cap` — 56px team logo img used in home cards. Shrinks to 40px at ≤767px.
