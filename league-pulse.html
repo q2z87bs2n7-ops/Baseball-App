@@ -443,13 +443,41 @@ html, body {
   margin-bottom: 10px;
 }
 
-.empty-hype {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1.5;
+.empty-hype-block {
   margin-bottom: 18px;
-  max-width: 500px;
+}
+.empty-hype-headline {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+.empty-hype-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.hype-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+}
+.hype-pill.hr      { background: rgba(255,155,30,0.12); border-color: rgba(255,155,30,0.35); color: #ffaa30; }
+.hype-pill.scoring { background: rgba(220,60,40,0.10);  border-color: rgba(220,60,40,0.30);  color: #e05040; }
+.hype-pill.risp    { background: rgba(255,200,0,0.10);  border-color: rgba(255,200,0,0.30);  color: #ffd000; }
+.empty-hype-sub {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .upcoming-hero {
@@ -480,7 +508,7 @@ html, body {
   height: 40px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55));
+  filter: drop-shadow(0 0 7px rgba(255,255,255,0.55)) drop-shadow(0 1px 3px rgba(0,0,0,0.55));
 }
 
 .upcoming-team-name {
@@ -510,6 +538,15 @@ html, body {
   color: #ffffff;
 }
 
+.upcoming-foot-countdown {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
 .upcoming-foot-venue {
   font-size: 11px;
   color: rgba(255,255,255,0.45);
@@ -537,7 +574,7 @@ html, body {
   height: 26px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 0 5px rgba(255,255,255,0.45)) drop-shadow(0 1px 2px rgba(0,0,0,0.4));
 }
 
 .upcoming-card-matchup {
@@ -1234,6 +1271,7 @@ let gameStates     = {};   // gamePk -> game state object
 let feedItems      = [];   // all feed items, newest first
 let enabledGames   = new Set(); // gamePks whose plays are shown in the feed
 let mockPlayPtrs   = {};   // gamePk -> index of next play to emit
+let countdownTimer = null; // interval for hero card first-pitch countdown
 let mockGameQueue  = [];   // rotating round-robin of gamePks
 let mockTimerId    = null;
 let mockSpeedMs    = 6000;
@@ -1266,7 +1304,8 @@ function switchMode(toReal) {
   document.getElementById('btnMockMode').classList.toggle('active',  !toReal);
   document.getElementById('btnLiveMode').classList.toggle('active',   toReal);
 
-  if (mockTimerId) { clearInterval(mockTimerId); mockTimerId = null; }
+  if (mockTimerId)    { clearInterval(mockTimerId);    mockTimerId    = null; }
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   feedItems       = [];
   gameStates      = {};
   enabledGames    = new Set();
@@ -1464,6 +1503,23 @@ function baseDiamondSvg(on1, on2, on3) {
     + '</svg>';
 }
 
+function startCountdown(targetMs) {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  function tick() {
+    var el = document.getElementById('heroCountdown');
+    if (!el) { clearInterval(countdownTimer); countdownTimer = null; return; }
+    var diff = targetMs - Date.now();
+    if (diff <= 0) {
+      el.textContent = 'Starting now';
+    } else {
+      var mins = Math.ceil(diff / 60000);
+      el.textContent = 'First pitch in ' + mins + (mins === 1 ? 'm' : 'm');
+    }
+  }
+  tick();
+  countdownTimer = setInterval(tick, 30000);
+}
+
 function localDateStr(d) {
   return d.getFullYear() + '-'
     + String(d.getMonth() + 1).padStart(2, '0') + '-'
@@ -1534,7 +1590,15 @@ function renderEmptyState() {
   var html =
     '<div class="empty-upcoming-label">TODAY &middot; ' + n
     + (n === 1 ? ' UPCOMING GAME' : ' UPCOMING GAMES') + '</div>'
-    + '<p class="empty-hype">Every scoring play, home run, and RISP moment &mdash; surfaces here the moment a game goes live.</p>'
+    + '<div class="empty-hype-block">'
+    + '<div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    + '<div class="empty-hype-pills">'
+    + '<span class="hype-pill hr">💥 Home Runs</span>'
+    + '<span class="hype-pill scoring">🔴 Scoring Plays</span>'
+    + '<span class="hype-pill risp">⚡ RISP</span>'
+    + '</div>'
+    + '<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div>'
+    + '</div>'
     + '<div class="upcoming-hero" style="background:' + heroGrad + '">'
     + '<div class="upcoming-hero-kicker">NEXT UP</div>'
     + '<div class="upcoming-matchup-row">'
@@ -1551,7 +1615,10 @@ function renderEmptyState() {
     + '</div>'
     + '</div>'
     + '<div class="upcoming-foot">'
+    + '<div>'
     + '<div class="upcoming-foot-time">' + (hero.gameTime || 'TBD') + '</div>'
+    + '<div class="upcoming-foot-countdown" id="heroCountdown"></div>'
+    + '</div>'
     + (hero.venueName ? '<div class="upcoming-foot-venue">' + hero.venueName + '</div>' : '')
     + '</div>'
     + '</div>';
@@ -1573,6 +1640,9 @@ function renderEmptyState() {
   }
 
   el.innerHTML = html;
+
+  // Start countdown for hero game if it has a known start time
+  if (hero.gameDateMs) startCountdown(hero.gameDateMs);
 }
 
 // ── Feed ─────────────────────────────────────────────────────────────────────
