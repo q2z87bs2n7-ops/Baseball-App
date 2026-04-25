@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.5 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix)
+**Current version:** v2.6 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -220,9 +220,9 @@ Monthly calendar grid (Sun–Sat), navigable with ◀ ▶ arrows. Today highligh
 
 `scheduleLoaded` flag controls whether `loadSchedule()` is called on tab visit. This flag was introduced because `scheduleData` can be pre-populated by the cold-load ±7 day fetch, which previously prevented the full season from ever loading.
 
-**Doubleheaders (v2.2/v2.5):** `renderCalendar` uses `gamesByDate` (array per date, sorted by gamePk) instead of the former single-game `gameByDate`. Cells with two games show a `DH` badge next to the opponent name and stacked `G1:` / `G2:` rows, each independently clickable via `event.stopPropagation()`. The outer cell onclick defaults to G1 — on desktop this is a fallback for clicks outside the G1/G2 rows; on mobile it is the only active target (the inner rows are hidden inside `.cal-game-info` which is `display:none` at ≤480px). Mobile dot logic: live > all-W > all-L > split/PPD/upcoming.
+**Doubleheaders (v2.2/v2.5/v2.6):** `renderCalendar` uses `gamesByDate` (array per date, sorted by gamePk) instead of the former single-game `gameByDate`. Cells with two games show a `DH` badge next to the opponent name and stacked `G1:` / `G2:` rows, each independently clickable via `event.stopPropagation()`. The outer cell onclick defaults to G1 — on desktop this is a fallback for clicks outside the G1/G2 rows; on mobile it is the only active target (the inner rows are hidden inside `.cal-game-info` which is `display:none` at ≤480px). Mobile dot logic: live > all-W > all-L > all-PPD (grey) > split/upcoming. Clicking any DH cell populates `#gameDetail` with **both** games stacked, each rendered independently by `buildGameDetailPanel`.
 
-**Mobile calendar (≤480px):** cells show day number + colour-coded dot only (`.cal-dot`: green=W, red=L, pulsing red=Live, accent=upcoming/PPD/split). Tapping a game cell shows a fixed-position `.cal-tooltip` above the cell with opponent, short date, and result/time/PPD badge — data from `scheduleData`, no API call. Tooltip dismisses on tap outside. The `#gameDetail` panel below the calendar is also populated with full boxscore/linescore/game info (same as desktop).
+**Mobile calendar (≤480px):** cells show day number + colour-coded dot only (`.cal-dot`: green=W, red=L, pulsing red=Live, grey=PPD, accent=upcoming/split). Tapping a game cell shows a fixed-position `.cal-tooltip` above the cell with opponent, short date, and result/time/PPD badge — data from `scheduleData`, no API call. DH tooltip date line appends `· DH`. Tooltip dismisses on tap outside. The `#gameDetail` panel below the calendar is also populated with full game info for all games on that date.
 
 **Clicking a completed game** (desktop) expands detail panel:
 - Boxscore — tabbed by team. Batting (AB, H, R, RBI, BB, K, HR) and Pitching (IP, H, R, ER, BB, K, HR, PC). Only players with AB > 0 or IP > 0.
@@ -366,7 +366,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `loadSchedule()` | Fetches full season, sets `scheduleLoaded=true`, renders calendar |
 | `renderCalendar()` | Draws monthly calendar grid from scheduleData. Uses `gamesByDate` (array per date) to support doubleheaders — DH cells show G1/G2 rows each independently clickable. PPD/Cancelled/Suspended games show grey `PPD` badge. |
 | `changeMonth(dir)` | Navigates calendar month, calls renderCalendar |
-| `selectCalGame(gamePk, evt)` | On mobile (≤480px): shows `.cal-tooltip` above tapped cell with opponent/date/result/PPD badge from `scheduleData` (no API call), then falls through to populate `#gameDetail`. On desktop: loads linescore + boxscore into `#gameDetail` panel. Postponed/Cancelled/Suspended games render a Postponed info card and return early — no linescore fetch. |
+| `selectCalGame(gamePk, evt)` | Finds all games on the same local date, shows mobile tooltip for the tapped game, then renders all games via `buildGameDetailPanel` in parallel into `#gameDetail`. DH dates show both panels stacked with Game 1 / Game 2 labels. |
+| `buildGameDetailPanel(g, gameNum)` | Async — returns HTML for one game's detail panel. Handles all states independently: PPD (status + venue card), Upcoming (probable pitchers from scheduleData), Live (score + inning from hydrated linescore + Watch Live button), Final (fetches linescore + boxscore). `gameNum` null = single game (no label/separator); 1 = first DH game; 2+ = adds divider above. |
 | `buildBoxscore(players)` | Global — builds batting + pitching tables from boxscore players object. Used by both historical and live game views |
 | `switchBoxTab(bsId, side)` | Switches active tab in a boxscore panel |
 | `loadStandings()` | Fetches standings, calls all four render functions |
@@ -515,6 +516,8 @@ On every commit that changes app content, bump **three** things:
 - [x] Calendar — Postponed/Cancelled/Suspended games show grey `PPD` badge instead of crashing to "L undefined-undefined"; `selectCalGame` renders info card, skips linescore fetch (v2.2)
 - [x] Calendar — Doubleheader support: `gamesByDate` array per date; DH cells show `DH` badge + stacked G1/G2 rows each independently clickable; dot reflects combined result (v2.2)
 - [x] Calendar — DH cell mobile fix: outer onclick restored (defaults to G1); inner rows hidden on mobile so outer was the only target — tapping did nothing and left two cells highlighted (v2.5)
+- [x] Calendar — DH detail panel shows both games: `buildGameDetailPanel` extracted, called for all games on date in parallel; each state (PPD, Upcoming, Live, Final) handled independently with Game 1/2 labels (v2.6)
+- [x] Calendar — PPD mobile dot: `cal-dot-ppd` (grey `--muted`) added; shown when all games on a date are PPD and no result recorded; W+PPD and L+PPD still show result dot (v2.6)
 - [x] Calendar — Linescore R/H/E null guards tightened (`!=null` per field) to prevent `undefined` display on partial-data games (v2.2)
 - [x] ⚡ Pulse — Ticker shows `PPD` instead of `FINAL` for postponed/cancelled/suspended games (v2.2)
 - [x] ⚡ Pulse — 🌧️ "Game Postponed" feed item fired instead of 🏁 "Game Final" + gameEnd sound for PPD transitions (v2.2)
