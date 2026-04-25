@@ -1071,7 +1071,7 @@ async function pollLeaguePulse() {
         } else if (newStatus==='Live'&&detailed==='In Progress') {
           addFeedItem(pk,{type:'status',icon:'⚾',label:'Game underway!',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
         } else if (detailed.toLowerCase().indexOf('delay')!==-1) {
-          addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:detailed,playTime:ts0});
+          addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:g0.awayAbbr+' @ '+g0.homeAbbr+' · '+detailed,playTime:ts0});
         }
       } else {
         var prev=gameStates[pk];
@@ -1086,7 +1086,7 @@ async function pollLeaguePulse() {
           else{addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:prev.awayAbbr+' '+(away.score||0)+', '+prev.homeAbbr+' '+(home.score||0)});playSound('gameEnd');}
         }
         if (detailed.toLowerCase().indexOf('delay')!==-1&&prev.detailedState.toLowerCase().indexOf('delay')===-1) {
-          addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:detailed});
+          addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:prev.awayAbbr+' @ '+prev.homeAbbr+' · '+detailed});
         }
         prev.detailedState=detailed; prev.status=newStatus;
         prev.awayScore=away.score||0; prev.homeScore=home.score||0;
