@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.6</title>
+<title>MLB Tracker v2.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -441,6 +441,78 @@
 .sound-knob::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); top: 2px; left: 2px; transition: transform 0.2s, background 0.2s; }
 .sound-toggle input:checked + .sound-knob { background: color-mix(in srgb, var(--accent) 22%, var(--card)); border-color: var(--accent); }
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
+
+/* ── Player Card Flash (v2.7) ─────────────────────────────────────────────── */
+@keyframes card-in {
+  from { opacity:0; transform:translateY(20px) scale(0.92); }
+  to   { opacity:1; transform:translateY(0)    scale(1);    }
+}
+@keyframes card-out {
+  from { opacity:1; transform:scale(1);    }
+  to   { opacity:0; transform:scale(0.93); }
+}
+@keyframes hr-glow {
+  0%,100% { text-shadow:0 0 0   rgba(255,155,30,0);    }
+  50%      { text-shadow:0 0 18px rgba(255,155,30,0.85); }
+}
+@keyframes plus-one-pop {
+  0%   { opacity:0; transform:translateY(6px)  scale(0.7); }
+  40%  { opacity:1; transform:translateY(-4px) scale(1.2); }
+  70%  { transform:translateY(0) scale(1); }
+  100% { opacity:1; transform:translateY(0) scale(1); }
+}
+#playerCardOverlay {
+  display:none; position:fixed; inset:0; z-index:400;
+  background:rgba(0,0,0,0.72); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  align-items:center; justify-content:center; padding:16px;
+}
+#playerCardOverlay.open { display:flex; }
+#playerCardOverlay.closing #playerCard { animation:card-out 0.28s ease forwards; }
+#playerCard {
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  width:min(360px, calc(100vw - 32px)); overflow:hidden;
+  animation:card-in 0.32s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
+  position:relative; cursor:pointer;
+}
+.pc-header { padding:16px 18px 14px; display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--border); }
+.pc-photo-wrap { width:72px; height:72px; border-radius:10px; overflow:hidden; background:var(--card2); flex-shrink:0; position:relative; }
+.pc-photo-wrap img { width:100%; height:100%; object-fit:contain; object-position:top; display:block; }
+.pc-jersey { position:absolute; bottom:2px; right:3px; background:rgba(0,0,0,0.7); color:#fff; font-size:9px; font-weight:800; padding:1px 5px; border-radius:6px; line-height:1.4; }
+.pc-identity { flex:1; min-width:0; }
+.pc-name { font-size:1.1rem; font-weight:900; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; margin-bottom:2px; }
+.pc-team { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:8px; }
+.pc-event-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(255,155,30,0.15); border:1px solid rgba(255,155,30,0.40);
+  color:#ffaa30; font-size:11px; font-weight:800; letter-spacing:.05em;
+  padding:3px 9px; border-radius:20px; animation:hr-glow 2s ease-in-out infinite;
+}
+.pc-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-bottom:1px solid var(--border); }
+.pc-stat { padding:12px 10px; text-align:center; border-right:1px solid var(--border); }
+.pc-stat:last-child { border-right:none; }
+.pc-stat-val { font-size:1.2rem; font-weight:800; color:var(--accent); line-height:1.1; }
+.pc-stat-lbl { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-top:3px; }
+.pc-stat.pc-hr-highlight .pc-stat-val { color:#ffaa30; position:relative; }
+.pc-stat.pc-hr-highlight .pc-stat-val::after {
+  content:'+1'; position:absolute; top:-8px; right:-4px;
+  font-size:9px; font-weight:900; color:#ffaa30;
+  background:rgba(255,155,30,0.18); border:1px solid rgba(255,155,30,0.40);
+  border-radius:6px; padding:0 3px; line-height:1.5;
+  animation:plus-one-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+}
+.pc-context { padding:8px 14px 4px; text-align:center; }
+.pc-context-pill {
+  display:inline-block; background:rgba(255,155,30,0.12); border:1px solid rgba(255,155,30,0.30);
+  color:#ffaa30; font-size:10px; font-weight:700; letter-spacing:.04em; padding:3px 10px; border-radius:20px;
+}
+.pc-dismiss-hint { text-align:center; font-size:10px; color:var(--muted); padding:6px 14px 12px; opacity:0.6; }
+.pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; }
+@media (max-width:480px) {
+  #playerCard { width:calc(100vw - 32px); }
+  .pc-photo-wrap { width:60px; height:60px; }
+  .pc-name { font-size:1rem; }
+}
 </style>
 </head>
 <body>
@@ -510,7 +582,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7</div>
       </div>
     </div>
   </div>
@@ -766,7 +838,7 @@ const MOCK_DATA={
       {event:'Strikeout',  desc:'Austin Riley strikes out looking.',                                          scoring:false,aScore:0,hScore:1,inn:1,half:'bottom',outs:2,risp:false},
       {event:'Single',     desc:'Michael Harris II singles to right field.',                                  scoring:false,aScore:0,hScore:1,inn:1,half:'bottom',outs:2,risp:false},
       {event:'Groundout',  desc:'Orlando Arcia grounds out to second base to end the inning.',                scoring:false,aScore:0,hScore:1,inn:1,half:'bottom',outs:3,risp:false},
-      {event:'Home Run',   desc:'Francisco Lindor homers (7) on a line drive to right field!',               scoring:true, aScore:1,hScore:1,inn:2,half:'top',    outs:0,risp:false},
+      {event:'Home Run',   desc:'Francisco Lindor homers (7) on a line drive to right field!',               scoring:true, aScore:1,hScore:1,inn:2,half:'top',    outs:0,risp:false,batterId:596019,batterName:'Francisco Lindor'},
       {event:'Walk',       desc:'Pete Alonso works a walk on a full count.',                                  scoring:false,aScore:1,hScore:1,inn:2,half:'top',    outs:0,risp:false},
       {event:'Single',     desc:'Mark Vientos singles to left field. Alonso advances to second.',             scoring:false,aScore:1,hScore:1,inn:2,half:'top',    outs:0,risp:true},
       {event:'Single',     desc:'Jeff McNeil singles to center. Alonso scores! Vientos to third.',           scoring:true, aScore:2,hScore:1,inn:2,half:'top',    outs:0,risp:true},
@@ -775,7 +847,7 @@ const MOCK_DATA={
       {event:'Strikeout',  desc:'Francisco Alvarez strikes out swinging.',                                    scoring:false,aScore:3,hScore:1,inn:2,half:'top',    outs:3,risp:false},
     ],
     1002:[
-      {event:'Home Run',   desc:'Aaron Judge homers (14) on a fly ball to deep left field!',                 scoring:true, aScore:3,hScore:1,inn:6,half:'top',    outs:0,risp:false},
+      {event:'Home Run',   desc:'Aaron Judge homers (14) on a fly ball to deep left field!',                 scoring:true, aScore:3,hScore:1,inn:6,half:'top',    outs:0,risp:false,batterId:592450,batterName:'Aaron Judge'},
       {event:'Strikeout',  desc:'Giancarlo Stanton strikes out swinging.',                                    scoring:false,aScore:3,hScore:1,inn:6,half:'top',    outs:1,risp:false},
       {event:'Groundout',  desc:'DJ LeMahieu grounds out to the second baseman.',                             scoring:false,aScore:3,hScore:1,inn:6,half:'top',    outs:2,risp:false},
       {event:'Flyout',     desc:'Anthony Volpe flies out to right field.',                                    scoring:false,aScore:3,hScore:1,inn:6,half:'top',    outs:3,risp:false},
@@ -785,7 +857,7 @@ const MOCK_DATA={
       {event:'Flyout',     desc:'Rob Refsnyder flies out to center to end the inning.',                      scoring:false,aScore:3,hScore:2,inn:6,half:'bottom',outs:3,risp:false},
       {event:'Walk',       desc:'Gleyber Torres draws a walk to lead off the seventh.',                      scoring:false,aScore:3,hScore:2,inn:7,half:'top',    outs:0,risp:false},
       {event:'Single',     desc:'Austin Wells singles to left. Torres moves to second.',                     scoring:false,aScore:3,hScore:2,inn:7,half:'top',    outs:0,risp:true},
-      {event:'Home Run',   desc:'Aaron Judge crushes a three-run homer (15) deep to right-center!',         scoring:true, aScore:6,hScore:2,inn:7,half:'top',    outs:0,risp:true},
+      {event:'Home Run',   desc:'Aaron Judge crushes a three-run homer (15) deep to right-center!',         scoring:true, aScore:6,hScore:2,inn:7,half:'top',    outs:0,risp:true,batterId:592450,batterName:'Aaron Judge'},
       {event:'Strikeout',  desc:'Giancarlo Stanton strikes out swinging.',                                    scoring:false,aScore:6,hScore:2,inn:7,half:'top',    outs:1,risp:false},
       {event:'Groundout',  desc:'Jazz Chisholm Jr. grounds out to shortstop.',                               scoring:false,aScore:6,hScore:2,inn:7,half:'top',    outs:2,risp:false},
     ],
@@ -794,7 +866,7 @@ const MOCK_DATA={
       {event:'Single',     desc:'Freddie Freeman singles on a line drive to right field.',                   scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
       {event:'Error',      desc:'Will Smith reaches on a fielding error by the shortstop. Freeman to second.',scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:true},
       {event:'Walk',       desc:'Max Muncy walks. Bases loaded.',                                             scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:true},
-      {event:'Home Run',   desc:'Teoscar Hernández crushes a grand slam (8) to left-center! Dodgers lead 4-0!',scoring:true,aScore:4,hScore:0,inn:1,half:'top',    outs:1,risp:true},
+      {event:'Home Run',   desc:'Teoscar Hernández crushes a grand slam (8) to left-center! Dodgers lead 4-0!',scoring:true,aScore:4,hScore:0,inn:1,half:'top',    outs:1,risp:true,batterId:606192,batterName:'Teoscar Hernández'},
       {event:'Flyout',     desc:'Chris Taylor flies out to right field.',                                     scoring:false,aScore:4,hScore:0,inn:1,half:'top',    outs:2,risp:false},
       {event:'Groundout',  desc:'Miguel Rojas grounds out to shortstop.',                                     scoring:false,aScore:4,hScore:0,inn:1,half:'top',    outs:3,risp:false},
       {event:'Single',     desc:'LaMonte Wade Jr. singles to left to start the Giants half.',                scoring:false,aScore:4,hScore:0,inn:1,half:'bottom',outs:0,risp:false},
@@ -808,11 +880,11 @@ const MOCK_DATA={
       {event:'__GAME_START__',desc:'',                                                                        scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:0,risp:false},
       {event:'Lineout',    desc:'Jose Altuve lines out sharply to the shortstop.',                            scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
       {event:'Single',     desc:'Alex Bregman singles on a ground ball through the left side.',               scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
-      {event:'Home Run',   desc:'Yordan Alvarez launches a two-run homer (11) deep to left field!',          scoring:true, aScore:2,hScore:0,inn:1,half:'top',    outs:1,risp:false},
+      {event:'Home Run',   desc:'Yordan Alvarez launches a two-run homer (11) deep to left field!',          scoring:true, aScore:2,hScore:0,inn:1,half:'top',    outs:1,risp:false,batterId:670541,batterName:'Yordan Alvarez'},
       {event:'Groundout',  desc:'Kyle Tucker grounds out to first base.',                                     scoring:false,aScore:2,hScore:0,inn:1,half:'top',    outs:2,risp:false},
       {event:'Strikeout',  desc:'Jeremy Peña strikes out looking.',                                           scoring:false,aScore:2,hScore:0,inn:1,half:'top',    outs:3,risp:false},
       {event:'Single',     desc:'Marcus Semien singles to right field to start the Rangers half.',            scoring:false,aScore:2,hScore:0,inn:1,half:'bottom',outs:0,risp:false},
-      {event:'Home Run',   desc:'Corey Seager homers (9) to left-center! Rangers tie it at 2!',             scoring:true, aScore:2,hScore:2,inn:1,half:'bottom',outs:0,risp:false},
+      {event:'Home Run',   desc:'Corey Seager homers (9) to left-center! Rangers tie it at 2!',             scoring:true, aScore:2,hScore:2,inn:1,half:'bottom',outs:0,risp:false,batterId:608369,batterName:'Corey Seager'},
     ],
   },
 };
@@ -915,6 +987,7 @@ function advanceMockGame(gamePk, play) {
   if (play.event==='Home Run') {
     showAlert({icon:'💥',event:'HOME RUN · '+g.awayAbbr+' '+play.aScore+', '+g.homeAbbr+' '+play.hScore,desc:play.desc,color:teamColor,duration:6000});
     playSound('hr');
+    if (play.batterId) showPlayerCard(play.batterId, play.batterName||'', g.awayId, g.homeId, play.half);
   } else if (play.scoring) {
     showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.aScore+', '+g.homeAbbr+' '+play.hScore,desc:play.desc,color:teamColor,duration:4000});
     playSound('run');
@@ -1056,6 +1129,8 @@ async function pollGamePlays(gamePk) {
       var halfInning=(play.about&&play.about.halfInning)||g.halfInning;
       var outs=(play.count&&play.count.outs)||0;
       var desc=(play.result&&play.result.description)||'—';
+      var batterId=(play.matchup&&play.matchup.batter&&play.matchup.batter.id)||null;
+      var batterName=(play.matchup&&play.matchup.batter&&play.matchup.batter.fullName)||'';
       var runners=play.runners||[];
       var hasRISP=runners.some(function(r){return r.movement&&!r.movement.isOut&&(r.movement.end==='2B'||r.movement.end==='3B');});
       var playClass=event==='Home Run'?'homerun':isScoringP?'scoring':hasRISP?'risp':'normal';
@@ -1063,7 +1138,7 @@ async function pollGamePlays(gamePk) {
       addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime});
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
-        if (event==='Home Run'){showAlert({icon:'💥',event:'HOME RUN · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:6000});playSound('hr');}
+        if (event==='Home Run'){showAlert({icon:'💥',event:'HOME RUN · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:6000});playSound('hr');if(batterId)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning);}
         else if (isScoringP){showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
@@ -1283,6 +1358,82 @@ function showAlert(opts) {
   setTimeout(function(){dismissAlert(el);},duration);
 }
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}
+
+async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning) {
+  var overlay = document.getElementById('playerCardOverlay');
+  var card    = document.getElementById('playerCard');
+  if (!overlay || !card) return;
+  var battingTeamId = halfInning === 'top' ? awayTeamId : homeTeamId;
+  var teamData = TEAMS.find(function(t) { return t.id === battingTeamId; }) || {};
+  var teamAbbr = teamData.short || '???';
+  card.innerHTML = '<div class="pc-loading">Loading player card…</div>';
+  overlay.classList.remove('closing');
+  overlay.classList.add('open');
+  var stat = null, jerseyNumber = null;
+  var cached = (statsCache.hitting || []).find(function(e) { return e.player && e.player.id === batterId; });
+  if (cached) { stat = cached.stat; }
+  if (!stat) {
+    try {
+      var r = await fetch(MLB_BASE + '/people/' + batterId + '/stats?stats=season&season=' + SEASON + '&group=hitting');
+      var d = await r.json();
+      stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+    } catch(e) { stat = null; }
+  }
+  var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
+  if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
+  if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
+  var hrCount = stat ? (stat.homeRuns != null ? stat.homeRuns : '—') : '—';
+  var avg     = stat ? fmtRate(stat.avg) : '—';
+  var ops     = stat ? fmtRate(stat.ops) : '—';
+  var rbi     = stat ? (stat.rbi != null ? stat.rbi : '—') : '—';
+  var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
+  var contextHtml = '';
+  if (stat && stat.homeRuns > 0) {
+    if (stat.homeRuns % 5 === 0) {
+      contextHtml = '<div class="pc-context"><span class="pc-context-pill">💥 HR #' + stat.homeRuns + ' in ' + SEASON + ' — milestone!</span></div>';
+    } else {
+      var cache = statsCache.hitting || [];
+      if (cache.length >= 2) {
+        var sorted = cache.slice().sort(function(a,b){ return ((b.stat&&b.stat.homeRuns)||0)-((a.stat&&a.stat.homeRuns)||0); });
+        if (sorted[0] && sorted[0].player && sorted[0].player.id === batterId) {
+          contextHtml = '<div class="pc-context"><span class="pc-context-pill">🏆 HR leader on the team</span></div>';
+        }
+      }
+    }
+  }
+  var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">#' + jerseyNumber + '</div>' : '';
+  var hrLabel = hrCount !== '—' ? ' #' + hrCount : '';
+  card.innerHTML = ''
+    + '<div class="pc-header">'
+    +   '<div class="pc-photo-wrap">'
+    +     '<img src="' + photoUrl + '" alt="' + batterName + '" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=\\\'http://www.w3.org/2000/svg\\\' viewBox=\\\'0 0 72 72\\\'%3E%3Crect width=\\\'72\\\' height=\\\'72\\\' fill=\\\'%23333\\\'/%3E%3Ctext x=\\\'36\\\' y=\\\'44\\\' text-anchor=\\\'middle\\\' font-size=\\\'24\\\' fill=\\\'%23888\\\'%3E%3F%3C/text%3E%3C/svg%3E\'">'
+    +     jerseyHtml
+    +   '</div>'
+    +   '<div class="pc-identity">'
+    +     '<div class="pc-name">' + batterName + '</div>'
+    +     '<div class="pc-team">' + teamAbbr + '</div>'
+    +     '<div class="pc-event-badge">💥 HOME RUN' + hrLabel + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="pc-stats">'
+    +   '<div class="pc-stat"><div class="pc-stat-val">' + avg + '</div><div class="pc-stat-lbl">AVG</div></div>'
+    +   '<div class="pc-stat"><div class="pc-stat-val">' + ops + '</div><div class="pc-stat-lbl">OPS</div></div>'
+    +   '<div class="pc-stat pc-hr-highlight"><div class="pc-stat-val">' + hrCount + '</div><div class="pc-stat-lbl">HR</div></div>'
+    +   '<div class="pc-stat"><div class="pc-stat-val">' + rbi + '</div><div class="pc-stat-lbl">RBI</div></div>'
+    + '</div>'
+    + contextHtml
+    + '<div class="pc-dismiss-hint">Tap anywhere to dismiss</div>';
+  if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
+  window._playerCardTimer = setTimeout(dismissPlayerCard, 5500);
+}
+
+function dismissPlayerCard() {
+  var overlay = document.getElementById('playerCardOverlay');
+  if (!overlay || !overlay.classList.contains('open')) return;
+  if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
+  overlay.classList.add('closing');
+  setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, 280);
+}
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
 function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);}
@@ -2138,5 +2289,8 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
   </div>
 </div>
 <div id="calTooltip" class="cal-tooltip"></div>
+<div id="playerCardOverlay" onclick="dismissPlayerCard()">
+  <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
+</div>
 </body>
 </html>
