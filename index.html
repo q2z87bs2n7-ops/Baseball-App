@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.3.1</title>
+<title>MLB Tracker v2.3.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -509,7 +509,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.3.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.3.2</div>
       </div>
     </div>
   </div>
@@ -959,6 +959,7 @@ async function pollLeaguePulse() {
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team');
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    var pendingFinalItems={};
     games.forEach(function(g) {
       var pk=g.gamePk, newStatus=g.status.abstractGameState, detailed=g.status.detailedState||'';
       var away=g.teams.away, home=g.teams.home;
@@ -988,12 +989,12 @@ async function pollLeaguePulse() {
         if (newStatus==='Final') {
           var isHistPpd=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
           if (isHistPpd) {
-            addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
+            if (!gameDateMs||Date.now()>=gameDateMs) addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
           } else {
             var durMs=(ls.gameDurationMinutes||0)*60*1000;
-            var finalTs=gameDateMs?new Date(gameDateMs+(durMs||4*60*60*1000)):new Date();
+            var fallbackTs=gameDateMs?new Date(gameDateMs+(durMs||4*60*60*1000)):new Date();
             var durLabel=ls.gameDurationMinutes?'  ·  '+Math.floor(ls.gameDurationMinutes/60)+'h '+String(ls.gameDurationMinutes%60).padStart(2,'0')+'m':'';
-            addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:g0.awayAbbr+' '+(away.score||0)+', '+g0.homeAbbr+' '+(home.score||0)+durLabel,playTime:finalTs});
+            pendingFinalItems[pk]={sub:g0.awayAbbr+' '+(away.score||0)+', '+g0.homeAbbr+' '+(home.score||0)+durLabel,fallbackTs:fallbackTs};
           }
         } else if (newStatus==='Live'&&detailed==='In Progress') {
           addFeedItem(pk,{type:'status',icon:'⚾',label:'Game underway!',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
@@ -1022,8 +1023,14 @@ async function pollLeaguePulse() {
         prev.onFirst=!!(ls.offense&&ls.offense.first); prev.onSecond=!!(ls.offense&&ls.offense.second); prev.onThird=!!(ls.offense&&ls.offense.third);
       }
     });
-    var liveGames=games.filter(function(g){return g.status.abstractGameState==='Live';});
+    var liveGames=games.filter(function(g){return g.status.abstractGameState==='Live'||pendingFinalItems[g.gamePk];});
     await Promise.all(liveGames.map(function(g){return pollGamePlays(g.gamePk);}));
+    Object.keys(pendingFinalItems).forEach(function(pk) {
+      var pf=pendingFinalItems[pk];
+      var gamePlays=feedItems.filter(function(fi){return fi.gamePk==pk&&fi.data&&fi.data.type==='play';});
+      var finalTs=gamePlays.length>0?new Date(gamePlays[0].ts.getTime()+60000):pf.fallbackTs;
+      addFeedItem(+pk,{type:'status',icon:'🏁',label:'Game Final',sub:pf.sub,playTime:finalTs});
+    });
     if (isFirstPoll&&feedItems.length>0){feedItems.sort(function(a,b){return b.ts-a.ts;});renderFeed();}
     isFirstPoll=false;
     renderTicker(); updateHeader(); updateFeedEmpty();
