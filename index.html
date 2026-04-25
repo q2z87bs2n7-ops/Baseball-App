@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.5.1</title>
+<title>MLB Tracker v2.5.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -117,6 +117,7 @@
   .cal-dot-l{background:#f87171}
   .cal-dot-live{background:#f87171;animation:pulse 1.2s infinite}
   .cal-dot-up{background:var(--accent)}
+  .cal-dot-ppd{background:var(--muted)}
   .cal-tooltip{display:none;position:fixed;z-index:300;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none}
   .cal-tooltip.open{display:block}
   .cal-tt-opp{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px}
@@ -509,7 +510,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.5.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.5.2</div>
       </div>
     </div>
   </div>
@@ -1616,7 +1617,7 @@ function renderCalendar(){
     if(dayGames.length){
       var g0=dayGames[0],home0=g0.teams.home,away0=g0.teams.away,teamHome=home0.team.id===activeTeam.id,opp0=teamHome?away0:home0;
       inner+='<div class="cal-game-info"><div class="cal-opp" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span class="cal-ha">'+(teamHome?'vs ':'@ ')+'</span>'+opp0.team.teamName+(isDH?' <span style="font-size:.55rem;font-weight:700;color:var(--accent);letter-spacing:.04em">DH</span>':'')+'</div>';
-      var dotW=false,dotL=false,dotLive=false;
+      var dotW=false,dotL=false,dotLive=false,dotPPD=false;
       dayGames.forEach(function(gm,idx){
         var myT=gm.teams.home.team.id===activeTeam.id?gm.teams.home:gm.teams.away;
         var opT=gm.teams.home.team.id===activeTeam.id?gm.teams.away:gm.teams.home;
@@ -1626,6 +1627,7 @@ function renderCalendar(){
         var wrap=isDH?'<div onclick="event.stopPropagation();selectCalGame('+gm.gamePk+',event)" style="cursor:pointer;display:flex;align-items:center;gap:3px;margin-top:2px"><span style="font-size:.6rem;color:var(--muted);flex-shrink:0">G'+(idx+1)+':</span>':'';
         var wrapEnd=isDH?'</div>':'';
         if(ppd){
+          dotPPD=true;
           inner+=wrap+'<span class="cal-result" style="background:rgba(150,150,150,.15);color:var(--muted);border:1px solid rgba(150,150,150,.4)'+(isDH?';font-size:.6rem;padding:1px 5px':'')+'">PPD</span>'+wrapEnd;
         } else if(st==='Final'){
           var mW=myT.isWinner,sc=(myT.score!=null&&opT.score!=null)?myT.score+'-'+opT.score:'?-?';
@@ -1640,7 +1642,7 @@ function renderCalendar(){
         }
       });
       inner+='</div>';
-      var dotCls='cal-dot '+(dotLive?'cal-dot-live':(dotW&&!dotL)?'cal-dot-w':(!dotW&&dotL)?'cal-dot-l':'cal-dot-up');
+      var dotCls='cal-dot '+(dotLive?'cal-dot-live':(dotW&&!dotL)?'cal-dot-w':(!dotW&&dotL)?'cal-dot-l':(dotPPD&&!dotW&&!dotL)?'cal-dot-ppd':'cal-dot-up');
       inner+='<span class="'+dotCls+'"></span>';
     }
     html+='<div class="'+classes+'" '+onclick+'>'+inner+'</div>';
