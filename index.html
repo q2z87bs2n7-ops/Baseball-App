@@ -1196,9 +1196,9 @@ function renderEmptyState() {
     rest.forEach(function(g){
       html+='<div class="matchup-card"><div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">'+(g.gameTime||'TBD')+'</div>'
         +'<div style="display:flex;align-items:center;justify-content:center;gap:6px">'
-        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.awayId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:#fff">'+g.awayAbbr+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(g.awayW!=null?'('+g.awayW+'-'+g.awayL+')'):'')+'</div></div>'
+        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.awayId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:#fff">'+g.awayAbbr+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(g.awayW!=null?'('+g.awayW+'-'+g.awayL+')':'')+'</div></div>'
         +'<span style="color:var(--muted);font-size:.8rem">vs</span>'
-        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.homeId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:#fff">'+g.homeAbbr+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(g.homeW!=null?'('+g.homeW+'-'+g.homeL+')'):'')+'</div></div>'
+        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.homeId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:#fff">'+g.homeAbbr+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(g.homeW!=null?'('+g.homeW+'-'+g.homeL+')':'')+'</div></div>'
         +'</div></div>';
     });
     html+='</div>';
