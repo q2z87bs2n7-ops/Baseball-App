@@ -1477,16 +1477,30 @@ function genProbablePitchers(){
     });
   }
   games.forEach(function(g){
-    var awayPP='TBD', homePP='TBD';
-    if(g.teams&&g.teams.away&&g.teams.away.probablePitcher){
-      awayPP=g.teams.away.probablePitcher.fullName||'TBD';
+    var awayAbbr='TBD', homeAbbr='TBD', awayPP='TBD', homePP='TBD';
+
+    // Get abbreviations from either API structure or gameStates structure
+    if(g.teams&&g.teams.away&&g.teams.away.team){
+      awayAbbr=g.teams.away.team.abbreviation||'TBD';
+      homeAbbr=g.teams.home.team.abbreviation||'TBD';
+    } else {
+      awayAbbr=g.awayAbbr||'TBD';
+      homeAbbr=g.homeAbbr||'TBD';
     }
-    if(g.teams&&g.teams.home&&g.teams.home.probablePitcher){
-      homePP=g.teams.home.probablePitcher.fullName||'TBD';
+
+    // Get probable pitcher names
+    if(g.teams&&g.teams.away&&g.teams.away.probablePitcher&&g.teams.away.probablePitcher.fullName){
+      awayPP=g.teams.away.probablePitcher.fullName;
     }
-    var headline=awayPP+' ['+g.awayAbbr+'] vs '+homePP+' ['+g.homeAbbr+']';
+    if(g.teams&&g.teams.home&&g.teams.home.probablePitcher&&g.teams.home.probablePitcher.fullName){
+      homePP=g.teams.home.probablePitcher.fullName;
+    }
+
+    var headline=awayPP+' ['+awayAbbr+'] vs '+homePP+' ['+homeAbbr+']';
     var timeStr=g.gameTime||'TBD';
-    out.push(makeStory('probable_'+g.gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'upcoming',g.gamePk,new Date(g.gameDateMs||Date.now()),60*60000,0.05));
+    var gamePk=g.gamePk||g.gamePk;
+    var gameDateMs=g.gameDateMs||new Date(g.gameDate||Date.now()).getTime();
+    out.push(makeStory('probable_'+gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'upcoming',gamePk,new Date(gameDateMs),60*60000,0.05));
   });
   return out;
 }
@@ -1676,9 +1690,13 @@ async function loadYesterdayCache(){
         });
         var startingPitcher=null, startingPitcherStats=null;
         Object.values(allPlayers).forEach(function(p){
-          if(!p.stats||!p.stats.pitching||!p.gameStatus||!p.gameStatus.isCurrentPitcher) return;
+          if(!p.stats||!p.stats.pitching) return;
           var pit=p.stats.pitching;
-          if(parseFloat(pit.inningsPitched||0)>=1) {startingPitcher=p;startingPitcherStats=pit;}
+          if(parseFloat(pit.inningsPitched||0)>=1){
+            if(!startingPitcher||parseFloat(pit.inningsPitched||0)>parseFloat(startingPitcherStats.inningsPitched||0)){
+              startingPitcher=p;startingPitcherStats=pit;
+            }
+          }
         });
         var lines=[];
         if(topBatter&&topBatterStats) lines.push(topBatter.person.fullName.split(' ').pop()+' '+topBatterStats.hits+'-'+topBatterStats.atBats);
