@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.7</title>
+<title>MLB Tracker v2.7.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -41,7 +41,7 @@
   .loading{color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center}
   .sub-kicker{font-size:.68rem;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
   .error{color:#ff6b6b;font-size:.85rem;padding:10px}
-  .game-big{border-radius:14px;padding:24px;text-align:center}
+  .game-big{border-radius:14px;padding:24px;text-align:center;min-height:280px;display:flex;flex-direction:column;justify-content:center}
   .card-cap{width:56px;height:56px;flex-shrink:0;object-fit:contain}
   .matchup-cap{width:28px;height:28px;object-fit:contain;display:block;margin:0 auto 2px;filter:drop-shadow(0 0 3px rgba(255,255,255,.4))}
   .series-ghost{position:absolute;right:-60px;bottom:-60px;width:300px;height:300px;opacity:.12;pointer-events:none;object-fit:contain}
@@ -521,8 +521,8 @@
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
   <nav>
     <button class="active" onclick="showSection('home',this)">🏠<span class="nav-label"> Home</span></button>
-    <button onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
     <button onclick="showSection('league',this)">🌐<span class="nav-label"> League</span></button>
+    <button onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
     <button onclick="showSection('schedule',this)">📅<span class="nav-label"> Schedule</span></button>
     <button onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
     <button onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
@@ -582,7 +582,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7.1</div>
       </div>
     </div>
   </div>
@@ -1973,6 +1973,8 @@ function renderNLWC(divMap){
   var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
   wc.forEach(function(t,i){var isActive=t.team.id===activeTeam.id,gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--accent)':'';html+='<tr class="'+(isActive?'active-row':'')+'" style="'+cutoff+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
   html+='</tbody></table><div style="font-size:.72rem;color:var(--accent);margin-top:6px">── Wild Card cutoff line</div>';
+  var otherDivTeams=[];leagueDivs.forEach(function(d){if(d.name!==activeTeam.division){d.teams.forEach(function(t){if(!leaders.has(t.team.id))otherDivTeams.push(t);});}});
+  if(otherDivTeams.length){otherDivTeams.sort(function(a,b){return parseFloat(b.winningPercentage)-parseFloat(a.winningPercentage);});var otherTop=otherDivTeams[0],otherTopW=otherTop.wins,otherTopL=otherTop.losses;html+='<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)"><div class="div-header">Other Divisions Wild Card</div><table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';otherDivTeams.slice(0,9).forEach(function(t,i){var gb=i===0?'—':(((otherTopW-t.wins)+(t.losses-otherTopL))/2).toFixed(1);html+='<tr><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});html+='</tbody></table></div>';}
   document.getElementById('nlWC').innerHTML=html;
 }
 function renderFullStandings(divMap){
@@ -1981,6 +1983,7 @@ function renderFullStandings(divMap){
   var primarySorted=primary.slice().sort(function(a,b){return a.name===activeTeam.division?-1:b.name===activeTeam.division?1:0;});
   var html='';
   primarySorted.concat(secondary).forEach(function(div){
+    if(div.name===activeTeam.division)return;
     html+='<div class="div-header">'+div.name+'</div><table class="standings-table"><thead><tr><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
     div.teams.forEach(function(t){var isActive=t.team.id===activeTeam.id;html+='<tr class="'+(isActive?'active-row':'')+'"><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+t.gamesBack+'</td></tr>';});
     html+='</tbody></table>';
