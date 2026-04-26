@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.9.1</title>
+<title>MLB Tracker v2.9.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -617,7 +617,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9.2</div>
       </div>
     </div>
   </div>
@@ -1467,19 +1467,26 @@ function genMultiHitDay(){
 function genDailyLeaders(){
   var out=[];
   if(!dailyLeadersCache) return out;
-  var cats=[{key:'homeRuns',label:'home runs',icon:'💥'},{key:'rbi',label:'RBIs',icon:'🏃'},{key:'hits',label:'hits',icon:'🪵'},{key:'strikeOuts',label:'strikeouts',icon:'⚡'},{key:'saves',label:'saves',icon:'🛡️'}];
+  var cats=[
+    {key:'homeRuns',       label:'Home Run Leaders',      icon:'💥', fmtVal:null},
+    {key:'battingAverage', label:'Batting Avg Leaders',   icon:'🎯', fmtVal:function(v){return (v+'').replace(/^0\./,'.');}},
+    {key:'rbi',            label:'RBI Leaders',            icon:'🏃', fmtVal:null},
+    {key:'stolenBases',    label:'Stolen Base Leaders',   icon:'💨', fmtVal:null},
+    {key:'wins',           label:'Pitching Wins Leaders', icon:'🏆', fmtVal:null},
+    {key:'saves',          label:'Pitching Saves Leaders',icon:'🛡️', fmtVal:null},
+  ];
+  var today=localDateStr(new Date());
   cats.forEach(function(cat){
     var list=dailyLeadersCache[cat.key];
     if(!list||!list.length) return;
-    for(var i=0;i<Math.min(3,list.length);i++){
-      var p=list[i]; if(!p||!p.person) continue;
-      var id='leader_'+cat.key+'_'+i+'_'+localDateStr(new Date());
-      var basePri=50, priFactor=[1.0,0.7,0.45][i]||0.45;
-      var pri=Math.round(basePri*priFactor);
-      var rankLabel=i===0?'leads':'#'+(i+1)+' in';
-      var headline=p.person.fullName+' '+rankLabel+' MLB with '+p.value+' '+cat.label;
-      out.push(makeStory(id,'daily_stat',3,pri,cat.icon,headline,'','season',null,new Date(),30*60000,0.1));
-    }
+    var sub=list.slice(0,5).map(function(p,i){
+      if(!p||!p.person) return '';
+      var lastName=p.person.fullName.split(' ').slice(1).join(' ')||p.person.fullName;
+      var val=cat.fmtVal?cat.fmtVal(p.value):p.value;
+      return (i+1)+'. '+lastName+' '+val;
+    }).filter(Boolean).join('<br>');
+    var id='leader_'+cat.key+'_'+today;
+    out.push(makeStory(id,'daily_stat',3,65,cat.icon,'MLB '+cat.label,sub,'season',null,new Date(),30*60000,0.05));
   });
   return out;
 }
@@ -1838,9 +1845,9 @@ async function loadYesterdayCache(){
 
 async function loadDailyLeaders(){
   try{
-    var rH=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=homeRuns,hits,rbi&season='+SEASON+'&statGroup=hitting&limit=1');
+    var rH=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=homeRuns,battingAverage,rbi,stolenBases&season='+SEASON+'&statGroup=hitting&limit=5');
     var dH=await rH.json();
-    var rP=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=strikeOuts,saves&season='+SEASON+'&statGroup=pitching&limit=1');
+    var rP=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=wins,saves&season='+SEASON+'&statGroup=pitching&limit=5');
     var dP=await rP.json();
     dailyLeadersCache={};
     [(dH.leagueLeaders||[]),(dP.leagueLeaders||[])].forEach(function(list){
