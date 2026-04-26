@@ -1586,8 +1586,12 @@ async function loadOnThisDayCache(){
             if(!topBatter||(bat.hits/bat.atBats)>(topBatterStats.hits/topBatterStats.atBats)) {topBatter=p;topBatterStats=bat;}
           });
           var startingPitcher=null, startingPitcherStats=null;
-          Object.values(allPlayers).forEach(function(p){
-            if(!p.stats||!p.stats.pitching||!p.gameStatus||!p.gameStatus.isCurrentPitcher) return;
+          var awayStarterId=bs.teams&&bs.teams.away&&bs.teams.away.pitchers&&bs.teams.away.pitchers[0];
+          var homeStarterId=bs.teams&&bs.teams.home&&bs.teams.home.pitchers&&bs.teams.home.pitchers[0];
+          [awayStarterId,homeStarterId].forEach(function(starterId){
+            if(!starterId||!allPlayers[starterId]) return;
+            var p=allPlayers[starterId];
+            if(!p.stats||!p.stats.pitching) return;
             var pit=p.stats.pitching;
             if(parseFloat(pit.inningsPitched||0)>=1) {startingPitcher=p;startingPitcherStats=pit;}
           });
