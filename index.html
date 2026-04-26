@@ -610,7 +610,7 @@
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <details style="cursor:pointer">
             <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
-            <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
+            <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:500px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
@@ -1642,19 +1642,19 @@ function refreshDebugPanel(){
   html+='<div>Tier 1/2/3/4: '+tier1+' / '+tier2+' / '+tier3+' / '+tier4+'</div>';
   html+='<div>Rotation active: '+(storyRotateTimer?'yes':'no')+'</div>';
   html+='<div>Next rotate in: '+nextRotateIn+'s</div>';
-  html+='<div style="margin-top:8px;font-weight:600;color:var(--accent);margin-bottom:4px">Stories</div>';
+  html+='<div style="margin-top:8px;font-weight:600;color:var(--accent);margin-bottom:4px">All Stories ('+storyPool.length+')</div>';
   if(storyPool.length){
-    storyPool.slice(0,10).forEach(function(s){
+    storyPool.forEach(function(s,idx){
       var cooldownRemain=s.lastShown?Math.max(0,Math.round((s.cooldownMs-(now-s.lastShown.getTime()))/1000)):'—';
       var age=Math.round((now-s.ts.getTime())/1000);
       var ageStr=age<60?age+'s':Math.floor(age/60)+'m';
       var decay=Math.pow(Math.max(0,1-s.decayRate),age/60000/30);
       var score=s.priority*decay;
       var shownStr=s.lastShown?'shown '+Math.floor((now-s.lastShown.getTime())/1000)+'s ago':'never';
-      html+='<div style="margin-top:4px;padding:4px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:2px solid var(--border)"><span style="color:var(--accent)">T'+s.tier+'</span> '+s.headline.substring(0,45)+'…<br/>'
-        +'<span style="color:var(--muted)">pri '+Math.round(score)+' · '+ageStr+' old · cooldown '+cooldownRemain+'s · '+shownStr+'</span></div>';
+      var isCurrent=s.id===storyShownId?' ★':'';
+      html+='<div style="margin-top:4px;padding:4px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:2px solid var(--border)"><span style="color:var(--accent)">['+(idx+1)+'] T'+s.tier+isCurrent+'</span> '+s.headline.substring(0,50)+'<br/>'
+        +'<span style="color:var(--muted);font-size:0.9em">'+s.type+' · pri '+Math.round(score)+' · '+ageStr+' old · cooldown '+cooldownRemain+'s · '+shownStr+'</span></div>';
     });
-    if(storyPool.length>10) html+='<div style="margin-top:4px;color:var(--muted)">… and '+(storyPool.length-10)+' more</div>';
   } else {
     html+='<div style="color:var(--muted)">No stories yet</div>';
   }
