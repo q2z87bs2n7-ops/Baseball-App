@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.11.1</title>
+<title>MLB Tracker v2.11.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -621,7 +621,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.11.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.11.2</div>
       </div>
     </div>
   </div>
@@ -1381,10 +1381,24 @@ function genWalkOffThreat(){
   Object.values(gameStates).forEach(function(g){
     if(g.status!=='Live'||g.halfInning!=='bottom'||g.inning<9) return;
     if(Math.abs(g.awayScore-g.homeScore)>1) return;
-    var id='walkoff_'+g.gamePk;
+    var id='walkoff_'+g.gamePk+'_'+g.inning;
     var headline='Walk-off situation — '+g.homeAbbr+' in the bottom '+ordinal(g.inning);
-    var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+g.inning+'th inning';
-    out.push(makeStory(id,'walkoff',1,90,'🎯',headline,sub,'live',g.gamePk,new Date(),60000,0.9));
+    var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+ordinal(g.inning)+' inning';
+    out.push(makeStory(id,'walkoff',1,90,'🎯',headline,sub,'live',g.gamePk,new Date(),5*60000,0.9));
+  });
+  return out;
+}
+
+function genBasesLoaded(){
+  var out=[];
+  Object.values(gameStates).forEach(function(g){
+    if(g.status!=='Live'||!g.onFirst||!g.onSecond||!g.onThird) return;
+    var battingAbbr=g.halfInning==='top'?g.awayAbbr:g.homeAbbr;
+    var half=g.halfInning==='top'?'Top':'Bot';
+    var id='basesloaded_'+g.gamePk+'_'+g.inning+'_'+g.halfInning;
+    var headline='Bases loaded — '+battingAbbr+' batting in the '+ordinal(g.inning);
+    var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+half+' '+ordinal(g.inning);
+    out.push(makeStory(id,'realtime',1,88,'🔴',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
   });
   return out;
 }
@@ -1617,7 +1631,7 @@ async function buildStoryPool(){
   loadProbablePitcherStats();
   fetchMissingHRBatterStats();
   var fresh=[].concat(
-    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBigInning(),
+    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),genMultiHitDay(),genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers()
   );
