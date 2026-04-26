@@ -750,6 +750,9 @@
     </div>
   </div>
   <div id="alertStack"></div>
+  <div id="playerCardOverlay" onclick="dismissPlayerCard()">
+    <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
+  </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="mockBar" style="display:none">
     <span class="mock-badge">⚡ Mock</span>
@@ -985,14 +988,15 @@ function advanceMockGame(gamePk, play) {
     awayScore:play.aScore,homeScore:play.hScore,inning:play.inn,halfInning:play.half,
     outs:play.outs,risp:play.risp,playClass:playClass});
   var teamColor=play.half==='top'?g.awayPrimary:g.homePrimary;
+  var gameVisible=enabledGames.has(gamePk);
   if (play.event==='Home Run') {
     playSound('hr');
-    if (play.batterId) showPlayerCard(play.batterId, play.batterName||'', g.awayId, g.homeId, play.half, play.mockStats||null);
+    if (play.batterId&&gameVisible) showPlayerCard(play.batterId, play.batterName||'', g.awayId, g.homeId, play.half, play.mockStats||null);
   } else if (play.scoring) {
-    showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.aScore+', '+g.homeAbbr+' '+play.hScore,desc:play.desc,color:teamColor,duration:4000});
+    if (gameVisible) showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.aScore+', '+g.homeAbbr+' '+play.hScore,desc:play.desc,color:teamColor,duration:4000});
     playSound('run');
   } else if (play.event&&play.event.indexOf('Triple Play')!==-1) {
-    showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:play.desc,color:'#9b59b6',duration:5000});
+    if (gameVisible) showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:play.desc,color:'#9b59b6',duration:5000});
     playSound('tp');
   } else if (play.event&&play.event.indexOf('Double Play')!==-1) { playSound('dp');
   } else if (play.event&&play.event.indexOf('Error')!==-1) { playSound('error');
@@ -1138,9 +1142,10 @@ async function pollGamePlays(gamePk) {
       addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime});
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
-        if (event==='Home Run'){playSound('hr');if(batterId)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning);}
-        else if (isScoringP){showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});playSound('run');}
-        else if (event.indexOf('Triple Play')!==-1){showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
+        var gameVisible=enabledGames.has(gamePk);
+        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning);}
+        else if (isScoringP){if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});playSound('run');}
+        else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
         else if (hasRISP){playSound('risp');}
@@ -2300,8 +2305,5 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
   </div>
 </div>
 <div id="calTooltip" class="cal-tooltip"></div>
-<div id="playerCardOverlay" onclick="dismissPlayerCard()">
-  <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
-</div>
 </body>
 </html>
