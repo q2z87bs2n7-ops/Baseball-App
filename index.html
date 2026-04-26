@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.8.4</title>
+<title>MLB Tracker v2.8.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -440,6 +440,7 @@
 .story-badge.onthisday { background: rgba(155,100,255,0.15); color: #b07aff; }
 .story-badge.upcoming { background: rgba(255,190,60,0.15); color: #ffbe3c; }
 .story-badge.season { background: rgba(255,215,0,0.15); color: #ffd700; }
+.story-badge.probables { background: rgba(100,180,255,0.15); color: #64b4ff; }
 .story-icon { font-size: 18px; margin-right: 6px; }
 .story-headline { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.35; }
 .story-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
@@ -615,7 +616,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.5</div>
       </div>
     </div>
   </div>
@@ -881,7 +882,7 @@ let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersL
 let dailyHitsTracker={},dailyPitcherKs={};
 let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
-const STORY_ROTATE_MS=20000;
+const STORY_ROTATE_MS=10000;
 
 function tcLookup(id){var t=TEAMS.find(function(t){return t.id===id;});return t?{primary:t.primary,abbr:t.short,name:t.name}:{primary:'#444',abbr:'???',name:'Unknown'};}
 
@@ -1519,7 +1520,7 @@ function genProbablePitchers(){
     var homeWL=homePPId&&probablePitcherStatsCache[homePPId]?(probablePitcherStatsCache[homePPId].wins+'-'+probablePitcherStatsCache[homePPId].losses):'0-0';
     var headline=awayPP+' ('+awayWL+') ['+awayAbbr+'] vs '+homePP+' ('+homeWL+') ['+homeAbbr+']';
     var timeStr=g.gameTime||'TBD';
-    out.push(makeStory('probable_'+g.gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'upcoming',g.gamePk,new Date(g.gameDateMs),60*60000,0.05));
+    out.push(makeStory('probable_'+g.gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'probables',g.gamePk,new Date(g.gameDateMs),60*60000,0.05));
   });
   return out;
 }
@@ -1570,8 +1571,8 @@ function showStoryCard(story){
 
 function renderStoryCard(story){
   var el=document.getElementById('storyCard'); if(!el) return;
-  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',season:'season'};
-  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',season:'SEASON LEADER'};
+  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',season:'season',probables:'probables'};
+  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',season:'SEASON LEADER',probables:"TODAY'S PROBABLE PITCHERS"};
   var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
   el.className='story-card tier'+story.tier;
   el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
@@ -1737,7 +1738,7 @@ async function loadYesterdayCache(){
           if(!losePitcher&&allPitchers.length>1) {losePitcher=allPitchers[1].p;losePitcherStats=allPitchers[1].stats;}
         }
         var lines=[];
-        if(topBatter&&topBatterStats){var bline=topBatter.person.fullName.split(' ').pop()+' '+topBatterStats.hits+'-'+topBatterStats.atBats;if(topBatterStats.homeRuns>0)bline+=' '+topBatterStats.homeRuns+' HR';if(topBatterStats.rbi>0)bline+=' '+topBatterStats.rbi+' RBI';lines.push(bline);}
+        if(topBatter&&topBatterStats){var bline=topBatter.person.fullName.split(' ').pop()+' '+topBatterStats.hits+'-'+topBatterStats.atBats;if(topBatterStats.homeRuns>0)bline+=' '+topBatterStats.homeRuns+'HR';if(topBatterStats.rbi>0)bline+=' '+topBatterStats.rbi+'RBI';lines.push(bline);}
         if(winPitcher&&winPitcherStats) lines.push('W: '+winPitcher.person.fullName.split(' ').pop()+' '+winPitcherStats.inningsPitched+'IP, '+winPitcherStats.strikeOuts+'K, '+(winPitcherStats.earnedRuns||0)+' ER');
         if(losePitcher&&losePitcherStats) lines.push('L: '+losePitcher.person.fullName.split(' ').pop()+' '+losePitcherStats.inningsPitched+'IP, '+losePitcherStats.strikeOuts+'K, '+(losePitcherStats.earnedRuns||0)+' ER');
         if(savePitcher) lines.push('S: '+savePitcher.person.fullName.split(' ').pop());
