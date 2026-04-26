@@ -1581,7 +1581,12 @@ async function loadYesterdayCache(){
   try{
     var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1&hydrate=linescore,team');
     var d=await r.json();
-    (d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){return g.status.abstractGameState==='Final';}).forEach(function(g){
+    (d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){
+      if(g.status.abstractGameState!=='Final') return false;
+      var detailed=g.status.detailedState||'';
+      if(detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended') return false;
+      return true;
+    }).forEach(function(g){
       var away=g.teams.away, home=g.teams.home;
       var winner=away.score>home.score?away.team.abbreviation:home.team.abbreviation;
       var loser=away.score>home.score?home.team.abbreviation:away.team.abbreviation;
