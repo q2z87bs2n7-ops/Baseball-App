@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.7 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements)
+**Current version:** v2.8 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -81,7 +81,7 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
 ```
 
 ### Navigation
-`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `home`, `pulse`, `league`, `schedule`, `news`, `standings`, `stats`, `media`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
+`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `home`, `league`, `pulse`, `schedule`, `news`, `standings`, `stats`, `media`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
 
 `pulse` is lazy-initialised: `initLeaguePulse()` fires only on the first navigation to the section via a `pulseInitialized` guard inside `showSection`. The sound panel click-outside handler is also registered at that point.
 
@@ -243,8 +243,8 @@ Source: `/schedule?season=2026&teamId={id}&hydrate=team,linescore,game`
 
 ### 🏆 Standings
 - **Division standings** — active team's division, active team highlighted
-- **Wild Card Race** — top 9 non-division-leaders in active team's league. Orange cutoff after position 3.
-- **Full MLB Standings** — all 6 divisions. Active team's league first, active team's division at top.
+- **Wild Card Race** — top 9 non-division-leaders in active team's league (includes players from all divisions). Includes "Other Divisions Wild Card Race" section showing top 9 non-division-leaders from other divisions in the league. Orange cutoff after position 3 in both sections.
+- **Full MLB Standings** — all 6 divisions EXCEPT active team's division (already shown above). Active team's league listed first.
 
 Source: `/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,division,league`
 
