@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.6 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot)
+**Current version:** v2.6.1 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -60,6 +60,7 @@ let scheduleLoaded = false             // true only after full-season fetch comp
 let rosterData = { hitting, pitching, fielding }
 let statsCache = { hitting, pitching }
 let selectedPlayer = null              // full roster object — includes person, position, jerseyNumber (jerseyNumber is null when loaded from team stats endpoint)
+let newsFeedMode = 'mlb'               // 'mlb' (no team filter) | 'team' (activeTeam.espnId filter); home card always shows team news
 
 // ── ⚡ Pulse globals ──────────────────────────────────────────────────────────
 let pulseMockMode    = false           // persisted to localStorage('mlb_pulse_mock')
@@ -318,7 +319,7 @@ Source: YouTube RSS via allorigins.win proxy → 3-attempt retry (1s delay) → 
 ---
 
 ### 📰 News
-Team-specific headlines from ESPN. Manual refresh. Source: ESPN News API `?team={espnId}&limit=20`
+ESPN headlines with an **MLB / Team toggle** (pill buttons, `stat-tab` style). Defaults to MLB-wide stream (no team filter). Team pill shows `activeTeam.short` and updates on team switch via `loadNews()`. The home card's "Latest News" widget always shows team news regardless of the toggle state. Manual refresh button. Source: ESPN News API — MLB mode: `?limit=20`; Team mode: `?team={espnId}&limit=20`. When in MLB mode, a second parallel fetch gets team news for the home card.
 
 ---
 
@@ -518,6 +519,7 @@ On every commit that changes app content, bump **three** things:
 - [x] Calendar — DH cell mobile fix: outer onclick restored (defaults to G1); inner rows hidden on mobile so outer was the only target — tapping did nothing and left two cells highlighted (v2.5)
 - [x] Calendar — DH detail panel shows both games: `buildGameDetailPanel` extracted, called for all games on date in parallel; each state (PPD, Upcoming, Live, Final) handled independently with Game 1/2 labels (v2.6)
 - [x] Calendar — PPD mobile dot: `cal-dot-ppd` (grey `--muted`) added; shown when all games on a date are PPD and no result recorded; W+PPD and L+PPD still show result dot (v2.6)
+- [x] News — MLB/Team toggle pills added to News Feed section; defaults to MLB stream; team pill label updates on team switch; home card always shows team news (v2.6.1)
 - [x] Calendar — Linescore R/H/E null guards tightened (`!=null` per field) to prevent `undefined` display on partial-data games (v2.2)
 - [x] ⚡ Pulse — Ticker shows `PPD` instead of `FINAL` for postponed/cancelled/suspended games (v2.2)
 - [x] ⚡ Pulse — 🌧️ "Game Postponed" feed item fired instead of 🏁 "Game Final" + gameEnd sound for PPD transitions (v2.2)
