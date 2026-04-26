@@ -1446,14 +1446,14 @@ function genPitcherGem(){
 function genOnThisDay(){
   if(!onThisDayCache||!onThisDayCache.length) return [];
   return onThisDayCache.map(function(item){
-    return makeStory(item.id,'historical',4,30,item.icon,item.headline,item.sub,'onthisday',item.gamePk,item.ts,60*60000,0.5);
+    return makeStory(item.id,'historical',4,20,item.icon,item.headline,item.sub,'onthisday',item.gamePk,item.ts,60*60000,0.5);
   });
 }
 
 function genYesterdayHighlights(){
   if(!yesterdayCache||!yesterdayCache.length) return [];
   return yesterdayCache.map(function(item){
-    return makeStory(item.id,'yesterday',4,35,item.icon,item.headline,item.sub,'yesterday',item.gamePk,item.ts,30*60000,0.3);
+    return makeStory(item.id,'yesterday',4,45,item.icon,item.headline,item.sub,'yesterday',item.gamePk,item.ts,30*60000,0.3);
   });
 }
 
