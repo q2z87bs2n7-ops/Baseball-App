@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.6</title>
+<title>MLB Tracker v2.6.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -510,7 +510,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.6.1</div>
       </div>
     </div>
   </div>
@@ -653,7 +653,19 @@
 </div>
 
 <div id="news" class="section">
-  <div class="card"><div class="card-title">📰 News Feed <button class="refresh-btn" onclick="loadNews()">↻ Refresh</button></div><div id="newsFull"><div class="loading">Loading news...</div></div></div>
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <span>📰 News Feed</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="stat-tabs" style="margin-bottom:0">
+          <button class="stat-tab active" id="newsMlbBtn" onclick="switchNewsFeed('mlb',this)">MLB</button>
+          <button class="stat-tab" id="newsTeamBtn" onclick="switchNewsFeed('team',this)">Mets</button>
+        </div>
+        <button class="refresh-btn" onclick="loadNews()">↻ Refresh</button>
+      </div>
+    </div>
+    <div id="newsFull"><div class="loading">Loading news...</div></div>
+  </div>
 </div>
 
 <div id="pulse" class="section">
@@ -735,6 +747,7 @@ const TEAMS=[
 ];
 
 let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false;
+let newsFeedMode='mlb';
 
 // ── League Pulse globals ──────────────────────────────────────────────────────
 const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
@@ -1878,16 +1891,21 @@ function renderPlayerStats(s,group){
 
 async function loadNews(){
   var fullEl=document.getElementById('newsFull'),homeEl=document.getElementById('homeNews');
+  var teamBtn=document.getElementById('newsTeamBtn');if(teamBtn)teamBtn.textContent=activeTeam.short;
   if(fullEl)fullEl.innerHTML='<div class="loading">Loading news...</div>';if(homeEl)homeEl.innerHTML='<div class="loading">Loading news...</div>';
+  var teamUrl='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?team='+activeTeam.espnId+'&limit=20';
+  var fullUrl=newsFeedMode==='mlb'?'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20':teamUrl;
   try{
-    var r=await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?team='+activeTeam.espnId+'&limit=20');
-    var d=await r.json(),articles=(d.articles||[]).filter(function(a){return a.headline;});
-    if(!articles.length)throw new Error('No articles');
-    var htmlFull='',htmlHome='';
-    articles.forEach(function(a,i){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var row='<div class="news-item"><div class="news-dot"></div><div><div class="news-title"><a href="'+link+'" target="_blank">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';htmlFull+=row;if(i<5)htmlHome+=row;});
-    if(fullEl)fullEl.innerHTML=htmlFull;if(homeEl)homeEl.innerHTML=htmlHome||'<div class="loading">No news available</div>';
+    var fetches=[fetch(fullUrl)];if(newsFeedMode==='mlb')fetches.push(fetch(teamUrl));
+    var responses=await Promise.all(fetches);
+    var fullD=await responses[0].json(),fullArticles=(fullD.articles||[]).filter(function(a){return a.headline;});
+    if(!fullArticles.length)throw new Error('No articles');
+    function mkRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';return '<div class="news-item"><div class="news-dot"></div><div><div class="news-title"><a href="'+link+'" target="_blank">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
+    if(fullEl)fullEl.innerHTML=fullArticles.map(mkRow).join('');
+    if(homeEl){var homeArts=fullArticles;if(newsFeedMode==='mlb'){var hD=await responses[1].json();homeArts=(hD.articles||[]).filter(function(a){return a.headline;});}homeEl.innerHTML=homeArts.slice(0,5).map(mkRow).join('')||'<div class="loading">No news available</div>';}
   }catch(e){var msg='<div class="error">News unavailable (ESPN API may be blocked by browser).</div>';if(fullEl)fullEl.innerHTML=msg;if(homeEl)homeEl.innerHTML=msg;}
 }
+function switchNewsFeed(mode,btn){newsFeedMode=mode;['newsMlbBtn','newsTeamBtn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});if(btn)btn.classList.add('active');loadNews();}
 
 var liveGamePk=null,liveInterval=null;
 function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,300000);}
