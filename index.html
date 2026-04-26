@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.9</title>
+<title>MLB Tracker v2.9.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -617,7 +617,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9.1</div>
       </div>
     </div>
   </div>
@@ -1231,7 +1231,7 @@ async function pollGamePlays(gamePk) {
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
-        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning);}
+        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc);}
         else if (isScoringP){if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
@@ -1239,13 +1239,16 @@ async function pollGamePlays(gamePk) {
         else if (hasRISP){playSound('risp');}
       }
     });
-    // Patch Statcast distance into existing HR feed items once the data arrives
+    // Patch Statcast distance and HR number into existing HR feed items once the data arrives
     plays.forEach(function(play){
-      if(play.result&&play.result.event==='Home Run'&&play.hitData&&play.hitData.totalDistance>0){
-        var dist=Math.round(play.hitData.totalDistance);
+      if(play.result&&play.result.event==='Home Run'){
+        var newDesc=(play.result.description)||'';
         var pt=null;try{if(play.about&&play.about.startTime)pt=new Date(play.about.startTime);}catch(e){}
-        var found=feedItems.find(function(i){return i.gamePk===gamePk&&i.data&&i.data.event==='Home Run'&&!i.data.distance&&pt&&i.ts&&Math.abs(i.ts.getTime()-pt.getTime())<5000;});
-        if(found) found.data.distance=dist;
+        var found=feedItems.find(function(i){return i.gamePk===gamePk&&i.data&&i.data.event==='Home Run'&&pt&&i.ts&&Math.abs(i.ts.getTime()-pt.getTime())<5000;});
+        if(found){
+          if(!found.data.distance&&play.hitData&&play.hitData.totalDistance>0) found.data.distance=Math.round(play.hitData.totalDistance);
+          if(newDesc.match(/\(\d+\)/)&&!(found.data.desc||'').match(/\(\d+\)/)) found.data.desc=newDesc;
+        }
       }
     });
     g.playCount=plays.length;
@@ -2071,7 +2074,7 @@ function showAlert(opts) {
 }
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}
 
-async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats) {
+async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint) {
   var overlay = document.getElementById('playerCardOverlay');
   var card    = document.getElementById('playerCard');
   if (!overlay || !card) return;
@@ -2100,15 +2103,16 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
   var hrCount = stat ? (stat.homeRuns != null ? stat.homeRuns : '—') : '—';
+  if (descHint) { var _m=descHint.match(/\((\d+)\)/); if(_m){var _n=parseInt(_m[1],10);if(typeof hrCount!=='number'||hrCount<_n)hrCount=_n;} }
   var hrPrev  = (typeof hrCount === 'number' && hrCount >= 1) ? hrCount - 1 : hrCount;
   var avg     = stat ? fmtRate(stat.avg) : '—';
   var ops     = stat ? fmtRate(stat.ops) : '—';
   var rbi     = stat ? (stat.rbi != null ? stat.rbi : '—') : '—';
   var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
   var contextHtml = '';
-  if (stat && stat.homeRuns > 0) {
-    if (stat.homeRuns % 5 === 0) {
-      contextHtml = '<div class="pc-context"><span class="pc-context-pill">💥 HR #' + stat.homeRuns + ' in ' + SEASON + ' — milestone!</span></div>';
+  if (typeof hrCount === 'number' && hrCount > 0) {
+    if (hrCount % 5 === 0) {
+      contextHtml = '<div class="pc-context"><span class="pc-context-pill">💥 HR #' + hrCount + ' in ' + SEASON + ' — milestone!</span></div>';
     } else {
       var cache = statsCache.hitting || [];
       if (cache.length >= 2) {
