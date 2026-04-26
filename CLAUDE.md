@@ -253,8 +253,8 @@ Source: `/schedule?season=2026&teamId={id}&hydrate=team,linescore,game`
 
 ### 🏆 Standings
 - **Division standings** — active team's division, active team highlighted
-- **Wild Card Race** — top 9 non-division-leaders in active team's league (includes players from all divisions). Includes "Other Divisions Wild Card Race" section showing top 9 non-division-leaders from other divisions in the league. Orange cutoff after position 3 in both sections.
-- **Full MLB Standings** — all 6 divisions EXCEPT active team's division (already shown above). Active team's league listed first.
+- **Wild Card Race** — top 9 non-division-leaders in active team's league. Orange cutoff after position 3.
+- **Other League Wild Card Race** — top 9 non-division-leaders in the opposing league (NL team → AL WC; AL team → NL WC). Same format, cutoff after position 3. Title and data update dynamically on team switch.
 
 Source: `/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,division,league`
 
