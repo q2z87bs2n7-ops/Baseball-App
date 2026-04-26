@@ -400,6 +400,8 @@
 .play-tag.dp-tag   { background: rgba(220, 100,  60, 0.14); color: #e06040; }
 .play-tag.tp-tag   { background: rgba(220,  60,  60, 0.18); color: #e03030; }
 .feed-play { font-size: 13.5px; color: var(--text); line-height: 1.45; }
+.feed-desc { transition: opacity 0.32s ease; }
+.feed-desc.color-fade { opacity: 0; }
 .feed-item.homerun .feed-play { font-weight: 600; }
 .feed-score-badge { display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; margin-left: 5px; vertical-align: middle; color: rgba(255,255,255,0.55); }
 .feed-score-scorer { color: #ffffff; font-weight: 800; }
@@ -1120,7 +1122,7 @@ async function pollGamePlays(gamePk) {
     var data=await r.json();
     var plays=(data.allPlays||[]).filter(function(p){return p.about&&p.about.isComplete;});
     var lastCount=g.playCount||0, isHistory=(lastCount===0&&plays.length>0);
-
+    var colorQueue=[];
     plays.slice(lastCount).forEach(function(play) {
       var event=(play.result&&play.result.event)||'';
       var isScoringP=(play.about&&play.about.isScoringPlay)||false;
@@ -1137,7 +1139,7 @@ async function pollGamePlays(gamePk) {
       var playClass=event==='Home Run'?'homerun':isScoringP?'scoring':hasRISP?'risp':'normal';
       var playTime=null; if (play.about&&play.about.startTime){try{playTime=new Date(play.about.startTime);}catch(e){}}
       addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime});
-
+      if (!isHistory && playTime) colorQueue.push({ts:playTime.getTime(), batterName:batterName, origDesc:desc});
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         if (event==='Home Run'){playSound('hr');if(batterId)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning);}
@@ -1149,10 +1151,41 @@ async function pollGamePlays(gamePk) {
       }
     });
     g.playCount=plays.length;
-
+    if (colorQueue.length) enrichPlaysWithColor(gamePk, colorQueue);
   } catch(e){}
 }
 
+async function enrichPlaysWithColor(gamePk, colorQueue) {
+  try {
+    var r = await fetch(MLB_BASE + '/game/' + gamePk + '/feed/color');
+    if (!r.ok) return;
+    var d = await r.json();
+    var items = d.items || d.colorFeed || d.color || [];
+    // DEBUG START
+    if (items.length > 0) console.log('[Color] sample item:', JSON.stringify(items[items.length - 1]).slice(0, 600));
+    // DEBUG END
+    colorQueue.forEach(function(q) {
+      var lastName = q.batterName ? q.batterName.split(' ').slice(-1)[0].toLowerCase() : null;
+      var best = null;
+      for (var i = items.length - 1; i >= 0; i--) {
+        var ci = items[i];
+        var ciDesc = ci.description || ci.narrative || ci.text || ci.body || '';
+        if (!ciDesc || ciDesc === q.origDesc) continue;
+        var ciTime = ci.timestamp || ci.startTime || ci.timeCode || null;
+        if (!ciTime) continue;
+        if (Math.abs(new Date(ciTime).getTime() - q.ts) > 5 * 60 * 1000) continue;
+        if (lastName && ciDesc.toLowerCase().indexOf(lastName) === -1) continue;
+        best = ciDesc;
+        break;
+      }
+      if (!best) return;
+      var el = document.querySelector('.feed-item[data-gamepk="' + gamePk + '"][data-ts="' + q.ts + '"] .feed-desc');
+      if (!el) return;
+      el.classList.add('color-fade');
+      setTimeout(function(elem, text) { elem.textContent = text; elem.classList.remove('color-fade'); }.bind(null, el, best), 320);
+    });
+  } catch(e) {}
+}
 
 function renderTicker() {
   var ticker=document.getElementById('gameTicker'), states=Object.values(gameStates);
@@ -1343,7 +1376,7 @@ function buildFeedEl(item) {
   else if (evt.indexOf('Error')!==-1) playBadge='<span class="play-tag err-tag">E</span>';
   else if (evt.indexOf('Triple Play')!==-1) playBadge='<span class="play-tag tp-tag">TP</span>';
   else if (evt.indexOf('Double Play')!==-1) playBadge='<span class="play-tag dp-tag">DP</span>';
-  el.innerHTML=metaHtml+'<div class="feed-play">'+icon+''+d.desc+''+rispBadge+playBadge+scoreBadge+'</div>';
+  el.innerHTML=metaHtml+'<div class="feed-play">'+icon+'<span class="feed-desc">'+d.desc+'</span>'+rispBadge+playBadge+scoreBadge+'</div>';
   return el;
 }
 
