@@ -1581,21 +1581,58 @@ async function loadYesterdayCache(){
   try{
     var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1&hydrate=linescore,team');
     var d=await r.json();
-    (d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){
+    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){
       if(g.status.abstractGameState!=='Final') return false;
       var detailed=g.status.detailedState||'';
       if(detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended') return false;
       return true;
-    }).forEach(function(g){
+    });
+    for(var i=0;i<games.length;i++){
+      var g=games[i];
       var away=g.teams.away, home=g.teams.home;
       var winner=away.score>home.score?away.team.abbreviation:home.team.abbreviation;
       var loser=away.score>home.score?home.team.abbreviation:away.team.abbreviation;
       var ws=Math.max(away.score||0,home.score||0), ls=Math.min(away.score||0,home.score||0);
       var linescore=g.linescore||{};
       var dur=linescore.gameDurationMinutes?' · '+Math.floor(linescore.gameDurationMinutes/60)+'h '+String(linescore.gameDurationMinutes%60).padStart(2,'0')+'m':'';
-      var headline='Yesterday: '+winner+' beat '+loser+' '+ws+'-'+ls;
+      var playerHighlight='', sigPlay='';
+      try{
+        var bs=await fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore').then(function(r){return r.json();});
+        var allPlayers=Object.assign({},bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs.teams&&bs.teams.away&&bs.teams.away.players||{});
+        var topBatter=null, topBatterStats=null;
+        Object.values(allPlayers).forEach(function(p){
+          if(!p.stats||!p.stats.batting) return;
+          var bat=p.stats.batting;
+          if(!bat.hits||bat.atBats<2) return;
+          if(!topBatter||(bat.hits/bat.atBats)>(topBatterStats.hits/topBatterStats.atBats)) {topBatter=p;topBatterStats=bat;}
+        });
+        var startingPitcher=null, startingPitcherStats=null;
+        Object.values(allPlayers).forEach(function(p){
+          if(!p.stats||!p.stats.pitching||!p.gameStatus||!p.gameStatus.isCurrentPitcher) return;
+          var pit=p.stats.pitching;
+          if(parseFloat(pit.inningsPitched||0)>=1) {startingPitcher=p;startingPitcherStats=pit;}
+        });
+        var lines=[];
+        if(topBatter&&topBatterStats) lines.push(topBatter.person.fullName.split(' ').pop()+' '+topBatterStats.hits+'-'+topBatterStats.atBats);
+        if(startingPitcher&&startingPitcherStats) lines.push(startingPitcher.person.fullName.split(' ').pop()+' '+startingPitcherStats.strikeOuts+'K, '+(startingPitcherStats.earnedRuns||0)+' ER');
+        if(lines.length) playerHighlight=' · '+lines.join(' · ');
+      }catch(e){}
+      try{
+        var pb=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay').then(function(r){return r.json();});
+        var plays=pb.allPlays||[];
+        var lastPlay=plays[plays.length-1];
+        if(lastPlay&&lastPlay.about&&lastPlay.about.isScoringPlay&&lastPlay.result){
+          var evt=lastPlay.result.event||'';
+          if(evt.indexOf('Home Run')!==-1&&lastPlay.about.inning>=9&&Math.abs(ws-ls)<=1) {sigPlay=' · Walk-off HR!';}
+          else if(evt.indexOf('Grand Slam')!==-1) {sigPlay=' · Grand slam!';}
+        }
+        var allHits={away:0,home:0};
+        plays.forEach(function(p){if(p.result&&['Single','Double','Triple','Home Run'].indexOf(p.result.event)!==-1){var half=(p.about.halfInning||'Top').toLowerCase();allHits[half==='top'?'away':'home']++;}});
+        if(allHits.away===0||allHits.home===0) {sigPlay=' · No-hitter!';}
+      }catch(e){}
+      var headline='Yesterday: '+winner+' beat '+loser+' '+ws+'-'+ls+playerHighlight+sigPlay;
       yesterdayCache.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
-    });
+    }
   }catch(e){}
 }
 
