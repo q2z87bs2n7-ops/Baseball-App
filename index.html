@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.8</title>
+<title>MLB Tracker v2.8.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -614,7 +614,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.1</div>
       </div>
     </div>
   </div>
@@ -657,6 +657,7 @@
     <div>
       <div class="card"><div class="card-title" id="divTitle">🔥 Division</div><div id="nlEast"><div class="loading">Loading...</div></div></div>
       <div class="card" style="margin-top:16px"><div class="card-title" id="wcTitle">🃏 Wild Card Race</div><div class="wc-note">Top 3 non-division-winner teams qualify</div><div id="nlWC"><div class="loading">Loading...</div></div></div>
+      <div class="card" style="margin-top:16px"><div class="card-title" id="otherDivWCTitle">🃏 Wild Card Race</div><div class="wc-note">Top 3 non-division-winner teams qualify</div><div id="otherDivWC"><div class="loading">Loading...</div></div></div>
     </div>
     <div><div class="card"><div class="card-title">Full MLB Standings</div><div id="fullStandings"><div class="loading">Loading...</div></div></div></div>
   </div>
@@ -2537,11 +2538,12 @@ async function loadStandings(){
     var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,division,league');
     var d=await r.json(),divMap={};
     (d.records||[]).forEach(function(rec){divMap[rec.division.id]={name:rec.division.name,league:rec.league.name,teams:rec.teamRecords};});
-    renderDivStandings(divMap);renderNLWC(divMap);renderFullStandings(divMap);renderHomeStandings(divMap);
+    renderDivStandings(divMap);renderNLWC(divMap);renderOtherDivWC(divMap);renderFullStandings(divMap);renderHomeStandings(divMap);
     document.getElementById('divTitle').textContent='🔥 '+activeTeam.division;
     document.getElementById('wcTitle').textContent='🃏 '+activeTeam.league+' Wild Card Race';
+    document.getElementById('otherDivWCTitle').textContent='🃏 '+activeTeam.league+' Wild Card Race — Other Divisions';
     document.getElementById('homeDivTitle').textContent=activeTeam.division+' Snapshot';
-  }catch(e){['nlEast','nlWC','fullStandings','homeStandings'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<div class="error">Could not load standings</div>';});}
+  }catch(e){['nlEast','nlWC','otherDivWC','fullStandings','homeStandings'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<div class="error">Could not load standings</div>';});}
 }
 
 function standingsTable(teams){
@@ -2560,9 +2562,19 @@ function renderNLWC(divMap){
   var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
   wc.forEach(function(t,i){var isActive=t.team.id===activeTeam.id,gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--accent)':'';html+='<tr class="'+(isActive?'active-row':'')+'" style="'+cutoff+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
   html+='</tbody></table><div style="font-size:.72rem;color:var(--accent);margin-top:6px">── Wild Card cutoff line</div>';
-  var otherDivTeams=[];leagueDivs.forEach(function(d){if(d.name!==activeTeam.division){d.teams.forEach(function(t){if(!leaders.has(t.team.id))otherDivTeams.push(t);});}});
-  if(otherDivTeams.length){otherDivTeams.sort(function(a,b){return parseFloat(b.winningPercentage)-parseFloat(a.winningPercentage);});var otherTop=otherDivTeams[0],otherTopW=otherTop.wins,otherTopL=otherTop.losses;html+='<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)"><div class="card-title">🃏 '+activeTeam.league+' Wild Card Race</div><div class="wc-note">Top 3 non-division-winner teams qualify</div><table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';otherDivTeams.slice(0,9).forEach(function(t,i){var gb=i===0?'—':(((otherTopW-t.wins)+(t.losses-otherTopL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--accent)':'';html+='<tr style="'+cutoff+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});html+='</tbody></table><div style="font-size:.72rem;color:var(--accent);margin-top:6px">── Wild Card cutoff line</div></div>';}
   document.getElementById('nlWC').innerHTML=html;
+}
+function renderOtherDivWC(divMap){
+  var league=activeTeam.league==='NL'?'National League':'American League';
+  var leagueDivs=Object.values(divMap).filter(function(d){return d.league===league;});
+  var leaders=new Set(leagueDivs.map(function(d){return d.teams[0]&&d.teams[0].team.id;}));
+  var teams=[];leagueDivs.forEach(function(d){if(d.name!==activeTeam.division){d.teams.forEach(function(t){if(!leaders.has(t.team.id))teams.push(t);});}});
+  teams.sort(function(a,b){return parseFloat(b.winningPercentage)-parseFloat(a.winningPercentage);});
+  var top=teams[0],topW=top?top.wins:0,topL=top?top.losses:0;
+  var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
+  teams.slice(0,9).forEach(function(t,i){var gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--accent)':'';html+='<tr style="'+cutoff+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
+  html+='</tbody></table><div style="font-size:.72rem;color:var(--accent);margin-top:6px">── Wild Card cutoff line</div>';
+  document.getElementById('otherDivWC').innerHTML=html;
 }
 function renderFullStandings(divMap){
   var al=Object.values(divMap).filter(function(d){return d.league==='American League';}),nl=Object.values(divMap).filter(function(d){return d.league==='National League';});
