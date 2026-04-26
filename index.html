@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.12</title>
+<title>MLB Tracker v2.12.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -622,7 +622,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12.1</div>
       </div>
     </div>
   </div>
@@ -1381,7 +1381,9 @@ function genWalkOffThreat(){
   var out=[];
   Object.values(gameStates).forEach(function(g){
     if(g.status!=='Live'||g.halfInning!=='bottom'||g.inning<9) return;
-    if(Math.abs(g.awayScore-g.homeScore)>1) return;
+    var runnersOn=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
+    var deficit=g.awayScore-g.homeScore; // positive = home trailing
+    if(deficit<0||deficit>runnersOn+1) return; // home leading, or winning run not at bat
     var id='walkoff_'+g.gamePk+'_'+g.inning;
     var headline='Walk-off situation — '+g.homeAbbr+' in the bottom '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+ordinal(g.inning)+' inning';
