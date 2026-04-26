@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.12.2</title>
+<title>MLB Tracker v2.12.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -622,7 +622,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12.3</div>
       </div>
     </div>
   </div>
@@ -1656,7 +1656,8 @@ async function buildStoryPool(){
 function rotateStory(){
   if(!storyPool.length) return;
   var now=Date.now();
-  var eligible=storyPool.filter(function(s){return !s.lastShown||(now-s.lastShown.getTime())>s.cooldownMs;});
+  var maxCooldown=Math.max(storyPool.length*STORY_ROTATE_MS*1.5,2*60000);
+  var eligible=storyPool.filter(function(s){return !s.lastShown||(now-s.lastShown.getTime())>Math.min(s.cooldownMs,maxCooldown);});
   if(!eligible.length){eligible=storyPool.slice().sort(function(a,b){return (a.lastShown?a.lastShown.getTime():0)-(b.lastShown?b.lastShown.getTime():0);});}
   var scored=eligible.map(function(s){
     var ageMin=(now-s.ts.getTime())/60000;
