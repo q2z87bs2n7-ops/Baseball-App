@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.8.2</title>
+<title>MLB Tracker v2.8.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -614,7 +614,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.3</div>
       </div>
     </div>
   </div>
@@ -2541,7 +2541,7 @@ async function loadStandings(){
     renderDivStandings(divMap);renderNLWC(divMap);renderOtherDivWC(divMap);renderFullStandings(divMap);renderHomeStandings(divMap);
     document.getElementById('divTitle').textContent='🔥 '+activeTeam.division;
     document.getElementById('wcTitle').textContent='🃏 '+activeTeam.league+' Wild Card Race';
-    document.getElementById('otherDivWCTitle').textContent='🃏 '+activeTeam.league+' Wild Card Race — Other Divisions';
+    document.getElementById('otherDivWCTitle').textContent='🃏 '+(activeTeam.league==='NL'?'AL':'NL')+' Wild Card Race';
     document.getElementById('homeDivTitle').textContent=activeTeam.division+' Snapshot';
   }catch(e){['nlEast','nlWC','otherDivWC','fullStandings','homeStandings'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<div class="error">Could not load standings</div>';});}
 }
@@ -2565,10 +2565,10 @@ function renderNLWC(divMap){
   document.getElementById('nlWC').innerHTML=html;
 }
 function renderOtherDivWC(divMap){
-  var league=activeTeam.league==='NL'?'National League':'American League';
-  var leagueDivs=Object.values(divMap).filter(function(d){return d.league===league;});
+  var otherLeague=activeTeam.league==='NL'?'American League':'National League';
+  var leagueDivs=Object.values(divMap).filter(function(d){return d.league===otherLeague;});
   var leaders=new Set(leagueDivs.map(function(d){return d.teams[0]&&d.teams[0].team.id;}));
-  var teams=[];leagueDivs.forEach(function(d){if(d.name!==activeTeam.division){d.teams.forEach(function(t){if(!leaders.has(t.team.id))teams.push(t);});}});
+  var teams=[];leagueDivs.forEach(function(d){d.teams.forEach(function(t){if(!leaders.has(t.team.id))teams.push(t);});});
   teams.sort(function(a,b){return parseFloat(b.winningPercentage)-parseFloat(a.winningPercentage);});
   var top=teams[0],topW=top?top.wins:0,topL=top?top.losses:0;
   var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
