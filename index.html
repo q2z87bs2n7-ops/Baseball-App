@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.9.2</title>
+<title>MLB Tracker v2.9.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#002D72" id="themeColorMeta">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(255,145,20,0.18);--hr-border:rgba(255,145,20,0.55);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
+  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(0,195,175,0.10);--hr-border:rgba(0,195,175,0.40);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
   body{background:var(--dark);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
   header{background:linear-gradient(135deg,var(--primary) 0%,#001a4a 100%);border-bottom:1px solid rgba(255,255,255,.08);padding:0 20px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100}
   .logo{display:flex;align-items:center;gap:10px;font-size:1.2rem;font-weight:700;color:var(--header-text)}
@@ -354,7 +354,11 @@
 .ticker-inning { font-size: 11px; color: var(--muted); font-weight: 600; }
 .ticker-empty { color: var(--muted); font-size: 12px; padding: 0 4px; }
 
-#feedWrap { max-width: 700px; margin: 0 auto; padding: 14px 12px 24px; }
+#pulseFeedHeader { max-width: 700px; margin: 10px auto 0; padding: 0 12px; display: flex; align-items: center; gap: 8px; }
+#pulseFeedHeader::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.pulse-feed-label { font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.pulse-feed-label .pulse-bolt { color: var(--accent); }
+#feedWrap { max-width: 700px; margin: 8px auto 0; padding: 14px 12px 24px; border: 1px solid var(--border); border-radius: var(--radius); }
 #feedEmpty { text-align: center; padding: 64px 24px; color: var(--muted); }
 #feedEmpty .empty-icon { font-size: 40px; display: block; margin-bottom: 14px; opacity: 0.6; }
 #feedEmpty .empty-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
@@ -383,7 +387,7 @@
 
 .feed-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 13px; margin-bottom: 6px; animation: feed-in 0.28s ease; }
 .feed-item.scoring { background: var(--scoring-bg); border-color: var(--scoring-border); }
-.feed-item.homerun { background: var(--hr-bg); border-color: var(--hr-border); border-left: 3px solid rgba(255,145,20,0.85); }
+.feed-item.homerun { background: var(--hr-bg); border-color: var(--hr-border); border-left: 3px solid rgba(0,195,175,0.85); }
 .feed-item.risp { }
 .feed-item.status-change { background: var(--status-bg); border-color: var(--status-border); text-align: center; padding: 10px 16px; }
 .feed-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
@@ -428,7 +432,7 @@
 #storyCarousel { max-width: 700px; margin: 0 auto; padding: 10px 12px 4px; }
 .story-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; animation: storyFadeIn 0.35s ease; }
 @keyframes storyFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-.story-card.tier1 { border-left: 3px solid rgba(255,145,20,0.85); background: var(--hr-bg); }
+.story-card.tier1 { border-left: 3px solid rgba(160,100,255,0.85); background: rgba(160,100,255,0.13); }
 .story-card.story-biginning { background: rgba(220,60,60,0.13); border-left-color: rgba(220,60,60,0.75); }
 .story-card.tier2 { border-left: 3px solid rgba(60,190,100,0.6); background: var(--scoring-bg); }
 .story-card.tier3 { border-left: 3px solid rgba(80,140,255,0.6); background: var(--status-bg); }
@@ -618,7 +622,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9.3</div>
       </div>
     </div>
   </div>
@@ -819,6 +823,9 @@
     <button class="mock-btn" id="btnSkip" onclick="skipMockPlay()">Skip ▶</button>
     <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
     <span class="mock-progress" id="mockProgress"></span>
+  </div>
+  <div id="pulseFeedHeader">
+    <span class="pulse-feed-label"><span class="pulse-bolt">⚡</span> Pulse</span>
   </div>
   <div id="feedWrap">
     <div id="feedEmpty">
