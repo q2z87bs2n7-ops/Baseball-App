@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.12.1</title>
+<title>MLB Tracker v2.12.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -622,7 +622,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12.2</div>
       </div>
     </div>
   </div>
@@ -1421,7 +1421,7 @@ function genBigInning(){
     var id='biginning_'+grp.gamePk+'_'+grp.inning+'_'+grp.half;
     var battingTeam=grp.half==='top'?g.awayAbbr:g.homeAbbr;
     var headline=battingTeam+' scored '+grp.runs+' runs in the '+ordinal(grp.inning);
-    var sub=g.awayAbbr+' '+grp.lastItem.data.awayScore+', '+g.homeAbbr+' '+grp.lastItem.data.homeScore;
+    var sub=g.awayAbbr+' @ '+g.homeAbbr;
     out.push(makeStory(id,'realtime',1,75,'🔥',headline,sub,'highlight',grp.gamePk,grp.lastItem.ts,10*60000,0.4));
   });
   return out;
