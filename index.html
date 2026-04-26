@@ -1373,25 +1373,30 @@ function genFinalScoreStories(){
 function genStreakStories(){
   var out=[];
   if(!scheduleData||!scheduleData.length) return out;
-  var teamId=activeTeam.id;
-  var games=scheduleData.filter(function(g){
-    return (g.teams.away.team.id===teamId||g.teams.home.team.id===teamId)&&g.status.abstractGameState==='Final';
-  }).sort(function(a,b){return new Date(b.gameDate)-new Date(a.gameDate);});
-  if(games.length<3) return out;
-  var streak=0, isWin=null;
-  for(var i=0;i<games.length;i++){
-    var gm=games[i];
-    var isHome=gm.teams.home.team.id===teamId;
-    var myScore=isHome?gm.teams.home.score:gm.teams.away.score;
-    var oppScore=isHome?gm.teams.away.score:gm.teams.home.score;
-    if(myScore==null||oppScore==null) break;
-    var win=myScore>oppScore;
-    if(i===0){isWin=win;streak=1;} else if(win===isWin){streak++;} else break;
-  }
-  if(streak<3) return out;
-  var id='streak_'+teamId+'_'+streak+'_'+(isWin?'W':'L');
-  var headline=activeTeam.name+(isWin?' on a '+streak+'-game winning streak':' on a '+streak+'-game losing streak');
-  out.push(makeStory(id,'streak',2,60,isWin?'🔥':'❄️',headline,activeTeam.name+' 2026','today',null,new Date(),20*60000,0.1));
+  var streaksByTeam={};
+  scheduleData.filter(function(g){return g.status.abstractGameState==='Final';}).forEach(function(g){
+    var away=g.teams.away, home=g.teams.home;
+    [away,home].forEach(function(side){
+      var teamId=side.team.id;
+      if(!streaksByTeam[teamId]) streaksByTeam[teamId]={id:teamId,name:side.team.name,games:[]};
+      var isHome=(side===home);
+      var myScore=isHome?home.score:away.score;
+      var oppScore=isHome?away.score:home.score;
+      if(myScore!=null&&oppScore!=null) streaksByTeam[teamId].games.push({win:myScore>oppScore,date:new Date(g.gameDate)});
+    });
+  });
+  Object.values(streaksByTeam).forEach(function(team){
+    team.games.sort(function(a,b){return b.date-a.date;});
+    var streak=0, isWin=null;
+    for(var i=0;i<team.games.length;i++){
+      var g=team.games[i];
+      if(i===0){isWin=g.win;streak=1;} else if(g.win===isWin){streak++;} else break;
+    }
+    if(streak<3) return;
+    var id='streak_'+team.id+'_'+streak+'_'+(isWin?'W':'L');
+    var headline=team.name+(isWin?' on a '+streak+'-game winning streak':' on a '+streak+'-game losing streak');
+    out.push(makeStory(id,'streak',2,60,isWin?'🔥':'❄️',headline,team.name+' 2026','today',null,new Date(),20*60000,0.1));
+  });
   return out;
 }
 
