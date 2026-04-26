@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.8.5</title>
+<title>MLB Tracker v2.8.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -616,7 +616,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.6</div>
       </div>
     </div>
   </div>
@@ -1494,7 +1494,7 @@ function genProbablePitchers(){
 
   // Try to find today's games from gameStates (already fetched with probablePitcher by pollLeaguePulse)
   Object.values(gameStates).forEach(function(g){
-    if(localDateStr(new Date(g.gameDateMs))===today&&g.awayAbbr&&g.homeAbbr) {
+    if(localDateStr(new Date(g.gameDateMs))===today&&g.awayAbbr&&g.homeAbbr&&g.status!=='Live'&&g.status!=='Final') {
       games.push(g);
     }
   });
@@ -1881,6 +1881,15 @@ function updateFeedEmpty() {
 
 function renderEmptyState() {
   var el=document.getElementById('feedEmpty');
+  // If any enabled live game is in progress, plays are imminent — don't show a DH game-2 as "NEXT UP"
+  var liveEnabled=Object.values(gameStates).some(function(g){
+    return g.status==='Live'&&g.detailedState==='In Progress'&&enabledGames.has(g.gamePk);
+  });
+  if(liveEnabled){
+    el.className='';
+    el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">Game in progress</div><div class="empty-sub">Plays will appear here shortly…</div>';
+    return;
+  }
   var upcoming=Object.values(gameStates).filter(function(g){
     return g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress');
   });
