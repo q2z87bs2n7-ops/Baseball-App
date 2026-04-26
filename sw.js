@@ -1,4 +1,4 @@
-const CACHE = 'mlb-v90'; // bump this version on every deploy to force cache refresh
+const CACHE = 'mlb-v91'; // bump this version on every deploy to force cache refresh
 const SHELL = ['./', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 const ICON  = new URL('./icons/icon-192.png', self.location).href;
 const START = new URL('./', self.location).href;

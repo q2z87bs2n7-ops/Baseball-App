@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.8.10</title>
+<title>MLB Tracker v2.8.11</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -617,7 +617,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.10</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.11</div>
       </div>
     </div>
   </div>
@@ -1500,6 +1500,25 @@ function genYesterdayHighlights(){
   });
 }
 
+async function fetchMissingHRBatterStats(){
+  var ids=[];
+  feedItems.forEach(function(item){
+    if(!item.data||item.data.event!=='Home Run') return;
+    var bid=item.data.batterId;
+    if(bid&&!hrBatterStatsCache[bid]) ids.push(bid);
+  });
+  var unique=[...new Set(ids)];
+  if(!unique.length) return;
+  await Promise.all(unique.map(async function(id){
+    try{
+      var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group=hitting');
+      var d=await r.json();
+      var stat=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;
+      if(stat) hrBatterStatsCache[id]=stat;
+    }catch(e){}
+  }));
+}
+
 async function loadProbablePitcherStats(){
   var ids=[];
   Object.values(storyCarouselRawGameData).forEach(function(raw){
@@ -1570,6 +1589,7 @@ async function buildStoryPool(){
   var now=Date.now();
   if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
   loadProbablePitcherStats();
+  fetchMissingHRBatterStats();
   var fresh=[].concat(
     genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),genMultiHitDay(),genDailyLeaders(),
