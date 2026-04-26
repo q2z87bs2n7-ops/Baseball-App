@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.7</title>
+<title>MLB Tracker v2.7.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -424,6 +424,31 @@
 .mock-btn.active { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); }
 .mock-progress { margin-left: auto; font-size: 11px; color: var(--muted); flex-shrink: 0; }
 
+/* ── Story Carousel (v2.7.1) ─────────────────────────────────────────────── */
+#storyCarousel { max-width: 700px; margin: 0 auto; padding: 10px 12px 4px; }
+.story-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; animation: storyFadeIn 0.35s ease; }
+@keyframes storyFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.story-card.tier1 { border-left: 3px solid rgba(255,145,20,0.85); background: var(--hr-bg); }
+.story-card.tier2 { border-left: 3px solid rgba(60,190,100,0.6); background: var(--scoring-bg); }
+.story-card.tier3 { border-left: 3px solid rgba(80,140,255,0.6); background: var(--status-bg); }
+.story-card.tier4 { border-left: 3px solid var(--border); }
+.story-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 7px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; }
+.story-badge.live { background: rgba(255,60,60,0.2); color: #ff6b6b; }
+.story-badge.today { background: rgba(60,190,100,0.2); color: #4caf7d; }
+.story-badge.final { background: rgba(80,140,255,0.15); color: #7aa8ff; }
+.story-badge.yesterday { background: rgba(155,160,168,0.15); color: var(--muted); }
+.story-badge.onthisday { background: rgba(155,100,255,0.15); color: #b07aff; }
+.story-badge.upcoming { background: rgba(255,190,60,0.15); color: #ffbe3c; }
+.story-icon { font-size: 18px; margin-right: 6px; }
+.story-headline { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.35; }
+.story-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.story-controls { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 5px 0 2px; }
+.story-nav { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 3px 10px; font-size: 16px; line-height: 1; cursor: pointer; font-family: inherit; transition: color 0.15s, border-color 0.15s; }
+.story-nav:hover { color: var(--accent); border-color: var(--accent); }
+.story-dots { display: flex; gap: 5px; align-items: center; }
+.story-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+.story-dot.active { background: var(--accent); }
+
 #soundPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 270px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 150; overflow: hidden; }
 .sound-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
 .sound-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
@@ -582,7 +607,7 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7.1</div>
       </div>
     </div>
   </div>
@@ -766,6 +791,14 @@
     <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
+  <div id="storyCarousel" style="display:none">
+    <div id="storyCard"></div>
+    <div class="story-controls">
+      <button class="story-nav" onclick="prevStory()">‹</button>
+      <div class="story-dots" id="storyDots"></div>
+      <button class="story-nav" onclick="nextStory()">›</button>
+    </div>
+  </div>
   <div id="mockBar" style="display:none">
     <span class="mock-badge">⚡ Mock</span>
     <span class="mock-bar-label">Speed:</span>
@@ -832,6 +865,12 @@ let mockPlayPtrs={},mockGameQueue=[],mockTimerId=null;
 let mockSpeedMs=6000,totalMockPlays=0,playedMockPlays=0;
 let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
+
+// ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
+let storyPool=[],storyShownId=null,storyRotateTimer=null;
+let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersLastFetch=0;
+let dailyHitsTracker={},dailyPitcherKs={};
+const STORY_ROTATE_MS=20000;
 
 function tcLookup(id){var t=TEAMS.find(function(t){return t.id===id;});return t?{primary:t.primary,abbr:t.short,name:t.name}:{primary:'#444',abbr:'???',name:'Unknown'};}
 
@@ -919,6 +958,9 @@ function switchMode(toReal) {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   feedItems=[]; gameStates={}; enabledGames=new Set();
   mockPlayPtrs={}; mockGameQueue=[]; playedMockPlays=0; totalMockPlays=0; isFirstPoll=true;
+  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={};
+  if (storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
+  var sc=document.getElementById('storyCarousel'); if(sc)sc.style.display='none';
   document.getElementById('feed').innerHTML='';
   document.getElementById('alertStack').innerHTML='';
   updateFeedEmpty();
@@ -1027,6 +1069,9 @@ function resetMock() {
   if (mockTimerId){clearInterval(mockTimerId);mockTimerId=null;}
   feedItems=[]; gameStates={}; enabledGames=new Set(); mockPlayPtrs={}; mockGameQueue=[];
   playedMockPlays=0; totalMockPlays=0;
+  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={};
+  if (storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
+  var sc=document.getElementById('storyCarousel'); if(sc)sc.style.display='none';
   document.getElementById('feed').innerHTML=''; document.getElementById('alertStack').innerHTML='';
   updateFeedEmpty();
   document.querySelectorAll('.mock-btn').forEach(function(b){b.classList.remove('active');});
@@ -1038,6 +1083,9 @@ function updateMockProgress(){document.getElementById('mockProgress').textConten
 function initReal() {
   document.getElementById('mockBar').style.display='none';
   pollDateStr=localDateStr(new Date());
+  loadOnThisDayCache(); loadYesterdayCache();
+  document.removeEventListener('visibilitychange',onStoryVisibilityChange);
+  document.addEventListener('visibilitychange',onStoryVisibilityChange);
   pollLeaguePulse();
   pulseTimer=setInterval(pollLeaguePulse,15000);
 }
@@ -1070,6 +1118,7 @@ async function pollLeaguePulse() {
           homeW:home.leagueRecord?home.leagueRecord.wins:null, homeL:home.leagueRecord?home.leagueRecord.losses:null,
           status:newStatus, detailedState:detailed,
           inning:ls.currentInning||1, halfInning:(ls.inningHalf||'Top').toLowerCase(), outs:ls.outs||0,
+          awayHits:ls.teams&&ls.teams.away?ls.teams.away.hits||0:0, homeHits:ls.teams&&ls.teams.home?ls.teams.home.hits||0:0,
           playCount:0, lastTimestamp:null, gameTime:gameTime, gameDateMs:gameDateMs,
           venueName:g.venue?g.venue.name:null,
           onFirst:!!(ls.offense&&ls.offense.first), onSecond:!!(ls.offense&&ls.offense.second), onThird:!!(ls.offense&&ls.offense.third),
@@ -1109,6 +1158,8 @@ async function pollLeaguePulse() {
         prev.awayScore=away.score||0; prev.homeScore=home.score||0;
         prev.inning=ls.currentInning||prev.inning; prev.halfInning=(ls.inningHalf||'Top').toLowerCase();
         prev.outs=ls.outs||0;
+        if (ls.teams&&ls.teams.away) prev.awayHits=ls.teams.away.hits||0;
+        if (ls.teams&&ls.teams.home) prev.homeHits=ls.teams.home.hits||0;
         prev.onFirst=!!(ls.offense&&ls.offense.first); prev.onSecond=!!(ls.offense&&ls.offense.second); prev.onThird=!!(ls.offense&&ls.offense.third);
       }
     });
@@ -1122,6 +1173,7 @@ async function pollLeaguePulse() {
     if (isFirstPoll&&feedItems.length>0){feedItems.sort(function(a,b){return b.ts-a.ts;});renderFeed();}
     isFirstPoll=false;
     renderTicker(); updateHeader(); updateFeedEmpty();
+    buildStoryPool();
   } catch(e){console.error('poll error',e);}
 }
 
@@ -1152,7 +1204,12 @@ async function pollGamePlays(gamePk) {
       var hasRISP=runners.some(function(r){return r.movement&&!r.movement.isOut&&(r.movement.end==='2B'||r.movement.end==='3B');});
       var playClass=event==='Home Run'?'homerun':isScoringP?'scoring':hasRISP?'risp':'normal';
       var playTime=null; if (play.about&&play.about.startTime){try{playTime=new Date(play.about.startTime);}catch(e){}}
-      addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime});
+      addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime,batterId:batterId,batterName:batterName});
+      var isHitEvt=['Single','Double','Triple','Home Run'].indexOf(event)!==-1;
+      if (isHitEvt&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
+      var pitcherId=(play.matchup&&play.matchup.pitcher&&play.matchup.pitcher.id)||null;
+      var pitcherName=(play.matchup&&play.matchup.pitcher&&play.matchup.pitcher.fullName)||'';
+      if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;dailyPitcherKs[kkey]=ke;}
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
@@ -1210,6 +1267,338 @@ function renderTicker() {
 }
 
 function updateHeader() {}
+
+// ── Story Carousel (v2.7.1) ───────────────────────────────────────────────────
+
+function makeStory(id,type,tier,priority,icon,headline,sub,badge,gamePk,ts,cooldownMs,decayRate){
+  var existing=storyPool.find(function(s){return s.id===id;});
+  return {id:id,type:type,tier:tier,priority:priority,icon:icon,headline:headline,sub:sub,badge:badge,gamePk:gamePk||null,ts:ts||new Date(),lastShown:existing?existing.lastShown:null,cooldownMs:cooldownMs,decayRate:decayRate};
+}
+
+function genHRStories(){
+  var out=[];
+  feedItems.forEach(function(item){
+    if(!item.data||item.data.event!=='Home Run') return;
+    var g=gameStates[item.gamePk]; if(!g) return;
+    var id='hr_'+item.gamePk+'_'+item.ts.getTime();
+    var desc=item.data.desc||'';
+    var m=desc.match(/^(.+?)\s+homers?\s*\((\d+)\)/i);
+    var playerName=m?m[1]:(item.data.batterName||'Player');
+    var hrNum=m?m[2]:'';
+    var dirMatch=desc.match(/to (.+?)\./i);
+    var direction=dirMatch?' to '+dirMatch[1]:'';
+    var headline=playerName+' homers'+(hrNum?' (#'+hrNum+')':'')+direction;
+    var sub=g.awayAbbr+' '+item.data.awayScore+', '+g.homeAbbr+' '+item.data.homeScore+' · '+g.awayAbbr+' @ '+g.homeAbbr;
+    out.push(makeStory(id,'realtime',1,100,'💥',headline,sub,g.status==='Live'?'live':'today',item.gamePk,item.ts,5*60000,0.5));
+  });
+  return out;
+}
+
+function genNoHitterWatch(){
+  var out=[];
+  Object.values(gameStates).forEach(function(g){
+    if(g.status!=='Live'||g.detailedState!=='In Progress') return;
+    if(g.inning<6) return;
+    var nohitAway=g.awayHits===0, nohitHome=g.homeHits===0;
+    if(!nohitAway&&!nohitHome) return;
+    var id='nohit_'+g.gamePk;
+    var pitchingTeam=nohitAway?g.homeAbbr:g.awayAbbr;
+    var hittingTeam=nohitAway?g.awayAbbr:g.homeAbbr;
+    var headline=pitchingTeam+' working a no-hitter through the '+ordinal(g.inning);
+    var sub=hittingTeam+' have 0 hits · '+g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore;
+    out.push(makeStory(id,'nohit',1,95,'🚫',headline,sub,'live',g.gamePk,new Date(),2*60000,0.2));
+  });
+  return out;
+}
+
+function genWalkOffThreat(){
+  var out=[];
+  Object.values(gameStates).forEach(function(g){
+    if(g.status!=='Live'||g.halfInning!=='bottom'||g.inning<9||!g.onThird) return;
+    if(Math.abs(g.awayScore-g.homeScore)>1) return;
+    var id='walkoff_'+g.gamePk;
+    var headline=g.homeAbbr+' threatening a walk-off in the '+ordinal(g.inning);
+    var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · Runner on 3rd';
+    out.push(makeStory(id,'walkoff',1,90,'🎯',headline,sub,'live',g.gamePk,new Date(),60000,0.9));
+  });
+  return out;
+}
+
+function genBigInning(){
+  var out=[], groups={};
+  feedItems.forEach(function(item){
+    if(!item.data||item.data.type!=='play'||!item.data.scoring) return;
+    var key=item.gamePk+'_'+item.data.inning+'_'+item.data.halfInning;
+    if(!groups[key]) groups[key]={gamePk:item.gamePk,inning:item.data.inning,half:item.data.halfInning,runs:0,lastItem:item};
+    groups[key].runs++;
+    groups[key].lastItem=item;
+  });
+  Object.values(groups).forEach(function(grp){
+    if(grp.runs<3) return;
+    var g=gameStates[grp.gamePk]; if(!g) return;
+    var id='biginning_'+grp.gamePk+'_'+grp.inning+'_'+grp.half;
+    var battingTeam=grp.half==='top'?g.awayAbbr:g.homeAbbr;
+    var headline=battingTeam+' scored '+grp.runs+' runs in the '+ordinal(grp.inning);
+    var sub=g.awayAbbr+' '+grp.lastItem.data.awayScore+', '+g.homeAbbr+' '+grp.lastItem.data.homeScore;
+    out.push(makeStory(id,'realtime',1,75,'🔥',headline,sub,g.status==='Live'?'live':'today',grp.gamePk,grp.lastItem.ts,10*60000,0.4));
+  });
+  return out;
+}
+
+function genFinalScoreStories(){
+  var out=[];
+  Object.values(gameStates).forEach(function(g){
+    if(g.status!=='Final') return;
+    if(g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended') return;
+    var id='final_'+g.gamePk;
+    var winner=g.awayScore>g.homeScore?g.awayAbbr:g.homeAbbr;
+    var loser=g.awayScore>g.homeScore?g.homeAbbr:g.awayAbbr;
+    var ws=Math.max(g.awayScore,g.homeScore), ls=Math.min(g.awayScore,g.homeScore);
+    var headline=winner+' defeat '+loser+' '+ws+'-'+ls;
+    var sub='Final'+(g.venueName?' · '+g.venueName:'');
+    var ts=g.gameDateMs?new Date(g.gameDateMs):new Date();
+    out.push(makeStory(id,'game_status',2,80,'🏁',headline,sub,'final',g.gamePk,ts,15*60000,0.3));
+  });
+  return out;
+}
+
+function genStreakStories(){
+  var out=[];
+  if(!scheduleData||!scheduleData.length) return out;
+  var teamId=activeTeam.id;
+  var games=scheduleData.filter(function(g){
+    return (g.teams.away.team.id===teamId||g.teams.home.team.id===teamId)&&g.status.abstractGameState==='Final';
+  }).sort(function(a,b){return new Date(b.gameDate)-new Date(a.gameDate);});
+  if(games.length<3) return out;
+  var streak=0, isWin=null;
+  for(var i=0;i<games.length;i++){
+    var gm=games[i];
+    var isHome=gm.teams.home.team.id===teamId;
+    var myScore=isHome?gm.teams.home.score:gm.teams.away.score;
+    var oppScore=isHome?gm.teams.away.score:gm.teams.home.score;
+    if(myScore==null||oppScore==null) break;
+    var win=myScore>oppScore;
+    if(i===0){isWin=win;streak=1;} else if(win===isWin){streak++;} else break;
+  }
+  if(streak<3) return out;
+  var id='streak_'+teamId+'_'+streak+'_'+(isWin?'W':'L');
+  var headline=activeTeam.name+(isWin?' on a '+streak+'-game winning streak':' on a '+streak+'-game losing streak');
+  out.push(makeStory(id,'streak',2,60,isWin?'🔥':'❄️',headline,activeTeam.name+' 2026','today',null,new Date(),20*60000,0.1));
+  return out;
+}
+
+function genMultiHitDay(){
+  var out=[], dateStr=localDateStr(new Date());
+  Object.keys(dailyHitsTracker).forEach(function(batterId){
+    var entry=dailyHitsTracker[batterId];
+    if(entry.hits<3&&!(entry.hits>=2&&entry.hrs>=1)) return;
+    var id='multihit_'+batterId+'_'+dateStr;
+    var headline=entry.name+' goes '+entry.hits+'-for-today'+(entry.hrs?' with '+entry.hrs+' HR'+(entry.hrs>1?'s':''):'');
+    var g=gameStates[entry.gamePk]||{};
+    var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr:'';
+    out.push(makeStory(id,'daily_stat',3,55,'🎯',headline,sub,'today',entry.gamePk,new Date(),15*60000,0.1));
+  });
+  return out;
+}
+
+function genDailyLeaders(){
+  var out=[];
+  if(!dailyLeadersCache) return out;
+  var cats=[{key:'homeRuns',label:'home runs',icon:'💥'},{key:'rbi',label:'RBIs',icon:'🏃'},{key:'hits',label:'hits',icon:'🪵'},{key:'strikeOuts',label:'strikeouts',icon:'⚡'},{key:'saves',label:'saves',icon:'🛡️'}];
+  cats.forEach(function(cat){
+    var list=dailyLeadersCache[cat.key];
+    if(!list||!list.length) return;
+    var top=list[0]; if(!top||!top.person) return;
+    var id='leader_'+cat.key+'_'+localDateStr(new Date());
+    var headline=top.person.fullName+' leads MLB with '+top.value+' '+cat.label+' ('+SEASON+')';
+    out.push(makeStory(id,'daily_stat',3,50,cat.icon,headline,'Season leaderboard','today',null,new Date(),30*60000,0.1));
+  });
+  return out;
+}
+
+function genPitcherGem(){
+  var out=[];
+  Object.keys(dailyPitcherKs).forEach(function(key){
+    var entry=dailyPitcherKs[key];
+    if(entry.ks<8) return;
+    var g=gameStates[entry.gamePk]||{};
+    var id='kgem_'+key;
+    var headline=entry.name+' has '+entry.ks+' strikeouts today';
+    var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr+(g.status==='Live'?' · '+ordinal(g.inning):''):'';
+    out.push(makeStory(id,'daily_stat',3,58,'⚡',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),10*60000,0.2));
+  });
+  return out;
+}
+
+function genOnThisDay(){
+  if(!onThisDayCache||!onThisDayCache.length) return [];
+  return onThisDayCache.map(function(item){
+    return makeStory(item.id,'historical',4,30,item.icon,item.headline,item.sub,'onthisday',item.gamePk,item.ts,60*60000,0.5);
+  });
+}
+
+function genYesterdayHighlights(){
+  if(!yesterdayCache||!yesterdayCache.length) return [];
+  return yesterdayCache.map(function(item){
+    return makeStory(item.id,'yesterday',4,35,item.icon,item.headline,item.sub,'yesterday',item.gamePk,item.ts,30*60000,0.3);
+  });
+}
+
+function genProbablePitchers(){
+  var out=[], today=localDateStr(new Date());
+  if(!scheduleData||!scheduleData.length) return out;
+  scheduleData.filter(function(g){
+    return g.status.abstractGameState!=='Final'&&localDateStr(new Date(g.gameDate))===today&&(g.teams.away.team.id===activeTeam.id||g.teams.home.team.id===activeTeam.id);
+  }).forEach(function(g){
+    var ap=g.teams.away.probablePitcher, hp=g.teams.home.probablePitcher;
+    if(!ap&&!hp) return;
+    var awayTc=tcLookup(g.teams.away.team.id), homeTc=tcLookup(g.teams.home.team.id);
+    var headline=awayTc.abbr+': '+(ap?ap.fullName:'TBD')+' vs '+homeTc.abbr+': '+(hp?hp.fullName:'TBD');
+    var gd=new Date(g.gameDate);
+    var timeStr=gd.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    out.push(makeStory('probable_'+g.gamePk,'contextual',4,40,'⚾',headline,'Tonight · '+timeStr,'upcoming',g.gamePk,new Date(),60*60000,0.05));
+  });
+  return out;
+}
+
+async function buildStoryPool(){
+  var now=Date.now();
+  if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
+  var fresh=[].concat(
+    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBigInning(),
+    genFinalScoreStories(),genStreakStories(),genMultiHitDay(),genDailyLeaders(),
+    genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers()
+  );
+  storyPool=fresh;
+  var carousel=document.getElementById('storyCarousel');
+  if(!carousel) return;
+  if(storyPool.length){
+    if(carousel.style.display==='none'){
+      carousel.style.display='';
+      rotateStory();
+      if(!storyRotateTimer) storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+    }
+  } else {
+    carousel.style.display='none';
+    if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
+  }
+}
+
+function rotateStory(){
+  if(!storyPool.length) return;
+  var now=Date.now();
+  var eligible=storyPool.filter(function(s){return !s.lastShown||(now-s.lastShown.getTime())>s.cooldownMs;});
+  if(!eligible.length){eligible=storyPool.slice().sort(function(a,b){return (a.lastShown?a.lastShown.getTime():0)-(b.lastShown?b.lastShown.getTime():0);});}
+  var scored=eligible.map(function(s){
+    var ageMin=(now-s.ts.getTime())/60000;
+    var decay=Math.pow(Math.max(0,1-s.decayRate),ageMin/30);
+    return {s:s,score:s.priority*decay};
+  });
+  scored.sort(function(a,b){return b.score-a.score;});
+  showStoryCard(scored[0].s);
+}
+
+function showStoryCard(story){
+  story.lastShown=new Date(); storyShownId=story.id;
+  renderStoryCard(story); updateStoryDots();
+}
+
+function renderStoryCard(story){
+  var el=document.getElementById('storyCard'); if(!el) return;
+  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming'};
+  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING'};
+  var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
+  el.className='story-card tier'+story.tier;
+  el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
+    +'<div style="display:flex;align-items:flex-start;gap:6px;margin-top:2px">'
+    +'<span class="story-icon">'+story.icon+'</span>'
+    +'<div><div class="story-headline">'+story.headline+'</div>'
+    +(story.sub?'<div class="story-sub">'+story.sub+'</div>':'')
+    +'</div></div>';
+}
+
+function updateStoryDots(){
+  var el=document.getElementById('storyDots'); if(!el) return;
+  var max=Math.min(storyPool.length,8);
+  var curIdx=storyPool.findIndex(function(s){return s.id===storyShownId;});
+  var html='';
+  for(var i=0;i<max;i++) html+='<div class="story-dot'+(i===curIdx?' active':'')+'"></div>';
+  el.innerHTML=html;
+}
+
+function prevStory(){
+  if(!storyPool.length) return;
+  var idx=storyPool.findIndex(function(s){return s.id===storyShownId;});
+  showStoryCard(storyPool[idx<=0?storyPool.length-1:idx-1]);
+}
+
+function nextStory(){
+  if(!storyPool.length) return;
+  var idx=storyPool.findIndex(function(s){return s.id===storyShownId;});
+  showStoryCard(storyPool[idx>=storyPool.length-1?0:idx+1]);
+}
+
+function onStoryVisibilityChange(){
+  if(document.hidden){clearInterval(storyRotateTimer);storyRotateTimer=null;}
+  else if(pulseInitialized&&storyPool.length){rotateStory();storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);}
+}
+
+async function loadOnThisDayCache(){
+  onThisDayCache=[];
+  var today=new Date();
+  var mm=String(today.getMonth()+1).padStart(2,'0');
+  var dd=String(today.getDate()).padStart(2,'0');
+  for(var i=1;i<=3;i++){
+    var yr=SEASON-i;
+    try{
+      var r=await fetch(MLB_BASE+'/schedule?teamId='+activeTeam.id+'&date='+yr+'-'+mm+'-'+dd+'&hydrate=linescore,team');
+      var d=await r.json();
+      (d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){return g.status.abstractGameState==='Final';}).forEach(function(g){
+        var isHome=g.teams.home.team.id===activeTeam.id;
+        var myScore=isHome?g.teams.home.score:g.teams.away.score;
+        var oppScore=isHome?g.teams.away.score:g.teams.home.score;
+        var oppAbbr=isHome?g.teams.away.team.abbreviation:g.teams.home.team.abbreviation;
+        var won=myScore>oppScore;
+        var headline='On this day in '+yr+': '+activeTeam.name+(won?' beat ':' lost to ')+oppAbbr+' '+myScore+'-'+oppScore;
+        onThisDayCache.push({id:'otd_'+yr+'_'+g.gamePk,icon:'📅',headline:headline,sub:(g.venue?g.venue.name:'')+' · '+yr,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
+      });
+    }catch(e){}
+  }
+}
+
+async function loadYesterdayCache(){
+  yesterdayCache=[];
+  var yd=new Date(); yd.setDate(yd.getDate()-1);
+  var dateStr=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+  try{
+    var r=await fetch(MLB_BASE+'/schedule?teamId='+activeTeam.id+'&date='+dateStr+'&hydrate=linescore,team');
+    var d=await r.json();
+    (d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){return g.status.abstractGameState==='Final';}).forEach(function(g){
+      var isHome=g.teams.home.team.id===activeTeam.id;
+      var myScore=isHome?g.teams.home.score:g.teams.away.score;
+      var oppScore=isHome?g.teams.away.score:g.teams.home.score;
+      var oppAbbr=isHome?g.teams.away.team.abbreviation:g.teams.home.team.abbreviation;
+      var won=myScore>oppScore;
+      var ls=g.linescore||{};
+      var dur=ls.gameDurationMinutes?' · '+Math.floor(ls.gameDurationMinutes/60)+'h '+String(ls.gameDurationMinutes%60).padStart(2,'0')+'m':'';
+      var headline='Yesterday: '+activeTeam.name+(won?' beat ':' lost to ')+oppAbbr+' '+myScore+'-'+oppScore;
+      yesterdayCache.push({id:'yday_'+g.gamePk+'_result',icon:won?'✅':'❌',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
+    });
+  }catch(e){}
+}
+
+async function loadDailyLeaders(){
+  try{
+    var rH=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=homeRuns,hits,rbi&season='+SEASON+'&statGroup=hitting&limit=1');
+    var dH=await rH.json();
+    var rP=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=strikeOuts,saves&season='+SEASON+'&statGroup=pitching&limit=1');
+    var dP=await rP.json();
+    dailyLeadersCache={};
+    [(dH.leagueLeaders||[]),(dP.leagueLeaders||[])].forEach(function(list){
+      list.forEach(function(cat){if(cat.leaderCategory&&cat.leaders) dailyLeadersCache[cat.leaderCategory]=cat.leaders;});
+    });
+  }catch(e){}
+}
 
 function ordinal(n){return n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th';}
 
