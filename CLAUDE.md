@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.7 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements)
+**Current version:** v2.7.6 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators and priority-weighted rotation)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -65,10 +65,9 @@ let newsFeedMode = 'mlb'               // 'mlb' (no team filter) | 'team' (activ
 // ── ⚡ Pulse globals ──────────────────────────────────────────────────────────
 let pulseMockMode    = false           // persisted to localStorage('mlb_pulse_mock')
 let pulseInitialized = false           // lazy-init guard — set true on first Pulse nav
-let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayPrimary, homePrimary,
-                                      //   awayId, homeId,
-                                      //   awayScore, homeScore, status, detailedState,
-                                      //   inning, halfInning, outs, playCount, lastTimestamp,
+let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayName, homeName, awayPrimary, homePrimary,
+                                      //   awayId, homeId, awayScore, homeScore, awayHits, homeHits,
+                                      //   status, detailedState, inning, halfInning, outs, playCount, lastTimestamp,
                                       //   gameTime, gameDateMs, venueName, onFirst, onSecond, onThird }
 let feedItems        = []             // all feed items newest-first (never pruned)
 let enabledGames     = new Set()      // gamePks whose plays are visible in the feed
@@ -78,6 +77,17 @@ let countdownTimer   = null, pulseTimer = null, alertId = 0, isFirstPoll = true,
 // pulseTimer — stores setInterval handle from initReal() so switchMode() can clear it
 let soundSettings    = { master:false, hr:true, run:true, risp:true,
                          dp:true, tp:true, gameStart:true, gameEnd:true, error:true }
+
+// ── 📖 Story Carousel globals (v2.7.1+) ──────────────────────────────────────
+let storyPool        = []               // array of story objects ready to rotate
+let storyShownId     = null             // id of currently displayed story
+let storyRotateTimer = null             // setInterval handle from initReal()
+let onThisDayCache   = null             // cached stories from 3 years ago (same date)
+let yesterdayCache   = null             // cached stories from yesterday's games
+let dailyLeadersCache= null             // cached top 3 leaders per stat category
+let dailyLeadersLastFetch=0             // timestamp of last leaders fetch
+let dailyHitsTracker = {}               // batterId → hit count (reset daily)
+let dailyPitcherKs   = {}               // pitcherId → strikeout count (reset daily)
 ```
 
 ### Navigation
@@ -309,7 +319,151 @@ These items are only ever added once (subsequent polls use the update path). `pe
 
 **Migration notes:** League Pulse was built as standalone `league-pulse.html` (~2370 lines) then merged into `index.html`. Key changes on merge: `mockMode`→`pulseMockMode`, `init()`→`initLeaguePulse()`, `poll()`→`pollLeaguePulse()`; `TC` object replaced by `tcLookup(id)` (wraps `TEAMS.find`, uses `t.short` for abbr); all 6 colour utilities and `applyLeaguePulseTheme()` dropped (index.html copies used); standalone header dropped; mock bar changed from `position:fixed;bottom:0` to inline; sound/mock controls moved into Settings panel.
 
-Source: `/schedule?sportId=1&date={date}&hydrate=linescore,team` + `/game/{pk}/playByPlay` + `/api/v1.1/game/{pk}/feed/live/timestamps`
+Source: `/schedule?sportId=1&date={date}&hydrate=linescore,team,probablePitcher` + `/game/{pk}/playByPlay` + `/api/v1.1/game/{pk}/feed/live/timestamps`
+
+---
+
+#### 📖 Story Carousel — Curated Event Stream (v2.7.1+)
+
+A rotating single-card digest layer surfacing high-level game narratives alongside the play-by-play feed. Not filtered by user's active team — league-wide stories only. Auto-rotates every 20s with manual prev/next controls. Each story has cooldowns so repeats are throttled and decay rates so older stories naturally deprioritise.
+
+**HTML structure:**
+- `#storyCarousel` — Container below `#gameTicker`, above `#mockBar`
+- `#storyCard` — Single story card with badge, icon, headline, sub
+- `.story-controls` — Manual prev/next buttons and progress dots
+
+**Story object shape:**
+```javascript
+{
+  id: string,           // Unique per story type: "hr_gamePk_playCount", "nohit_gamePk", etc.
+  type: string,         // Category: 'realtime', 'game_status', 'daily_stat', 'historical', 'contextual', 'yesterday'
+  tier: 1|2|3|4,        // Priority tier — determines display color and lifecycle
+  priority: number,     // Base priority 1–100; combined with decay for final score
+  icon: string,         // Emoji icon (💥, 🔥, 🏆, etc.)
+  headline: string,     // Main text: "Ohtani homers (8) — LAD lead 3-1"
+  sub: string,          // Context: "LAD @ SF · ▼5th"
+  badge: string,        // 'LIVE', 'TODAY', 'YESTERDAY', 'ON THIS DAY', 'UPCOMING'
+  gamePk: number|null,  // Associated game or null for league-wide stories
+  ts: Date,             // When story occurred (for age calculation and sorting)
+  lastShown: Date|null, // Last display time; null = never shown
+  cooldownMs: number,   // Min milliseconds before re-display (1–60 min)
+  decayRate: number,    // Fraction lost per 30-minute window (0.05–0.90)
+}
+```
+
+**Story tiers and lifecycle:**
+
+| Tier | Type | Examples | Cooldown | Decay/30m | Notes |
+|---|---|---|---|---|---|
+| 1 | `realtime` | Home run | 5 min | 50% | New story per HR; playCount dedup |
+| 1 | `realtime` | No-hitter watch (inning ≥6, 0 hits) | 2 min | 20% | One per game; removed when hit occurs |
+| 1 | `realtime` | Walk-off threat (9th+, tied/1-run, runner on 3rd) | 1 min | 90% | One per game; instantly stale if resolved |
+| 1 | `realtime` | Big inning (3+ scoring plays in sequence) | 10 min | 40% | One per inning-half |
+| 2 | `game_status` | Final score + comeback label | 15 min | 30% | One per game (stable ID) |
+| 2 | `game_status` | Win/loss streak ≥3 games | 20 min | 10% | Checks all 30 teams in scheduleData |
+| 3 | `daily_stat` | Multi-hit day (≥3 hits or ≥2 hits+1 HR) | 15 min | 10% | One per batter per day; tracks `dailyHitsTracker` |
+| 3 | `daily_stat` | Daily leaders — top 3 per stat | 30 min | — | HR/RBI/H (hitting); K/SV (pitching); weighted priority [1.0, 0.7, 0.45] |
+| 3 | `daily_stat` | Pitcher gem (≥8 Ks in-progress) | 10 min | 20% | One per pitcher per game |
+| 4 | `historical` | On This Day (same date, last 3 seasons) | 60 min | 50% | Loaded once at Pulse init |
+| 4 | `contextual` | Yesterday's game highlights (final scores + W/L pitcher stats + top batter) | 30 min | 30% | Loaded once at Pulse init; naturally deprioritised when live games exist |
+| 4 | `contextual` | Probable pitchers for today (all teams) | 60 min | 5% | Format: "PitcherName [ABR] vs PitcherName [ABR]" |
+
+**Story generators (called every 15s poll):**
+
+1. **`genHRStories()`** — Source: `feedItems` (already-fetched plays). Detects `data.event === 'Home Run'`. ID: `hr_{gamePk}_{playCount}` (unique, survives re-polls). Headline includes distance if available from boxscore `hitData.totalDistance`. Priority: 100. Cooldown: 5 min.
+
+2. **`genNoHitterWatch()`** — Source: `gameStates` linescore. Detects: `status === 'Live'` AND `away.hits === 0 || home.hits === 0` AND `inning >= 6`. ID: `nohit_{gamePk}` (one per game, updates description as innings advance). Priority: 95. Cooldown: 2 min. Removed when a hit occurs.
+
+3. **`genWalkOffThreat()`** — Source: `gameStates`. Detects: `halfInning === 'bottom'` AND `inning >= 9` AND `|awayScore - homeScore| <= 1` AND `onThird`. ID: `walkoff_{gamePk}`. Priority: 90. Cooldown: 1 min, 90% decay.
+
+4. **`genBigInning()`** — Source: `feedItems` (3+ consecutive scoring plays in same inning/half). ID: `biginning_{gamePk}_{inning}_{half}`. Priority: 75. Cooldown: 10 min.
+
+5. **`genFinalScoreStories()`** — Source: `gameStates` where `status === 'Final'`. Headline: "Final: NYM 5, PHI 2". Adds "comeback" label if trailing by 3+ after 5th. ID: `final_{gamePk}` (stable, won't re-generate). Priority: 80. Cooldown: 15 min.
+
+6. **`genStreakStories()`** — Source: `scheduleData` (all teams, not filtered). Counts consecutive W/L. Fires when streak ≥3. ID: `streak_{teamId}_{streakLength}` (updates as streak grows). Headline: "Mets have won 5 in a row". Priority: 60. Cooldown: 20 min.
+
+7. **`genMultiHitDay()`** — Source: `feedItems` (aggregates hits per batter). Threshold: ≥3 hits OR ≥2 hits + 1 HR. Uses `dailyHitsTracker` for in-memory count. ID: `multihit_{batterId}_{date}`. Headline: "Alonso goes 3-for-4 with a homer". Priority: 55. Cooldown: 15 min per player.
+
+8. **`genDailyLeaders()`** — Source: `/stats/leaders` (fresh fetch every 5 min, cached in `dailyLeadersCache`). Covers: HR, RBI, H (hitting); K, SV (pitching). Top 3 per category with weighted priorities: [100 · 1.0, 100 · 0.7, 100 · 0.45] = [100, 70, 45]. ID: `leader_{stat}_{playerId}_{date}`. Headline: "Ohtani leads MLB with 8 HRs". Cooldown: 30 min.
+
+9. **`genPitcherGem()`** — Source: `feedItems` + linescore (pitcher K count). Detects: ≥8 Ks in progress. Uses `dailyPitcherKs` for in-memory tracking. ID: `kgem_{gamePk}_{pitcherId}`. Headline: "Senga has 10 Ks through 7". Priority: 58. Cooldown: 10 min.
+
+10. **`genOnThisDay()`** — Source: `/schedule?date={MM/DD, 3-year lookback}&season={year}&hydrate=linescore,boxscore,playByPlay` (fetched once at Pulse init, cached). Extracts top batter (by avg), starting pitcher stats (W/L/IP/K/ER), multi-HR hitters, walk-offs, grand slams, no-hitters. ID: `otd_{year}_{gamePk}`. Headline: "On this day 2024: Mets beat PHI 5-2 · deGrom 12K". Priority: 20 (low, contextual only). Cooldown: 60 min.
+
+11. **`genYesterdayHighlights()`** — Source: `/schedule?date={yesterday}&hydrate=linescore,boxscore` (fetched once at Pulse init, cached). Filters for Final games (excludes PPD/Cancelled/Suspended). Extracts: W/L pitcher (by `gameStatus.isWinningPitcher` / `isLosingPitcher` flags) with IP/K/ER stats, save pitcher (if exists), top batter (by batting avg), multi-HR hitters. ID: `yday_{gamePk}_{type}`. Headline: "Yesterday: NYM 5, PHI 2 · W: deGrom 7IP, 10K · L: Wheeler 6IP, 2ER". Priority: 45. Cooldown: 30 min. Shown prominently when <2 live games.
+
+12. **`genProbablePitchers()`** — Source: `scheduleData` (today only) OR `gameStates` fallback. Hydrate param: `probablePitcher`. Filters: `abstractGameState !== 'Final'` AND `localDate === today`. Extracts pitcher names from `g.teams.away/home.probablePitcher.fullName` or "TBD". ID: `probable_{gamePk}`. Headline: "Scherzer [NYM] vs Kershaw [LAD] · 7:05 PM". Priority: 40. Cooldown: 60 min.
+
+**Rotation engine:**
+
+```javascript
+const STORY_ROTATE_MS = 20_000;  // auto-advance every 20 seconds
+
+function rotateStory() {
+  const now = Date.now();
+  
+  // Eligible = cooldown expired OR never shown
+  let eligible = storyPool.filter(s =>
+    !s.lastShown || (now - s.lastShown.getTime()) > s.cooldownMs
+  );
+  
+  // Fallback: if nothing eligible, pick least-recently-shown
+  if (!eligible.length) {
+    eligible = [...storyPool].sort((a,b) =>
+      (a.lastShown?.getTime()||0) - (b.lastShown?.getTime()||0)
+    );
+  }
+  
+  if (!eligible.length) return;
+  
+  // Score: priority × decay^(ageMinutes / 30)
+  const scored = eligible.map(s => {
+    const ageMin = (now - s.ts.getTime()) / 60_000;
+    const decay = Math.pow(1 - s.decayRate, ageMin / 30);
+    return { s, score: s.priority * decay };
+  });
+  
+  scored.sort((a,b) => b.score - a.score);
+  showStoryCard(scored[0].s);
+}
+```
+
+**Pool builder (`buildStoryPool()`):**
+Called at end of every `pollLeaguePulse()` (every 15s). Generates fresh stories from all 12 generators, merges with existing pool (preserving `lastShown` timestamps), drops stale ones (e.g., walk-offs that resolved). Result: `storyPool` is always up-to-date with current state, and stories never reappear within their cooldown window.
+
+**Data refresh schedule:**
+
+| Data | Fetch interval | Method | Cache key |
+|---|---|---|---|
+| Story pool rebuild | Every 15s (Pulse poll) | `buildStoryPool()` at end of `pollLeaguePulse()` | `storyPool` array |
+| Daily leaders | Every 5 min | Separate timer in `initReal()` | `dailyLeadersCache` |
+| Yesterday cache | Once at Pulse init | `loadYesterdayCache()` | `yesterdayCache` array |
+| On This Day cache | Once at Pulse init | `loadOnThisDayCache()` (3 API calls) | `onThisDayCache` array |
+| Story rotation | Every 20 sec | `storyRotateTimer` interval | current story ID in `storyShownId` |
+| Daily hit tracker | Reset daily (implicit) | Incremented in `pollGamePlays()` on each play | `dailyHitsTracker` object |
+| Daily pitcher K tracker | Reset daily (implicit) | Incremented in `pollGamePlays()` on strikeout plays | `dailyPitcherKs` object |
+
+**Page Visibility API integration:**
+```javascript
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearInterval(storyRotateTimer);
+    storyRotateTimer = null;
+  } else if (pulseInitialized) {
+    rotateStory();  // Immediately refresh on tab return
+    storyRotateTimer = setInterval(rotateStory, STORY_ROTATE_MS);
+  }
+});
+```
+Pauses rotation when tab is inactive, resumes on return — saves resources and prevents stale stories from showing on delayed re-focus.
+
+**Early-day / sole-game handling:**
+Pool composition naturally adapts:
+- **Pre-game (< 2 live games):** Dominated by Upcoming (Probable Pitchers) + Yesterday + On This Day stories
+- **Mid-day (games in progress):** Realtime (HR, no-hitter, walk-off, big inning) + Daily Stats dominate
+- **Late day (all Final):** Digest stories (Final scores, multi-hit, streaks) dominate
+
+No explicit "mode" needed — the priority + decay math handles adaptation automatically. Low-tier contextual stories naturally deprioritise when high-tier realtime stories exist.
 
 ---
 
@@ -540,6 +694,8 @@ On every commit that changes app content, bump **three** things:
 - [x] ⚡ Pulse — RISP left accent stripe removed; ⚡ badge + base diamond chip on ticker are sufficient (v2.7)
 - [x] ⚡ Pulse — Game Delayed feed items now show team abbreviations ("SD @ AZ · Delayed Start") in both initial-load and live-update paths (v2.7)
 - [x] ⚡ Pulse — Real poll interval leak into mock mode fixed: `pulseTimer` global stores `setInterval` handle; `switchMode()` clears it (v2.7)
+- [x] 📖 Story Carousel — Event stream with priority-weighted rotation, cooldowns, and decay (v2.7.1+). 12 story generators covering realtime (HR, no-hitter, walk-off, big inning), game status (final, streak), daily stats (multi-hit, leaders, pitcher gem), and historical (yesterday, on this day, probable pitchers)
+- [x] 📖 Story Carousel — Auto-rotate every 20s with manual prev/next; Display winning/losing/save pitcher with IP/K/ER stats in yesterday/on-this-day stories
 - [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
 - [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
 - [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
