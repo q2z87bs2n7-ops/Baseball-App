@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.7.6</title>
+<title>MLB Tracker v2.7.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -614,7 +614,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7.7</div>
       </div>
     </div>
   </div>
@@ -877,6 +877,7 @@ let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameS
 let storyPool=[],storyShownId=null,storyRotateTimer=null;
 let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersLastFetch=0;
 let dailyHitsTracker={},dailyPitcherKs={};
+let storyCarouselRawGameData={};
 const STORY_ROTATE_MS=20000;
 
 function tcLookup(id){var t=TEAMS.find(function(t){return t.id===id;});return t?{primary:t.primary,abbr:t.short,name:t.name}:{primary:'#444',abbr:'???',name:'Unknown'};}
@@ -1105,6 +1106,8 @@ async function pollLeaguePulse() {
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    storyCarouselRawGameData={};
+    games.forEach(function(g){storyCarouselRawGameData[g.gamePk]=g;});
     var pendingFinalItems={};
     games.forEach(function(g) {
       var pk=g.gamePk, newStatus=g.status.abstractGameState, detailed=g.status.detailedState||'';
@@ -1465,42 +1468,31 @@ function genYesterdayHighlights(){
 function genProbablePitchers(){
   var out=[], today=localDateStr(new Date());
   var games=[];
-  if(scheduleData&&scheduleData.length){
-    games=scheduleData.filter(function(g){
-      return g.status.abstractGameState!=='Final'&&localDateStr(new Date(g.gameDate))===today;
-    });
-  } else {
-    Object.values(gameStates).forEach(function(g){
-      if(localDateStr(new Date(g.gameDateMs))===today&&g.awayAbbr&&g.homeAbbr) {
-        games.push(g);
-      }
-    });
-  }
+
+  // Try to find today's games from gameStates (already fetched with probablePitcher by pollLeaguePulse)
+  Object.values(gameStates).forEach(function(g){
+    if(localDateStr(new Date(g.gameDateMs))===today&&g.awayAbbr&&g.homeAbbr) {
+      games.push(g);
+    }
+  });
+
   games.forEach(function(g){
-    var awayAbbr='TBD', homeAbbr='TBD', awayPP='TBD', homePP='TBD';
+    var awayAbbr=g.awayAbbr||'TBD', homeAbbr=g.homeAbbr||'TBD', awayPP='TBD', homePP='TBD';
 
-    // Get abbreviations from either API structure or gameStates structure
-    if(g.teams&&g.teams.away&&g.teams.away.team){
-      awayAbbr=g.teams.away.team.abbreviation||'TBD';
-      homeAbbr=g.teams.home.team.abbreviation||'TBD';
-    } else {
-      awayAbbr=g.awayAbbr||'TBD';
-      homeAbbr=g.homeAbbr||'TBD';
-    }
-
-    // Get probable pitcher names
-    if(g.teams&&g.teams.away&&g.teams.away.probablePitcher&&g.teams.away.probablePitcher.fullName){
-      awayPP=g.teams.away.probablePitcher.fullName;
-    }
-    if(g.teams&&g.teams.home&&g.teams.home.probablePitcher&&g.teams.home.probablePitcher.fullName){
-      homePP=g.teams.home.probablePitcher.fullName;
+    // Pitcher data might come from scheduleData during the poll — look in raw games if available
+    if(storyCarouselRawGameData&&storyCarouselRawGameData[g.gamePk]){
+      var raw=storyCarouselRawGameData[g.gamePk];
+      if(raw.teams&&raw.teams.away&&raw.teams.away.probablePitcher&&raw.teams.away.probablePitcher.fullName){
+        awayPP=raw.teams.away.probablePitcher.fullName;
+      }
+      if(raw.teams&&raw.teams.home&&raw.teams.home.probablePitcher&&raw.teams.home.probablePitcher.fullName){
+        homePP=raw.teams.home.probablePitcher.fullName;
+      }
     }
 
     var headline=awayPP+' ['+awayAbbr+'] vs '+homePP+' ['+homeAbbr+']';
     var timeStr=g.gameTime||'TBD';
-    var gamePk=g.gamePk||g.gamePk;
-    var gameDateMs=g.gameDateMs||new Date(g.gameDate||Date.now()).getTime();
-    out.push(makeStory('probable_'+gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'upcoming',gamePk,new Date(gameDateMs),60*60000,0.05));
+    out.push(makeStory('probable_'+g.gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'upcoming',g.gamePk,new Date(g.gameDateMs),60*60000,0.05));
   });
   return out;
 }
