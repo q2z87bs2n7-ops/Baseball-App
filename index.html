@@ -607,6 +607,13 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <details style="cursor:pointer">
+            <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
+            <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
+            <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
+          </details>
+        </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7.1</div>
       </div>
     </div>
@@ -1174,6 +1181,7 @@ async function pollLeaguePulse() {
     isFirstPoll=false;
     renderTicker(); updateHeader(); updateFeedEmpty();
     buildStoryPool();
+    refreshDebugPanel();
   } catch(e){console.error('poll error',e);}
 }
 
@@ -1501,6 +1509,7 @@ function rotateStory(){
 function showStoryCard(story){
   story.lastShown=new Date(); storyShownId=story.id;
   renderStoryCard(story); updateStoryDots();
+  refreshDebugPanel();
 }
 
 function renderStoryCard(story){
@@ -1601,6 +1610,59 @@ async function loadDailyLeaders(){
 }
 
 function ordinal(n){return n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th';}
+
+// ── Debug Panel (v2.7.1) ──────────────────────────────────────────────────────
+function refreshDebugPanel(){
+  var panel=document.getElementById('debugPanel');
+  if(!panel) return;
+
+  var now=Date.now();
+  var gameStatesArr=Object.values(gameStates);
+  var liveCount=gameStatesArr.filter(function(g){return g.status==='Live';}).length;
+  var finalCount=gameStatesArr.filter(function(g){return g.status==='Final';}).length;
+  var previewCount=gameStatesArr.filter(function(g){return g.status==='Preview'||g.status==='Scheduled';}).length;
+
+  var tier1=storyPool.filter(function(s){return s.tier===1;}).length;
+  var tier2=storyPool.filter(function(s){return s.tier===2;}).length;
+  var tier3=storyPool.filter(function(s){return s.tier===3;}).length;
+  var tier4=storyPool.filter(function(s){return s.tier===4;}).length;
+
+  var nextPollIn=Math.round((1042-Date.now())%15000/1000); if(nextPollIn<0)nextPollIn+=15;
+  var nextRotateIn=storyRotateTimer?Math.round((STORY_ROTATE_MS-(now%(STORY_ROTATE_MS||20000)))/1000):'—';
+
+  var html='<div style="padding:0;line-height:1.6">';
+  html+='<div style="font-weight:600;margin-bottom:6px;color:var(--accent)">📊 Service Health</div>';
+  html+='<div>Polls active: '+Object.keys(gameStates).length+'</div>';
+  html+='<div>Live/Final/Preview: '+liveCount+' / '+finalCount+' / '+previewCount+'</div>';
+  html+='<div>Feed items: '+feedItems.length+'</div>';
+  html+='<div>Next poll in: '+nextPollIn+'s</div>';
+  html+='<div style="margin-top:8px;font-weight:600;color:var(--accent)">💾 Caches</div>';
+  html+='<div>On This Day: '+(onThisDayCache?onThisDayCache.length+' stories':'loading…')+'</div>';
+  html+='<div>Yesterday: '+(yesterdayCache?yesterdayCache.length+' stories':'loading…')+'</div>';
+  html+='<div>Daily Leaders: '+(dailyLeadersCache?'loaded':'loading…')+'</div>';
+  html+='<div style="margin-top:8px;font-weight:600;color:var(--accent)">🎯 Story Pool ('+storyPool.length+')</div>';
+  html+='<div>Tier 1/2/3/4: '+tier1+' / '+tier2+' / '+tier3+' / '+tier4+'</div>';
+  html+='<div>Rotation active: '+(storyRotateTimer?'yes':'no')+'</div>';
+  html+='<div>Next rotate in: '+nextRotateIn+'s</div>';
+  html+='<div style="margin-top:8px;font-weight:600;color:var(--accent);margin-bottom:4px">Stories</div>';
+  if(storyPool.length){
+    storyPool.slice(0,10).forEach(function(s){
+      var cooldownRemain=s.lastShown?Math.max(0,Math.round((s.cooldownMs-(now-s.lastShown.getTime()))/1000)):'—';
+      var age=Math.round((now-s.ts.getTime())/1000);
+      var ageStr=age<60?age+'s':Math.floor(age/60)+'m';
+      var decay=Math.pow(Math.max(0,1-s.decayRate),age/60000/30);
+      var score=s.priority*decay;
+      var shownStr=s.lastShown?'shown '+Math.floor((now-s.lastShown.getTime())/1000)+'s ago':'never';
+      html+='<div style="margin-top:4px;padding:4px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:2px solid var(--border)"><span style="color:var(--accent)">T'+s.tier+'</span> '+s.headline.substring(0,45)+'…<br/>'
+        +'<span style="color:var(--muted)">pri '+Math.round(score)+' · '+ageStr+' old · cooldown '+cooldownRemain+'s · '+shownStr+'</span></div>';
+    });
+    if(storyPool.length>10) html+='<div style="margin-top:4px;color:var(--muted)">… and '+(storyPool.length-10)+' more</div>';
+  } else {
+    html+='<div style="color:var(--muted)">No stories yet</div>';
+  }
+  html+='</div>';
+  panel.innerHTML=html;
+}
 
 function baseDiamondSvg(on1,on2,on3) {
   var dim='rgba(255,255,255,0.18)',lit='#ffd000',glow='filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
