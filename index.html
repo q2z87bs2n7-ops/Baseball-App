@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.13</title>
+<title>MLB Tracker v2.13.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -628,7 +628,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.13</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.13.1</div>
       </div>
     </div>
   </div>
@@ -894,7 +894,7 @@ let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameS
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null;
 let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersLastFetch=0;
-let dailyHitsTracker={},dailyPitcherKs={};
+let dailyHitsTracker={},dailyPitcherKs={},stolenBaseEvents=[];
 let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
@@ -986,7 +986,7 @@ function switchMode(toReal) {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   feedItems=[]; gameStates={}; enabledGames=new Set();
   mockPlayPtrs={}; mockGameQueue=[]; playedMockPlays=0; totalMockPlays=0; isFirstPoll=true;
-  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={};
+  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={}; stolenBaseEvents=[];
   if (storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
   var sc=document.getElementById('storyCarousel'); if(sc)sc.style.display='none';
   document.getElementById('feed').innerHTML='';
@@ -1097,7 +1097,7 @@ function resetMock() {
   if (mockTimerId){clearInterval(mockTimerId);mockTimerId=null;}
   feedItems=[]; gameStates={}; enabledGames=new Set(); mockPlayPtrs={}; mockGameQueue=[];
   playedMockPlays=0; totalMockPlays=0;
-  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={};
+  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={}; stolenBaseEvents=[];
   if (storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
   var sc=document.getElementById('storyCarousel'); if(sc)sc.style.display='none';
   document.getElementById('feed').innerHTML=''; document.getElementById('alertStack').innerHTML='';
@@ -1232,6 +1232,19 @@ async function pollGamePlays(gamePk) {
       var batterId=(play.matchup&&play.matchup.batter&&play.matchup.batter.id)||null;
       var batterName=(play.matchup&&play.matchup.batter&&play.matchup.batter.fullName)||'';
       var runners=play.runners||[];
+      if (event.indexOf('Stolen Base')!==-1) {
+        if (!isHistory) {
+          var sbRunner=runners.find(function(r){return r.details&&r.details.eventType&&r.details.eventType.indexOf('stolen_base')!==-1;});
+          var sbRunnerId=(sbRunner&&sbRunner.details&&sbRunner.details.runner&&sbRunner.details.runner.id)||batterId;
+          var sbRunnerName=(sbRunner&&sbRunner.details&&sbRunner.details.runner&&sbRunner.details.runner.fullName)||batterName;
+          var sbBase=event.indexOf('Home')!==-1?'home':event.indexOf('3B')!==-1?'3B':'2B';
+          var sbKey=gamePk+'_'+(play.about&&play.about.atBatIndex!=null?play.about.atBatIndex:g.playCount+plays.indexOf(play));
+          if (!stolenBaseEvents.some(function(e){return e.key===sbKey;})) {
+            stolenBaseEvents.push({key:sbKey,gamePk:gamePk,runnerId:sbRunnerId,runnerName:sbRunnerName,base:sbBase,inning:inning,halfInning:halfInning,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,ts:playTime||new Date()});
+          }
+        }
+        return; // carousel only — skip feed item
+      }
       var hasRISP=runners.some(function(r){return r.movement&&!r.movement.isOut&&(r.movement.end==='2B'||r.movement.end==='3B');});
       var playClass=event==='Home Run'?'homerun':isScoringP?'scoring':hasRISP?'risp':'normal';
       var playTime=null; if (play.about&&play.about.startTime){try{playTime=new Date(play.about.startTime);}catch(e){}}
@@ -1410,6 +1423,19 @@ function genBasesLoaded(){
     var headline='Bases loaded — '+battingAbbr+' batting in the '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+half+' '+ordinal(g.inning);
     out.push(makeStory(id,'realtime',1,88,'🔴',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
+  });
+  return out;
+}
+
+function genStolenBaseStories(){
+  var out=[];
+  stolenBaseEvents.forEach(function(sb){
+    var isHome=sb.base==='home';
+    var baseLabel=isHome?'home plate':sb.base;
+    var halfInd=sb.halfInning==='top'?'▲':'▼';
+    var sub=sb.awayAbbr+' @ '+sb.homeAbbr+' · '+halfInd+sb.inning;
+    out.push(makeStory('sb_'+sb.key,'realtime',isHome?1:2,isHome?85:55,isHome?'🏃':'💨',
+      sb.runnerName+' steals '+baseLabel,sub,'live',sb.gamePk,sb.ts,5*60000,0.7));
   });
   return out;
 }
@@ -1642,7 +1668,7 @@ async function buildStoryPool(){
   loadProbablePitcherStats();
   fetchMissingHRBatterStats();
   var fresh=[].concat(
-    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genBigInning(),
+    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),genMultiHitDay(),genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers()
   );
