@@ -381,7 +381,7 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 3. **`genWalkOffThreat()`** — Source: `gameStates`. Detects: `halfInning === 'bottom'` AND `inning >= 9` AND `|awayScore - homeScore| <= 1` AND `onThird`. ID: `walkoff_{gamePk}`. Priority: 90. Cooldown: 1 min, 90% decay.
 
-4. **`genBigInning()`** — Source: `feedItems` (3+ consecutive scoring plays in same inning/half). ID: `biginning_{gamePk}_{inning}_{half}`. Priority: 75. Cooldown: 10 min.
+4. **`genBigInning()`** — Source: `feedItems` (3+ consecutive scoring plays in same inning/half). ID: `biginning_{gamePk}_{inning}_{half}`. Priority: 75. Cooldown: 10 min. Badge: `highlight`. Card gets `.story-biginning` CSS class (crimson background, distinct from HR amber).
 
 5. **`genFinalScoreStories()`** — Source: `gameStates` where `status === 'Final'`. Headline: "Final: NYM 5, PHI 2". Adds "comeback" label if trailing by 3+ after 5th. ID: `final_{gamePk}` (stable, won't re-generate). Priority: 80. Cooldown: 15 min.
 
@@ -708,7 +708,7 @@ On every commit that changes app content, bump **three** things:
 - [x] 📖 Story Carousel — Probable Pitchers badge changed from UPCOMING to TODAY'S PROBABLE PITCHERS (v2.9)
 - [x] ⚡ Pulse — DH game 2 excluded from NEXT UP empty-state hero card while game 1 is live (v2.9)
 - [x] 📖 Story Carousel — Lazy Statcast distance: `pollGamePlays` patches `item.data.distance` on subsequent fetches once `hitData.totalDistance` populates; HR headline shows "Xft" when available (v2.9)
-- [x] 📖 Story Carousel — Big-inning card: HIGHLIGHT badge + crimson left-border background, visually consistent with HR cards (v2.9.1)
+- [x] 📖 Story Carousel — Big-inning card: HIGHLIGHT badge + crimson background (`rgba(220,60,60,0.13)`) via `.story-biginning` CSS class, distinct from HR amber (v2.9.1)
 - [x] ⚡ Pulse — HR play description patched on subsequent polls when MLB API delivers initial play without season count in parentheses; `pollGamePlays` patch loop extended to update `item.data.desc` alongside distance (v2.9.1)
 - [x] ⚡ Pulse — Player card +1 fix: `desc` passed to `showPlayerCard` as `descHint`; HR number extracted from description used as floor for `hrCount` when stats API is stale; milestone context pill uses resolved `hrCount` (v2.9.1)
 - [x] 📖 Story Carousel — Daily leaders consolidated to one story per stat with MLB top-5 ranked list (last name + value, `<br>`-separated); stats expanded from {HR, H, RBI, K, SV} to {HR, AVG, RBI, SB, Pitching Wins, Saves}; fetch limit raised 1→5 (v2.9.2)
