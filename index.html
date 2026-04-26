@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.7.3</title>
+<title>MLB Tracker v2.7.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -614,7 +614,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.7.4</div>
       </div>
     </div>
   </div>
@@ -1471,9 +1471,8 @@ function genProbablePitchers(){
     });
   } else {
     Object.values(gameStates).forEach(function(g){
-      if(localDateStr(new Date(g.gameDateMs))===today) {
-        var sg=Object.values(gameStates).find(function(x){return x.gamePk===g.gamePk;});
-        if(sg) games.push(sg);
+      if(localDateStr(new Date(g.gameDateMs))===today&&g.awayAbbr&&g.homeAbbr) {
+        games.push(g);
       }
     });
   }
