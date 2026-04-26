@@ -2115,9 +2115,7 @@ function showSection(id,btn){
   if(id==='media')loadMedia();
   if(id==='league')loadLeagueView();
   if(id==='news')loadNews();
-  if(id==='pulse'&&!pulseInitialized){
-    pulseInitialized=true;
-    initLeaguePulse();
+  if(id==='pulse'){
     document.addEventListener('click',function(e){
       var panel=document.getElementById('soundPanel'),btn=document.getElementById('btnSound');
       if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
@@ -2812,6 +2810,7 @@ function togglePush(){
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
   if(sv('mlb_pulse_mock')==='true'){pulseMockMode=true;var pt2=document.getElementById('pulseMockToggle'),pk2=document.getElementById('pulseMockToggleKnob');if(pt2){pt2.style.background='var(--secondary)';pk2.style.left='21px';}}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
+  pulseInitialized=true;initLeaguePulse();
 })();
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
