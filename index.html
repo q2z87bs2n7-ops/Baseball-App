@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.8.12</title>
+<title>MLB Tracker v2.8.13</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -617,7 +617,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.12</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.8.13</div>
       </div>
     </div>
   </div>
@@ -1223,7 +1223,8 @@ async function pollGamePlays(gamePk) {
       var playTime=null; if (play.about&&play.about.startTime){try{playTime=new Date(play.about.startTime);}catch(e){}}
       var pitcherId=(play.matchup&&play.matchup.pitcher&&play.matchup.pitcher.id)||null;
       var pitcherName=(play.matchup&&play.matchup.pitcher&&play.matchup.pitcher.fullName)||'';
-      addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime,batterId:batterId,batterName:batterName,pitcherName:pitcherName});
+      var hrDistance=(event==='Home Run'&&play.hitData&&play.hitData.totalDistance>0)?Math.round(play.hitData.totalDistance):null;
+      addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime,batterId:batterId,batterName:batterName,pitcherName:pitcherName,distance:hrDistance});
       var isHitEvt=['Single','Double','Triple','Home Run'].indexOf(event)!==-1;
       if (isHitEvt&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
       if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;dailyPitcherKs[kkey]=ke;}
@@ -1236,6 +1237,15 @@ async function pollGamePlays(gamePk) {
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
         else if (hasRISP){playSound('risp');}
+      }
+    });
+    // Patch Statcast distance into existing HR feed items once the data arrives
+    plays.forEach(function(play){
+      if(play.result&&play.result.event==='Home Run'&&play.hitData&&play.hitData.totalDistance>0){
+        var dist=Math.round(play.hitData.totalDistance);
+        var pt=null;try{if(play.about&&play.about.startTime)pt=new Date(play.about.startTime);}catch(e){}
+        var found=feedItems.find(function(i){return i.gamePk===gamePk&&i.data&&i.data.event==='Home Run'&&!i.data.distance&&pt&&i.ts&&Math.abs(i.ts.getTime()-pt.getTime())<5000;});
+        if(found) found.data.distance=dist;
       }
     });
     g.playCount=plays.length;
@@ -1320,10 +1330,11 @@ function genHRStories(){
       // Single homer — past tense descriptive
       id='hr_'+item.gamePk+'_'+item.ts.getTime();
       var pitcherStr=item.data.pitcherName?' off '+item.data.pitcherName:'';
+      var distStr=item.data.distance?item.data.distance+'ft ':'';
       var innStr=item.data.inning?' in the '+ordinal(item.data.inning)+' inning':'';
       var hrNumMatch=(item.data.desc||'').match(/\((\d+)\)/);
       var hrTag=hrNumMatch?' (HR #'+hrNumMatch[1]+' this season)':'';
-      headline=bname+' hit a homer'+pitcherStr+innStr+hrTag;
+      headline=bname+' hit a '+distStr+'homer'+pitcherStr+innStr+hrTag;
       priority=100;
     } else {
       // Multi-homer — replace original story; boost priority
