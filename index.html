@@ -1416,10 +1416,15 @@ function genDailyLeaders(){
   cats.forEach(function(cat){
     var list=dailyLeadersCache[cat.key];
     if(!list||!list.length) return;
-    var top=list[0]; if(!top||!top.person) return;
-    var id='leader_'+cat.key+'_'+localDateStr(new Date());
-    var headline=top.person.fullName+' leads MLB with '+top.value+' '+cat.label+' ('+SEASON+')';
-    out.push(makeStory(id,'daily_stat',3,50,cat.icon,headline,'Season leaderboard','today',null,new Date(),30*60000,0.1));
+    for(var i=0;i<Math.min(3,list.length);i++){
+      var p=list[i]; if(!p||!p.person) continue;
+      var id='leader_'+cat.key+'_'+i+'_'+localDateStr(new Date());
+      var basePri=50, priFactor=[1.0,0.7,0.45][i]||0.45;
+      var pri=Math.round(basePri*priFactor);
+      var rankLabel=i===0?'leads':'#'+(i+1)+' in';
+      var headline=p.person.fullName+' '+rankLabel+' MLB with '+p.value+' '+cat.label;
+      out.push(makeStory(id,'daily_stat',3,pri,cat.icon,headline,'Season leaderboard','today',null,new Date(),30*60000,0.1));
+    }
   });
   return out;
 }
