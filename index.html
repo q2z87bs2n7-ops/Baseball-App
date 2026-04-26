@@ -1102,7 +1102,7 @@ async function pollLeaguePulse() {
   if (!hasLive) pollDateStr=localDateStr(new Date());
   var dateStr=pollDateStr;
   try {
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team');
+    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
     var pendingFinalItems={};
