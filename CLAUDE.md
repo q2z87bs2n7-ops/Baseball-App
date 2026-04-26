@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.8 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights)
+**Current version:** v2.9 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -88,6 +88,10 @@ let dailyLeadersCache= null             // cached top 3 leaders per stat categor
 let dailyLeadersLastFetch=0             // timestamp of last leaders fetch
 let dailyHitsTracker = {}               // batterId → hit count (reset daily)
 let dailyPitcherKs   = {}               // pitcherId → strikeout count (reset daily)
+let storyCarouselRawGameData={}         // gamePk → raw schedule API game object (doubleHeader, gameNumber, status.startTimeTBD, probablePitcher)
+let probablePitcherStatsCache={}        // pitcherId → {wins, losses} — fetched by loadProbablePitcherStats()
+let hrBatterStatsCache={}               // batterId → hitting stat object — populated by showPlayerCard() and fetchMissingHRBatterStats()
+const STORY_ROTATE_MS=10000             // auto-advance every 10 seconds (was 20s pre-v2.9)
 ```
 
 ### Navigation
@@ -371,7 +375,7 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 **Story generators (called every 15s poll):**
 
-1. **`genHRStories()`** — Source: `feedItems` (already-fetched plays). Detects `data.event === 'Home Run'`. ID: `hr_{gamePk}_{playCount}` (unique, survives re-polls). Headline includes distance if available from boxscore `hitData.totalDistance`. Priority: 100. Cooldown: 5 min.
+1. **`genHRStories()`** — Source: `feedItems`. Groups HR plays by `batterId` so multi-homer games collapse into one story. **Single HR:** ID `hr_{gamePk}_{ts}`, past-tense headline "Player hit a [Xft] homer off Pitcher in the Nth inning (HR #N this season)"; distance from `item.data.distance` (lazily populated by Statcast — see `pollGamePlays` patch loop). **Multi-homer:** ID `hr_multi_{batterId}_{gamePk}_{count}`, "Player hits his second homer…"; priority boosted +15 per additional HR; original single-HR story auto-drops when multi-homer takes over. Sub-line: "AWAY @ HOME · N HR · N RBI · .AVG AVG · .OPS OPS" from `hrBatterStatsCache` → `statsCache` fallback. Badge: `highlight` (orange). Priority: 100 (single), 115+ (multi). Cooldown: 5 min.
 
 2. **`genNoHitterWatch()`** — Source: `gameStates` linescore. Detects: `status === 'Live'` AND `away.hits === 0 || home.hits === 0` AND `inning >= 6`. ID: `nohit_{gamePk}` (one per game, updates description as innings advance). Priority: 95. Cooldown: 2 min. Removed when a hit occurs.
 
@@ -398,7 +402,7 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 **Rotation engine:**
 
 ```javascript
-const STORY_ROTATE_MS = 20_000;  // auto-advance every 20 seconds
+const STORY_ROTATE_MS = 10_000;  // auto-advance every 10 seconds
 
 function rotateStory() {
   const now = Date.now();
@@ -697,6 +701,14 @@ On every commit that changes app content, bump **three** things:
 - [x] ⚡ Pulse — Real poll interval leak into mock mode fixed: `pulseTimer` global stores `setInterval` handle; `switchMode()` clears it (v2.7)
 - [x] 📖 Story Carousel — Event stream with priority-weighted rotation, cooldowns, and decay (v2.7.1+). 12 story generators covering realtime (HR, no-hitter, walk-off, big inning), game status (final, streak), daily stats (multi-hit, leaders, pitcher gem), and historical (yesterday, on this day, probable pitchers)
 - [x] 📖 Story Carousel — Auto-rotate every 20s with manual prev/next; Display winning/losing/save pitcher with IP/K/ER stats in yesterday/on-this-day stories
+- [x] 📖 Story Carousel — HR card redesign: past-tense headline, YTD stats sub-line (HR/RBI/AVG/OPS), HIGHLIGHT badge, multi-homer collapse with priority boost (v2.9)
+- [x] 📖 Story Carousel — Probable pitcher W-L record shown in matchup headline (fetched via `loadProbablePitcherStats`); defaults to 0-0 (v2.9)
+- [x] 📖 Story Carousel — Streak/leader sub-lines cleaned up; Season Leader badge replaces TODAY badge on leader cards (v2.9)
+- [x] 📖 Story Carousel — Auto-rotate reduced to 10s (was 20s) (v2.9)
+- [x] 📖 Story Carousel — Probable Pitchers badge changed from UPCOMING to TODAY'S PROBABLE PITCHERS (v2.9)
+- [x] ⚡ Pulse — DH game 2 excluded from NEXT UP empty-state hero card while game 1 is live (v2.9)
+- [x] 📖 Story Carousel — Lazy Statcast distance: `pollGamePlays` patches `item.data.distance` on subsequent fetches once `hitData.totalDistance` populates; HR headline shows "Xft" when available (v2.9)
+- [ ] 📖 Story Carousel — HR distance via Statcast (`hitData.totalDistance` in `/game/{pk}/playByPlay`) needs real-world verification — field may not populate for all games or all parks; confirm distance appears in headlines during live play
 - [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
 - [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
 - [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
