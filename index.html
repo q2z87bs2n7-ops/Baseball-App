@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.12.6</title>
+<title>MLB Tracker v2.12.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -346,7 +346,7 @@
 .ticker-game.has-risp { align-items: stretch; gap: 4px; padding: 6px 10px 7px; white-space: normal; }
 .ticker-row { display: flex; align-items: center; gap: 5px; }
 .ticker-top { display: flex; align-items: center; gap: 7px; }
-.ticker-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ticker-bottom { display: flex; align-items: center; gap: 6px; }
 .ticker-diamond { flex-shrink: 0; }
 .feed-item.feed-hidden { display: none; }
 .ticker-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; animation: pulse-ring 1.8s ease-out infinite; }
@@ -628,7 +628,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.12.7</div>
       </div>
     </div>
   </div>
@@ -1291,6 +1291,8 @@ function renderTicker() {
     var hasRisp=isLive&&(g.onSecond||g.onThird);
     var fc=enabledGames.has(g.gamePk)?' feed-enabled':' feed-disabled';
     var rc=hasRisp?' has-risp':'';
+    var outsHtml='';
+    if(isLive){outsHtml='<span class="ticker-outs">'+[0,1,2].map(function(i){return '<span class="out-dot'+(i<g.outs?' out-on':'')+'"></span>';}).join('')+'</span>';}
     if (hasRisp) {
       html+='<div class="ticker-game '+sc+fc+rc+'" onclick="toggleGame('+g.gamePk+')">'
         +'<div class="ticker-top">'+dot
@@ -1298,10 +1300,8 @@ function renderTicker() {
         +'<span class="ticker-divider">·</span>'
         +'<span class="ticker-score"><strong>'+g.homeScore+'</strong>&nbsp;'+g.homeAbbr+'</span>'
         +'</div><div class="ticker-bottom">'+baseDiamondSvg(g.onFirst,g.onSecond,g.onThird)
-        +'<span class="ticker-inning">'+innStr+'</span></div></div>';
+        +'<span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div></div>';
     } else {
-      var outsHtml='';
-      if(isLive){outsHtml='<span class="ticker-outs">'+[0,1,2].map(function(i){return '<span class="out-dot'+(i<g.outs?' out-on':'')+'"></span>';}).join('')+'</span>';}
       var spacer=isLive?'<div class="ticker-dot-spacer"></div>':'';
       html+='<div class="ticker-game '+sc+fc+'" onclick="toggleGame('+g.gamePk+')">'
         +'<div class="ticker-row">'+dot+'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span></div>'
