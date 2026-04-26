@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.9</title>
+<title>MLB Tracker v2.9.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -429,6 +429,7 @@
 .story-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; animation: storyFadeIn 0.35s ease; }
 @keyframes storyFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 .story-card.tier1 { border-left: 3px solid rgba(255,145,20,0.85); background: var(--hr-bg); }
+.story-card.story-biginning { background: rgba(220,60,60,0.13); border-left-color: rgba(220,60,60,0.75); }
 .story-card.tier2 { border-left: 3px solid rgba(60,190,100,0.6); background: var(--scoring-bg); }
 .story-card.tier3 { border-left: 3px solid rgba(80,140,255,0.6); background: var(--status-bg); }
 .story-card.tier4 { border-left: 3px solid var(--border); }
@@ -617,7 +618,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.9.1</div>
       </div>
     </div>
   </div>
@@ -1395,7 +1396,7 @@ function genBigInning(){
     var battingTeam=grp.half==='top'?g.awayAbbr:g.homeAbbr;
     var headline=battingTeam+' scored '+grp.runs+' runs in the '+ordinal(grp.inning);
     var sub=g.awayAbbr+' '+grp.lastItem.data.awayScore+', '+g.homeAbbr+' '+grp.lastItem.data.homeScore;
-    out.push(makeStory(id,'realtime',1,75,'🔥',headline,sub,g.status==='Live'?'live':'today',grp.gamePk,grp.lastItem.ts,10*60000,0.4));
+    out.push(makeStory(id,'realtime',1,75,'🔥',headline,sub,'highlight',grp.gamePk,grp.lastItem.ts,10*60000,0.4));
   });
   return out;
 }
@@ -1644,7 +1645,7 @@ function renderStoryCard(story){
   var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',season:'season',probables:'probables',highlight:'highlight'};
   var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',season:'SEASON LEADER',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT'};
   var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
-  el.className='story-card tier'+story.tier;
+  el.className='story-card tier'+story.tier+(story.id.indexOf('biginning')===0?' story-biginning':'');
   el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
     +'<div style="display:flex;align-items:flex-start;gap:6px;margin-top:2px">'
     +'<span class="story-icon">'+story.icon+'</span>'

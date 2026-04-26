@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.9 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines)
+**Current version:** v2.9.1 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines; v2.9.1 Story Carousel big-inning card: HIGHLIGHT badge, crimson background distinct from HR amber)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -381,7 +381,7 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 3. **`genWalkOffThreat()`** — Source: `gameStates`. Detects: `halfInning === 'bottom'` AND `inning >= 9` AND `|awayScore - homeScore| <= 1` AND `onThird`. ID: `walkoff_{gamePk}`. Priority: 90. Cooldown: 1 min, 90% decay.
 
-4. **`genBigInning()`** — Source: `feedItems` (3+ consecutive scoring plays in same inning/half). ID: `biginning_{gamePk}_{inning}_{half}`. Priority: 75. Cooldown: 10 min.
+4. **`genBigInning()`** — Source: `feedItems` (3+ consecutive scoring plays in same inning/half). ID: `biginning_{gamePk}_{inning}_{half}`. Priority: 75. Cooldown: 10 min. Badge: `highlight`. Card gets `.story-biginning` CSS class (crimson background, distinct from HR amber).
 
 5. **`genFinalScoreStories()`** — Source: `gameStates` where `status === 'Final'`. Headline: "Final: NYM 5, PHI 2". Adds "comeback" label if trailing by 3+ after 5th. ID: `final_{gamePk}` (stable, won't re-generate). Priority: 80. Cooldown: 15 min.
 
@@ -708,6 +708,7 @@ On every commit that changes app content, bump **three** things:
 - [x] 📖 Story Carousel — Probable Pitchers badge changed from UPCOMING to TODAY'S PROBABLE PITCHERS (v2.9)
 - [x] ⚡ Pulse — DH game 2 excluded from NEXT UP empty-state hero card while game 1 is live (v2.9)
 - [x] 📖 Story Carousel — Lazy Statcast distance: `pollGamePlays` patches `item.data.distance` on subsequent fetches once `hitData.totalDistance` populates; HR headline shows "Xft" when available (v2.9)
+- [x] 📖 Story Carousel — Big inning card: badge changed to HIGHLIGHT; background changed to crimson (`rgba(220,60,60,0.13)`) via `.story-biginning` CSS class, distinct from HR amber (v2.9.1)
 - [ ] 📖 Story Carousel — HR distance via Statcast (`hitData.totalDistance` in `/game/{pk}/playByPlay`) needs real-world verification — field may not populate for all games or all parks; confirm distance appears in headlines during live play
 - [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
 - [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
