@@ -1579,13 +1579,14 @@ async function loadOnThisDayCache(){
           var bs=await fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore').then(function(r){return r.json();});
           var allPlayers=Object.assign({},bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs.teams&&bs.teams.away&&bs.teams.away.players||{});
           var topBatter=null, topBatterStats=null;
-          var multiHRHitters=[];
+          var hrHitters={multi:[],single:[]};
           Object.values(allPlayers).forEach(function(p){
             if(!p.stats||!p.stats.batting) return;
             var bat=p.stats.batting;
             if(!bat.hits||bat.atBats<2) return;
             if(!topBatter||(bat.hits/bat.atBats)>(topBatterStats.hits/topBatterStats.atBats)) {topBatter=p;topBatterStats=bat;}
-            if(bat.homeRuns&&bat.homeRuns>=2) multiHRHitters.push({name:p.person.fullName.split(' ').pop(),hrs:bat.homeRuns});
+            if(bat.homeRuns&&bat.homeRuns>=2) hrHitters.multi.push({name:p.person.fullName.split(' ').pop(),hrs:bat.homeRuns});
+            else if(bat.homeRuns===1) hrHitters.single.push(p.person.fullName.split(' ').pop());
           });
           var startingPitcher=null, startingPitcherStats=null;
           var awayStarterId=bs.teams&&bs.teams.away&&bs.teams.away.pitchers&&bs.teams.away.pitchers[0];
@@ -1600,7 +1601,8 @@ async function loadOnThisDayCache(){
           var lines=[];
           if(topBatter&&topBatterStats) lines.push(topBatter.person.fullName.split(' ').pop()+' '+topBatterStats.hits+'-'+topBatterStats.atBats);
           if(startingPitcher&&startingPitcherStats) lines.push(startingPitcher.person.fullName.split(' ').pop()+' '+startingPitcherStats.strikeOuts+'K, '+(startingPitcherStats.earnedRuns||0)+' ER');
-          multiHRHitters.forEach(function(h){lines.push(h.name+' '+h.hrs+'HR');});
+          hrHitters.multi.forEach(function(h){lines.push(h.name+' '+h.hrs+'HR');});
+          hrHitters.single.forEach(function(name){lines.push(name+' HR');});
           if(lines.length) playerHighlight=' · '+lines.join(' · ');
         }catch(e){}
         try{
