@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.6 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot)
+**Current version:** v2.7 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.7 merged Pulse player card flash + HR feed improvements)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -65,6 +65,7 @@ let selectedPlayer = null              // full roster object — includes person
 let pulseMockMode    = false           // persisted to localStorage('mlb_pulse_mock')
 let pulseInitialized = false           // lazy-init guard — set true on first Pulse nav
 let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayPrimary, homePrimary,
+                                      //   awayId, homeId,
                                       //   awayScore, homeScore, status, detailedState,
                                       //   inning, halfInning, outs, playCount, lastTimestamp,
                                       //   gameTime, gameDateMs, venueName, onFirst, onSecond, onThird }
@@ -72,7 +73,8 @@ let feedItems        = []             // all feed items newest-first (never prun
 let enabledGames     = new Set()      // gamePks whose plays are visible in the feed
 let mockPlayPtrs     = {}, mockGameQueue = [], mockTimerId = null
 let mockSpeedMs      = 6000, totalMockPlays = 0, playedMockPlays = 0
-let countdownTimer   = null, alertId = 0, isFirstPoll = true, pollDateStr = null
+let countdownTimer   = null, pulseTimer = null, alertId = 0, isFirstPoll = true, pollDateStr = null
+// pulseTimer — stores setInterval handle from initReal() so switchMode() can clear it
 let soundSettings    = { master:false, hr:true, run:true, risp:true,
                          dp:true, tp:true, gameStart:true, gameEnd:true, error:true }
 ```
@@ -150,6 +152,7 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
 | `/game/{pk}/playByPlay` | ✅ | Completed at-bat log for live/finished games. Returns `allPlays[]`, `scoringPlays[]`, `playsByInning[]`. Use this for play-by-play display — lighter than feed/live. |
 | `/game/{pk}/feed/live` | ⚠️ | **v1 path 404s.** Use `v1.1` (`statsapi.mlb.com/api/v1.1/game/{pk}/feed/live`) — returns full GUMBO object (plays + linescore + boxscore in one call). Large payload (~500KB). Companion endpoints: `/feed/live/timestamps` and `/feed/live/diffPatch` for efficient polling. |
 | `/api/v1.1/game/{pk}/feed/live/timestamps` | ✅ | **Pulse only.** Returns array of timestamp strings; last element = most recent state change. Compare to stored `g.lastTimestamp` — if unchanged, skip the playByPlay fetch. **Must use `MLB_BASE_V1_1` — v1 path returns 404.** |
+| `/game/{pk}/feed/color` | ❌ | Documented in MLB Stats API spec (`default: "v1"`) but returns 404 for all 2026 games. Confirmed dead across gamePks 824203, 824527, 824934. Do not use. |
 | ESPN News API | ⚠️ | Unofficial, may be CORS-blocked in some browsers |
 | YouTube RSS via allorigins.win | ⚠️ | Public proxy, no SLA. 3-attempt retry in place. Media tab only. |
 
@@ -182,7 +185,7 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
 --radius        /* 10px — shared border-radius for Pulse cards */
 --scoring-bg / --scoring-border   /* green tint for scoring play feed items */
 --hr-bg / --hr-border             /* amber tint for home run feed items */
---risp-accent                     /* yellow — left border stripe on RISP feed items */
+--risp-accent                     /* yellow — defined but no longer used as border stripe; RISP items rely on ⚡ badge only */
 --status-bg / --status-border     /* blue tint for status-change feed items */
 ```
 
@@ -273,18 +276,21 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 
 **HTML structure (`#pulse` section):**
 - `#soundPanel` — `position:fixed` floating overlay, hidden by default; triggered by `🔊 Configure` in Settings
-- `#alertStack` — `position:fixed` toast stack for HR/run alerts
+- `#alertStack` — `position:fixed` toast stack for run/triple-play alerts (HR events do NOT fire a toast — the player card replaces it)
+- `#playerCardOverlay` — `position:fixed` full-screen semi-transparent overlay; contains `#playerCard`; shown on HR events in both real and mock mode (v2.7)
 - `#gameTicker` — `position:sticky` below header; horizontal scrollable chip bar
 - `#mockBar` — inline (not fixed); shown only when `pulseMockMode` is true
 - `#feedWrap > #feedEmpty + #feed` — empty/upcoming state and live play items
 
 **Ticker bar:** All games as scrollable horizontal chips. Sorted: Live (most-progressed inning first) → Preview/Scheduled (by `gameDateMs` asc) → Final (dimmed). Each chip shows away score · home score · inning or start time. Final games with `detailedState` Postponed/Cancelled/Suspended show `PPD` instead of `FINAL`. Clicking a chip toggles that game's plays in the feed (`enabledGames` Set). When a live game has a runner on 2nd or 3rd (`g.onSecond || g.onThird`), the chip expands to a 2-row layout with a 28×24px base diamond SVG (`baseDiamondSvg()`).
 
-**Feed:** Newest plays at top. Each item shows: coloured team dots + score (meta row), inning + outs, play description, play-type badge (1B/2B/3B/BB/K/E/DP/TP), ⚡ RISP badge, and score badge on scoring plays (scoring side full brightness). Play classification drives visual treatment: `homerun` (amber tint), `scoring` (green tint), `risp` (yellow left stripe), `status-change` (blue tint, centred — game start/end/delay).
+**Feed:** Newest plays at top. Each item shows: coloured team dots + score (meta row), inning + outs, play description, play-type badge (1B/2B/3B/BB/K/E/DP/TP), ⚡ RISP badge, and score badge on scoring plays (scoring side full brightness). Play classification drives visual treatment: `homerun` (strong amber tint + 3px amber left border stripe — visually outranks scoring plays), `scoring` (green tint), `risp` (no border stripe — ⚡ badge and base diamond chip provide sufficient treatment), `status-change` (blue tint, centred — game start/end/delay). **Game Delayed status items (v2.7)** show team abbreviations: "🌧️ Game Delayed — SD @ AZ · Delayed Start".
 
 **Empty state:** When no visible plays exist, `renderEmptyState()` renders a hype block + hero upcoming-game card (3-stop gradient, team caps, countdown timer via `startCountdown()`) + 2-col grid for remaining games. Falls back to plain `⚾ League Pulse` placeholder off-season.
 
-**Mock mode:** Controlled by `pulseMockMode` (toggle in Settings, persisted to `localStorage('mlb_pulse_mock')`). `MOCK_DATA` contains 4 games (NYM@ATL, NYY@BOS, LAD@SF, HOU@TEX) with ~55 scripted plays. Round-robin engine (`mockTick()`) advances one play per tick across games. Mock bar (Normal/Fast/Skip/Reset controls) is inline below the ticker.
+**Mock mode:** Controlled by `pulseMockMode` (toggle in Settings, persisted to `localStorage('mlb_pulse_mock')`). `MOCK_DATA` contains 4 games (NYM@ATL, NYY@BOS, LAD@SF, HOU@TEX) with ~55 scripted plays. Round-robin engine (`mockTick()`) advances one play per tick across games. Mock bar (Normal/Fast/Skip/Reset controls) is inline below the ticker. Each mock HR play has an embedded `mockStats` object `{avg, homeRuns, rbi, ops}` — passed as `overrideStats` to `showPlayerCard` to bypass the live API fetch in mock mode.
+
+**Player card overlay (v2.7):** When a home run fires (real or mock), `showPlayerCard` renders a baseball-card-style overlay: player headshot from `img.mlbstatic.com` (generic silhouette fallback), name, team abbreviation, "💥 HOME RUN!" badge, and a stat grid (AVG · OPS · HR with count-up animation from N−1 → N · RBI). A context pill shows "HR #N in SEASON — milestone!" on multiples of 5, or "🏆 HR leader on the team" if `statsCache` confirms it — no extra API calls needed. Card auto-dismisses after 5.5s or on tap/click anywhere. `isHistory` guard prevents cards from firing on initial feed load. In real mode, `statsCache` is checked first; if the player isn't in cache (opponent player), `/people/{id}/stats` is fetched. In mock mode, `overrideStats` bypasses the fetch entirely.
 
 **Live mode:** `pollLeaguePulse()` fetches all games every 15s. Game-start fires only when `detailedState` transitions to `'In Progress'` (not on warmup). Timestamps stale check (`/api/v1.1/game/{pk}/feed/live/timestamps`) skips the playByPlay fetch when nothing has changed. On first poll, all pre-existing plays load as history with no alerts or sounds (`isHistory` flag), then sorted chronologically across games.
 
@@ -423,7 +429,9 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `buildFeedEl(item)` | Builds DOM element for a feed item — status-change items (game start/end/delay) or play items (with play-type badge, RISP badge, score badge) |
 | `updateFeedEmpty()` | Checks for visible feed items; calls `renderEmptyState()` if none; shows/hides `#feedEmpty` |
 | `renderEmptyState()` | Renders hype block + hero upcoming-game card (gradient, caps, countdown) + 2-col grid, or plain placeholder if no upcoming games |
-| `showAlert(opts)` | Creates and stacks a `position:fixed` toast; auto-dismisses after `opts.duration` ms |
+| `showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats)` | Shows HR player card overlay. Resolves stats from `statsCache` → live API fetch → `overrideStats` (mock). Renders headshot, name, team abbr, "💥 HOME RUN!" badge, AVG/OPS/HR count-up/RBI, context pill. Auto-dismisses after 5.5s. |
+| `dismissPlayerCard()` | Adds `.closing` animation class, hides overlay after 280ms. Also bound to overlay click/tap. |
+| `showAlert(opts)` | Creates and stacks a `position:fixed` toast; auto-dismisses after `opts.duration` ms. Not fired for HR events — player card replaces it. |
 | `dismissAlert(el)` | Adds `.dismissing` class, removes element after 300ms transition |
 | `mockTick()` | Advances one play in round-robin order across `mockGameQueue`; marks remaining Live games Final when all plays exhausted |
 | `advanceMockGame(pk, play)` | Applies one mock play to `gameStates`, calls `addFeedItem`, fires alerts and sounds |
@@ -524,6 +532,12 @@ On every commit that changes app content, bump **three** things:
 - [x] ⚡ Pulse — Historical status items synthesised on first load: Game Final (with `linescore.gameDurationMinutes` duration label + accurate end-time sort), Game Postponed, Game Underway, Game Delayed (v2.2)
 - [x] ⚡ Pulse — Game Final feed item anchored after last play timestamp (`pendingFinalItems` deferred insert); omitted if no plays found; PPD item suppressed before scheduled game time (v2.3)
 - [x] ⚡ Pulse — Feed items inserted at correct timestamp position on every poll; late-arriving plays no longer float to top (v2.3)
+- [x] ⚡ Pulse — Player card flash on HR: baseball-card overlay with headshot, AVG/OPS/HR count-up animation/RBI, milestone + team-leader context pill; auto-dismisses 5.5s; mock plays have embedded stats to bypass API (v2.7)
+- [x] ⚡ Pulse — HR toast suppressed — player card replaces it; run/TP toasts unaffected (v2.7)
+- [x] ⚡ Pulse — HR feed items: stronger amber background + 3px amber left border stripe; visually outranks green scoring plays (v2.7)
+- [x] ⚡ Pulse — RISP left accent stripe removed; ⚡ badge + base diamond chip on ticker are sufficient (v2.7)
+- [x] ⚡ Pulse — Game Delayed feed items now show team abbreviations ("SD @ AZ · Delayed Start") in both initial-load and live-update paths (v2.7)
+- [x] ⚡ Pulse — Real poll interval leak into mock mode fixed: `pulseTimer` global stores `setInterval` handle; `switchMode()` clears it (v2.7)
 - [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
 - [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
 - [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
