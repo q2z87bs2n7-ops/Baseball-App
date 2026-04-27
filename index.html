@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.23.3</title>
+<title>MLB Tracker v2.24</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -680,7 +680,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.23.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.24</div>
       </div>
     </div>
   </div>
@@ -949,6 +949,8 @@ const TEAMS=[
   {id:136,espnId:12,name:'Seattle Mariners',short:'Mariners',division:'American League West',league:'AL',primary:'#0C2C56',secondary:'#005C5C',youtubeUC:'UCFy0GbiTJtShy4tKkzl_5qg'},
   {id:140,espnId:13,name:'Texas Rangers',short:'Rangers',division:'American League West',league:'AL',primary:'#003278',secondary:'#C0111F',youtubeUC:'UCZjXWMvOrhc91chSDPDUspA'},
 ];
+
+const MLB_THEME={id:-1,name:'MLB (Neutral)',short:'MLB',primary:'#003087',secondary:'#FFB81C'};
 
 let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false;
 let newsFeedMode='mlb';
@@ -2310,7 +2312,7 @@ function renderEmptyState() {
   }
   el.className='has-upcoming';
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
-  var heroGrad='linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
+  var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
     +'<div class="empty-hype-block"><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
@@ -2567,7 +2569,7 @@ document.addEventListener('click',function(e){
 });
 
 function buildThemeSelect(){
-  var sel=document.getElementById('themeSelect');sel.innerHTML='<option value="0">Default (Follow Team)</option>';var lastDiv='';
+  var sel=document.getElementById('themeSelect');sel.innerHTML='<option value="0">Default (Follow Team)</option><option value="-1">MLB (Neutral)</option>';var lastDiv='';
   TEAMS.forEach(function(t){
     if(t.division!==lastDiv){var og=document.createElement('optgroup');og.label=t.division;sel.appendChild(og);lastDiv=t.division;}
     var opt=document.createElement('option');opt.value=t.id;opt.textContent=t.name;sel.lastChild.appendChild(opt);
@@ -2575,7 +2577,9 @@ function buildThemeSelect(){
 }
 
 function switchTheme(val){
-  themeOverride=val==='0'?null:TEAMS.find(t=>t.id===parseInt(val));
+  if(val==='0'){themeOverride=null;}
+  else if(val==='-1'){themeOverride=MLB_THEME;}
+  else{themeOverride=TEAMS.find(t=>t.id===parseInt(val));}
   localStorage.setItem('mlb_theme',val);
   applyTeamTheme(activeTeam);
 }
@@ -3319,7 +3323,10 @@ function togglePush(){
 (async function(){
   var sv=function(k){return localStorage.getItem(k);};
   if(sv('mlb_team'))activeTeam=TEAMS.find(t=>t.id===parseInt(sv('mlb_team')))||activeTeam;
-  if(sv('mlb_theme')&&sv('mlb_theme')!=='0')themeOverride=TEAMS.find(t=>t.id===parseInt(sv('mlb_theme')))||null;
+  if(sv('mlb_theme')&&sv('mlb_theme')!=='0'){
+    if(sv('mlb_theme')==='-1'){themeOverride=MLB_THEME;}
+    else{themeOverride=TEAMS.find(t=>t.id===parseInt(sv('mlb_theme')))||null;}
+  }
   if(sv('mlb_invert')==='true')themeInvert=true;
   if(sv('mlb_media')==='true')mediaEnabled=true;
   buildTeamSelect();buildThemeSelect();
