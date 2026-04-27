@@ -395,7 +395,7 @@
 #feedEmpty .empty-sub { font-size: 13px; }
 #feedEmpty.has-upcoming { text-align: left; padding: 20px 0; color: var(--text); }
 .empty-upcoming-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-.empty-hype-block { margin-bottom: 18px; }
+.empty-hype-block { margin-bottom: 18px; position: relative; }
 .empty-hype-headline { font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
 .empty-hype-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .hype-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; border: 1px solid; }
@@ -1416,7 +1416,7 @@ async function initDemo() {
   renderTicker();
   buildStoryPool();
   updateFeedEmpty();
-  showAlert({icon:'▶',event:'Demo Mode',desc:'Real games from recent days',color:'var(--accent)',duration:3000});
+  showAlert({icon:'▶',event:'Demo Mode',desc:'Real games from recent days',color:'#7dd89e',duration:3000});
   if(storyRotateTimer) clearInterval(storyRotateTimer);
   storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
   demoStartTime=Date.now();
