@@ -1397,9 +1397,17 @@ async function initDemo() {
   demoPlayQueue=[];
   demoPlayIdx=0;
   var games=await loadDemoGames();
-  if(!games||games.length===0){
-    console.warn('Demo: No games fetched, using mock data fallback');
-    games=MOCK_DATA.games;
+  var useMockData=!games||games.length===0;
+  if(useMockData){
+    console.warn('Demo: No API games fetched, using mock data fallback');
+    games=MOCK_DATA.games.map(function(g){
+      var away=tcLookup(g.awayId),home=tcLookup(g.homeId);
+      return{gamePk:g.gamePk,gameDateTime:new Date().toISOString(),gameTime:g.gameTime||'TBD',
+        awayTeam:{id:g.awayId,name:away.name,shortName:away.abbr},
+        homeTeam:{id:g.homeId,name:home.name,shortName:home.abbr},
+        awayPrimary:away.primary,homePrimary:home.primary,venue:g.venueName||''
+      };
+    });
   }
   games.forEach(function(g){
     gameStates[g.gamePk]={
@@ -1412,7 +1420,23 @@ async function initDemo() {
     };
     enabledGames.add(g.gamePk);
   });
-  await flattenDemoPlays(games);
+  if(useMockData){
+    demoPlayQueue=[];
+    var ts=Date.now();
+    Object.keys(MOCK_DATA.plays).forEach(function(pk){
+      MOCK_DATA.plays[pk].forEach(function(p){
+        demoPlayQueue.push({gamePk:parseInt(pk),event:p.event,desc:p.desc,scoring:p.scoring,
+          inn:p.inn,half:p.half,outs:p.outs,awayScore:p.aScore,homeScore:p.hScore,
+          ts:ts,type:'other'
+        });
+        ts+=10000;
+      });
+    });
+    demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
+    demoPlayIdx=0;
+  }else{
+    await flattenDemoPlays(games);
+  }
   renderTicker();
   buildStoryPool();
   updateFeedEmpty();
