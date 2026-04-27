@@ -1385,6 +1385,9 @@ async function pollGamePlays(gamePk) {
 async function initDemo() {
   demoMode=true;
   document.body.classList.add('demo-active');
+  // Make sure Pulse section is active
+  var pulseSection=document.getElementById('pulse');
+  if(pulseSection) pulseSection.classList.add('active');
   var main=document.getElementById('main');
   if(main) main.style.display='none';
   var feedWrap=document.getElementById('feedWrap');
@@ -1401,8 +1404,10 @@ async function initDemo() {
   if(useMockData){
     console.warn('Demo: No API games fetched, using mock data fallback');
     games=MOCK_DATA.games.map(function(g){
-      var away=tcLookup(g.awayId),home=tcLookup(g.homeId);
-      return{gamePk:g.gamePk,gameDateTime:new Date().toISOString(),gameTime:g.gameTime||'TBD',
+      var away=tcLookup(g.awayId)||{name:'Unknown',abbr:'???',primary:'#666'};
+      var home=tcLookup(g.homeId)||{name:'Unknown',abbr:'???',primary:'#666'};
+      return {
+        gamePk:g.gamePk,gameDateTime:new Date().toISOString(),gameTime:g.gameTime||'TBD',
         awayTeam:{id:g.awayId,name:away.name,shortName:away.abbr},
         homeTeam:{id:g.homeId,name:home.name,shortName:home.abbr},
         awayPrimary:away.primary,homePrimary:home.primary,venue:g.venueName||''
