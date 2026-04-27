@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.18</title>
+<title>MLB Tracker v2.19</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -679,7 +679,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.18</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.19</div>
       </div>
     </div>
   </div>
@@ -1500,9 +1500,9 @@ function fetchMLBNewsFeed() {
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     }).then(function(data){
-      if(!data.success||!data.videos) throw new Error('Invalid proxy response');
-      var feed=data.videos.slice(0,6).map(function(v){
-        return {title:v.title,link:'https://mlb.com',image:v.thumb||''};
+      if(!data.success||!data.articles) throw new Error('Invalid proxy response');
+      var feed=data.articles.slice(0,6).map(function(a){
+        return {title:a.title,link:a.link||'https://mlb.com',image:a.image||''};
       });
       if(feed.length>0) {
         console.log('[📰 News] ✅ MLB RSS proxy loaded successfully');
