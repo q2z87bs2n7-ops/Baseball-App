@@ -1455,47 +1455,62 @@ function renderSideRailGames() {
 }
 
 function fetchMLBNewsFeed() {
-  var url='https://www.mlb.com/feeds/rss.xml';
-  var proxyUrl='https://allorigins.win/raw?url='+encodeURIComponent(url);
-  fetch(proxyUrl,{timeout:5000}).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.text();
-  }).then(function(xml){
-    try{
-      var parser=new DOMParser();
-      var doc=parser.parseFromString(xml,'text/xml');
-      if(doc.getElementsByTagName('parsererror').length>0) throw new Error('Parse error');
-      var items=doc.getElementsByTagName('item');
-      var feed=[];
-      for(var i=0;i<Math.min(items.length,6);i++){
-        var item=items[i];
-        var titleEl=item.getElementsByTagName('title')[0];
-        var linkEl=item.getElementsByTagName('link')[0];
-        var descEl=item.getElementsByTagName('description')[0];
-        var title=(titleEl&&titleEl.textContent)||'MLB News';
-        var link=(linkEl&&linkEl.textContent)||'https://mlb.com';
-        var desc=(descEl&&descEl.textContent)||'';
-        var imageUrl='';
-        if(desc) {
-          var imgMatch=desc.match(/<img[^>]+src=['"]([^'"]+)['"]/i);
-          if(imgMatch) imageUrl=imgMatch[1];
-        }
-        if(title&&title!=='MLB News') feed.push({title:title,link:link,image:imageUrl});
-      }
-      if(feed.length>0) {
-        mlbNewsFeed=feed;
-        renderMLBNewsFeed();
-      } else {
-        showNewsUnavailable();
-      }
-    }catch(e){
-      console.log('MLB news parse error:',e);
+  var urls=[
+    'https://www.mlb.com/feeds/rss.xml',
+    'https://mlb.com/feed/',
+    'https://www.espn.com/mlb/feeds/rss/'
+  ];
+  var proxyBase='https://api.allorigins.win/get?url=';
+
+  function tryFetch(urlIndex) {
+    if(urlIndex>=urls.length) {
       showNewsUnavailable();
+      return;
     }
-  }).catch(function(e){
-    console.log('MLB news fetch failed:',e);
-    showNewsUnavailable();
-  });
+    var url=urls[urlIndex];
+    var proxyUrl=proxyBase+encodeURIComponent(url);
+    fetch(proxyUrl,{timeout:5000}).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(response){
+      var xml=response.contents;
+      try{
+        var parser=new DOMParser();
+        var doc=parser.parseFromString(xml,'text/xml');
+        if(doc.getElementsByTagName('parsererror').length>0) throw new Error('Parse error');
+        var items=doc.getElementsByTagName('item');
+        var feed=[];
+        for(var i=0;i<Math.min(items.length,6);i++){
+          var item=items[i];
+          var titleEl=item.getElementsByTagName('title')[0];
+          var linkEl=item.getElementsByTagName('link')[0];
+          var descEl=item.getElementsByTagName('description')[0];
+          var title=(titleEl&&titleEl.textContent)||'';
+          var link=(linkEl&&linkEl.textContent)||'https://mlb.com';
+          var desc=(descEl&&descEl.textContent)||'';
+          var imageUrl='';
+          if(desc) {
+            var imgMatch=desc.match(/<img[^>]+src=['"]([^'"]+)['"]/i);
+            if(imgMatch) imageUrl=imgMatch[1];
+          }
+          if(title&&title.length>5) feed.push({title:title,link:link,image:imageUrl});
+        }
+        if(feed.length>0) {
+          mlbNewsFeed=feed;
+          renderMLBNewsFeed();
+        } else {
+          tryFetch(urlIndex+1);
+        }
+      }catch(e){
+        console.log('MLB news parse error at URL '+urlIndex+':',e);
+        tryFetch(urlIndex+1);
+      }
+    }).catch(function(e){
+      console.log('MLB news fetch failed at URL '+urlIndex+':',e);
+      tryFetch(urlIndex+1);
+    });
+  }
+  tryFetch(0);
 }
 
 function showNewsUnavailable() {
