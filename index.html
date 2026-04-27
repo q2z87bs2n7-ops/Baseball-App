@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.15.6</title>
+<title>MLB Tracker v2.15.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -676,7 +676,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.15.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.15.7</div>
       </div>
     </div>
   </div>
@@ -1579,36 +1579,26 @@ function rotateNewsCard() {
 }
 
 function testRSSFeeds() {
-  // Test helper for user to diagnose which RSS feeds work in browser environment
-  var feeds=[
-    {name:'MLB General',url:'https://www.mlb.com/feeds/news/rss.xml'},
-    {name:'Yankees',url:'https://www.mlb.com/yankees/feeds/news/rss.xml'},
-    {name:'Mets',url:'https://www.mlb.com/mets/feeds/news/rss.xml'},
-    {name:'ESPN MLB',url:'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=5'}
+  // Test helper for user to diagnose which news sources work
+  var sources=[
+    {name:'ESPN JSON API',url:'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=5',type:'json'},
+    {name:'MLB RSS (backend proxy)',url:'/api/proxy-rss?feed=mlb',type:'backend'}
   ];
-  console.log('🧪 Testing %d news feeds...',feeds.length);
-  feeds.forEach(function(f,idx){
+  console.log('🧪 Testing %d news sources...',sources.length);
+  sources.forEach(function(s,idx){
     setTimeout(function(){
-      if(f.url.includes('espn')){
-        // ESPN is JSON
-        fetch(f.url).then(function(r){return r.json();}).then(function(d){
-          var count=(d.articles||[]).length;
-          console.log('✅ ESPN: %d articles',count);
-        }).catch(function(e){console.log('❌ ESPN failed: %s',e.message);});
-      } else {
-        // Test via allorigins proxy
-        var encoded=encodeURIComponent(f.url);
-        fetch('https://api.allorigins.win/get?url='+encoded).then(function(r){
-          if(!r.ok) throw new Error('HTTP '+r.status);
-          return r.json();
-        }).then(function(json){
-          if(!json.contents) throw new Error('No contents');
-          var parser=new DOMParser(),xml=parser.parseFromString(json.contents,'application/xml');
-          if(xml.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
-          var items=xml.querySelectorAll('item');
-          console.log('✅ %s: %d items',f.name,items.length);
-        }).catch(function(e){console.log('❌ %s failed: %s',f.name,e.message);});
-      }
+      fetch(s.url).then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return r.json();
+      }).then(function(data){
+        if(s.type==='json'){
+          var count=(data.articles||[]).length;
+          console.log('✅ %s: %d articles',s.name,count);
+        } else {
+          var count=data.success&&data.articles?data.articles.length:0;
+          console.log('✅ %s: %d articles',s.name,count);
+        }
+      }).catch(function(e){console.log('❌ %s failed: %s',s.name,e.message);});
     },idx*500);
   });
 }
