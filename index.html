@@ -439,14 +439,16 @@
 
 #sideRail { display: none; width: 320px; flex-shrink: 0; overflow-y: auto; padding-left: 8px; }
 #sideRailGames { margin-bottom: 24px; }
-.side-rail-section { margin-bottom: 20px; }
-.side-rail-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; padding: 0 8px; }
-.side-rail-game { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-.side-rail-game:hover { background: var(--card2); }
-.side-rail-game-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.side-rail-game-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.side-rail-game-teams { font-size: 12px; font-weight: 600; color: var(--text); }
-.side-rail-game-time { font-size: 11px; color: var(--muted); }
+.side-rail-section-header { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; margin-bottom: 10px; }
+.side-rail-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.game-count { font-size: 12px; font-weight: 700; color: var(--accent); }
+.side-rail-game { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: transparent; cursor: pointer; transition: background 0.15s; margin-bottom: 4px; border-radius: 4px; font-size: 12px; }
+.side-rail-game:hover { background: rgba(255,255,255,0.03); }
+.side-rail-game-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.side-rail-game-time-badge { font-weight: 700; color: #FFC425; min-width: 60px; }
+.side-rail-game-score-badge { font-weight: 700; color: var(--text); min-width: 48px; }
+.side-rail-game-abbr { font-weight: 600; color: var(--text); min-width: 28px; }
+.side-rail-game-vs { color: var(--muted); font-size: 10px; flex-shrink: 0; }
 #sideRailNews { padding: 0 8px; }
 .side-rail-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 #newsCarousel { display: flex; align-items: center; gap: 8px; }
@@ -1407,28 +1409,32 @@ function renderSideRailGames() {
   upcomingGames.sort(function(a,b){return (a.gameDateMs||0)-(b.gameDateMs||0);});
   completedGames.sort(function(a,b){return (b.gameDateMs||0)-(a.gameDateMs||0);});
   if (upcomingGames.length) {
-    upcomingHtml+='<div class="side-rail-section-title">Upcoming Games</div>';
+    upcomingHtml+='<div class="side-rail-section-header"><span class="side-rail-section-title">Upcoming Today</span><span class="game-count">'+upcomingGames.length+'</span></div>';
     upcomingGames.forEach(function(g) {
       var time=g.gameTime||'TBD';
       upcomingHtml+='<div class="side-rail-game" onclick="showLiveGame('+g.gamePk+')">'
+        +'<span class="side-rail-game-time-badge">'+time+'</span>'
         +'<span class="side-rail-game-dot" style="background:'+g.awayPrimary+'"></span>'
-        +'<div class="side-rail-game-info">'
-        +'<div class="side-rail-game-teams">'+g.awayAbbr+' vs '+g.homeAbbr+'</div>'
-        +'<div class="side-rail-game-time">'+time+'</div>'
-        +'</div></div>';
+        +'<span class="side-rail-game-abbr">'+g.awayAbbr+'</span>'
+        +'<span class="side-rail-game-vs">@</span>'
+        +'<span class="side-rail-game-dot" style="background:'+g.homePrimary+'"></span>'
+        +'<span class="side-rail-game-abbr">'+g.homeAbbr+'</span>'
+        +'</div>';
     });
   }
   if (completedGames.length) {
-    completedHtml+='<div class="side-rail-section-title">Completed Games</div>';
+    completedHtml+='<div class="side-rail-section-header" style="margin-top:20px;"><span class="side-rail-section-title">Completed</span><span class="game-count">'+completedGames.length+'</span></div>';
     completedGames.forEach(function(g) {
       var isPostponed=g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended';
-      var scoreStr=isPostponed?'PPD':g.awayScore+' - '+g.homeScore;
+      var scoreStr=isPostponed?'PPD':g.awayScore+'-'+g.homeScore;
       completedHtml+='<div class="side-rail-game" onclick="showLiveGame('+g.gamePk+')">'
+        +'<span class="side-rail-game-score-badge">'+scoreStr+'</span>'
         +'<span class="side-rail-game-dot" style="background:'+g.awayPrimary+'"></span>'
-        +'<div class="side-rail-game-info">'
-        +'<div class="side-rail-game-teams">'+g.awayAbbr+' vs '+g.homeAbbr+'</div>'
-        +'<div class="side-rail-game-time">'+scoreStr+'</div>'
-        +'</div></div>';
+        +'<span class="side-rail-game-abbr">'+g.awayAbbr+'</span>'
+        +'<span class="side-rail-game-vs">@</span>'
+        +'<span class="side-rail-game-dot" style="background:'+g.homePrimary+'"></span>'
+        +'<span class="side-rail-game-abbr">'+g.homeAbbr+'</span>'
+        +'</div>';
     });
   }
   var gamesHtml=upcomingHtml+completedHtml;
