@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.16</title>
+<title>MLB Tracker v2.17</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -171,7 +171,9 @@
   .back-btn{background:none;border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;margin-bottom:16px}
   .back-btn:hover{border-color:var(--accent);color:var(--accent)}
   @media(min-width:1025px) {
+    #pulse { display: grid; grid-template-columns: 700px 320px; gap: 12px; }
     #sideRail { display: block !important; }
+    #sideRailGames { margin-top: 70px; }
   }
   @media(max-width:1024px){
     .grid3,.live-grid{grid-template-columns:1fr}
@@ -189,8 +191,8 @@
     #pulse { flex-direction: column; }
     #pulseLeft { flex: 0 0 auto; }
     #sideRail { display: none !important; }
-    #pulseFeedHeader { max-width: 700px; margin: 10px auto 0; }
-    #feedWrap { max-width: 700px; margin: 8px auto 0; }
+    #pulseFeedHeader { margin-bottom: 0; }
+    #feedWrap { max-width: 700px; margin: 10px auto 0; }
   }
   @media(max-width:767px){
     .grid2{grid-template-columns:1fr}
@@ -234,7 +236,7 @@
     #pulse { flex-direction: column; }
     #pulseLeft { flex: 0 0 auto; }
     #sideRail { display: none !important; }
-    #pulseFeedHeader { max-width: 100%; margin: 10px 0 0; }
+    #pulseFeedHeader { display: none; }
     #feedWrap { max-width: 100%; margin: 8px 0 0; }
   }
 
@@ -676,7 +678,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.16</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.17</div>
       </div>
     </div>
   </div>
@@ -879,9 +881,6 @@
     <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
     <span class="mock-progress" id="mockProgress"></span>
   </div>
-  <div id="pulseFeedHeader">
-    <span class="pulse-feed-label"><span class="pulse-bolt">⚡</span> Pulse</span>
-  </div>
   <div id="feedWrap">
     <div id="feedEmpty">
       <span class="empty-icon">⚾</span>
@@ -892,6 +891,12 @@
   </div>
   </div>
   <div id="sideRail">
+    <div id="pulseFeedHeader" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,195,175,0.12);border:1px solid rgba(0,195,175,0.3);border-radius:8px;width:fit-content">
+        <span style="font-size:20px">⚡</span>
+        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text)">MLB Pulse</span>
+      </div>
+    </div>
     <div id="sideRailGames">
       <div id="upcomingGames"></div>
       <div id="completedGames"></div>
@@ -1361,8 +1366,12 @@ function renderTicker() {
   var ticker=document.getElementById('gameTicker'), states=Object.values(gameStates);
   states=states.filter(function(g){return g.status==='Live';});
   if (!states.length){
-    ticker.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px 12px;">'
-      +'<span class="ticker-empty" style="color:var(--muted);font-size:13px;">No live games</span>'
+    ticker.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px 12px;min-height:50px;">'
+      +'<div style="text-align:center">'
+      +'<div style="font-size:24px;margin-bottom:6px">⚾</div>'
+      +'<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">No Live Games</div>'
+      +'<div style="font-size:11px;color:var(--muted)">Upcoming games will appear in the side panel</div>'
+      +'</div>'
       +'</div>';
     return;
   }
@@ -1455,36 +1464,68 @@ function renderSideRailGames() {
 }
 
 function fetchMLBNewsFeed() {
-  var url='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20';
-  fetch(url).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
-  }).then(function(data){
-    try{
-      var articles=(data.articles||[]).filter(function(a){return a.headline&&a.headline.length>5;}).slice(0,6);
-      var feed=[];
-      articles.forEach(function(a){
-        var title=a.headline||'';
-        var link=(a.links&&a.links.web&&a.links.web.href)||'https://mlb.com';
-        var imageUrl='';
-        if(a.images&&a.images.length>0) {
-          imageUrl=a.images[0].url||'';
+  function tryESPN() {
+    var url='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20';
+    return fetch(url).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(data){
+      try{
+        var articles=(data.articles||[]).filter(function(a){return a.headline&&a.headline.length>5;}).slice(0,6);
+        var feed=[];
+        articles.forEach(function(a){
+          var title=a.headline||'';
+          var link=(a.links&&a.links.web&&a.links.web.href)||'https://mlb.com';
+          var imageUrl='';
+          if(a.images&&a.images.length>0) {
+            imageUrl=a.images[0].url||'';
+          }
+          feed.push({title:title,link:link,image:imageUrl});
+        });
+        if(feed.length>0) {
+          console.log('[📰 News] ✅ ESPN JSON loaded successfully');
+          return feed;
+        } else {
+          throw new Error('No articles in ESPN response');
         }
-        feed.push({title:title,link:link,image:imageUrl});
+      }catch(e){
+        console.log('[📰 News] ❌ ESPN parse error:',e);
+        throw e;
+      }
+    });
+  }
+  function tryMLBProxy() {
+    return fetch('/api/proxy-rss?feed=mlb').then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(data){
+      if(!data.success||!data.videos) throw new Error('Invalid proxy response');
+      var feed=data.videos.slice(0,6).map(function(v){
+        return {title:v.title,link:'https://mlb.com',image:v.thumb||''};
       });
       if(feed.length>0) {
-        mlbNewsFeed=feed;
-        renderMLBNewsFeed();
+        console.log('[📰 News] ✅ MLB RSS proxy loaded successfully');
+        return feed;
       } else {
-        showNewsUnavailable();
+        throw new Error('No items in proxy response');
       }
-    }catch(e){
-      console.log('MLB news parse error:',e);
+    }).catch(function(e){
+      console.log('[📰 News] ❌ MLB RSS proxy error:',e);
+      throw e;
+    });
+  }
+  tryESPN().then(function(feed){
+    mlbNewsFeed=feed;
+    renderMLBNewsFeed();
+  }).catch(function(espnErr){
+    console.log('[📰 News] Trying fallback...');
+    tryMLBProxy().then(function(feed){
+      mlbNewsFeed=feed;
+      renderMLBNewsFeed();
+    }).catch(function(e){
+      console.log('[📰 News] ⚠️ All news sources failed');
       showNewsUnavailable();
-    }
-  }).catch(function(e){
-    console.log('MLB news fetch failed:',e);
-    showNewsUnavailable();
+    });
   });
 }
 
