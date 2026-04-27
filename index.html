@@ -1412,7 +1412,7 @@ async function initDemo() {
     };
     enabledGames.add(g.gamePk);
   });
-  flattenDemoPlays(games);
+  await flattenDemoPlays(games);
   renderTicker();
   buildStoryPool();
   updateFeedEmpty();
@@ -1457,40 +1457,43 @@ async function loadDemoGames() {
   }
 }
 
-function flattenDemoPlays(games) {
+async function flattenDemoPlays(games) {
   demoPlayQueue=[];
-  games.forEach(function(g){
-    if(g.gameDetails&&g.gameDetails.linescore){
-      var ls=g.gameDetails.linescore;
-      if(ls.innings&&ls.innings.length>0){
-        var inningNum=1;
-        ls.innings.forEach(function(inn){
-          ['top','bottom'].forEach(function(half){
-            var plays=half==='top'?inn.away:inn.home;
-            if(plays&&plays.length>0){
-              plays.forEach(function(p,idx){
-                if(p.event){
-                  var scorer=false,desc='',playEvent='other';
-                  if(['Home Run','Single','Double','Triple'].indexOf(p.event)>-1) desc=p.description||p.event,scorer=true;
-                  if(p.event==='Home Run') playEvent='homerun';
-                  if(['Single','Double','Triple'].indexOf(p.event)>-1) playEvent='hit';
-                  demoPlayQueue.push({
-                    gamePk:g.gamePk,event:p.event,desc:desc||p.description||p.event,
-                    scoring:scorer,inn:inningNum,half:half,outs:p.outs||0,
-                    awayScore:p.inningState?parseInt(p.inningState.split('-')[0]):0,
-                    homeScore:p.inningState?parseInt(p.inningState.split('-')[1]):0,
-                    ts:new Date(p.result.eventTimestamp||Date.now()).getTime(),
-                    type:playEvent
-                  });
-                }
+  for(var i=0;i<games.length;i++){
+    var g=games[i];
+    try{
+      var r=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay');
+      if(!r.ok) continue;
+      var pbp=await r.json();
+      if(pbp.allPlays&&pbp.allPlays.length>0){
+        pbp.allPlays.forEach(function(p){
+          if(p.result&&p.result.event){
+            var evt=p.result.event,scorer=false,desc='',playEvent='other';
+            if(['Home Run','Single','Double','Triple'].indexOf(evt)>-1){
+              scorer=true;
+              desc=(p.player?p.player.fullName+' ':'')+(p.result.description||evt);
+            }else{
+              desc=p.result.description||evt;
+            }
+            if(evt==='Home Run') playEvent='homerun';
+            if(['Single','Double','Triple'].indexOf(evt)>-1) playEvent='hit';
+            if(p.about&&p.about.inning&&p.about.halfInning){
+              demoPlayQueue.push({
+                gamePk:g.gamePk,event:evt,desc:desc,scoring:scorer,
+                inn:p.about.inning,half:p.about.halfInning.substring(0,3),outs:p.count?p.count.outs:0,
+                awayScore:p.liveData&&p.liveData.linescore?p.liveData.linescore.teams.away.runs:0,
+                homeScore:p.liveData&&p.liveData.linescore?p.liveData.linescore.teams.home.runs:0,
+                ts:p.about&&p.about.endTime?new Date(p.about.endTime).getTime():Date.now(),
+                type:playEvent
               });
             }
-          });
-          inningNum++;
+          }
         });
       }
+    }catch(e){
+      console.warn('Demo: playByPlay fetch error for gamePk '+g.gamePk,e);
     }
-  });
+  }
   demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
   demoPlayIdx=0;
 }
