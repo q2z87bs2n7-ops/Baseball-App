@@ -409,7 +409,9 @@
 .upcoming-foot-venue { font-size: 11px; color: rgba(255,255,255,0.45); text-align: right; }
 .upcoming-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-.feed-item { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 13px; margin-bottom: 6px; animation: feed-in 0.28s ease; }
+.feed-item { background: var(--card); border: 1px solid var(--border); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 0; padding: 10px 12px; margin-bottom: 0; animation: feed-in 0.28s ease; }
+.feed-item:first-child { border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); }
+.feed-item:last-child { border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius); }
 .feed-item.scoring { background: var(--scoring-bg); border-color: var(--scoring-border); }
 .feed-item.homerun { background: var(--hr-bg); border-color: var(--hr-border); border-left: 3px solid rgba(160,100,255,0.85); }
 .feed-item.risp { }
@@ -443,7 +445,7 @@
 .side-rail-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .game-count { font-size: 12px; font-weight: 700; color: var(--accent); }
 .side-rail-games-container { background: var(--card); border: 1px solid var(--border); border-radius: 0 0 10px 10px; overflow: hidden; margin-bottom: 12px; }
-.side-rail-game { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: transparent; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
+.side-rail-game { display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: transparent; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
 .side-rail-game:last-child { border-bottom: none; }
 .side-rail-game:hover { background: rgba(255,255,255,0.06); }
 .side-rail-game-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
