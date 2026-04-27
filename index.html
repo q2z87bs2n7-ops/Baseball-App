@@ -1384,6 +1384,7 @@ async function pollGamePlays(gamePk) {
 // ── Demo Mode Functions ──────────────────────────────────────────────────────────
 async function initDemo() {
   demoMode=true;
+  pulseMockMode=false;  // Disable mock mode to avoid conflicts
   document.body.classList.add('demo-active');
   // Make sure Pulse section is active
   var pulseSection=document.getElementById('pulse');
@@ -1392,6 +1393,9 @@ async function initDemo() {
   if(main) main.style.display='none';
   var feedWrap=document.getElementById('feedWrap');
   if(feedWrap) feedWrap.style.display='block';
+  // Hide mock bar when in demo mode
+  var mockBar=document.getElementById('mockBar');
+  if(mockBar) mockBar.style.display='none';
   gameStates={};
   feedItems=[];
   enabledGames=new Set();
@@ -1403,6 +1407,7 @@ async function initDemo() {
   var useMockData=!games||games.length===0;
   if(useMockData){
     console.warn('Demo: No API games fetched, using mock data fallback');
+    console.log('MOCK_DATA.games length:',MOCK_DATA.games.length,'MOCK_DATA.plays keys:',Object.keys(MOCK_DATA.plays));
     games=MOCK_DATA.games.map(function(g){
       var away=tcLookup(g.awayId)||{name:'Unknown',abbr:'???',primary:'#666'};
       var home=tcLookup(g.homeId)||{name:'Unknown',abbr:'???',primary:'#666'};
@@ -1439,6 +1444,7 @@ async function initDemo() {
     });
     demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
     demoPlayIdx=0;
+    console.log('Demo: Built play queue with',demoPlayQueue.length,'plays from',Object.keys(MOCK_DATA.plays).length,'games');
   }else{
     await flattenDemoPlays(games);
   }
