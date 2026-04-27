@@ -1357,7 +1357,12 @@ async function pollGamePlays(gamePk) {
 function renderTicker() {
   var ticker=document.getElementById('gameTicker'), states=Object.values(gameStates);
   states=states.filter(function(g){return g.status==='Live';});
-  if (!states.length){ticker.innerHTML='<span class="ticker-empty">No live games</span>';return;}
+  if (!states.length){
+    ticker.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px 12px;">'
+      +'<span class="ticker-empty" style="color:var(--muted);font-size:13px;">No live games</span>'
+      +'</div>';
+    return;
+  }
   states.sort(function(a,b){
     var aP=a.inning*2+(a.halfInning==='bottom'?1:0),bP=b.inning*2+(b.halfInning==='bottom'?1:0);
     if(bP!==aP)return bP-aP;
