@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.14 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines; v2.9.1 adds big-inning HIGHLIGHT badge + crimson card background, HR description patch on stale first-delivery, player card +1 fix via desc hint; v2.9.2 consolidates daily leader stories to one-per-stat with MLB top-5 ranked list and expands stats to HR/AVG/RBI/SB/Wins/Saves; v2.10 Pulse UI polish: distinct HR colors — teal for Story Carousel tier-1 cards, violet for feed play items; ⚡ Pulse section banner (no hairline rule); feedWrap contained-module border; v2.11 walk-off story fires on game state alone (bottom 9th+, tied/1-run, no runner requirement); per-inning ID + 5-min cooldown prevents repeated firing in same inning; v2.12 adds bases loaded story card (tier-1, priority 88, per half-inning), leader card player names match headline size/color; v2.12.1 tightens walk-off detection to winning-run-at-bat logic: fires when deficit ≤ runners-on-base + 1, correctly handles tied/down-1/down-2-with-runners scenarios; v2.12.2 big-inning card sub-line shows "AWAY @ HOME" only, score removed; v2.12.3 story carousel cooldowns dynamically capped to pool size × 1.5 × rotate interval so thin pre-game pools recycle cards in seconds not hours; v2.13 Pulse ticker chip redesign: chips stack teams vertically (away row / home row / inning+outs row) for compact width; out-dot indicators (3 circles, hollow outline → filled red per out) on both normal and RISP chips; live dot changed red → green (#22c55e) to avoid clash; home-row dot-spacer aligns team abbreviations on shared left edge; RISP bottom row now left-aligns diamond + inning + outs together; v2.14 adds stolen base carousel story: 💨 tier-2/priority-55 card for 2B/3B steals, 🏃 tier-1/priority-85 for steal of home; carousel only — stolen base plays intercepted before feed; isHistory guard fires live events only)
+**Current version:** v2.15.9 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines; v2.9.1 adds big-inning HIGHLIGHT badge + crimson card background, HR description patch on stale first-delivery, player card +1 fix via desc hint; v2.9.2 consolidates daily leader stories to one-per-stat with MLB top-5 ranked list and expands stats to HR/AVG/RBI/SB/Wins/Saves; v2.10 Pulse UI polish: distinct HR colors — teal for Story Carousel tier-1 cards, violet for feed play items; ⚡ Pulse section banner (no hairline rule); feedWrap contained-module border; v2.11 walk-off story fires on game state alone (bottom 9th+, tied/1-run, no runner requirement); per-inning ID + 5-min cooldown prevents repeated firing in same inning; v2.12 adds bases loaded story card (tier-1, priority 88, per half-inning), leader card player names match headline size/color; v2.12.1 tightens walk-off detection to winning-run-at-bat logic: fires when deficit ≤ runners-on-base + 1, correctly handles tied/down-1/down-2-with-runners scenarios; v2.12.2 big-inning card sub-line shows "AWAY @ HOME" only, score removed; v2.12.3 story carousel cooldowns dynamically capped to pool size × 1.5 × rotate interval so thin pre-game pools recycle cards in seconds not hours; v2.13 Pulse ticker chip redesign: chips stack teams vertically (away row / home row / inning+outs row) for compact width; out-dot indicators (3 circles, hollow outline → filled red per out) on both normal and RISP chips; live dot changed red → green (#22c55e) to avoid clash; home-row dot-spacer aligns team abbreviations on shared left edge; RISP bottom row now left-aligns diamond + inning + outs together; v2.14 adds stolen base carousel story: 💨 tier-2/priority-55 card for 2B/3B steals, 🏃 tier-1/priority-85 for steal of home; carousel only — stolen base plays intercepted before feed; isHistory guard fires live events only; v2.15 Pulse two-column layout redesign: desktop/iPad landscape only (≥1025px) with ~700px left column (ticker, story carousel, feed) + ~320px right column (side rail games + news carousel); ticker filtered to Live games only (no Preview/Final); side rail unified module with Upcoming/Completed games sections; MLB news carousel via backend proxy (primary) + ESPN JSON fallback; YouTube channel feed proxy added for reliable Media tab video loading; responsive: side rail hidden at ≤1024px, Pulse reverts to single-column centered)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -32,9 +32,11 @@ manifest.json           — PWA manifest (install metadata, icons)
 icons/                  — app icons (icon-192.png, icon-512.png, icon-180.png, icon-maskable-512.png, favicon.svg, icon-mono.svg)
 api/subscribe.js        — Vercel serverless: store/remove push subscriptions in Upstash Redis
 api/notify.js           — Vercel serverless: check MLB schedule, fire push notifications
+api/test-push.js        — Vercel serverless: sends a test push immediately (bypasses game schedule check)
+api/proxy-rss.js        — Vercel serverless: fetch + parse MLB RSS feeds server-side, return JSON (bypasses CORS)
+api/proxy-youtube.js    — Vercel serverless: fetch + parse YouTube channel feeds server-side, return JSON (bypasses CORS)
 .github/workflows/      — notify-cron.yml: GitHub Actions cron (*/5 * * * *) pings /api/notify
                           test-push.yml: manual workflow_dispatch to fire a test push to all subscribers
-api/test-push.js        — Vercel serverless: sends a test push immediately (bypasses game schedule check)
 vercel.json             — Vercel function config (maxDuration)
 package.json            — web-push + @upstash/redis dependencies (for Vercel functions only)
 ```
@@ -290,6 +292,37 @@ Source: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats` (via `fetch
 
 ### ⚡ Pulse
 Global live MLB play-by-play feed — aggregates every scoring play, home run, and RISP moment across all simultaneous games in one chronological stream. Lazy-loaded on first nav to the section.
+
+#### Two-Column Layout Redesign (v2.15)
+
+**Desktop/iPad Landscape (≥1025px):**
+- CSS Grid: `display: grid; grid-template-columns: 700px 320px; gap: 12px;`
+- Left column (~700px): Ticker, Story Carousel, Feed (unchanged from v2.14)
+- Right column (~320px): **Side Rail** with unified games module + news carousel
+  - **Games Module:** Upcoming (Scheduled + Preview, sorted by start time) and Completed (Final, sorted newest-first) sections. Each game shows team color dot + away abbr @ home abbr + time (upcoming) or score (completed). Click navigates to Live View.
+  - **News Module:** Auto-rotating carousel (30s) with prev/next controls. Shows title + image + link. Sources: MLB RSS (primary via `/api/proxy-rss?feed=mlb`) → ESPN JSON fallback.
+
+**Responsive Breakpoints:**
+- **≥1025px (Desktop):** Two-column layout visible; side rail active
+- **768–1024px (Tablet Landscape):** Side rail may be hidden depending on content width; Pulse may remain two-column or revert to single-column (test confirmed working at 768px+)
+- **≤767px (Tablet Portrait/Mobile):** Side rail `display: none`; Pulse reverts to single-column centered (pre-v2.15 layout). Max-width 700px on left column maintained.
+
+**Ticker Filter (v2.15):**
+- Now shows **Live games only** (removes Preview/Scheduled/Final)
+- Sorted by inning progress (most-advanced first)
+- Empty state shows placeholder text; side rail displays all non-live games
+
+**News Feed Strategy (v2.15.9):**
+- **Primary:** MLB RSS via backend proxy `/api/proxy-rss?feed=mlb` (fixed v2.15.8 to handle CDATA and image tags)
+- **Fallback:** ESPN JSON API at `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20`
+- Both return same `{title, link, image}` format to carousel; console logs which source loaded
+
+**Media Tab YouTube Proxy (v2.15.9):**
+- New backend proxy `/api/proxy-youtube.js` available for future Media tab improvements
+- Fetches YouTube channel feed server-side (bypasses CORS), returns `{videoId, title, thumb, date}` JSON
+- Usage: `fetch('/api/proxy-youtube?channel=UCxxxxxx')`
+- Eliminates dependency on allorigins.win (free proxy with no SLA)
+- Media tab currently hidden (Settings toggle); proxy ready when feature is revisited
 
 **HTML structure (`#pulse` section):**
 - `#soundPanel` — `position:fixed` floating overlay, hidden by default; triggered by `🔊 Configure` in Settings
