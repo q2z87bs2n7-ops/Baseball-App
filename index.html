@@ -2565,6 +2565,13 @@ function applyTeamTheme(team){
   var chip=document.getElementById('teamChip');if(chip)chip.textContent=team.name.toUpperCase();
 }
 
+function applyPulseMLBTheme(){
+  document.documentElement.style.setProperty('--dark','#0F1B2E');
+  document.documentElement.style.setProperty('--card','#172B4D');
+  document.documentElement.style.setProperty('--card2','#1E3A5F');
+  document.documentElement.style.setProperty('--border','#2C4A7F');
+}
+
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
 document.addEventListener('click',function(e){
   if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');
@@ -2623,10 +2630,9 @@ function showSection(id,btn){
   document.getElementById(id).classList.add('active');btn.classList.add('active');
   if(id==='pulse'){
     savedThemeForPulse=themeOverride;
-    themeOverride=MLB_THEME;
-    applyTeamTheme(activeTeam);
+    applyPulseMLBTheme();
   }else{
-    if(savedThemeForPulse!==undefined){themeOverride=savedThemeForPulse;applyTeamTheme(activeTeam);}
+    if(savedThemeForPulse!==undefined){applyTeamTheme(activeTeam);}
   }
   if(id==='schedule'&&!scheduleLoaded)loadSchedule();
   if(id==='standings')loadStandings();
