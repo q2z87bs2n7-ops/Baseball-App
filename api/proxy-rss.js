@@ -39,26 +39,29 @@ export default async function handler(req, res) {
     while ((match = itemRegex.exec(xml)) !== null) {
       const itemXml = match[1];
 
-      // Extract title
+      // Extract title (handle CDATA by removing both HTML tags and CDATA markers)
       const titleMatch = /<title>([\s\S]*?)<\/title>/.exec(itemXml);
-      const title = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+      let title = '';
+      if (titleMatch) {
+        title = titleMatch[1]
+          .replace(/<!\[CDATA\[/g, '')          // Remove opening CDATA
+          .replace(/\]\]>/g, '')                 // Remove closing CDATA
+          .replace(/<[^>]*>/g, '')               // Remove any remaining tags
+          .trim();
+      }
 
       // Extract link
       const linkMatch = /<link>([\s\S]*?)<\/link>/.exec(itemXml);
       const link = linkMatch ? linkMatch[1].trim() : 'https://mlb.com';
 
-      // Extract description (try to find image URL in CDATA)
-      const descMatch = /<description>([\s\S]*?)<\/description>/.exec(itemXml);
+      // Extract image URL from <image href="..."/> tag (MLB RSS format)
       let imageUrl = '';
-      if (descMatch) {
-        const desc = descMatch[1];
-        const imgMatch = /src=['"]([^'"]+)['"]/i.exec(desc);
-        if (imgMatch) {
-          imageUrl = imgMatch[1];
-        }
+      const imageMatch = /<image\s+href=['"]([^'"]+)['"]/i.exec(itemXml);
+      if (imageMatch) {
+        imageUrl = imageMatch[1];
       }
 
-      // Extract pubDate for sorting (optional, but useful)
+      // Extract pubDate for sorting
       const pubDateMatch = /<pubDate>([\s\S]*?)<\/pubDate>/.exec(itemXml);
       const pubDate = pubDateMatch ? new Date(pubDateMatch[1]).getTime() : 0;
 
