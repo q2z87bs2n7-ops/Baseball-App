@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.15.5</title>
+<title>MLB Tracker v2.15.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -676,7 +676,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.15.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.15.6</div>
       </div>
     </div>
   </div>
@@ -1494,48 +1494,25 @@ function fetchESPNNews() {
 
 function fetchMLBRSSNews() {
   return new Promise(function(resolve, reject) {
-    var feedUrl=encodeURIComponent('https://www.mlb.com/feeds/news/rss.xml');
-    // Try allorigins proxy with retry logic (same pattern as YouTube)
+    // Call backend proxy function to fetch MLB RSS server-side (no CORS issues)
     var attempt=0;
     var tryFetch=function() {
-      fetch('https://api.allorigins.win/get?url='+feedUrl).then(function(r){
+      fetch('/api/proxy-rss?feed=mlb').then(function(r){
         if(!r.ok) throw new Error('HTTP '+r.status);
         return r.json();
-      }).then(function(json){
-        if(!json.contents) throw new Error('No contents');
-        var parser=new DOMParser(),xml=parser.parseFromString(json.contents,'application/xml');
-        // Check for parsing errors
-        if(xml.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
-        var items=xml.querySelectorAll('item');
-        if(!items.length) throw new Error('No items');
-        var feed=[];
-        for(var i=0;i<Math.min(items.length,6);i++){
-          var item=items[i],title=item.querySelector('title'),link=item.querySelector('link'),desc=item.querySelector('description');
-          var titleText=title?title.textContent:'';
-          var linkHref=link?link.textContent:'https://mlb.com';
-          var imageUrl='';
-          // Try to extract image from description (often contains <img> tag)
-          if(desc){
-            var descHtml=desc.textContent;
-            var imgMatch=descHtml.match(/src=['"]([^'"]+)['"]/);
-            if(imgMatch) imageUrl=imgMatch[1];
-          }
-          if(titleText.length>5) feed.push({title:titleText,link:linkHref,image:imageUrl});
-        }
-        if(feed.length>0){
-          mlbNewsFeed=feed;
-          console.log('MLB RSS loaded:', feed.length, 'articles');
-          renderMLBNewsFeed();
-          resolve();
-        } else {
-          throw new Error('No valid articles');
-        }
+      }).then(function(data){
+        if(!data.success||!data.articles||!data.articles.length) throw new Error(data.error||'No articles');
+        var feed=data.articles.slice(0,6);
+        mlbNewsFeed=feed;
+        console.log('MLB RSS loaded:', feed.length, 'articles (via backend proxy)');
+        renderMLBNewsFeed();
+        resolve();
       }).catch(function(e){
         attempt++;
         if(attempt<3){
           setTimeout(tryFetch,1000);
         } else {
-          reject(new Error('MLB RSS failed after 3 attempts'));
+          reject(new Error('MLB RSS failed after 3 attempts: '+e.message));
         }
       });
     };
