@@ -1601,6 +1601,41 @@ function rotateNewsCard() {
   showNewsCard(newsCardIndex);
 }
 
+function testRSSFeeds() {
+  // Test helper for user to diagnose which RSS feeds work in browser environment
+  var feeds=[
+    {name:'MLB General',url:'https://www.mlb.com/feeds/news/rss.xml'},
+    {name:'Yankees',url:'https://www.mlb.com/yankees/feeds/news/rss.xml'},
+    {name:'Mets',url:'https://www.mlb.com/mets/feeds/news/rss.xml'},
+    {name:'ESPN MLB',url:'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=5'}
+  ];
+  console.log('🧪 Testing %d news feeds...',feeds.length);
+  feeds.forEach(function(f,idx){
+    setTimeout(function(){
+      if(f.url.includes('espn')){
+        // ESPN is JSON
+        fetch(f.url).then(function(r){return r.json();}).then(function(d){
+          var count=(d.articles||[]).length;
+          console.log('✅ ESPN: %d articles',count);
+        }).catch(function(e){console.log('❌ ESPN failed: %s',e.message);});
+      } else {
+        // Test via allorigins proxy
+        var encoded=encodeURIComponent(f.url);
+        fetch('https://api.allorigins.win/get?url='+encoded).then(function(r){
+          if(!r.ok) throw new Error('HTTP '+r.status);
+          return r.json();
+        }).then(function(json){
+          if(!json.contents) throw new Error('No contents');
+          var parser=new DOMParser(),xml=parser.parseFromString(json.contents,'application/xml');
+          if(xml.getElementsByTagName('parsererror').length) throw new Error('XML parse error');
+          var items=xml.querySelectorAll('item');
+          console.log('✅ %s: %d items',f.name,items.length);
+        }).catch(function(e){console.log('❌ %s failed: %s',f.name,e.message);});
+      }
+    },idx*500);
+  });
+}
+
 // ── Story Carousel (v2.7.1) ───────────────────────────────────────────────────
 
 function makeStory(id,type,tier,priority,icon,headline,sub,badge,gamePk,ts,cooldownMs,decayRate){
