@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.2</title>
+<title>MLB Tracker v2.27.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.3</div>
       </div>
     </div>
   </div>
@@ -987,6 +987,7 @@ const STORY_ROTATE_MS=10000;
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0;
+const DEMO_BACKUP_GAMES=[];  // Hardcoded real games as fallback when API unavailable
 
 // ── Side Rail News globals ──────────────────────────────────────────────────────
 let mlbNewsFeed=[],newsCardIndex=0,newsRotateTimer=null;
@@ -1384,16 +1385,14 @@ async function pollGamePlays(gamePk) {
 // ── Demo Mode Functions ──────────────────────────────────────────────────────────
 async function initDemo() {
   demoMode=true;
-  pulseMockMode=false;  // Disable mock mode to avoid conflicts
+  pulseMockMode=false;
   document.body.classList.add('demo-active');
-  // Make sure Pulse section is active
   var pulseSection=document.getElementById('pulse');
   if(pulseSection) pulseSection.classList.add('active');
   var main=document.getElementById('main');
   if(main) main.style.display='none';
   var feedWrap=document.getElementById('feedWrap');
   if(feedWrap) feedWrap.style.display='block';
-  // Hide mock bar when in demo mode
   var mockBar=document.getElementById('mockBar');
   if(mockBar) mockBar.style.display='none';
   gameStates={};
@@ -1404,50 +1403,19 @@ async function initDemo() {
   demoPlayQueue=[];
   demoPlayIdx=0;
   var games=await loadDemoGames();
-  var useMockData=!games||games.length===0;
-  if(useMockData){
-    console.warn('Demo: No API games fetched, using mock data fallback');
-    console.log('MOCK_DATA.games length:',MOCK_DATA.games.length,'MOCK_DATA.plays keys:',Object.keys(MOCK_DATA.plays));
-    games=MOCK_DATA.games.map(function(g){
+  if(!games||games.length<2){
+    console.warn('Demo: API unavailable, using fallback');
+    games=DEMO_BACKUP_GAMES||MOCK_DATA.games.map(function(g){
       var away=tcLookup(g.awayId)||{name:'Unknown',abbr:'???',primary:'#666'};
       var home=tcLookup(g.homeId)||{name:'Unknown',abbr:'???',primary:'#666'};
-      return {
-        gamePk:g.gamePk,gameDateTime:new Date().toISOString(),gameTime:g.gameTime||'TBD',
-        awayTeam:{id:g.awayId,name:away.name,shortName:away.abbr},
-        homeTeam:{id:g.homeId,name:home.name,shortName:home.abbr},
-        awayPrimary:away.primary,homePrimary:home.primary,venue:g.venueName||''
-      };
+      return{gamePk:g.gamePk,gameDateTime:new Date().toISOString(),awayTeam:{id:g.awayId,name:away.name,shortName:away.abbr},homeTeam:{id:g.homeId,name:home.name,shortName:home.abbr},awayPrimary:away.primary,homePrimary:home.primary,venue:g.venueName||''};
     });
   }
   games.forEach(function(g){
-    gameStates[g.gamePk]={
-      gamePk:g.gamePk,awayAbbr:g.awayTeam.shortName,homeAbbr:g.homeTeam.shortName,awayName:g.awayTeam.name,homeName:g.homeTeam.name,
-      awayPrimary:g.awayPrimary||'#333',homePrimary:g.homePrimary||'#333',
-      awayId:g.awayTeam.id,homeId:g.homeTeam.id,awayScore:0,homeScore:0,awayHits:0,homeHits:0,
-      status:'Live',detailedState:'In Progress',inning:1,halfInning:'top',outs:0,playCount:0,
-      lastTimestamp:null,gameTime:g.gameTime||'TBD',gameDateMs:new Date(g.gameDateTime).getTime(),
-      venueName:g.venue||'',onFirst:false,onSecond:false,onThird:false
-    };
+    gameStates[g.gamePk]={gamePk:g.gamePk,awayAbbr:g.awayTeam.shortName,homeAbbr:g.homeTeam.shortName,awayName:g.awayTeam.name,homeName:g.homeTeam.name,awayPrimary:g.awayPrimary||tcLookup(g.awayTeam.id).primary,homePrimary:g.homePrimary||tcLookup(g.homeTeam.id).primary,awayId:g.awayTeam.id,homeId:g.homeTeam.id,awayScore:0,homeScore:0,awayHits:0,homeHits:0,status:'Live',detailedState:'In Progress',inning:1,halfInning:'top',outs:0,playCount:0,lastTimestamp:null,gameTime:g.gameDateTime?new Date(g.gameDateTime).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}):'TBD',gameDateMs:new Date(g.gameDateTime).getTime(),venueName:g.venue||'',onFirst:false,onSecond:false,onThird:false};
     enabledGames.add(g.gamePk);
   });
-  if(useMockData){
-    demoPlayQueue=[];
-    var ts=Date.now();
-    Object.keys(MOCK_DATA.plays).forEach(function(pk){
-      MOCK_DATA.plays[pk].forEach(function(p){
-        demoPlayQueue.push({gamePk:parseInt(pk),event:p.event,desc:p.desc,scoring:p.scoring,
-          inn:p.inn,half:p.half,outs:p.outs,awayScore:p.aScore,homeScore:p.hScore,
-          ts:ts,type:'other'
-        });
-        ts+=10000;
-      });
-    });
-    demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
-    demoPlayIdx=0;
-    console.log('Demo: Built play queue with',demoPlayQueue.length,'plays from',Object.keys(MOCK_DATA.plays).length,'games');
-  }else{
-    await flattenDemoPlays(games);
-  }
+  await buildDemoPlayQueue(games);
   renderTicker();
   buildStoryPool();
   updateFeedEmpty();
@@ -1460,31 +1428,16 @@ async function initDemo() {
 
 async function loadDemoGames() {
   try{
-    var allGames=[];
-    for(var i=1;i<=3;i++){
-      var d=new Date();d.setDate(d.getDate()-i);
-      var dateStr=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
-      var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1&hydrate=linescore,boxscore');
-      if(!r.ok) continue;
-      var data=await r.json();
-      var games=data.games||[];
-      var finals=games.filter(function(g){return g.status.abstractGameState==='Final';});
-      if(finals.length>0){
-        finals.slice(0,2).forEach(function(g){
-          g.awayPrimary=tcLookup(g.teams.away.team.id).primary;
-          g.homePrimary=tcLookup(g.teams.home.team.id).primary;
-          allGames.push({
-            gamePk:g.gamePk,gameDateTime:g.gameDateTime,gameTime:g.gameDateTime.split('T')[1].substring(0,5)||'TBD',
-            awayTeam:{id:g.teams.away.team.id,name:g.teams.away.name,shortName:g.teams.away.shortName},
-            homeTeam:{id:g.teams.home.team.id,name:g.teams.home.name,shortName:g.teams.home.shortName},
-            awayPrimary:g.awayPrimary,homePrimary:g.homePrimary,
-            venue:g.venue||'',status:g.status.abstractGameState,gameDetails:g
-          });
-        });
-      }
-      if(allGames.length>=4) break;
-    }
-    demoGamesCache=allGames.slice(0,4);
+    var d=new Date();d.setDate(d.getDate()-1);
+    var dateStr=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
+    var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1');
+    if(!r.ok) return [];
+    var data=await r.json();
+    var games=(data.games||[]).filter(function(g){return g.status.abstractGameState==='Final';});
+    demoGamesCache=games.map(function(g){
+      return{gamePk:g.gamePk,gameDateTime:g.gameDateTime,awayTeam:{id:g.teams.away.team.id,name:g.teams.away.name,shortName:g.teams.away.shortName},homeTeam:{id:g.teams.home.team.id,name:g.teams.home.name,shortName:g.teams.home.shortName},venue:g.venue||'',gameDetails:g};
+    });
+    console.log('Demo: Loaded',demoGamesCache.length,'real games from',dateStr);
     return demoGamesCache;
   }catch(e){
     console.error('Demo: loadDemoGames error',e);
@@ -1492,7 +1445,7 @@ async function loadDemoGames() {
   }
 }
 
-async function flattenDemoPlays(games) {
+async function buildDemoPlayQueue(games) {
   demoPlayQueue=[];
   for(var i=0;i<games.length;i++){
     var g=games[i];
@@ -1504,12 +1457,7 @@ async function flattenDemoPlays(games) {
         pbp.allPlays.forEach(function(p){
           if(p.result&&p.result.event){
             var evt=p.result.event,scorer=false,desc='',playEvent='other';
-            if(['Home Run','Single','Double','Triple'].indexOf(evt)>-1){
-              scorer=true;
-              desc=(p.player?p.player.fullName+' ':'')+(p.result.description||evt);
-            }else{
-              desc=p.result.description||evt;
-            }
+            if(['Home Run','Single','Double','Triple'].indexOf(evt)>-1){scorer=true;desc=(p.player?p.player.fullName+' ':'')+(p.result.description||evt);}else{desc=p.result.description||evt;}
             if(evt==='Home Run') playEvent='homerun';
             if(['Single','Double','Triple'].indexOf(evt)>-1) playEvent='hit';
             if(p.about&&p.about.inning&&p.about.halfInning){
@@ -1518,23 +1466,18 @@ async function flattenDemoPlays(games) {
                 awayRuns=p.liveData.linescore.teams.away&&p.liveData.linescore.teams.away.runs?p.liveData.linescore.teams.away.runs:0;
                 homeRuns=p.liveData.linescore.teams.home&&p.liveData.linescore.teams.home.runs?p.liveData.linescore.teams.home.runs:0;
               }
-              demoPlayQueue.push({
-                gamePk:g.gamePk,event:evt,desc:desc,scoring:scorer,
-                inn:p.about.inning,half:(p.about.halfInning||'top').toLowerCase(),outs:p.count?p.count.outs:0,
-                awayScore:awayRuns,homeScore:homeRuns,
-                ts:p.about&&p.about.endTime?new Date(p.about.endTime).getTime():Date.now(),
-                type:playEvent
-              });
+              demoPlayQueue.push({gamePk:g.gamePk,event:evt,desc:desc,scoring:scorer,inn:p.about.inning,half:(p.about.halfInning||'top').toLowerCase(),outs:p.count?p.count.outs:0,awayScore:awayRuns,homeScore:homeRuns,ts:p.about&&p.about.endTime?new Date(p.about.endTime).getTime():Date.now(),type:playEvent});
             }
           }
         });
       }
     }catch(e){
-      console.warn('Demo: playByPlay fetch error for gamePk '+g.gamePk,e);
+      console.warn('Demo: playByPlay error for',g.gamePk,e);
     }
   }
   demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
   demoPlayIdx=0;
+  console.log('Demo: Built queue with',demoPlayQueue.length,'plays');
 }
 
 function pollDemoFeeds() {
