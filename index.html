@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.26</title>
+<title>MLB Tracker v2.27</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -414,6 +414,16 @@
 .upcoming-foot-countdown { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.55); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 3px; }
 .upcoming-foot-venue { font-size: 11px; color: rgba(255,255,255,0.45); text-align: right; }
 .upcoming-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.demo-cta { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.2s; }
+.demo-cta:hover { color: var(--text); }
+.demo-active .empty-hype-block { position: relative; }
+.demo-active #main { display: none !important; }
+.demo-active #feedWrap { display: block !important; }
+.demo-end-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 300; }
+.demo-end-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-width: 320px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.demo-end-headline { font-size: 22px; font-weight: 900; color: var(--text); margin-bottom: 12px; }
+.demo-end-summary { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.demo-end-tagline { font-size: 12px; color: var(--muted); line-height: 1.4; }
 
 .feed-item { background: var(--card); border: 1px solid var(--border); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 0; padding: 10px 12px; margin-bottom: 0; animation: feed-in 0.28s ease; }
 .feed-item:first-child { border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); }
@@ -682,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27</div>
       </div>
     </div>
   </div>
@@ -974,6 +984,9 @@ let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 const STORY_ROTATE_MS=10000;
+
+// ── Demo Mode globals ──────────────────────────────────────────────────────────
+let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0;
 
 // ── Side Rail News globals ──────────────────────────────────────────────────────
 let mlbNewsFeed=[],newsCardIndex=0,newsRotateTimer=null;
@@ -1366,6 +1379,194 @@ async function pollGamePlays(gamePk) {
     });
     g.playCount=plays.length;
   } catch(e){}
+}
+
+// ── Demo Mode Functions ──────────────────────────────────────────────────────────
+async function initDemo() {
+  demoMode=true;
+  document.body.classList.add('demo-active');
+  var main=document.getElementById('main');
+  if(main) main.style.display='none';
+  var feedWrap=document.getElementById('feedWrap');
+  if(feedWrap) feedWrap.style.display='block';
+  gameStates={};
+  feedItems=[];
+  enabledGames=new Set();
+  storyPool=[];
+  storyShownId=null;
+  demoPlayQueue=[];
+  demoPlayIdx=0;
+  var games=await loadDemoGames();
+  if(!games||games.length===0){
+    console.warn('Demo: No games fetched, using mock data fallback');
+    games=MOCK_DATA.games;
+  }
+  games.forEach(function(g){
+    gameStates[g.gamePk]={
+      gamePk:g.gamePk,awayAbbr:g.awayTeam.shortName,homeAbbr:g.homeTeam.shortName,awayName:g.awayTeam.name,homeName:g.homeTeam.name,
+      awayPrimary:g.awayPrimary||'#333',homePrimary:g.homePrimary||'#333',
+      awayId:g.awayTeam.id,homeId:g.homeTeam.id,awayScore:0,homeScore:0,awayHits:0,homeHits:0,
+      status:'Live',detailedState:'In Progress',inning:1,halfInning:'top',outs:0,playCount:0,
+      lastTimestamp:null,gameTime:g.gameTime||'TBD',gameDateMs:new Date(g.gameDateTime).getTime(),
+      venueName:g.venue||'',onFirst:false,onSecond:false,onThird:false
+    };
+    enabledGames.add(g.gamePk);
+  });
+  flattenDemoPlays(games);
+  renderTicker();
+  buildStoryPool();
+  updateFeedEmpty();
+  showAlert({icon:'▶',event:'Demo Mode',desc:'Real games from recent days',color:'var(--accent)',duration:3000});
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+  demoStartTime=Date.now();
+  pollDemoFeeds();
+}
+
+async function loadDemoGames() {
+  try{
+    var allGames=[];
+    for(var i=1;i<=3;i++){
+      var d=new Date();d.setDate(d.getDate()-i);
+      var dateStr=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
+      var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1&hydrate=linescore,boxscore');
+      if(!r.ok) continue;
+      var data=await r.json();
+      var games=data.games||[];
+      var finals=games.filter(function(g){return g.status.abstractGameState==='Final';});
+      if(finals.length>0){
+        finals.slice(0,2).forEach(function(g){
+          g.awayPrimary=tcLookup(g.teams.away.team.id).primary;
+          g.homePrimary=tcLookup(g.teams.home.team.id).primary;
+          allGames.push({
+            gamePk:g.gamePk,gameDateTime:g.gameDateTime,gameTime:g.gameDateTime.split('T')[1].substring(0,5)||'TBD',
+            awayTeam:{id:g.teams.away.team.id,name:g.teams.away.name,shortName:g.teams.away.shortName},
+            homeTeam:{id:g.teams.home.team.id,name:g.teams.home.name,shortName:g.teams.home.shortName},
+            awayPrimary:g.awayPrimary,homePrimary:g.homePrimary,
+            venue:g.venue||'',status:g.status.abstractGameState,gameDetails:g
+          });
+        });
+      }
+      if(allGames.length>=4) break;
+    }
+    demoGamesCache=allGames.slice(0,4);
+    return demoGamesCache;
+  }catch(e){
+    console.error('Demo: loadDemoGames error',e);
+    return [];
+  }
+}
+
+function flattenDemoPlays(games) {
+  demoPlayQueue=[];
+  games.forEach(function(g){
+    if(g.gameDetails&&g.gameDetails.linescore){
+      var ls=g.gameDetails.linescore;
+      if(ls.innings&&ls.innings.length>0){
+        var inningNum=1;
+        ls.innings.forEach(function(inn){
+          ['top','bottom'].forEach(function(half){
+            var plays=half==='top'?inn.away:inn.home;
+            if(plays&&plays.length>0){
+              plays.forEach(function(p,idx){
+                if(p.event){
+                  var scorer=false,desc='',playEvent='other';
+                  if(['Home Run','Single','Double','Triple'].indexOf(p.event)>-1) desc=p.description||p.event,scorer=true;
+                  if(p.event==='Home Run') playEvent='homerun';
+                  if(['Single','Double','Triple'].indexOf(p.event)>-1) playEvent='hit';
+                  demoPlayQueue.push({
+                    gamePk:g.gamePk,event:p.event,desc:desc||p.description||p.event,
+                    scoring:scorer,inn:inningNum,half:half,outs:p.outs||0,
+                    awayScore:p.inningState?parseInt(p.inningState.split('-')[0]):0,
+                    homeScore:p.inningState?parseInt(p.inningState.split('-')[1]):0,
+                    ts:new Date(p.result.eventTimestamp||Date.now()).getTime(),
+                    type:playEvent
+                  });
+                }
+              });
+            }
+          });
+          inningNum++;
+        });
+      }
+    }
+  });
+  demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
+  demoPlayIdx=0;
+}
+
+function pollDemoFeeds() {
+  if(!demoMode||demoPlayIdx>=demoPlayQueue.length){
+    if(demoPlayIdx>=demoPlayQueue.length) renderDemoEndScreen();
+    return;
+  }
+  var play=demoPlayQueue[demoPlayIdx];
+  advanceDemoPlay(play);
+  demoPlayIdx++;
+  clearTimeout(demoTimer);
+  demoTimer=setTimeout(pollDemoFeeds,10000);
+}
+
+function advanceDemoPlay(play) {
+  var g=gameStates[play.gamePk];
+  if(!g) return;
+  g.inning=play.inn;
+  g.halfInning=play.half;
+  g.outs=play.outs;
+  g.awayScore=play.awayScore;
+  g.homeScore=play.homeScore;
+  var badge='';
+  if(play.event==='Home Run') badge='HR';
+  else if(play.event==='Double') badge='2B';
+  else if(play.event==='Triple') badge='3B';
+  else if(play.event==='Single') badge='1B';
+  var feedData={
+    playTime:new Date(play.ts),type:play.type,event:play.event,desc:play.desc,
+    badge:badge,scoring:play.scoring,inning:play.inn,half:play.half,outs:play.outs,
+    awayScore:play.awayScore,homeScore:play.homeScore
+  };
+  addFeedItem(play.gamePk,feedData);
+  renderTicker();
+  buildStoryPool();
+  if(play.scoring) playSound('run');
+}
+
+function renderDemoEndScreen() {
+  demoMode=false;
+  clearTimeout(demoTimer);
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  var overlay=document.createElement('div');
+  overlay.className='demo-end-screen';
+  overlay.innerHTML='<div class="demo-end-card"><div class="demo-end-headline">Demo Complete</div>'
+    +'<div class="demo-end-summary">'+demoGamesCache.length+' games &middot; '+demoPlayQueue.length+' plays</div>'
+    +'<div class="demo-end-tagline">Ready for live games? Enable Game Start Alerts in Settings.</div>'
+    +'<button onclick="exitDemo()" style="margin-top:12px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600">Exit Demo</button>'
+    +'</div>';
+  overlay.onclick=function(e){if(e.target===overlay) exitDemo();};
+  document.body.appendChild(overlay);
+  setTimeout(function(){
+    if(document.body.contains(overlay)) exitDemo();
+  },4000);
+}
+
+function exitDemo() {
+  demoMode=false;
+  clearTimeout(demoTimer);
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  var overlay=document.querySelector('.demo-end-screen');
+  if(overlay) overlay.remove();
+  document.body.classList.remove('demo-active');
+  gameStates={};
+  feedItems=[];
+  enabledGames=new Set();
+  storyPool=[];
+  demoPlayQueue=[];
+  demoPlayIdx=0;
+  var main=document.getElementById('main');
+  if(main) main.style.display='block';
+  var feedWrap=document.getElementById('feedWrap');
+  if(feedWrap) feedWrap.style.display='none';
+  updateFeedEmpty();
 }
 
 function renderTicker() {
@@ -2317,7 +2518,7 @@ function renderEmptyState() {
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    +'<div class="empty-hype-block"><button class="demo-cta" onclick="initDemo()">▶ Try Demo</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
@@ -2624,6 +2825,7 @@ function switchTeam(teamId){
 }
 
 function showSection(id,btn){
+  if(demoMode)exitDemo();
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
