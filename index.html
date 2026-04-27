@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.4</title>
+<title>MLB Tracker v2.27.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.5</div>
       </div>
     </div>
   </div>
@@ -1434,23 +1434,26 @@ async function initDemo() {
 
 async function loadDemoGames() {
   try{
-    var d=new Date();d.setDate(d.getDate()-1);
-    var dateStr=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
-    console.log('Demo: Fetching games from',dateStr);
-    var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1');
-    if(!r.ok){
-      console.warn('Demo: API returned',r.status,r.statusText);
-      return [];
+    for(var dayOffset=1;dayOffset<=7;dayOffset++){
+      var d=new Date();d.setDate(d.getDate()-dayOffset);
+      var dateStr=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
+      console.log('Demo: Fetching games from',dateStr);
+      var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1');
+      if(!r.ok) continue;
+      var data=await r.json();
+      var allGames=data.games||[];
+      console.log('Demo: Found',allGames.length,'total games on',dateStr);
+      var games=allGames.filter(function(g){return g.status.abstractGameState==='Final';});
+      if(games.length>0){
+        console.log('Demo: Loaded',games.length,'Final games from',dateStr);
+        demoGamesCache=games.map(function(g){
+          return{gamePk:g.gamePk,gameDateTime:g.gameDateTime,awayTeam:{id:g.teams.away.team.id,name:g.teams.away.name,shortName:g.teams.away.shortName},homeTeam:{id:g.teams.home.team.id,name:g.teams.home.name,shortName:g.teams.home.shortName},venue:g.venue||'',gameDetails:g};
+        });
+        return demoGamesCache;
+      }
     }
-    var data=await r.json();
-    var allGames=data.games||[];
-    console.log('Demo: API returned',allGames.length,'total games');
-    var games=allGames.filter(function(g){return g.status.abstractGameState==='Final';});
-    console.log('Demo: Found',games.length,'Final games');
-    demoGamesCache=games.map(function(g){
-      return{gamePk:g.gamePk,gameDateTime:g.gameDateTime,awayTeam:{id:g.teams.away.team.id,name:g.teams.away.name,shortName:g.teams.away.shortName},homeTeam:{id:g.teams.home.team.id,name:g.teams.home.name,shortName:g.teams.home.shortName},venue:g.venue||'',gameDetails:g};
-    });
-    return demoGamesCache;
+    console.warn('Demo: No Final games found in past 7 days');
+    return [];
   }catch(e){
     console.error('Demo: loadDemoGames error',e.message);
     return [];
