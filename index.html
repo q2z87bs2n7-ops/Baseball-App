@@ -439,13 +439,15 @@
 
 #sideRail { display: none; width: 320px; flex-shrink: 0; overflow-y: auto; padding-left: 8px; }
 #sideRailGames { margin-bottom: 24px; }
-.side-rail-section-header { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; margin-bottom: 10px; }
+.side-rail-section-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 10px 10px 0 0; border-bottom: none; margin-bottom: 0; }
 .side-rail-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .game-count { font-size: 12px; font-weight: 700; color: var(--accent); }
-.side-rail-game { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: transparent; cursor: pointer; transition: background 0.15s; margin-bottom: 4px; border-radius: 4px; font-size: 12px; }
-.side-rail-game:hover { background: rgba(255,255,255,0.03); }
+.side-rail-games-container { background: var(--card); border: 1px solid var(--border); border-radius: 0 0 10px 10px; overflow: hidden; margin-bottom: 12px; }
+.side-rail-game { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: transparent; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; }
+.side-rail-game:last-child { border-bottom: none; }
+.side-rail-game:hover { background: rgba(255,255,255,0.06); }
 .side-rail-game-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-.side-rail-game-time-badge { font-weight: 700; color: #FFC425; min-width: 60px; }
+.side-rail-game-time-badge { font-weight: 700; color: var(--accent); min-width: 60px; }
 .side-rail-game-score-badge { font-weight: 700; color: var(--text); min-width: 48px; }
 .side-rail-game-abbr { font-weight: 600; color: var(--text); min-width: 28px; }
 .side-rail-game-vs { color: var(--muted); font-size: 10px; flex-shrink: 0; }
@@ -1415,6 +1417,7 @@ function renderSideRailGames() {
   completedGames.sort(function(a,b){return (b.gameDateMs||0)-(a.gameDateMs||0);});
   if (upcomingGames.length) {
     upcomingHtml+='<div class="side-rail-section-header"><span class="side-rail-section-title">Upcoming Today</span><span class="game-count">'+upcomingGames.length+'</span></div>';
+    upcomingHtml+='<div class="side-rail-games-container">';
     upcomingGames.forEach(function(g) {
       var time=g.gameTime||'TBD';
       upcomingHtml+='<div class="side-rail-game" onclick="showLiveGame('+g.gamePk+')">'
@@ -1426,9 +1429,11 @@ function renderSideRailGames() {
         +'<span class="side-rail-game-abbr">'+g.homeAbbr+'</span>'
         +'</div>';
     });
+    upcomingHtml+='</div>';
   }
   if (completedGames.length) {
-    completedHtml+='<div class="side-rail-section-header" style="margin-top:20px;"><span class="side-rail-section-title">Completed</span><span class="game-count">'+completedGames.length+'</span></div>';
+    completedHtml+='<div class="side-rail-section-header"><span class="side-rail-section-title">Completed</span><span class="game-count">'+completedGames.length+'</span></div>';
+    completedHtml+='<div class="side-rail-games-container">';
     completedGames.forEach(function(g) {
       var isPostponed=g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended';
       var scoreStr=isPostponed?'PPD':g.awayScore+'-'+g.homeScore;
@@ -1441,9 +1446,10 @@ function renderSideRailGames() {
         +'<span class="side-rail-game-abbr">'+g.homeAbbr+'</span>'
         +'</div>';
     });
+    completedHtml+='</div>';
   }
   var gamesHtml=upcomingHtml+completedHtml;
-  if (!gamesHtml) gamesHtml='<div style="color:var(--muted);font-size:12px;padding:8px;text-align:center;">No games today</div>';
+  if (!gamesHtml) gamesHtml='<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center;">No games today</div>';
   document.getElementById('sideRailGames').innerHTML=gamesHtml;
 }
 
