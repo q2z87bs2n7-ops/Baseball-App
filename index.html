@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.22</title>
+<title>MLB Tracker v2.23</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -679,7 +679,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.22</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.23</div>
       </div>
     </div>
   </div>
@@ -2282,6 +2282,12 @@ function updateFeedEmpty() {
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
   if (!hasVisible) renderEmptyState();
   document.getElementById('feedEmpty').style.display=hasVisible?'none':'';
+  // Hide all Pulse UI elements when no live games
+  var hideWhenEmpty=['storyCarousel','gameTicker','mockBar','pulseFeedHeader','sideRailNews'];
+  hideWhenEmpty.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display=hasVisible?'':'none';
+  });
 }
 
 function renderEmptyState() {
