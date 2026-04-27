@@ -172,6 +172,7 @@
   .back-btn:hover{border-color:var(--accent);color:var(--accent)}
   @media(min-width:1025px) {
     #pulse { display: grid; grid-template-columns: 700px 320px; gap: 12px; }
+    #pulse:has(> #sideRail[style*="display: none"]) { grid-template-columns: 1fr; }
     #sideRail { display: block !important; }
     #sideRailGames { margin-top: 0; }
   }
