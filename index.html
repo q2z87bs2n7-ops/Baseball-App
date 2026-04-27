@@ -1478,11 +1478,15 @@ async function flattenDemoPlays(games) {
             if(evt==='Home Run') playEvent='homerun';
             if(['Single','Double','Triple'].indexOf(evt)>-1) playEvent='hit';
             if(p.about&&p.about.inning&&p.about.halfInning){
+              var awayRuns=0,homeRuns=0;
+              if(p.liveData&&p.liveData.linescore&&p.liveData.linescore.teams){
+                awayRuns=p.liveData.linescore.teams.away&&p.liveData.linescore.teams.away.runs?p.liveData.linescore.teams.away.runs:0;
+                homeRuns=p.liveData.linescore.teams.home&&p.liveData.linescore.teams.home.runs?p.liveData.linescore.teams.home.runs:0;
+              }
               demoPlayQueue.push({
                 gamePk:g.gamePk,event:evt,desc:desc,scoring:scorer,
-                inn:p.about.inning,half:p.about.halfInning.substring(0,3),outs:p.count?p.count.outs:0,
-                awayScore:p.liveData&&p.liveData.linescore?p.liveData.linescore.teams.away.runs:0,
-                homeScore:p.liveData&&p.liveData.linescore?p.liveData.linescore.teams.home.runs:0,
+                inn:p.about.inning,half:(p.about.halfInning||'top').toLowerCase(),outs:p.count?p.count.outs:0,
+                awayScore:awayRuns,homeScore:homeRuns,
                 ts:p.about&&p.about.endTime?new Date(p.about.endTime).getTime():Date.now(),
                 type:playEvent
               });
