@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.23.5</title>
+<title>MLB Tracker v2.23.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -173,7 +173,7 @@
   @media(min-width:1025px) {
     #pulse { display: grid; grid-template-columns: 700px 320px; gap: 12px; }
     #pulse.pulse-empty { grid-template-columns: 1fr; }
-    #pulse.pulse-empty #sideRail { display: none; }
+    #pulse.pulse-empty #sideRail { display: none !important; }
     #sideRail { display: block !important; }
     #sideRailGames { margin-top: 0; }
   }
@@ -681,7 +681,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.23.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.23.6</div>
       </div>
     </div>
   </div>
