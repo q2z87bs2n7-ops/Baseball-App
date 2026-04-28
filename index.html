@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.26.e</title>
+<title>MLB Tracker v2.26.f</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -682,7 +682,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.e</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.f</div>
       </div>
     </div>
   </div>
@@ -2735,10 +2735,15 @@ function renderNextGame(g,label){
 
 async function loadTodayGame(){
   var now=new Date(),today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var yesterday=new Date(now.getTime()-86400000),yesterdayStr=yesterday.getFullYear()+'-'+String(yesterday.getMonth()+1).padStart(2,'0')+'-'+String(yesterday.getDate()).padStart(2,'0');
   document.getElementById('todayGame').innerHTML='<div class="loading">Loading next game...</div>';
   try{
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+today+'&teamId='+activeTeam.id+'&hydrate=linescore,team,seriesStatus,gameInfo');
-    var d=await r.json(),todayGames=(d.dates&&d.dates[0]&&d.dates[0].games)?d.dates[0].games:[];
+    var r=await Promise.all([
+      fetch(MLB_BASE+'/schedule?sportId=1&date='+yesterdayStr+'&teamId='+activeTeam.id+'&hydrate=linescore,team,seriesStatus,gameInfo'),
+      fetch(MLB_BASE+'/schedule?sportId=1&date='+today+'&teamId='+activeTeam.id+'&hydrate=linescore,team,seriesStatus,gameInfo')
+    ]);
+    var d1=await r[0].json(),d2=await r[1].json();
+    var todayGames=((d1.dates&&d1.dates[0]&&d1.dates[0].games)?d1.dates[0].games:[]).concat((d2.dates&&d2.dates[0]&&d2.dates[0].games)?d2.dates[0].games:[]);
     var liveGame=todayGames.find(function(g){return g.status.abstractGameState==='Live'&&g.status.detailedState!=='Warmup'&&g.status.detailedState!=='Pre-Game';});
     var upcomingToday=todayGames.find(function(g){return g.status.abstractGameState==='Preview'||g.status.abstractGameState==='Scheduled'||(g.status.abstractGameState==='Live'&&(g.status.detailedState==='Warmup'||g.status.detailedState==='Pre-Game'));});
     var gameToRender=liveGame||upcomingToday;
