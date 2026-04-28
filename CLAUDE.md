@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.26 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines; v2.9.1 adds big-inning HIGHLIGHT badge + crimson card background, HR description patch on stale first-delivery, player card +1 fix via desc hint; v2.9.2 consolidates daily leader stories to one-per-stat with MLB top-5 ranked list and expands stats to HR/AVG/RBI/SB/Wins/Saves; v2.10 Pulse UI polish: distinct HR colors — teal for Story Carousel tier-1 cards, violet for feed play items; ⚡ Pulse section banner (no hairline rule); feedWrap contained-module border; v2.11 walk-off story fires on game state alone (bottom 9th+, tied/1-run, no runner requirement); per-inning ID + 5-min cooldown prevents repeated firing in same inning; v2.12 adds bases loaded story card (tier-1, priority 88, per half-inning), leader card player names match headline size/color; v2.12.1 tightens walk-off detection to winning-run-at-bat logic: fires when deficit ≤ runners-on-base + 1, correctly handles tied/down-1/down-2-with-runners scenarios; v2.12.2 big-inning card sub-line shows "AWAY @ HOME" only, score removed; v2.12.3 story carousel cooldowns dynamically capped to pool size × 1.5 × rotate interval so thin pre-game pools recycle cards in seconds not hours; v2.13 Pulse ticker chip redesign: chips stack teams vertically (away row / home row / inning+outs row) for compact width; out-dot indicators (3 circles, hollow outline → filled red per out) on both normal and RISP chips; live dot changed red → green (#22c55e) to avoid clash; home-row dot-spacer aligns team abbreviations on shared left edge; RISP bottom row now left-aligns diamond + inning + outs together; v2.14 adds stolen base carousel story: 💨 tier-2/priority-55 card for 2B/3B steals, 🏃 tier-1/priority-85 for steal of home; carousel only — stolen base plays intercepted before feed; isHistory guard fires live events only; v2.15 Pulse two-column layout redesign: desktop/iPad landscape only (≥1025px) with ~700px left column (ticker, story carousel, feed) + ~320px right column (side rail games + news carousel); ticker filtered to Live games only (no Preview/Final); side rail unified module with Upcoming/Completed games sections; MLB news carousel via backend proxy (primary) + ESPN JSON fallback; YouTube channel feed proxy added for reliable Media tab video loading; responsive: side rail hidden at ≤1024px, Pulse reverts to single-column centered; v2.16 merged QC fixes from main; v2.17 adds Pulse header redesign (moved "⚡ Pulse" to side rail with "MLB Pulse ⚡" logo branding) and dual-source news fetching with console debug logging; v2.18 fixes Pulse display bug (ID selector specificity override) and adds proxy-rss.js serverless function for MLB RSS feed parsing (supports general feed + all 30 team-specific feeds, bypasses CORS); v2.19 fixes MLB RSS proxy fallback (changed data.videos → data.articles for correct field mapping); v2.20 corrects news source priority for Pulse side rail (MLB RSS primary via /api/proxy-rss, ESPN JSON fallback); v2.21 redesigns Pulse side rail layout (doubles pulseFeedHeader height with centered 23px icon, swaps news/games module order, extends newsCarousel to 700px width, aligns news top with previous games position via margin-top:70px); v2.22 removes pulseFeedHeader background box (transparent/app-matched) and aligns news photo top with horizontal reference line via reduced margins (margin-top:16px, title margin-bottom:8px); v2.23 empty state refinement: hides ticker, mock bar, header, side rail news when no live games, showing only hype card + upcoming games preview; v2.23.1 keeps storyCarousel visible (displays Probable Pitchers); v2.23.2 hides sideRailGames (hype card is more elegant); v2.23.3 expands Pulse layout to full width when side rail hidden (CSS :has() selector); v2.24 merges CSS change to prod; v2.25 fixes Pulse layout empty state: switches to flexbox approach, adds .pulse-empty class toggle on updateFeedEmpty(), constrains #pulseLeft to max-width 900px with center margin on empty state to prevent full-width stretching while maintaining readable spacing; v2.26 fixes Pulse theming: header stays in user's selected team theme while Pulse content (dark, card, card2, border CSS vars) auto-applies MLB Neutral navy when entering Pulse section, restores to selected theme on exit via applyPulseMLBTheme() function)
+**Current version:** v2.27.38 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines; v2.9.1 adds big-inning HIGHLIGHT badge + crimson card background, HR description patch on stale first-delivery, player card +1 fix via desc hint; v2.9.2 consolidates daily leader stories to one-per-stat with MLB top-5 ranked list and expands stats to HR/AVG/RBI/SB/Wins/Saves; v2.10 Pulse UI polish: distinct HR colors — teal for Story Carousel tier-1 cards, violet for feed play items; ⚡ Pulse section banner (no hairline rule); feedWrap contained-module border; v2.11 walk-off story fires on game state alone (bottom 9th+, tied/1-run, no runner requirement); per-inning ID + 5-min cooldown prevents repeated firing in same inning; v2.12 adds bases loaded story card (tier-1, priority 88, per half-inning), leader card player names match headline size/color; v2.12.1 tightens walk-off detection to winning-run-at-bat logic: fires when deficit ≤ runners-on-base + 1, correctly handles tied/down-1/down-2-with-runners scenarios; v2.12.2 big-inning card sub-line shows "AWAY @ HOME" only, score removed; v2.12.3 story carousel cooldowns dynamically capped to pool size × 1.5 × rotate interval so thin pre-game pools recycle cards in seconds not hours; v2.13 Pulse ticker chip redesign: chips stack teams vertically (away row / home row / inning+outs row) for compact width; out-dot indicators (3 circles, hollow outline → filled red per out) on both normal and RISP chips; live dot changed red → green (#22c55e) to avoid clash; home-row dot-spacer aligns team abbreviations on shared left edge; RISP bottom row now left-aligns diamond + inning + outs together; v2.14 adds stolen base carousel story: 💨 tier-2/priority-55 card for 2B/3B steals, 🏃 tier-1/priority-85 for steal of home; carousel only — stolen base plays intercepted before feed; isHistory guard fires live events only; v2.15 Pulse two-column layout redesign: desktop/iPad landscape only (≥1025px) with ~700px left column (ticker, story carousel, feed) + ~320px right column (side rail games + news carousel); ticker filtered to Live games only (no Preview/Final); side rail unified module with Upcoming/Completed games sections; MLB news carousel via backend proxy (primary) + ESPN JSON fallback; YouTube channel feed proxy added for reliable Media tab video loading; responsive: side rail hidden at ≤1024px, Pulse reverts to single-column centered; v2.16 merged QC fixes from main; v2.17 adds Pulse header redesign (moved "⚡ Pulse" to side rail with "MLB Pulse ⚡" logo branding) and dual-source news fetching with console debug logging; v2.18 fixes Pulse display bug (ID selector specificity override) and adds proxy-rss.js serverless function for MLB RSS feed parsing (supports general feed + all 30 team-specific feeds, bypasses CORS); v2.19 fixes MLB RSS proxy fallback (changed data.videos → data.articles for correct field mapping); v2.20 corrects news source priority for Pulse side rail (MLB RSS primary via /api/proxy-rss, ESPN JSON fallback); v2.21 redesigns Pulse side rail layout (doubles pulseFeedHeader height with centered 23px icon, swaps news/games module order, extends newsCarousel to 700px width, aligns news top with previous games position via margin-top:70px); v2.22 removes pulseFeedHeader background box (transparent/app-matched) and aligns news photo top with horizontal reference line via reduced margins (margin-top:16px, title margin-bottom:8px); v2.23 empty state refinement: hides ticker, mock bar, header, side rail news when no live games, showing only hype card + upcoming games preview; v2.23.1 keeps storyCarousel visible (displays Probable Pitchers); v2.23.2 hides sideRailGames (hype card is more elegant); v2.23.3 expands Pulse layout to full width when side rail hidden (CSS :has() selector); v2.24 merges CSS change to prod; v2.25 fixes Pulse layout empty state: switches to flexbox approach, adds .pulse-empty class toggle on updateFeedEmpty(), constrains #pulseLeft to max-width 900px with center margin on empty state to prevent full-width stretching while maintaining readable spacing; v2.26 fixes Pulse theming: header stays in user's selected team theme while Pulse content (dark, card, card2, border CSS vars) auto-applies MLB Neutral navy when entering Pulse section, restores to selected theme on exit via applyPulseMLBTheme() function; v2.27 adds Demo Mode: full-day static JSON snapshot (562K daily-events.json with 8 games, 619 plays) loads without API calls, temporal carousel filtering prevents future stories from appearing before replay reaches them, playback speeds 1x/10x/25x/200x, HR player cards and scoring alerts fire during playback, Try Demo button in both Pulse empty state and Settings)
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -652,6 +652,105 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `playSound(type)` | Checks `soundSettings.master && soundSettings[type]`, calls appropriate `playXxxSound()` |
 | `_makeCtx()` / `_closeCtx()` / `_osc()` / `_ns()` | Web Audio primitives — shared by all Pulse sound functions |
 | `genStolenBaseStories()` | Generates 💨/🏃 carousel story cards from `stolenBaseEvents[]`; tier-1 for steal of home (priority 85), tier-2 for 2B/3B steals (priority 55); one story per steal event (stable `sb_{gamePk}_{atBatIndex}` ID); never adds to feed |
+
+---
+
+## 📽️ Demo Mode (added v2.27)
+
+Self-contained replay of a full MLB day (April 27-28, 2026) from static `daily-events.json` snapshot. **No API calls required** — works offline once loaded.
+
+### How It Works
+
+**Data Source:** `daily-events.json` (562KB)
+- 23 total games (8 with full play-by-play data)
+- 619 plays spanning April 27 10:09 PM through April 28 5:34 AM
+- Pre-computed caches: dailyLeadersCache, onThisDayCache, yesterdayCache, hrBatterStatsCache, probablePitcherStatsCache, dailyHitsTracker, dailyPitcherKs, storyCarouselRawGameData, stolenBaseEvents, scheduleData
+- Format: `{gameStates, feedItems, ...caches}` — direct snapshot from live Pulse export
+
+**Starting Demo:**
+- Click **"▶ Try Demo"** button in Pulse empty state (top-right hype block) or Settings menu
+- `initDemo()` loads `daily-events.json` via `fetch()`
+- Resets all games to `Preview` status for chronological replay
+- Sets `demoCurrentTime` to first play's timestamp (22:09:51, CLE vs TB game start)
+- Populates `demoPlayQueue` from `feedItems`, sorted oldest-first
+- Alert shows "8 games · 619 plays queued"
+- **Playback begins immediately** at first play timestamp
+
+### Playback Mechanics
+
+**Speed Controls** (in mock bar when demo is active):
+- **1x** — 10 seconds per play (real-time simulation)
+- **10x** — 1 second per play
+- **25x** — 400ms per play
+- **200x** — 50ms per play (rapid skip-through)
+
+**Pause/Resume:** ⏸ Pause button stops playback; ▶ Resume continues from current play
+
+**Forward ▶:** Advance one play manually (useful when paused)
+
+**Flow:**
+1. `pollDemoFeeds()` loops through `demoPlayQueue` at `demoSpeedMs` interval
+2. Each tick calls `advanceDemoPlay(play)`:
+   - Updates `demoCurrentTime` to play's timestamp
+   - Updates game state (inning, score, runners)
+   - Fires **HR player cards** with stats and count-up animation
+   - Fires **scoring play alerts** (🟢 toast with team colors)
+   - Plays audio cues (drum roll for HR, bell for run, etc.)
+   - Adds item to `feedItems` via `addFeedItem()`
+   - Triggers `renderTicker()` (game chip updates)
+   - Calls `buildStoryPool()` to refresh carousel
+3. Loop continues until all plays exhausted, then shows "Demo Complete" overlay
+
+### Carousel Temporal Filtering
+
+Story generators (genHRStories, genBigInning, etc.) **filter by timestamp** — only stories where `item.ts.getTime() <= demoCurrentTime` are shown. This prevents future events from appearing before they're "played":
+
+```javascript
+// In genHRStories, genBigInning, etc.
+if(demoMode&&item.ts.getTime()>demoCurrentTime) return;  // skip future items
+```
+
+**As demo plays advance:**
+- demoCurrentTime advances per play
+- Story generators see one more chunk of feedItems
+- New HR and big-inning cards appear naturally
+- Historical stories ("On This Day", "Yesterday Highlights", "Probable Pitchers") visible from start
+
+**Known Limitation:** Carousel may show some contextual stories early (probable pitchers for all 23 games, daily leaders, etc.) while real-time stories (HR, big inning, walk-off) wait for plays to be reached. [Backlog: improve carousel pooling algorithm]
+
+### Key Functions
+
+| Function | Purpose |
+|---|---|
+| `loadDailyEventsJSON()` | Async fetch + parse `./daily-events.json`, convert timestamp strings to Date objects |
+| `initDemo()` | Reset state, load JSON, build demoPlayQueue, render UI, start playback |
+| `pollDemoFeeds()` | Main playback loop — advance one play per `demoSpeedMs` interval |
+| `advanceDemoPlay(play)` | Apply play to gameState, fire alerts/sounds, update feed, rebuild carousel |
+| `setDemoSpeed(ms, btn)` | Update `demoSpeedMs`, highlight speed button |
+| `toggleDemoPause()` | Pause/resume playback, update button text |
+| `renderDemoEndScreen()` | Show "Demo Complete" overlay, auto-dismiss after 4s |
+| `exitDemo()` | Clear demo state, reset UI, return to live mode (if desired) |
+
+### Demo Globals
+
+```javascript
+let demoMode = false              // true when demo active
+let demoDate = null               // earliest game date from JSON
+let demoCurrentTime = 0           // current replay timestamp (milliseconds)
+let demoPlayQueue = []            // plays sorted by timestamp
+let demoPlayIdx = 0               // current play index in queue
+let demoTimer = null              // setTimeout handle for playback loop
+let demoSpeedMs = 10000           // milliseconds per play advance (1x = 10000ms)
+let demoPaused = false            // pause/resume state
+```
+
+### Files Involved
+
+| File | Role |
+|---|---|
+| `daily-events.json` | Static snapshot (8 games, 619 plays, all caches) — **dev branch only, do not push to main** |
+| `index.html` | All demo code: loadDailyEventsJSON, initDemo, pollDemoFeeds, advanceDemoPlay, UI controls |
+| `sw.js` | Cache versioning for PWA update |
 
 ---
 
