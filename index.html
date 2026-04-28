@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.37</title>
+<title>MLB Tracker v2.27.38</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -413,6 +413,8 @@
 .upcoming-foot-time { font-size: 20px; font-weight: 800; color: #ffffff; }
 .upcoming-foot-countdown { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.55); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 3px; }
 .upcoming-foot-venue { font-size: 11px; color: rgba(255,255,255,0.45); text-align: right; }
+.demo-cta { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.2s; }
+.demo-cta:hover { color: var(--text); }
 .upcoming-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .demo-active .empty-hype-block { position: relative; }
 .demo-active #main { display: none !important; }
@@ -694,7 +696,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.37</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.38</div>
       </div>
     </div>
   </div>
@@ -2773,7 +2775,7 @@ function renderEmptyState() {
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    +'<div class="empty-hype-block"><button class="demo-cta" onclick="initDemo()">▶ Try Demo</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
