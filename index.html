@@ -1527,8 +1527,12 @@ async function initDemo() {
   storyCarouselRawGameData=jsonData.storyCarouselRawGameData||{};
   stolenBaseEvents=jsonData.stolenBaseEvents||[];
   scheduleData=jsonData.scheduleData||[];
-  if(jsonData.metadata&&jsonData.metadata.exportedAt){
-    demoDate=new Date(jsonData.metadata.exportedAt);
+  if(jsonData.gameStates){
+    var earliestMs=Infinity;
+    Object.values(jsonData.gameStates).forEach(function(g){
+      if(g.gameDateMs&&g.gameDateMs<earliestMs) earliestMs=g.gameDateMs;
+    });
+    if(earliestMs!==Infinity) demoDate=new Date(earliestMs);
   }
   feedItems.forEach(function(item){
     if(item.playTime&&typeof item.playTime==='string') item.playTime=new Date(item.playTime);
