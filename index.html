@@ -1522,6 +1522,14 @@ async function initDemo() {
   Object.values(gameStates).forEach(function(g){
     g.status='Preview';
     g.detailedState='Scheduled';
+    g.inning=0;
+    g.halfInning=null;
+    g.outs=0;
+    g.awayScore=0;
+    g.homeScore=0;
+    g.onFirst=false;
+    g.onSecond=false;
+    g.onThird=false;
   });
   feedItems=(jsonData.feedItems||[]).map(function(item){
     var ts=item.ts||item.playTime;
