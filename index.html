@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.26.i</title>
+<title>MLB Tracker v2.26.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -594,6 +594,12 @@
   100% { transform:scale(1);    color:#ffaa30; }
 }
 .pc-stat-val.counting { animation:hr-count-up 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+.pc-stat.pc-rbi-highlight .pc-stat-val { color:#34d399; }
+@keyframes rbi-count-up { 0%{transform:scale(1);color:#34d399;} 35%{transform:scale(1.55);color:#fff;} 65%{transform:scale(1.15);} 100%{transform:scale(1);color:#34d399;} }
+.pc-stat.pc-rbi-highlight .pc-stat-val.counting { animation:rbi-count-up 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+.pc-event-badge.pc-rbi-badge { background:rgba(52,211,153,0.15); border-color:rgba(52,211,153,0.40); color:#34d399; animation:rbi-glow 2s ease-in-out infinite; }
+@keyframes rbi-glow { 0%,100%{box-shadow:0 0 4px rgba(52,211,153,0.3);} 50%{box-shadow:0 0 12px rgba(52,211,153,0.6);} }
+.pc-context-pill.pc-rbi-pill { background:rgba(52,211,153,0.12); border-color:rgba(52,211,153,0.30); color:#34d399; }
 .pc-context { padding:8px 14px 4px; text-align:center; }
 .pc-context-pill {
   display:inline-block; background:rgba(255,155,30,0.12); border:1px solid rgba(255,155,30,0.30);
@@ -682,7 +688,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.i</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.1</div>
       </div>
     </div>
   </div>
@@ -960,6 +966,7 @@ let newsFeedMode='mlb';
 // ── League Pulse globals ──────────────────────────────────────────────────────
 const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
 let pulseMockMode=false,pulseInitialized=false;
+let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
 let mockPlayPtrs={},mockGameQueue=[],mockTimerId=null;
 let mockSpeedMs=6000,totalMockPlays=0,playedMockPlays=0;
@@ -1351,7 +1358,7 @@ async function pollGamePlays(gamePk) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
         if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc);}
-        else if (isScoringP){if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});playSound('run');}
+        else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=90000;if(_rbi>0&&_rs>=30&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
@@ -2514,6 +2521,104 @@ function dismissPlayerCard() {
   if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
   overlay.classList.add('closing');
   setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, 280);
+}
+
+// ── Key RBI card helpers ──────────────────────────────────────────────────────
+function calcRBICardScore(rbi, event, aScore, hScore, inning, halfInning) {
+  if (!rbi || rbi < 1) return 0;
+  var base = rbi === 1 ? 10 : rbi === 2 ? 25 : rbi === 3 ? 40 : 55;
+  var hitMult = event === 'Double' ? 1.5 : event === 'Triple' ? 2.0 :
+    (['Sac Fly','Sac Bunt','Walk','Hit By Pitch','Grounded Into DP','Field\'s Choice'].indexOf(event) !== -1 ? 0.7 : 1.0);
+  var battingAfter = halfInning === 'top' ? aScore : hScore;
+  var fieldingScore = halfInning === 'top' ? hScore : aScore;
+  var battingBefore = battingAfter - rbi;
+  var deficitBefore = fieldingScore - battingBefore; // positive = batting team was behind
+  var marginAfter = battingAfter - fieldingScore;    // positive = batting team now leads
+  var ctx = 0;
+  if (deficitBefore >= 0 && marginAfter > 0) ctx += 30;       // go-ahead
+  else if (deficitBefore > 0 && marginAfter === 0) ctx += 25; // equalizer
+  if (deficitBefore >= 3 && marginAfter >= -1) ctx += 20;     // comeback component
+  if (marginAfter - rbi >= 5) ctx -= 15;                      // was already leading by 5+
+  var innMult = inning <= 3 ? 0.4 : inning <= 6 ? 0.75 : inning <= 8 ? 1.0 : inning === 9 ? 1.4 : 1.6;
+  return (base * hitMult + ctx) * innMult;
+}
+
+function getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter) {
+  var lm = {'Single':'SINGLE','Double':'DOUBLE','Triple':'TRIPLE','Sac Fly':'SAC FLY','Walk':'WALK','Hit By Pitch':'HBP'};
+  var label = lm[event] || null;
+  var goAhead = deficitBefore >= 0 && marginAfter > 0;
+  var equalizer = deficitBefore > 0 && marginAfter === 0;
+  if (goAhead && halfInning === 'bottom' && inning >= 9 && label) return 'WALK-OFF ' + label + '!';
+  if (goAhead && label) return 'GO-AHEAD ' + label + '!';
+  if (equalizer && label) return label + ' TIES IT!';
+  if (rbi >= 2 && label) return rbi + '-RUN ' + label;
+  if (label) return 'RBI ' + label + '!';
+  return 'RBI!';
+}
+
+async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInning, rbi, event, aScore, hScore, inning) {
+  var overlay = document.getElementById('playerCardOverlay');
+  var card    = document.getElementById('playerCard');
+  if (!overlay || !card) return;
+  var battingTeamId = halfInning === 'top' ? awayTeamId : homeTeamId;
+  var teamData  = TEAMS.find(function(t) { return t.id === battingTeamId; }) || {};
+  var awayData  = TEAMS.find(function(t) { return t.id === awayTeamId; })   || {};
+  var homeData  = TEAMS.find(function(t) { return t.id === homeTeamId; })   || {};
+  var teamAbbr  = teamData.short || '???';
+  var awayAbbr  = awayData.short || 'AWY';
+  var homeAbbr  = homeData.short || 'HME';
+  card.innerHTML = '<div class="pc-loading">Loading player card…</div>';
+  overlay.classList.remove('closing');
+  overlay.classList.add('open');
+  var stat = null;
+  var cached = (statsCache.hitting || []).find(function(e) { return e.player && e.player.id === batterId; });
+  if (cached) stat = cached.stat;
+  if (!stat) {
+    try {
+      var r = await fetch(MLB_BASE + '/people/' + batterId + '/stats?stats=season&season=' + SEASON + '&group=hitting');
+      var d = await r.json();
+      stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+    } catch(e) { stat = null; }
+  }
+  var rbiSeason = stat ? (stat.rbi  != null ? stat.rbi  : '—') : '—';
+  var hits      = stat ? (stat.hits != null ? stat.hits : '—') : '—';
+  var avg       = stat ? fmtRate(stat.avg) : '—';
+  var ops       = stat ? fmtRate(stat.ops) : '—';
+  var rbiPrev   = (typeof rbiSeason === 'number' && rbiSeason >= rbi) ? rbiSeason - rbi : rbiSeason;
+  var battingAfter  = halfInning === 'top' ? aScore : hScore;
+  var fieldingScore = halfInning === 'top' ? hScore : aScore;
+  var deficitBefore = fieldingScore - (battingAfter - rbi);
+  var marginAfter   = battingAfter - fieldingScore;
+  var badge    = getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter);
+  var innLabel = (halfInning === 'top' ? '▲' : '▼') + inning;
+  var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
+  card.innerHTML = ''
+    + '<div class="pc-header">'
+    +   '<div class="pc-photo-wrap">'
+    +     '<img src="' + photoUrl + '" alt="' + batterName + '" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=\\\'http://www.w3.org/2000/svg\\\' viewBox=\\\'0 0 72 72\\\'%3E%3Crect width=\\\'72\\\' height=\\\'72\\\' fill=\\\'%23333\\\'/%3E%3Ctext x=\\\'36\\\' y=\\\'44\\\' text-anchor=\\\'middle\\\' font-size=\\\'24\\\' fill=\\\'%23888\\\'%3E%3F%3C/text%3E%3C/svg%3E\'">'
+    +   '</div>'
+    +   '<div class="pc-identity">'
+    +     '<div class="pc-name">' + batterName + '</div>'
+    +     '<div class="pc-team">' + teamAbbr + '</div>'
+    +     '<div class="pc-event-badge pc-rbi-badge">' + badge + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="pc-stats">'
+    +   '<div class="pc-stat"><div class="pc-stat-val">' + avg + '</div><div class="pc-stat-lbl">AVG</div></div>'
+    +   '<div class="pc-stat"><div class="pc-stat-val">' + ops + '</div><div class="pc-stat-lbl">OPS</div></div>'
+    +   '<div class="pc-stat"><div class="pc-stat-val">' + hits + '</div><div class="pc-stat-lbl">H</div></div>'
+    +   '<div class="pc-stat pc-rbi-highlight"><div class="pc-stat-val pc-rbi-val">' + rbiPrev + '</div><div class="pc-stat-lbl">RBI</div></div>'
+    + '</div>'
+    + '<div class="pc-context"><span class="pc-context-pill pc-rbi-pill">' + awayAbbr + ' ' + aScore + ', ' + homeAbbr + ' ' + hScore + ' · ' + innLabel + '</span></div>'
+    + '<div class="pc-dismiss-hint">Tap anywhere to dismiss</div>';
+  if (typeof rbiSeason === 'number' && rbiSeason >= 1) {
+    setTimeout(function() {
+      var el = card.querySelector('.pc-rbi-val');
+      if (el) { el.textContent = rbiSeason; el.classList.add('counting'); }
+    }, 500);
+  }
+  if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
+  window._playerCardTimer = setTimeout(dismissPlayerCard, 5500);
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
