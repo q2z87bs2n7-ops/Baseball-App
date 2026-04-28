@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.26.c</title>
+<title>MLB Tracker v2.26.d</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -682,7 +682,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.c</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.d</div>
       </div>
     </div>
   </div>
@@ -1216,7 +1216,7 @@ async function pollLeaguePulse() {
       fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher')
     ]);
     var d1=await r[0].json(), d2=await r[1].json();
-    var games=((d1.dates||[]).flatMap(function(dt){return dt.games||[];}))).concat((d2.dates||[]).flatMap(function(dt){return dt.games||[];}));
+    var games=(d1.dates||[]).flatMap(function(dt){return dt.games||[];}).concat((d2.dates||[]).flatMap(function(dt){return dt.games||[];}));
     storyCarouselRawGameData={};
     games.forEach(function(g){storyCarouselRawGameData[g.gamePk]=g;});
     var pendingFinalItems={};
