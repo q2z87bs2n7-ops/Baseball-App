@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.21</title>
+<title>MLB Tracker v2.27.22</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.21</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.22</div>
       </div>
     </div>
   </div>
@@ -2260,7 +2260,7 @@ function genYesterdayHighlights(){
 }
 
 async function fetchMissingHRBatterStats(){
-  if(demoMode) return;
+  if(demoMode){console.log('Demo: Skipping fetchMissingHRBatterStats API call');return;}
   var ids=[];
   feedItems.forEach(function(item){
     if(!item.data||item.data.event!=='Home Run') return;
@@ -2280,7 +2280,7 @@ async function fetchMissingHRBatterStats(){
 }
 
 async function loadProbablePitcherStats(){
-  if(demoMode) return;
+  if(demoMode){console.log('Demo: Skipping loadProbablePitcherStats API call');return;}
   var ids=[];
   Object.values(storyCarouselRawGameData).forEach(function(raw){
     var awayPP=raw.teams&&raw.teams.away&&raw.teams.away.probablePitcher;
@@ -2592,7 +2592,7 @@ async function loadYesterdayCache(){
 }
 
 async function loadDailyLeaders(){
-  if(demoMode) return;
+  if(demoMode){console.log('Demo: Skipping loadDailyLeaders API call');return;}
   try{
     var rH=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=homeRuns,battingAverage,rbi,stolenBases&season='+SEASON+'&statGroup=hitting&limit=5');
     var dH=await rH.json();
