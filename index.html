@@ -585,7 +585,7 @@
 #playerCardOverlay.open { display:flex; }
 #playerCardOverlay.closing #playerCard { animation:card-out 0.28s ease-out forwards; }
 #playerCard {
-  width:min(310px, calc(100vw - 32px)); aspect-ratio:2.5/3.7; overflow:hidden;
+  width:min(310px, calc(100vw - 32px)); aspect-ratio:2.5/4.3; overflow:hidden;
   animation:card-in 0.35s cubic-bezier(0.34,1.32,0.64,1);
   box-shadow:0 25px 70px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08);
   position:relative; cursor:pointer; border-radius:14px; display:flex; flex-direction:column;
@@ -698,7 +698,7 @@
 }
 .pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; background:var(--card); }
 @media (max-width:480px) {
-  #playerCard { width:calc(100vw - 32px); aspect-ratio:2.5/3.7; }
+  #playerCard { width:calc(100vw - 32px); aspect-ratio:2.5/4.3; }
   .pc-name { font-size:1rem; }
   .pc-team-pos { font-size:.63rem; }
   .pc-stat-val { font-size:.9rem; }
