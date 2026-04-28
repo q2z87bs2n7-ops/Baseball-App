@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.28.1</title>
+<title>MLB Tracker v2.28.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -41,7 +41,7 @@
   .loading{color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center}
   .sub-kicker{font-size:.68rem;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
   .error{color:#ff6b6b;font-size:.85rem;padding:10px}
-  .game-big{border-radius:14px;padding:24px;text-align:center;min-height:224px;display:flex;flex-direction:column;justify-content:center}
+  .game-big{border-radius:14px;padding:24px;text-align:center;min-height:224px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center}
   .card-cap{width:56px;height:56px;flex-shrink:0;object-fit:contain}
   .matchup-cap{width:28px;height:28px;object-fit:contain;display:block;margin:0 auto 2px;filter:drop-shadow(0 0 3px rgba(255,255,255,.4))}
   .series-ghost{position:absolute;right:-60px;bottom:-60px;width:300px;height:300px;opacity:.12;pointer-events:none;object-fit:contain}
@@ -702,7 +702,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.28.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.28.2</div>
       </div>
     </div>
   </div>
