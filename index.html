@@ -993,7 +993,7 @@ let hrBatterStatsCache={};
 const STORY_ROTATE_MS=10000;
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
-let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0;
+let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null;
 const DEMO_BACKUP_GAMES=[];  // Hardcoded real games as fallback when API unavailable
 // TO POPULATE: Use exportPulseStateAsSnapshot() while Pulse is running with live games,
 // then extract games from the snapshot and paste here with structure:
@@ -1215,7 +1215,7 @@ function updateMockProgress(){document.getElementById('mockProgress').textConten
 
 function initReal() {
   document.getElementById('mockBar').style.display='none';
-  pollDateStr=localDateStr(new Date());
+  pollDateStr=localDateStr(getEffectiveDate());
   loadOnThisDayCache(); loadYesterdayCache();
   if(newsRotateTimer){clearTimeout(newsRotateTimer);newsRotateTimer=null;}
   fetchMLBNewsFeed();
@@ -1229,7 +1229,7 @@ function initReal() {
 
 async function pollLeaguePulse() {
   var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live';});
-  if (!hasLive) pollDateStr=localDateStr(new Date());
+  if (!hasLive) pollDateStr=localDateStr(getEffectiveDate());
   var dateStr=pollDateStr;
   try {
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
@@ -1460,6 +1460,10 @@ async function loadDailyEventsJSON(){
   }
 }
 
+function getEffectiveDate(){
+  return demoMode&&demoDate?demoDate:new Date();
+}
+
 async function initDemo() {
   demoMode=true;
   pulseMockMode=false;
@@ -1523,6 +1527,9 @@ async function initDemo() {
   storyCarouselRawGameData=jsonData.storyCarouselRawGameData||{};
   stolenBaseEvents=jsonData.stolenBaseEvents||[];
   scheduleData=jsonData.scheduleData||[];
+  if(jsonData.metadata&&jsonData.metadata.exportedAt){
+    demoDate=new Date(jsonData.metadata.exportedAt);
+  }
   feedItems.forEach(function(item){
     if(item.playTime&&typeof item.playTime==='string') item.playTime=new Date(item.playTime);
   });
@@ -2171,7 +2178,7 @@ function genStreakStories(){
 }
 
 function genMultiHitDay(){
-  var out=[], dateStr=localDateStr(new Date());
+  var out=[], dateStr=localDateStr(getEffectiveDate());
   Object.keys(dailyHitsTracker).forEach(function(batterId){
     var entry=dailyHitsTracker[batterId];
     if(entry.hits<3&&!(entry.hits>=2&&entry.hrs>=1)) return;
@@ -2195,7 +2202,7 @@ function genDailyLeaders(){
     {key:'wins',           label:'Pitching Wins Leaders', icon:'🏆', fmtVal:null},
     {key:'saves',          label:'Pitching Saves Leaders',icon:'🛡️', fmtVal:null},
   ];
-  var today=localDateStr(new Date());
+  var today=localDateStr(getEffectiveDate());
   cats.forEach(function(cat){
     var list=dailyLeadersCache[cat.key];
     if(!list||!list.length) return;
@@ -2278,7 +2285,7 @@ async function loadProbablePitcherStats(){
 }
 
 function genProbablePitchers(){
-  var out=[], today=localDateStr(new Date());
+  var out=[], today=localDateStr(getEffectiveDate());
   var games=[];
 
   // Try to find today's games from gameStates (already fetched with probablePitcher by pollLeaguePulse)
