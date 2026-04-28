@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.31.1</title>
+<title>MLB Tracker v2.31.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -596,7 +596,7 @@
 }
 /* Photo background layer (full-bleed, fills most of card) */
 .pc-photo-bg {
-  position:absolute; top:0; left:0; right:0; bottom:125px;
+  position:absolute; top:0; left:0; right:0; bottom:110px;
   background-size:cover; background-position:center center;
   background-color:var(--card2); z-index:1;
 }
@@ -643,7 +643,7 @@
 .pc-stats {
   display:grid; grid-template-columns:repeat(2,1fr); gap:0;
   background:var(--card); border-bottom:none; border-top:1px solid var(--border);
-  position:absolute; bottom:0; left:0; right:0; z-index:6; height:60px;
+  position:absolute; bottom:0; left:0; right:0; z-index:6; height:75px;
 }
 .pc-stat {
   padding:8px 6px; text-align:center; border-right:1px solid var(--border);
@@ -703,8 +703,8 @@
   .pc-team-pos { font-size:.63rem; }
   .pc-stat-val { font-size:.9rem; }
   .pc-stat-lbl { font-size:.52rem; }
-  .pc-photo-bg { bottom:125px; }
-  .pc-header { bottom:60px; min-height:65px; }
+  .pc-photo-bg { bottom:110px; }
+  .pc-header { bottom:75px; min-height:65px; }
 }
 </style>
 </head>
@@ -786,7 +786,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.31.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.31.2</div>
       </div>
     </div>
   </div>
