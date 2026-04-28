@@ -596,7 +596,7 @@
 }
 /* Photo background layer (full-bleed, fills most of card) */
 .pc-photo-bg {
-  position:absolute; top:0; left:0; right:0; bottom:60px;
+  position:absolute; top:0; left:0; right:0; bottom:110px;
   background-size:cover; background-position:center center;
   background-color:var(--card2); z-index:1;
 }
@@ -607,11 +607,11 @@
 }
 /* Topps-style nameplate bar */
 .pc-header {
-  position:absolute; bottom:0; left:0; right:0; z-index:5;
-  padding:12px 14px 10px;
+  position:absolute; bottom:60px; left:0; right:0; z-index:5;
+  padding:10px 12px;
   background:linear-gradient(to right, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.88) 100%);
-  border-bottom:none; border-top:3px solid var(--primary);
-  display:flex; align-items:flex-start; gap:10px; height:60px;
+  border-bottom:1px solid var(--border); border-top:3px solid var(--primary);
+  display:flex; align-items:flex-start; gap:8px; height:auto; min-height:50px;
 }
 .pc-photo-wrap {
   display:none;
@@ -645,12 +645,12 @@
 }
 .pc-stats {
   display:grid; grid-template-columns:repeat(2,1fr); gap:0;
-  background:var(--card); border-bottom:none;
-  position:absolute; bottom:0; left:0; right:0; z-index:4; max-height:60px;
+  background:var(--card); border-bottom:none; border-top:1px solid var(--border);
+  position:absolute; bottom:0; left:0; right:0; z-index:6; height:60px;
 }
 .pc-stat {
-  padding:8px 8px; text-align:center; border-right:1px solid var(--border);
-  border-top:1px solid var(--border);
+  padding:8px 6px; text-align:center; border-right:1px solid var(--border);
+  display:flex; flex-direction:column; justify-content:center;
 }
 .pc-stat:nth-child(2n) { border-right:none; }
 .pc-stat-val {
@@ -706,8 +706,8 @@
   .pc-jersey { font-size:28px; padding:3px 5px; min-width:32px; }
   .pc-stat-val { font-size:.9rem; }
   .pc-stat-lbl { font-size:.52rem; }
-  .pc-photo-bg { bottom:58px; }
-  .pc-header { height:58px; }
+  .pc-photo-bg { bottom:110px; }
+  .pc-header { bottom:60px; min-height:50px; }
 }
 </style>
 </head>
