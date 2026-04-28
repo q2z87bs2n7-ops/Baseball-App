@@ -3437,7 +3437,14 @@ async function initDemo(){
   Object.keys(gameStates).forEach(function(pk){enabledGames.add(parseInt(pk));});
   demoPlayQueue=[];
   feedItems.forEach(function(item){
-    demoPlayQueue.push({gamePk:item.gamePk,event:item.event,desc:item.desc,type:item.type,ts:item.playTime.getTime()});
+    var ts=item.playTime&&item.playTime.getTime?item.playTime.getTime():(new Date(item.ts)).getTime();
+    var d=item.data||{};
+    demoPlayQueue.push({
+      gamePk:item.gamePk,ts:ts,
+      event:d.event,desc:d.desc,type:d.type||'play',inning:d.inning,halfInning:d.halfInning,outs:d.outs,
+      awayScore:d.awayScore,homeScore:d.homeScore,scoring:d.scoring,risp:d.risp,playClass:d.playClass,
+      playTime:new Date(ts),batterId:d.batterId,batterName:d.batterName,pitcherName:d.pitcherName,distance:d.distance
+    });
   });
   demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
   demoPlayIdx=0;
@@ -3472,9 +3479,10 @@ function advanceDemoPlay(play){
   g.awayScore=play.awayScore;
   g.homeScore=play.homeScore;
   var feedData={
-    playTime:new Date(play.ts),type:play.type||'other',event:play.event,desc:play.desc,
+    playTime:play.playTime,type:play.type||'play',event:play.event,desc:play.desc,
     inning:play.inning,halfInning:play.halfInning,outs:play.outs,
-    awayScore:play.awayScore,homeScore:play.homeScore,gamePk:play.gamePk
+    awayScore:play.awayScore,homeScore:play.homeScore,scoring:play.scoring,risp:play.risp,playClass:play.playClass,
+    batterId:play.batterId,batterName:play.batterName,pitcherName:play.pitcherName,distance:play.distance
   };
   addFeedItem(play.gamePk,feedData);
   renderTicker();
