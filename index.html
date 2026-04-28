@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.27</title>
+<title>MLB Tracker v2.27.28</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.27</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.28</div>
       </div>
     </div>
   </div>
@@ -992,7 +992,7 @@ let hrBatterStatsCache={};
 const STORY_ROTATE_MS=10000;
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
-let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null;
+let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
 const DEMO_BACKUP_GAMES=[];  // Hardcoded real games as fallback when API unavailable
 // TO POPULATE: Use exportPulseStateAsSnapshot() while Pulse is running with live games,
 // then extract games from the snapshot and paste here with structure:
@@ -1523,8 +1523,12 @@ async function initDemo() {
     g.status='Preview';
     g.detailedState='Scheduled';
   });
-  // Start with empty feedItems—carousel will learn as plays are added during demo
-  feedItems=[];
+  feedItems=(jsonData.feedItems||[]).map(function(item){
+    var ts=item.ts||item.playTime;
+    if(ts&&typeof ts==='string') ts=new Date(ts);
+    if(!(ts instanceof Date)) ts=new Date();
+    return {gamePk:item.gamePk,data:item.data,ts:ts};
+  });
     var ts=item.ts||item.playTime;
     if(ts&&typeof ts==='string') ts=new Date(ts);
     if(!(ts instanceof Date)) ts=new Date();
@@ -1690,6 +1694,7 @@ function forwardDemoPlay(){
 }
 
 function advanceDemoPlay(play) {
+  demoCurrentTime=play.ts;
   var g=gameStates[play.gamePk];
   if(!g) return;
   var feedData={playTime:new Date(play.ts)};
@@ -2030,6 +2035,7 @@ function genHRStories(){
   var hrsByBatter={};
   feedItems.forEach(function(item){
     if(!item.data||item.data.event!=='Home Run') return;
+    if(demoMode&&item.ts.getTime()>demoCurrentTime) return;
     var g=gameStates[item.gamePk]; if(!g) return;
     var bid=item.data.batterId||('anon_'+item.gamePk+'_'+item.ts.getTime());
     if(!hrsByBatter[bid]) hrsByBatter[bid]=[];
@@ -2134,6 +2140,7 @@ function genBigInning(){
   var out=[], groups={};
   feedItems.forEach(function(item){
     if(!item.data||item.data.type!=='play'||!item.data.scoring) return;
+    if(demoMode&&item.ts.getTime()>demoCurrentTime) return;
     var key=item.gamePk+'_'+item.data.inning+'_'+item.data.halfInning;
     if(!groups[key]) groups[key]={gamePk:item.gamePk,inning:item.data.inning,half:item.data.halfInning,runs:0,lastItem:item};
     groups[key].runs++;
