@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.11</title>
+<title>MLB Tracker v2.27.12</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.11</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.12</div>
       </div>
     </div>
   </div>
@@ -887,10 +887,17 @@
     </div>
   </div>
   <div id="mockBar" style="display:none">
-    <span class="mock-badge">⚡ Mock</span>
+    <span class="mock-badge" id="mockBarBadge">⚡ Mock</span>
     <span class="mock-bar-label">Speed:</span>
+    <button class="mock-btn" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)" style="display:none">1x</button>
+    <button class="mock-btn" id="demoSpeed2x" onclick="setDemoSpeed(5000,this)" style="display:none">2x</button>
+    <button class="mock-btn" id="demoSpeed5x" onclick="setDemoSpeed(2000,this)" style="display:none">5x</button>
+    <button class="mock-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)" style="display:none">10x</button>
     <button class="mock-btn active" id="btnNormal" onclick="setMockSpeed(6000,this)">Normal</button>
     <button class="mock-btn" id="btnFast" onclick="setMockSpeed(1500,this)">Fast</button>
+    <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()" style="display:none">⏸ Pause</button>
+    <button class="mock-btn" id="demoBackBtn" onclick="backDemoPlay()" style="display:none">◀ Back</button>
+    <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()" style="display:none">Forward ▶</button>
     <button class="mock-btn" id="btnSkip" onclick="skipMockPlay()">Skip ▶</button>
     <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
     <span class="mock-progress" id="mockProgress"></span>
@@ -1468,8 +1475,26 @@ async function initDemo() {
   if(main) main.style.display='none';
   var feedWrap=document.getElementById('feedWrap');
   if(feedWrap) feedWrap.style.display='block';
+  demoSpeedMs=10000;
+  demoPaused=false;
   var mockBar=document.getElementById('mockBar');
-  if(mockBar) mockBar.style.display='none';
+  if(mockBar){
+    mockBar.style.display='block';
+    var badge=document.getElementById('mockBarBadge');
+    if(badge) badge.textContent='📽️ Demo';
+    document.getElementById('btnNormal').style.display='none';
+    document.getElementById('btnFast').style.display='none';
+    document.getElementById('btnSkip').style.display='none';
+    document.getElementById('demoSpeed1x').style.display='';
+    document.getElementById('demoSpeed2x').style.display='';
+    document.getElementById('demoSpeed5x').style.display='';
+    document.getElementById('demoSpeed10x').style.display='';
+    document.getElementById('demoSpeed1x').classList.add('active');
+    document.getElementById('demoPauseBtn').style.display='';
+    document.getElementById('demoBackBtn').style.display='';
+    document.getElementById('demoForwardBtn').style.display='';
+    document.getElementById('demoPauseBtn').textContent='⏸ Pause';
+  }
   gameStates={};
   feedItems=[];
   enabledGames=new Set();
@@ -1600,16 +1625,49 @@ async function buildDemoPlayQueue(games) {
   console.log('Demo: Built queue with',demoPlayQueue.length,'plays (real API data only)');
 }
 
-function pollDemoFeeds() {
-  if(!demoMode||demoPlayIdx>=demoPlayQueue.length){
-    if(demoPlayIdx>=demoPlayQueue.length) renderDemoEndScreen();
+function pollDemoFeeds(){
+  if(!demoMode) return;
+  if(demoPaused){
+    clearTimeout(demoTimer);
+    demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
+    return;
+  }
+  if(demoPlayIdx>=demoPlayQueue.length){
+    renderDemoEndScreen();
     return;
   }
   var play=demoPlayQueue[demoPlayIdx];
   advanceDemoPlay(play);
   demoPlayIdx++;
   clearTimeout(demoTimer);
-  demoTimer=setTimeout(pollDemoFeeds,10000);
+  demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
+}
+
+function setDemoSpeed(ms,btn){
+  demoSpeedMs=ms;
+  if(btn){
+    document.querySelectorAll('#demoSpeed1x,#demoSpeed2x,#demoSpeed5x,#demoSpeed10x').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+}
+
+function toggleDemoPause(){
+  demoPaused=!demoPaused;
+  var btn=document.getElementById('demoPauseBtn');
+  if(btn) btn.textContent=demoPaused?'▶ Resume':'⏸ Pause';
+  if(!demoPaused&&demoMode) pollDemoFeeds();
+}
+
+function backDemoPlay(){
+  if(demoPlayIdx>0) demoPlayIdx--;
+  clearTimeout(demoTimer);
+  if(!demoPaused) pollDemoFeeds();
+}
+
+function forwardDemoPlay(){
+  if(demoPlayIdx<demoPlayQueue.length) demoPlayIdx++;
+  clearTimeout(demoTimer);
+  if(!demoPaused) pollDemoFeeds();
 }
 
 function advanceDemoPlay(play) {
@@ -1656,6 +1714,7 @@ function renderDemoEndScreen() {
 
 function exitDemo() {
   demoMode=false;
+  demoPaused=false;
   clearTimeout(demoTimer);
   if(storyRotateTimer) clearInterval(storyRotateTimer);
   var overlay=document.querySelector('.demo-end-screen');
@@ -1667,6 +1726,22 @@ function exitDemo() {
   storyPool=[];
   demoPlayQueue=[];
   demoPlayIdx=0;
+  var mockBar=document.getElementById('mockBar');
+  if(mockBar){
+    mockBar.style.display='none';
+    document.getElementById('btnNormal').style.display='';
+    document.getElementById('btnFast').style.display='';
+    document.getElementById('btnSkip').style.display='';
+    document.getElementById('demoSpeed1x').style.display='none';
+    document.getElementById('demoSpeed2x').style.display='none';
+    document.getElementById('demoSpeed5x').style.display='none';
+    document.getElementById('demoSpeed10x').style.display='none';
+    document.getElementById('demoPauseBtn').style.display='none';
+    document.getElementById('demoBackBtn').style.display='none';
+    document.getElementById('demoForwardBtn').style.display='none';
+    var badge=document.getElementById('mockBarBadge');
+    if(badge) badge.textContent='⚡ Mock';
+  }
   var main=document.getElementById('main');
   if(main) main.style.display='block';
   var feedWrap=document.getElementById('feedWrap');
