@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.12</title>
+<title>MLB Tracker v2.27.13</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.12</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.13</div>
       </div>
     </div>
   </div>
@@ -1530,8 +1530,6 @@ async function initDemo() {
   yesterdayCache.forEach(function(item){if(item.ts&&typeof item.ts==='string') item.ts=new Date(item.ts);});
   Object.keys(gameStates).forEach(function(pk){
     enabledGames.add(parseInt(pk));
-    gameStates[pk].status='Live';
-    gameStates[pk].detailedState='In Progress';
   });
   demoPlayQueue=[];
   feedItems.forEach(function(item){
@@ -1541,7 +1539,8 @@ async function initDemo() {
       gamePk:item.gamePk,ts:ts,
       event:d.event,desc:d.desc,type:d.type||'play',inning:d.inning,halfInning:d.halfInning,outs:d.outs,
       awayScore:d.awayScore,homeScore:d.homeScore,scoring:d.scoring,risp:d.risp,playClass:d.playClass,
-      playTime:new Date(ts),batterId:d.batterId,batterName:d.batterName,pitcherName:d.pitcherName,distance:d.distance
+      playTime:new Date(ts),batterId:d.batterId,batterName:d.batterName,pitcherName:d.pitcherName,distance:d.distance,
+      icon:d.icon,label:d.label,sub:d.sub
     });
   });
   demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
@@ -1668,25 +1667,46 @@ function forwardDemoPlay(){
 function advanceDemoPlay(play) {
   var g=gameStates[play.gamePk];
   if(!g) return;
-  g.inning=play.inn;
-  g.halfInning=play.half;
-  g.outs=play.outs;
-  g.awayScore=play.awayScore;
-  g.homeScore=play.homeScore;
-  var badge='';
-  if(play.event==='Home Run') badge='HR';
-  else if(play.event==='Double') badge='2B';
-  else if(play.event==='Triple') badge='3B';
-  else if(play.event==='Single') badge='1B';
-  var feedData={
-    playTime:new Date(play.ts),type:play.type,event:play.event,desc:play.desc,
-    badge:badge,scoring:play.scoring,inning:play.inn,half:play.half,outs:play.outs,
-    awayScore:play.awayScore,homeScore:play.homeScore
-  };
+  var feedData={playTime:new Date(play.ts)};
+  if(play.type==='status'){
+    feedData.type='status';
+    feedData.icon=play.icon;
+    feedData.label=play.label;
+    feedData.sub=play.sub;
+    if(play.label==='Game underway!'){
+      g.status='Live';
+      g.detailedState='In Progress';
+    }else if(play.label==='Game Final'){
+      g.status='Final';
+    }
+  }else{
+    g.inning=play.inning;
+    g.halfInning=play.halfInning;
+    g.outs=play.outs;
+    g.awayScore=play.awayScore;
+    g.homeScore=play.homeScore;
+    var badge='';
+    if(play.event==='Home Run') badge='HR';
+    else if(play.event==='Double') badge='2B';
+    else if(play.event==='Triple') badge='3B';
+    else if(play.event==='Single') badge='1B';
+    feedData.type='play';
+    feedData.event=play.event;
+    feedData.desc=play.desc;
+    feedData.badge=badge;
+    feedData.scoring=play.scoring;
+    feedData.inning=play.inning;
+    feedData.halfInning=play.halfInning;
+    feedData.outs=play.outs;
+    feedData.awayScore=play.awayScore;
+    feedData.homeScore=play.homeScore;
+    feedData.risp=play.risp;
+    feedData.playClass=play.playClass;
+    if(play.scoring) playSound('run');
+  }
   addFeedItem(play.gamePk,feedData);
   renderTicker();
   buildStoryPool();
-  if(play.scoring) playSound('run');
 }
 
 function renderDemoEndScreen() {
