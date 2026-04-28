@@ -1561,13 +1561,12 @@ async function initDemo() {
   });
   onThisDayCache.forEach(function(item){if(item.ts&&typeof item.ts==='string') item.ts=new Date(item.ts);});
   yesterdayCache.forEach(function(item){if(item.ts&&typeof item.ts==='string') item.ts=new Date(item.ts);});
-  // For demo mode, only enable games from demoDate initially
-  var demoDateStr=demoDate?localDateStr(demoDate):'';
+  // For demo mode, only enable games that have play data
+  var gamesWithPlays=new Set();
+  feedItems.forEach(function(item){if(item.gamePk) gamesWithPlays.add(item.gamePk);});
   Object.keys(gameStates).forEach(function(pk){
-    var g=gameStates[pk];
-    if(demoMode&&g.gameDateMs){
-      var gDateStr=localDateStr(new Date(g.gameDateMs));
-      if(gDateStr===demoDateStr) enabledGames.add(parseInt(pk));
+    if(demoMode){
+      if(gamesWithPlays.has(parseInt(pk))) enabledGames.add(parseInt(pk));
     }else{
       enabledGames.add(parseInt(pk));
     }
