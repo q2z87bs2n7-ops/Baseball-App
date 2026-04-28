@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.26.i</title>
+<title>MLB Tracker v2.26.j</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -682,7 +682,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.i</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.j</div>
       </div>
     </div>
   </div>
@@ -974,6 +974,9 @@ let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 const STORY_ROTATE_MS=10000;
+
+// ── Demo Mode globals ──────────────────────────────────────────────────────────
+let demoMode=false,demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoGamesCache=[];
 
 // ── Side Rail News globals ──────────────────────────────────────────────────────
 let mlbNewsFeed=[],newsCardIndex=0,newsRotateTimer=null;
@@ -3349,6 +3352,171 @@ function togglePush(){
     tog.style.background='var(--border)';knob.style.left='3px';
     unsubscribeFromPush();
   }
+}
+
+// ── Demo Mode Functions (load from daily-events.json only) ──────────────────
+async function loadDailyEventsJSON(){
+  try{
+    var r=await fetch('./daily-events.json');
+    if(!r.ok) return null;
+    var data=await r.json();
+    if(data.feedItems){
+      data.feedItems.forEach(function(item){
+        if(item.playTime&&typeof item.playTime==='string'){
+          item.playTime=new Date(item.playTime);
+        }
+      });
+    }
+    if(data.onThisDayCache){
+      data.onThisDayCache.forEach(function(item){
+        if(item.ts&&typeof item.ts==='string'){
+          item.ts=new Date(item.ts);
+        }
+      });
+    }
+    if(data.yesterdayCache){
+      data.yesterdayCache.forEach(function(item){
+        if(item.ts&&typeof item.ts==='string'){
+          item.ts=new Date(item.ts);
+        }
+      });
+    }
+    console.log('Demo: Loaded daily-events.json —',Object.keys(data.gameStates).length,'games,',data.feedItems.length,'plays');
+    return data;
+  }catch(e){
+    console.error('Demo: Failed to load daily-events.json',e);
+    return null;
+  }
+}
+
+async function initDemo(){
+  demoMode=true;
+  pulseMockMode=false;
+  document.body.classList.add('demo-active');
+  var pulseSection=document.getElementById('pulse');
+  if(pulseSection) pulseSection.classList.add('active');
+  var main=document.getElementById('main');
+  if(main) main.style.display='none';
+  var feedWrap=document.getElementById('feedWrap');
+  if(feedWrap) feedWrap.style.display='block';
+  var mockBar=document.getElementById('mockBar');
+  if(mockBar) mockBar.style.display='none';
+  gameStates={};
+  feedItems=[];
+  enabledGames=new Set();
+  storyPool=[];
+  storyShownId=null;
+  demoPlayQueue=[];
+  demoPlayIdx=0;
+  dailyLeadersCache=null;
+  onThisDayCache=null;
+  yesterdayCache=null;
+  hrBatterStatsCache={};
+  probablePitcherStatsCache={};
+  dailyHitsTracker={};
+  dailyPitcherKs={};
+  storyCarouselRawGameData={};
+  stolenBaseEvents=[];
+  var data=await loadDailyEventsJSON();
+  if(!data||!data.gameStates){
+    showAlert({icon:'⚠️',event:'Demo Load Failed',desc:'Could not load daily-events.json',color:'#e85d4f',duration:3000});
+    return;
+  }
+  gameStates=data.gameStates;
+  feedItems=data.feedItems||[];
+  dailyLeadersCache=data.dailyLeadersCache||null;
+  onThisDayCache=data.onThisDayCache||[];
+  yesterdayCache=data.yesterdayCache||[];
+  hrBatterStatsCache=data.hrBatterStatsCache||{};
+  probablePitcherStatsCache=data.probablePitcherStatsCache||{};
+  dailyHitsTracker=data.dailyHitsTracker||{};
+  dailyPitcherKs=data.dailyPitcherKs||{};
+  storyCarouselRawGameData=data.storyCarouselRawGameData||{};
+  stolenBaseEvents=data.stolenBaseEvents||[];
+  scheduleData=data.scheduleData||[];
+  Object.keys(gameStates).forEach(function(pk){enabledGames.add(parseInt(pk));});
+  demoPlayQueue=[];
+  feedItems.forEach(function(item){
+    demoPlayQueue.push({gamePk:item.gamePk,event:item.event,desc:item.desc,type:item.type,ts:item.playTime.getTime()});
+  });
+  demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
+  demoPlayIdx=0;
+  renderTicker();
+  buildStoryPool();
+  updateFeedEmpty();
+  showAlert({icon:'▶',event:'Demo Mode',desc:'Full day: '+Object.keys(gameStates).length+' games, '+feedItems.length+' plays',color:'#7dd89e',duration:3000});
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+  demoStartTime=Date.now();
+  pollDemoFeeds();
+}
+
+function pollDemoFeeds(){
+  if(!demoMode||demoPlayIdx>=demoPlayQueue.length){
+    if(demoPlayIdx>=demoPlayQueue.length) renderDemoEndScreen();
+    return;
+  }
+  var play=demoPlayQueue[demoPlayIdx];
+  advanceDemoPlay(play);
+  demoPlayIdx++;
+  clearTimeout(demoTimer);
+  demoTimer=setTimeout(pollDemoFeeds,10000);
+}
+
+function advanceDemoPlay(play){
+  var g=gameStates[play.gamePk];
+  if(!g) return;
+  g.inning=play.inning;
+  g.halfInning=play.halfInning;
+  g.outs=play.outs;
+  g.awayScore=play.awayScore;
+  g.homeScore=play.homeScore;
+  var feedData={
+    playTime:new Date(play.ts),type:play.type||'other',event:play.event,desc:play.desc,
+    inning:play.inning,halfInning:play.halfInning,outs:play.outs,
+    awayScore:play.awayScore,homeScore:play.homeScore,gamePk:play.gamePk
+  };
+  addFeedItem(play.gamePk,feedData);
+  renderTicker();
+  buildStoryPool();
+}
+
+function renderDemoEndScreen(){
+  demoMode=false;
+  clearTimeout(demoTimer);
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  var overlay=document.createElement('div');
+  overlay.className='demo-end-screen';
+  overlay.innerHTML='<div class="demo-end-card"><div class="demo-end-headline">Demo Complete</div>'
+    +'<div class="demo-end-summary">'+Object.keys(gameStates).length+' games &middot; '+demoPlayQueue.length+' plays</div>'
+    +'<div class="demo-end-tagline">Ready for live games? Enable Game Start Alerts in Settings.</div>'
+    +'<button onclick="exitDemo()" style="margin-top:12px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600">Exit Demo</button>'
+    +'</div>';
+  overlay.onclick=function(e){if(e.target===overlay) exitDemo();};
+  document.body.appendChild(overlay);
+  setTimeout(function(){
+    if(document.body.contains(overlay)) exitDemo();
+  },4000);
+}
+
+function exitDemo(){
+  demoMode=false;
+  clearTimeout(demoTimer);
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  var overlay=document.querySelector('.demo-end-screen');
+  if(overlay) overlay.remove();
+  document.body.classList.remove('demo-active');
+  gameStates={};
+  feedItems=[];
+  enabledGames=new Set();
+  storyPool=[];
+  demoPlayQueue=[];
+  demoPlayIdx=0;
+  var main=document.getElementById('main');
+  if(main) main.style.display='block';
+  var feedWrap=document.getElementById('feedWrap');
+  if(feedWrap) feedWrap.style.display='none';
+  updateFeedEmpty();
 }
 
 (async function(){
