@@ -887,16 +887,19 @@
     </div>
   </div>
   <div id="mockBar" style="display:none">
-    <span class="mock-badge">⚡ Mock</span>
+    <span class="mock-badge" id="mockBarBadge">⚡ Mock</span>
     <span class="mock-bar-label">Speed:</span>
-    <button class="mock-btn active" id="btnNormal" onclick="setMockSpeed(6000,this)">Normal</button>
-    <button class="mock-btn" id="btnFast" onclick="setMockSpeed(1500,this)">Fast</button>
-    <button class="mock-btn" id="btnSkip" onclick="skipMockPlay()">Skip ▶</button>
+    <button class="mock-btn demo-speed-btn active" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)">1x</button>
+    <button class="mock-btn demo-speed-btn" id="demoSpeed2x" onclick="setDemoSpeed(5000,this)">2x</button>
+    <button class="mock-btn demo-speed-btn" id="demoSpeed5x" onclick="setDemoSpeed(2000,this)">5x</button>
+    <button class="mock-btn demo-speed-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)">10x</button>
+    <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()">⏸ Pause</button>
+    <button class="mock-btn" id="demoBackBtn" onclick="backDemoPlay()">◀ Back</button>
+    <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()">Forward ▶</button>
+    <input type="number" id="demoJumpInput" placeholder="Jump to play #" style="width:100px;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--card2);color:var(--text);font-size:12px">
+    <button class="mock-btn" onclick="jumpToDemoPlay()">Go</button>
     <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
     <span class="mock-progress" id="mockProgress"></span>
-  </div>
-  <div id="exportBar" style="display:none;padding:8px 16px;background:var(--card2);border-bottom:1px solid var(--border);text-align:center">
-    <button onclick="exportPulseStateAsSnapshot()" style="background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px">📸 Export Pulse State as Demo</button>
   </div>
   <div id="feedWrap">
     <div id="feedEmpty">
@@ -990,6 +993,7 @@ const STORY_ROTATE_MS=10000;
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0;
+let demoSpeedMs=10000,demoPaused=false;
 const DEMO_BACKUP_GAMES=[];  // Hardcoded real games as fallback when API unavailable
 // TO POPULATE: Use exportPulseStateAsSnapshot() while Pulse is running with live games,
 // then extract games from the snapshot and paste here with structure:
@@ -1469,7 +1473,17 @@ async function initDemo() {
   var feedWrap=document.getElementById('feedWrap');
   if(feedWrap) feedWrap.style.display='block';
   var mockBar=document.getElementById('mockBar');
-  if(mockBar) mockBar.style.display='none';
+  if(mockBar) {
+    mockBar.style.display='block';
+    var badge=document.getElementById('mockBarBadge');
+    if(badge) badge.textContent='📽️ Demo';
+  }
+  demoSpeedMs=10000;
+  demoPaused=false;
+  document.getElementById('demoSpeed1x').classList.add('active');
+  document.getElementById('demoSpeed2x').classList.remove('active');
+  document.getElementById('demoSpeed5x').classList.remove('active');
+  document.getElementById('demoSpeed10x').classList.remove('active');
   gameStates={};
   feedItems=[];
   enabledGames=new Set();
@@ -1596,16 +1610,74 @@ async function buildDemoPlayQueue(games) {
   console.log('Demo: Built queue with',demoPlayQueue.length,'plays (real API data only)');
 }
 
-function pollDemoFeeds() {
-  if(!demoMode||demoPlayIdx>=demoPlayQueue.length){
-    if(demoPlayIdx>=demoPlayQueue.length) renderDemoEndScreen();
+function pollDemoFeeds(){
+  if(!demoMode) return;
+  if(demoPaused){
+    clearTimeout(demoTimer);
+    demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
+    return;
+  }
+  if(demoPlayIdx>=demoPlayQueue.length){
+    renderDemoEndScreen();
     return;
   }
   var play=demoPlayQueue[demoPlayIdx];
   advanceDemoPlay(play);
   demoPlayIdx++;
   clearTimeout(demoTimer);
-  demoTimer=setTimeout(pollDemoFeeds,10000);
+  demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
+}
+
+function setDemoSpeed(ms,btn){
+  demoSpeedMs=ms;
+  if(btn) document.querySelectorAll('.demo-speed-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+}
+
+function pauseDemo(){
+  demoPaused=true;
+  var pauseBtn=document.getElementById('demoPauseBtn');
+  if(pauseBtn) pauseBtn.textContent='▶ Resume';
+}
+
+function resumeDemo(){
+  demoPaused=false;
+  var pauseBtn=document.getElementById('demoPauseBtn');
+  if(pauseBtn) pauseBtn.textContent='⏸ Pause';
+  if(demoMode) pollDemoFeeds();
+}
+
+function toggleDemoPause(){
+  if(demoPaused) resumeDemo();
+  else pauseDemo();
+}
+
+function backDemoPlay(){
+  if(demoPlayIdx>0){
+    demoPlayIdx--;
+    clearTimeout(demoTimer);
+    demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
+  }
+}
+
+function forwardDemoPlay(){
+  if(demoPlayIdx<demoPlayQueue.length){
+    demoPlayIdx++;
+    clearTimeout(demoTimer);
+    if(demoPlayIdx<demoPlayQueue.length) pollDemoFeeds();
+    else renderDemoEndScreen();
+  }
+}
+
+function jumpToDemoPlay(){
+  var input=document.getElementById('demoJumpInput');
+  if(!input) return;
+  var idx=parseInt(input.value)-1;
+  if(idx>=0&&idx<demoPlayQueue.length){
+    demoPlayIdx=idx;
+    clearTimeout(demoTimer);
+    pollDemoFeeds();
+  }
 }
 
 function advanceDemoPlay(play) {
@@ -1652,6 +1724,7 @@ function renderDemoEndScreen() {
 
 function exitDemo() {
   demoMode=false;
+  demoPaused=false;
   clearTimeout(demoTimer);
   if(storyRotateTimer) clearInterval(storyRotateTimer);
   var overlay=document.querySelector('.demo-end-screen');
@@ -1667,6 +1740,8 @@ function exitDemo() {
   if(main) main.style.display='block';
   var feedWrap=document.getElementById('feedWrap');
   if(feedWrap) feedWrap.style.display='none';
+  var mockBar=document.getElementById('mockBar');
+  if(mockBar) mockBar.style.display='none';
   updateFeedEmpty();
 }
 
