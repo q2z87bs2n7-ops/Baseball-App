@@ -1,0 +1,37 @@
+{
+  "generated": "2026-04-28T00:00:00.000Z",
+  "note": "ESPN MLB news articles for demo carousel. Fetch from: https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=50",
+  "demoDateRange": "2026-04-24 to 2026-04-29",
+  "carouselSize": 6,
+  "carouselRotationMs": 30000,
+  "articles": [
+    {
+      "id": "article-template",
+      "headline": "Sample Article Title",
+      "description": "Full article description",
+      "published": "2026-04-27T15:30:00Z",
+      "link": "https://mlb.com/news/example",
+      "image": "https://a.espncdn.com/media/motion/2026/0427/sample.jpg",
+      "byline": "Author Name",
+      "timestamp": 1724332200000
+    }
+  ],
+  "instructions": {
+    "source": "Fetch from ESPN API: https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=50",
+    "fields_needed": ["headline", "published (ISO string)", "link (from links.web.href)", "image (from images[0].url)", "description", "byline"],
+    "processing": [
+      "1. Convert published ISO string to timestamp (milliseconds)",
+      "2. Sort by timestamp descending (newest first)",
+      "3. Carousel displays 6 articles, rotates every 30s",
+      "4. Save 50 articles total for variety during long demo"
+    ],
+    "integration": [
+      "Add mlbNewsFeed array init in initDemo()",
+      "Load articles from this JSON instead of live ESPN fetch",
+      "Set newsRotateTimer and rotateNewsCard() to cycle through articles during playback",
+      "Articles should appear in right-column news carousel and update as demo progresses"
+    ],
+    "carouselSize": "6 articles visible at once",
+    "rotationInterval": "30 seconds (NEWS_ROTATE_MS in code)"
+  }
+}
