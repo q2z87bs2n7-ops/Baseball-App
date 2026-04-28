@@ -902,9 +902,6 @@
     <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
     <span class="mock-progress" id="mockProgress"></span>
   </div>
-  <div id="exportBar" style="display:none;padding:8px 16px;background:var(--card2);border-bottom:1px solid var(--border);text-align:center">
-    <button onclick="exportPulseStateAsSnapshot()" style="background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px">📸 Export Pulse State as Demo</button>
-  </div>
   <div id="feedWrap">
     <div id="feedEmpty">
       <span class="empty-icon">⚾</span>
@@ -1120,7 +1117,6 @@ function updatePulseMockToggleUI() {
 
 function initMock() {
   document.getElementById('mockBar').style.display='';
-  document.getElementById('exportBar').style.display='none';
   totalMockPlays=0; playedMockPlays=0; gameStates={}; mockPlayPtrs={}; mockGameQueue=[];
   MOCK_DATA.games.forEach(function(g) {
     var away=tcLookup(g.awayId), home=tcLookup(g.homeId);
@@ -1219,7 +1215,6 @@ function updateMockProgress(){document.getElementById('mockProgress').textConten
 
 function initReal() {
   document.getElementById('mockBar').style.display='none';
-  document.getElementById('exportBar').style.display='block';
   pollDateStr=localDateStr(new Date());
   loadOnThisDayCache(); loadYesterdayCache();
   if(newsRotateTimer){clearTimeout(newsRotateTimer);newsRotateTimer=null;}
