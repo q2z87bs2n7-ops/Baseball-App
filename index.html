@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.32</title>
+<title>MLB Tracker v2.33</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -758,15 +758,6 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">⚡ Pulse: Mock Mode</div>
-            <div style="font-size:.68rem;color:var(--muted)">Use Simulated Game Data</div>
-          </div>
-          <div onclick="togglePulseMockMode()" id="pulseMockToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
-            <div id="pulseMockToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
-          </div>
-        </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <button onclick="initDemo();toggleSettings()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">▶ Try Demo</button>
           <div style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:center">Load snapshot &amp; replay from April 27</div>
@@ -785,7 +776,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.32</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.33</div>
       </div>
     </div>
   </div>
@@ -980,18 +971,14 @@
     </div>
   </div>
   <div id="mockBar" style="display:none">
-    <span class="mock-badge" id="mockBarBadge">⚡ Mock</span>
+    <span class="mock-badge" id="mockBarBadge">📽️ Demo</span>
     <span class="mock-bar-label">Speed:</span>
-    <button class="mock-btn" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)" style="display:none">1x</button>
-    <button class="mock-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)" style="display:none">10x</button>
-    <button class="mock-btn" id="demoSpeed25x" onclick="setDemoSpeed(400,this)" style="display:none">25x</button>
-    <button class="mock-btn" id="demoSpeed200x" onclick="setDemoSpeed(50,this)" style="display:none">200x</button>
-    <button class="mock-btn active" id="btnNormal" onclick="setMockSpeed(6000,this)">Normal</button>
-    <button class="mock-btn" id="btnFast" onclick="setMockSpeed(1500,this)">Fast</button>
-    <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()" style="display:none">⏸ Pause</button>
-    <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()" style="display:none">Forward ▶</button>
-    <button class="mock-btn" id="btnSkip" onclick="skipMockPlay()">Skip ▶</button>
-    <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
+    <button class="mock-btn" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)">1x</button>
+    <button class="mock-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)">10x</button>
+    <button class="mock-btn" id="demoSpeed25x" onclick="setDemoSpeed(400,this)">25x</button>
+    <button class="mock-btn" id="demoSpeed200x" onclick="setDemoSpeed(50,this)">200x</button>
+    <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()">⏸ Pause</button>
+    <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()">Forward ▶</button>
     <span class="mock-progress" id="mockProgress"></span>
   </div>
   <div id="feedWrap">
@@ -1068,11 +1055,9 @@ let newsFeedMode='mlb';
 
 // ── League Pulse globals ──────────────────────────────────────────────────────
 const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
-let pulseMockMode=false,pulseInitialized=false;
+let pulseInitialized=false;
 let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
-let mockPlayPtrs={},mockGameQueue=[],mockTimerId=null;
-let mockSpeedMs=6000,totalMockPlays=0,playedMockPlays=0;
 let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 
@@ -1170,141 +1155,8 @@ const MOCK_DATA={
 
 // ── League Pulse functions ────────────────────────────────────────────────────
 function initLeaguePulse() {
-  if (pulseMockMode) initMock();
-  else               initReal();
+  initReal();
 }
-
-function switchMode(toReal) {
-  pulseMockMode = !toReal;
-  updatePulseMockToggleUI();
-  if (mockTimerId)    { clearInterval(mockTimerId);    mockTimerId    = null; }
-  if (pulseTimer)     { clearInterval(pulseTimer);     pulseTimer     = null; }
-  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-  feedItems=[]; gameStates={}; enabledGames=new Set();
-  mockPlayPtrs={}; mockGameQueue=[]; playedMockPlays=0; totalMockPlays=0; isFirstPoll=true;
-  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={}; stolenBaseEvents=[];
-  if (storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
-  if (newsRotateTimer){clearTimeout(newsRotateTimer);newsRotateTimer=null;}
-  var sc=document.getElementById('storyCarousel'); if(sc)sc.style.display='none';
-  document.getElementById('feed').innerHTML='';
-  document.getElementById('alertStack').innerHTML='';
-  document.getElementById('sideRailGames').innerHTML='';
-  updateFeedEmpty();
-  if (toReal) initReal();
-  else        initMock();
-}
-
-function togglePulseMockMode() {
-  pulseMockMode = !pulseMockMode;
-  localStorage.setItem('mlb_pulse_mock', pulseMockMode);
-  updatePulseMockToggleUI();
-  if (pulseInitialized) switchMode(!pulseMockMode);
-}
-
-function updatePulseMockToggleUI() {
-  var tog=document.getElementById('pulseMockToggle'), knob=document.getElementById('pulseMockToggleKnob');
-  if (!tog) return;
-  tog.style.background = pulseMockMode ? 'var(--secondary)' : 'var(--border)';
-  knob.style.left      = pulseMockMode ? '21px' : '3px';
-}
-
-function initMock() {
-  document.getElementById('mockBar').style.display='';
-  totalMockPlays=0; playedMockPlays=0; gameStates={}; mockPlayPtrs={}; mockGameQueue=[];
-  MOCK_DATA.games.forEach(function(g) {
-    var away=tcLookup(g.awayId), home=tcLookup(g.homeId);
-    gameStates[g.gamePk]={
-      gamePk:g.gamePk, awayId:g.awayId, homeId:g.homeId,
-      awayAbbr:away.abbr, homeAbbr:home.abbr, awayName:away.name, homeName:home.name,
-      awayPrimary:away.primary, homePrimary:home.primary,
-      awayScore:0, homeScore:0, status:g.status, inning:1, halfInning:'top', outs:0,
-      gameTime:g.gameTime||null, venueName:g.venueName||null,
-    };
-    mockPlayPtrs[g.gamePk]=0;
-    totalMockPlays+=(MOCK_DATA.plays[g.gamePk]||[]).length;
-    mockGameQueue.push(g.gamePk);
-  });
-  enabledGames=new Set(Object.keys(gameStates).map(Number));
-  renderTicker(); renderFeed(); updateHeader(); startMockTick();
-}
-
-function startMockTick() {
-  if (mockTimerId) clearInterval(mockTimerId);
-  mockTimerId=setInterval(mockTick, mockSpeedMs);
-  setTimeout(mockTick, 400);
-}
-
-function mockTick() {
-  var pks=mockGameQueue, found=false, n=pks.length;
-  for (var i=0;i<n;i++) {
-    var pk=pks.shift(); pks.push(pk);
-    var plays=MOCK_DATA.plays[pk]||[], ptr=mockPlayPtrs[pk]||0;
-    if (ptr<plays.length) { advanceMockGame(pk,plays[ptr]); mockPlayPtrs[pk]=ptr+1; playedMockPlays++; found=true; break; }
-  }
-  if (!found) {
-    Object.values(gameStates).forEach(function(g) {
-      if (g.status==='Live') {
-        playSound('gameEnd'); g.status='Final';
-        addFeedItem(g.gamePk,{type:'status',icon:'🏁',label:'Game Final',sub:g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore});
-      }
-    });
-    if (mockTimerId){clearInterval(mockTimerId);mockTimerId=null;}
-    renderTicker();
-  }
-  updateMockProgress(); updateHeader();
-}
-
-function advanceMockGame(gamePk, play) {
-  var g=gameStates[gamePk]; if (!g) return;
-  if (play.event==='__GAME_START__') {
-    g.status='Live';
-    addFeedItem(gamePk,{type:'status',icon:'⚾',label:'Game underway!',sub:g.awayAbbr+' @ '+g.homeAbbr});
-    playSound('gameStart'); renderTicker(); return;
-  }
-  g.awayScore=play.aScore; g.homeScore=play.hScore; g.inning=play.inn;
-  g.halfInning=play.half; g.outs=play.outs;
-  g.onFirst=false; g.onSecond=!play.scoring&&!!play.risp; g.onThird=false;
-  var playClass=play.event==='Home Run'?'homerun':play.scoring?'scoring':play.risp?'risp':'normal';
-  addFeedItem(gamePk,{type:'play',event:play.event,desc:play.desc,scoring:play.scoring,
-    awayScore:play.aScore,homeScore:play.hScore,inning:play.inn,halfInning:play.half,
-    outs:play.outs,risp:play.risp,playClass:playClass});
-  var teamColor=play.half==='top'?g.awayPrimary:g.homePrimary;
-  var gameVisible=enabledGames.has(gamePk);
-  if (play.event==='Home Run') {
-    playSound('hr');
-    if (play.batterId&&gameVisible) showPlayerCard(play.batterId, play.batterName||'', g.awayId, g.homeId, play.half, play.mockStats||null);
-  } else if (play.scoring) {
-    if (gameVisible) showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.aScore+', '+g.homeAbbr+' '+play.hScore,desc:play.desc,color:teamColor,duration:4000});
-    playSound('run');
-  } else if (play.event&&play.event.indexOf('Triple Play')!==-1) {
-    if (gameVisible) showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:play.desc,color:'#9b59b6',duration:5000});
-    playSound('tp');
-  } else if (play.event&&play.event.indexOf('Double Play')!==-1) { playSound('dp');
-  } else if (play.event&&play.event.indexOf('Error')!==-1) { playSound('error');
-  } else if (play.risp) { playSound('risp'); }
-  renderTicker();
-}
-
-function setMockSpeed(ms,btn) {
-  mockSpeedMs=ms;
-  document.querySelectorAll('.mock-btn').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active'); startMockTick();
-}
-function skipMockPlay(){mockTick();}
-function resetMock() {
-  if (mockTimerId){clearInterval(mockTimerId);mockTimerId=null;}
-  feedItems=[]; gameStates={}; enabledGames=new Set(); mockPlayPtrs={}; mockGameQueue=[];
-  playedMockPlays=0; totalMockPlays=0;
-  storyPool=[]; storyShownId=null; dailyHitsTracker={}; dailyPitcherKs={}; stolenBaseEvents=[];
-  if (storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
-  var sc=document.getElementById('storyCarousel'); if(sc)sc.style.display='none';
-  document.getElementById('feed').innerHTML=''; document.getElementById('alertStack').innerHTML='';
-  updateFeedEmpty();
-  document.querySelectorAll('.mock-btn').forEach(function(b){b.classList.remove('active');});
-  var bn=document.getElementById('btnNormal'); if (bn){bn.classList.add('active');mockSpeedMs=6000;}
-  initMock();
-}
-function updateMockProgress(){document.getElementById('mockProgress').textContent=playedMockPlays+' / '+totalMockPlays+' plays';}
 
 function initReal() {
   document.getElementById('mockBar').style.display='none';
@@ -4010,7 +3862,6 @@ function togglePush(){
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='';mt.style.background='var(--secondary)';mk.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
-  if(sv('mlb_pulse_mock')==='true'){pulseMockMode=true;var pt2=document.getElementById('pulseMockToggle'),pk2=document.getElementById('pulseMockToggleKnob');if(pt2){pt2.style.background='var(--secondary)';pk2.style.left='21px';}}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
   pulseInitialized=true;initLeaguePulse();
 })();
