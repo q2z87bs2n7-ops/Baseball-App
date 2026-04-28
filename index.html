@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.26.h</title>
+<title>MLB Tracker v2.26.i</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -682,7 +682,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.h</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.i</div>
       </div>
     </div>
   </div>
@@ -2884,7 +2884,8 @@ function renderCalendar(){
           inner+=wrap+'<span class="cal-result '+(mW?'cal-w':'cal-l')+'"'+(isDH?' style="font-size:.6rem;padding:1px 5px"':'')+'>'+(mW?'W':'L')+' '+sc+'</span>'+wrapEnd;
           if(mW)dotW=true;else dotL=true;
         } else if(calLive){
-          inner+=wrap+'<span class="cal-result" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.5)'+(isDH?';font-size:.6rem;padding:1px 5px':'')+'">LIVE</span>'+wrapEnd;
+          var myScore=myT.score!=null?myT.score:0, opScore=opT.score!=null?opT.score:0, inn=(gm.linescore&&gm.linescore.currentInning)?gm.linescore.currentInning:'?', half=(gm.linescore&&gm.linescore.inningHalf==='Bottom'?'▼ ':'▲ ')+inn;
+          inner+=wrap+'<span class="cal-result" style="background:rgba(120,120,120,.12);color:var(--muted);border:1px solid rgba(120,120,120,.3)'+(isDH?';font-size:.6rem;padding:1px 5px':'')+'">'+half+' · '+myScore+'-'+opScore+'</span>'+wrapEnd;
           dotLive=true;
         } else {
           var t=new Date(gm.gameDate),ts=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
