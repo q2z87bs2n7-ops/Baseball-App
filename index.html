@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.30.1</title>
+<title>MLB Tracker v2.31</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -550,14 +550,22 @@
 .sound-toggle input:checked + .sound-knob { background: color-mix(in srgb, var(--accent) 22%, var(--card)); border-color: var(--accent); }
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
 
-/* ── Player Card Flash (v2.7) ─────────────────────────────────────────────── */
+/* ── Player Card Flash (v2.7, v2.31 Topps redesign) ────────────────────── */
 @keyframes card-in {
-  from { opacity:0; transform:translateY(20px) scale(0.92); }
-  to   { opacity:1; transform:translateY(0)    scale(1);    }
+  from { opacity:0; transform:scale(0.88); }
+  to   { opacity:1; transform:scale(1); }
+}
+@keyframes card-in-nameplate {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
 }
 @keyframes card-out {
-  from { opacity:1; transform:scale(1);    }
-  to   { opacity:0; transform:scale(0.93); }
+  from { opacity:1; transform:scale(1); }
+  to   { opacity:0; transform:scale(0.92); }
+}
+@keyframes shimmer-sweep {
+  0% { background-position:-1000px 0; }
+  100% { background-position:1000px 0; }
 }
 @keyframes hr-glow {
   0%,100% { text-shadow:0 0 0   rgba(255,155,30,0);    }
@@ -575,32 +583,89 @@
   align-items:center; justify-content:center; padding:16px;
 }
 #playerCardOverlay.open { display:flex; }
-#playerCardOverlay.closing #playerCard { animation:card-out 0.28s ease forwards; }
+#playerCardOverlay.closing #playerCard { animation:card-out 0.28s ease-out forwards; }
 #playerCard {
-  background:var(--card); border:1px solid var(--border); border-radius:16px;
-  width:min(360px, calc(100vw - 32px)); overflow:hidden;
-  animation:card-in 0.32s cubic-bezier(0.34,1.56,0.64,1);
-  box-shadow:0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
-  position:relative; cursor:pointer;
+  width:min(360px, calc(100vw - 32px)); max-width:360px; overflow:hidden;
+  animation:card-in 0.35s cubic-bezier(0.34,1.32,0.64,1);
+  box-shadow:0 25px 70px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08);
+  position:relative; cursor:pointer; border-radius:14px; display:flex; flex-direction:column;
 }
-.pc-header { padding:16px 18px 14px; display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--border); }
-.pc-photo-wrap { width:72px; height:72px; border-radius:10px; overflow:hidden; background:var(--card2); flex-shrink:0; position:relative; }
-.pc-photo-wrap img { width:100%; height:100%; object-fit:contain; object-position:top; display:block; }
-.pc-jersey { position:absolute; bottom:2px; right:3px; background:rgba(0,0,0,0.7); color:#fff; font-size:9px; font-weight:800; padding:1px 5px; border-radius:6px; line-height:1.4; }
+#playerCard::before {
+  content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,transparent 70%);
+  pointer-events:none; z-index:10;
+}
+/* Photo background layer (full-bleed) */
+.pc-photo-bg {
+  position:absolute; top:0; left:0; right:0; height:140px;
+  background-size:cover; background-position:center top;
+  background-color:var(--card2); z-index:1;
+}
+.pc-photo-bg::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.6) 100%);
+  z-index:2;
+}
+/* Topps-style nameplate bar */
+.pc-header {
+  position:relative; z-index:5; padding:12px 16px 14px;
+  background:linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.82) 100%);
+  border-bottom:none; border-top:3px solid var(--primary);
+  display:flex; align-items:flex-start; gap:12px;
+}
+.pc-photo-wrap {
+  display:none;
+}
+.pc-photo-wrap img {
+  display:none;
+}
+.pc-jersey {
+  position:absolute; top:8px; right:12px; z-index:8;
+  background:var(--primary); color:#fff;
+  font-size:28px; font-weight:900;
+  padding:4px 8px; border-radius:6px; line-height:1; min-width:32px; text-align:center;
+  text-shadow:1px 1px 2px rgba(0,0,0,0.5);
+}
 .pc-identity { flex:1; min-width:0; }
-.pc-name { font-size:1.1rem; font-weight:900; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; margin-bottom:2px; }
-.pc-team { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:8px; }
-.pc-event-badge {
-  display:inline-flex; align-items:center; gap:5px;
-  background:rgba(255,155,30,0.15); border:1px solid rgba(255,155,30,0.40);
-  color:#ffaa30; font-size:11px; font-weight:800; letter-spacing:.05em;
-  padding:3px 9px; border-radius:20px; animation:hr-glow 2s ease-in-out infinite;
+.pc-name {
+  font-size:1.05rem; font-weight:900; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  line-height:1.2; margin-bottom:4px; text-shadow:1px 1px 3px rgba(0,0,0,0.6);
 }
-.pc-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-bottom:1px solid var(--border); }
-.pc-stat { padding:12px 10px; text-align:center; border-right:1px solid var(--border); }
-.pc-stat:last-child { border-right:none; }
-.pc-stat-val { font-size:1.2rem; font-weight:800; color:var(--accent); line-height:1.1; }
-.pc-stat-lbl { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-top:3px; }
+.pc-team-pos {
+  font-size:.70rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:#ddd; margin-bottom:6px;
+}
+.pc-event-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  background:rgba(255,155,30,0.18); border:1px solid rgba(255,200,80,0.50);
+  color:#ffbb44; font-size:10px; font-weight:800; letter-spacing:.05em;
+  padding:4px 8px; border-radius:16px; animation:hr-glow 2s ease-in-out infinite;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,0.2);
+}
+.pc-stats {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:0;
+  background:var(--card); border-bottom:1px solid var(--border);
+  position:relative; z-index:4;
+}
+.pc-stat {
+  padding:11px 8px; text-align:center; border-right:1px solid var(--border);
+}
+.pc-stat:nth-child(3n) { border-right:none; }
+.pc-stat-val {
+  font-size:1.15rem; font-weight:800; color:var(--accent);
+  line-height:1; font-variant-numeric:tabular-nums;
+}
+.pc-stat-lbl {
+  font-size:.59rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.07em; color:var(--muted); margin-top:4px;
+}
+.pc-stats-placeholder {
+  grid-column:1/-1; padding:9px 12px;
+  background:linear-gradient(to right, rgba(255,255,255,0.02), transparent 50%, rgba(255,255,255,0.02));
+  font-size:.63rem; color:var(--muted); text-align:center;
+  font-weight:600; letter-spacing:.04em;
+  border-top:1px solid var(--border);
+}
 .pc-stat.pc-hr-highlight .pc-stat-val { color:#ffaa30; }
 @keyframes hr-count-up {
   0%   { transform:scale(1);    color:#ffaa30; }
@@ -610,22 +675,42 @@
 }
 .pc-stat-val.counting { animation:hr-count-up 0.45s cubic-bezier(0.34,1.56,0.64,1); }
 .pc-stat.pc-rbi-highlight .pc-stat-val { color:#34d399; }
-@keyframes rbi-count-up { 0%{transform:scale(1);color:#34d399;} 35%{transform:scale(1.55);color:#fff;} 65%{transform:scale(1.15);} 100%{transform:scale(1);color:#34d399;} }
-.pc-stat.pc-rbi-highlight .pc-stat-val.counting { animation:rbi-count-up 0.45s cubic-bezier(0.34,1.56,0.64,1); }
-.pc-event-badge.pc-rbi-badge { background:rgba(52,211,153,0.15); border-color:rgba(52,211,153,0.40); color:#34d399; animation:rbi-glow 2s ease-in-out infinite; }
-@keyframes rbi-glow { 0%,100%{box-shadow:0 0 4px rgba(52,211,153,0.3);} 50%{box-shadow:0 0 12px rgba(52,211,153,0.6);} }
-.pc-context-pill.pc-rbi-pill { background:rgba(52,211,153,0.12); border-color:rgba(52,211,153,0.30); color:#34d399; }
-.pc-context { padding:8px 14px 4px; text-align:center; }
-.pc-context-pill {
-  display:inline-block; background:rgba(255,155,30,0.12); border:1px solid rgba(255,155,30,0.30);
-  color:#ffaa30; font-size:10px; font-weight:700; letter-spacing:.04em; padding:3px 10px; border-radius:20px;
+@keyframes rbi-count-up {
+  0%   { transform:scale(1);    color:#34d399; }
+  35%  { transform:scale(1.55); color:#fff; }
+  65%  { transform:scale(1.15); }
+  100% { transform:scale(1);    color:#34d399; }
 }
-.pc-dismiss-hint { text-align:center; font-size:10px; color:var(--muted); padding:6px 14px 12px; opacity:0.6; }
-.pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; }
+.pc-stat.pc-rbi-highlight .pc-stat-val.counting { animation:rbi-count-up 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+.pc-event-badge.pc-rbi-badge {
+  background:rgba(52,211,153,0.18); border-color:rgba(100,220,180,0.50);
+  color:#4ade80; animation:rbi-glow 2s ease-in-out infinite;
+}
+@keyframes rbi-glow { 0%,100%{box-shadow:inset 0 1px 2px rgba(255,255,255,0.1), 0 0 6px rgba(52,211,153,0.3);} 50%{box-shadow:inset 0 1px 2px rgba(255,255,255,0.15), 0 0 12px rgba(52,211,153,0.6);} }
+.pc-context-pill.pc-rbi-pill {
+  background:rgba(52,211,153,0.16); border-color:rgba(100,220,180,0.40); color:#4ade80;
+}
+.pc-context {
+  padding:10px 14px; text-align:center; background:var(--card);
+  border-top:1px solid var(--border); position:relative; z-index:4;
+}
+.pc-context-pill {
+  display:inline-block; background:rgba(255,155,30,0.13); border:1px solid rgba(255,200,80,0.35);
+  color:#ffaa30; font-size:9.5px; font-weight:700; letter-spacing:.04em;
+  padding:4px 10px; border-radius:18px; box-shadow:inset 0 1px 1px rgba(255,255,255,0.15);
+}
+.pc-dismiss-hint {
+  text-align:center; font-size:9px; color:var(--muted); padding:8px 14px 10px;
+  opacity:0.5; background:var(--card); border-top:1px solid var(--border);
+  position:relative; z-index:4;
+}
+.pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; background:var(--card); }
 @media (max-width:480px) {
   #playerCard { width:calc(100vw - 32px); }
-  .pc-photo-wrap { width:60px; height:60px; }
-  .pc-name { font-size:1rem; }
+  .pc-name { font-size:.95rem; }
+  .pc-jersey { font-size:24px; padding:2px 6px; }
+  .pc-stat-val { font-size:1rem; }
+  .pc-stat-lbl { font-size:.56rem; }
 }
 </style>
 </head>
@@ -707,7 +792,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.30.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.31</div>
       </div>
     </div>
   </div>
@@ -2916,6 +3001,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
+  var position = rEntry && rEntry.position ? rEntry.position.abbreviation : '—';
   var hrCount = stat ? (stat.homeRuns != null ? stat.homeRuns : '—') : '—';
   if (descHint) { var _m=descHint.match(/\((\d+)\)/); if(_m){var _n=parseInt(_m[1],10);if(typeof hrCount!=='number'||hrCount<_n)hrCount=_n;} }
   var hrPrev  = (typeof hrCount === 'number' && hrCount >= 1) ? hrCount - 1 : hrCount;
@@ -2937,17 +3023,14 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
       }
     }
   }
-  var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">#' + jerseyNumber + '</div>' : '';
+  var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">' + jerseyNumber + '</div>' : '';
 
   card.innerHTML = ''
+    + '<div class="pc-photo-bg" style="background-image:url(\'' + photoUrl + '\')">' + jerseyHtml + '</div>'
     + '<div class="pc-header">'
-    +   '<div class="pc-photo-wrap">'
-    +     '<img src="' + photoUrl + '" alt="' + batterName + '" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=\\\'http://www.w3.org/2000/svg\\\' viewBox=\\\'0 0 72 72\\\'%3E%3Crect width=\\\'72\\\' height=\\\'72\\\' fill=\\\'%23333\\\'/%3E%3Ctext x=\\\'36\\\' y=\\\'44\\\' text-anchor=\\\'middle\\\' font-size=\\\'24\\\' fill=\\\'%23888\\\'%3E%3F%3C/text%3E%3C/svg%3E\'">'
-    +     jerseyHtml
-    +   '</div>'
     +   '<div class="pc-identity">'
     +     '<div class="pc-name">' + batterName + '</div>'
-    +     '<div class="pc-team">' + teamAbbr + '</div>'
+    +     '<div class="pc-team-pos">POS: ' + position + ' · ' + teamAbbr + '</div>'
     +     '<div class="pc-event-badge">' + (badgeText || '💥 HOME RUN!') + '</div>'
     +   '</div>'
     + '</div>'
@@ -2956,6 +3039,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
     +   '<div class="pc-stat"><div class="pc-stat-val">' + ops + '</div><div class="pc-stat-lbl">OPS</div></div>'
     +   '<div class="pc-stat pc-hr-highlight"><div class="pc-stat-val pc-hr-val">' + hrPrev + '</div><div class="pc-stat-lbl">HR</div></div>'
     +   '<div class="pc-stat"><div class="pc-stat-val">' + rbi + '</div><div class="pc-stat-lbl">RBI</div></div>'
+    +   '<div class="pc-stat-placeholder" style="grid-column:1/-1;opacity:0.6">2024 Career: — · HOT: —</div>'
     + '</div>'
     + contextHtml
     + '<div class="pc-dismiss-hint">Tap anywhere to dismiss</div>';
@@ -3062,14 +3146,17 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   var badge    = getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter);
   var innLabel = (halfInning === 'top' ? '▲' : '▼') + inning;
   var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
+  var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
+  if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
+  var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
+  var position = rEntry && rEntry.position ? rEntry.position.abbreviation : '—';
+  var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">' + jerseyNumber + '</div>' : '';
   card.innerHTML = ''
+    + '<div class="pc-photo-bg" style="background-image:url(\'' + photoUrl + '\')">' + jerseyHtml + '</div>'
     + '<div class="pc-header">'
-    +   '<div class="pc-photo-wrap">'
-    +     '<img src="' + photoUrl + '" alt="' + batterName + '" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=\\\'http://www.w3.org/2000/svg\\\' viewBox=\\\'0 0 72 72\\\'%3E%3Crect width=\\\'72\\\' height=\\\'72\\\' fill=\\\'%23333\\\'/%3E%3Ctext x=\\\'36\\\' y=\\\'44\\\' text-anchor=\\\'middle\\\' font-size=\\\'24\\\' fill=\\\'%23888\\\'%3E%3F%3C/text%3E%3C/svg%3E\'">'
-    +   '</div>'
     +   '<div class="pc-identity">'
     +     '<div class="pc-name">' + batterName + '</div>'
-    +     '<div class="pc-team">' + teamAbbr + '</div>'
+    +     '<div class="pc-team-pos">POS: ' + position + ' · ' + teamAbbr + '</div>'
     +     '<div class="pc-event-badge pc-rbi-badge">' + badge + '</div>'
     +   '</div>'
     + '</div>'
@@ -3078,6 +3165,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
     +   '<div class="pc-stat"><div class="pc-stat-val">' + ops + '</div><div class="pc-stat-lbl">OPS</div></div>'
     +   '<div class="pc-stat"><div class="pc-stat-val">' + hits + '</div><div class="pc-stat-lbl">H</div></div>'
     +   '<div class="pc-stat pc-rbi-highlight"><div class="pc-stat-val pc-rbi-val">' + rbiPrev + '</div><div class="pc-stat-lbl">RBI</div></div>'
+    +   '<div class="pc-stat-placeholder" style="grid-column:1/-1;opacity:0.6">2024 Career: — · HOT: —</div>'
     + '</div>'
     + '<div class="pc-context"><span class="pc-context-pill pc-rbi-pill">' + awayAbbr + ' ' + aScore + ', ' + homeAbbr + ' ' + hScore + ' · ' + innLabel + '</span></div>'
     + '<div class="pc-dismiss-hint">Tap anywhere to dismiss</div>';
