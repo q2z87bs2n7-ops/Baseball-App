@@ -746,11 +746,11 @@
       "gamePk": 824609,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "LAA 7, CWS 8"
       },
-      "ts": "2026-04-28T05:35:30.622Z"
+      "ts": "2026-04-28T05:34:06.355Z"
     },
     {
       "gamePk": 824609,
@@ -866,7 +866,7 @@
       "gamePk": 824609,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "LAA @ CWS"
       },
@@ -933,7 +933,7 @@
         "playTime": "2026-04-28T05:14:28.070Z",
         "batterId": 700337,
         "batterName": "Edgar Quero",
-        "pitcherName": "José Fermin",
+        "pitcherName": "Jos\u00e9 Fermin",
         "distance": null
       },
       "ts": "2026-04-28T05:14:28.070Z"
@@ -955,7 +955,7 @@
         "playTime": "2026-04-28T05:12:29.966Z",
         "batterId": 671976,
         "batterName": "Tristan Peters",
-        "pitcherName": "José Fermin",
+        "pitcherName": "Jos\u00e9 Fermin",
         "distance": null
       },
       "ts": "2026-04-28T05:12:29.966Z"
@@ -977,7 +977,7 @@
         "playTime": "2026-04-28T05:11:04.387Z",
         "batterId": 805367,
         "batterName": "Chase Meidroth",
-        "pitcherName": "José Fermin",
+        "pitcherName": "Jos\u00e9 Fermin",
         "distance": null
       },
       "ts": "2026-04-28T05:11:04.387Z"
@@ -986,11 +986,11 @@
       "gamePk": 823961,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "MIA 4, LAD 5"
       },
-      "ts": "2026-04-28T05:09:15.636Z"
+      "ts": "2026-04-28T05:07:43.564Z"
     },
     {
       "gamePk": 823961,
@@ -1063,7 +1063,7 @@
       "data": {
         "type": "play",
         "event": "Lineout",
-        "desc": "Yoán Moncada lines out to shortstop Colson Montgomery.",
+        "desc": "Yo\u00e1n Moncada lines out to shortstop Colson Montgomery.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 8,
@@ -1074,7 +1074,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T05:04:22.990Z",
         "batterId": 660162,
-        "batterName": "Yoán Moncada",
+        "batterName": "Yo\u00e1n Moncada",
         "pitcherName": "Grant Taylor",
         "distance": null
       },
@@ -1195,7 +1195,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "Miguel Rojas pops out softly to catcher Agustín Ramírez in foul territory.",
+        "desc": "Miguel Rojas pops out softly to catcher Agust\u00edn Ram\u00edrez in foul territory.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 2,
@@ -1282,11 +1282,11 @@
       "gamePk": 823311,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "CHC 7, SD 9"
       },
-      "ts": "2026-04-28T04:50:45.638Z"
+      "ts": "2026-04-28T04:49:47.280Z"
     },
     {
       "gamePk": 824609,
@@ -1447,7 +1447,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Jakob Marsee singles on a sharp ground ball to left fielder Teoscar Hernández.",
+        "desc": "Jakob Marsee singles on a sharp ground ball to left fielder Teoscar Hern\u00e1ndez.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 2,
@@ -1601,7 +1601,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Dansby Swanson singles on a line drive to left fielder Ramón Laureano. Matt Shaw to 2nd.",
+        "desc": "Dansby Swanson singles on a line drive to left fielder Ram\u00f3n Laureano. Matt Shaw to 2nd.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 9,
@@ -1645,7 +1645,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Teoscar Hernández called out on strikes.",
+        "desc": "Teoscar Hern\u00e1ndez called out on strikes.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 2,
@@ -1656,7 +1656,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T04:39:35.420Z",
         "batterId": 606192,
-        "batterName": "Teoscar Hernández",
+        "batterName": "Teoscar Hern\u00e1ndez",
         "pitcherName": "Calvin Faucher",
         "distance": null
       },
@@ -1843,7 +1843,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Agustín Ramírez grounds out sharply, shortstop Miguel Rojas to first baseman Freddie Freeman.",
+        "desc": "Agust\u00edn Ram\u00edrez grounds out sharply, shortstop Miguel Rojas to first baseman Freddie Freeman.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 2,
@@ -1854,7 +1854,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T04:32:34.194Z",
         "batterId": 682663,
-        "batterName": "Agustín Ramírez",
+        "batterName": "Agust\u00edn Ram\u00edrez",
         "pitcherName": "Edgardo Henriquez",
         "distance": null
       },
@@ -1997,7 +1997,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Moisés Ballesteros grounds out, third baseman Ty France to first baseman Gavin Sheets.",
+        "desc": "Mois\u00e9s Ballesteros grounds out, third baseman Ty France to first baseman Gavin Sheets.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 8,
@@ -2008,7 +2008,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T04:26:53.153Z",
         "batterId": 694208,
-        "batterName": "Moisés Ballesteros",
+        "batterName": "Mois\u00e9s Ballesteros",
         "pitcherName": "Jason Adam",
         "distance": null
       },
@@ -2173,7 +2173,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Ramón Laureano strikes out on a foul tip.",
+        "desc": "Ram\u00f3n Laureano strikes out on a foul tip.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 8,
@@ -2184,7 +2184,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T04:20:46.431Z",
         "batterId": 657656,
-        "batterName": "Ramón Laureano",
+        "batterName": "Ram\u00f3n Laureano",
         "pitcherName": "Phil Maton",
         "distance": null
       },
@@ -2723,7 +2723,7 @@
       "data": {
         "type": "play",
         "event": "Walk",
-        "desc": "Teoscar Hernández walks.",
+        "desc": "Teoscar Hern\u00e1ndez walks.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 2,
@@ -2734,7 +2734,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T04:00:30.763Z",
         "batterId": 606192,
-        "batterName": "Teoscar Hernández",
+        "batterName": "Teoscar Hern\u00e1ndez",
         "pitcherName": "Michael Petersen",
         "distance": null
       },
@@ -3119,7 +3119,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Ramón Laureano flies out to left fielder Matt Shaw.",
+        "desc": "Ram\u00f3n Laureano flies out to left fielder Matt Shaw.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 6,
@@ -3130,7 +3130,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T03:45:47.331Z",
         "batterId": 657656,
-        "batterName": "Ramón Laureano",
+        "batterName": "Ram\u00f3n Laureano",
         "pitcherName": "Ben Brown",
         "distance": null
       },
@@ -3317,7 +3317,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Moisés Ballesteros grounds out, shortstop Xander Bogaerts to first baseman Ty France.",
+        "desc": "Mois\u00e9s Ballesteros grounds out, shortstop Xander Bogaerts to first baseman Ty France.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 6,
@@ -3328,7 +3328,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T03:38:26.113Z",
         "batterId": 694208,
-        "batterName": "Moisés Ballesteros",
+        "batterName": "Mois\u00e9s Ballesteros",
         "pitcherName": "Adrian Morejon",
         "distance": null
       },
@@ -3383,7 +3383,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Agustín Ramírez grounds out sharply, shortstop Hyeseong Kim to first baseman Freddie Freeman.",
+        "desc": "Agust\u00edn Ram\u00edrez grounds out sharply, shortstop Hyeseong Kim to first baseman Freddie Freeman.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 2,
@@ -3394,7 +3394,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T03:35:01.082Z",
         "batterId": 682663,
-        "batterName": "Agustín Ramírez",
+        "batterName": "Agust\u00edn Ram\u00edrez",
         "pitcherName": "Yoshinobu Yamamoto",
         "distance": null
       },
@@ -3845,7 +3845,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Andy Pages flies out to center fielder Jakob Marsee. Teoscar Hernández to 3rd.",
+        "desc": "Andy Pages flies out to center fielder Jakob Marsee. Teoscar Hern\u00e1ndez to 3rd.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 2,
@@ -3901,7 +3901,7 @@
         "playTime": "2026-04-28T03:16:28.898Z",
         "batterId": 673548,
         "batterName": "Seiya Suzuki",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T03:16:28.898Z"
@@ -3911,7 +3911,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Max Muncy singles on a line drive to left fielder Kyle Stowers. Teoscar Hernández to 2nd.",
+        "desc": "Max Muncy singles on a line drive to left fielder Kyle Stowers. Teoscar Hern\u00e1ndez to 2nd.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 2,
@@ -3955,7 +3955,7 @@
       "data": {
         "type": "play",
         "event": "Walk",
-        "desc": "Teoscar Hernández walks.",
+        "desc": "Teoscar Hern\u00e1ndez walks.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 2,
@@ -3966,7 +3966,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T03:14:07.850Z",
         "batterId": 606192,
-        "batterName": "Teoscar Hernández",
+        "batterName": "Teoscar Hern\u00e1ndez",
         "pitcherName": "Chris Paddack",
         "distance": null
       },
@@ -3989,7 +3989,7 @@
         "playTime": "2026-04-28T03:14:06.780Z",
         "batterId": 664023,
         "batterName": "Ian Happ",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T03:14:06.780Z"
@@ -4033,7 +4033,7 @@
         "playTime": "2026-04-28T03:13:05.209Z",
         "batterId": 608324,
         "batterName": "Alex Bregman",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T03:13:05.209Z"
@@ -4109,7 +4109,7 @@
       "data": {
         "type": "play",
         "event": "Field Error",
-        "desc": "Javier Sanoja reaches on a fielding error by shortstop Hyeseong Kim. Otto Lopez scores. Xavier Edwards to 3rd. Agustín Ramírez to 2nd.",
+        "desc": "Javier Sanoja reaches on a fielding error by shortstop Hyeseong Kim. Otto Lopez scores. Xavier Edwards to 3rd. Agust\u00edn Ram\u00edrez to 2nd.",
         "scoring": true,
         "awayScore": 1,
         "homeScore": 2,
@@ -4197,7 +4197,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Fernando Tatis Jr. singles on a line drive to center fielder Pete Crow-Armstrong. Ramón Laureano to 2nd.",
+        "desc": "Fernando Tatis Jr. singles on a line drive to center fielder Pete Crow-Armstrong. Ram\u00f3n Laureano to 2nd.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 4,
@@ -4241,7 +4241,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Agustín Ramírez singles on a sharp ground ball to left fielder Teoscar Hernández. Otto Lopez to 3rd. Xavier Edwards to 2nd.",
+        "desc": "Agust\u00edn Ram\u00edrez singles on a sharp ground ball to left fielder Teoscar Hern\u00e1ndez. Otto Lopez to 3rd. Xavier Edwards to 2nd.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -4252,7 +4252,7 @@
         "playClass": "risp",
         "playTime": "2026-04-28T03:03:44.200Z",
         "batterId": 682663,
-        "batterName": "Agustín Ramírez",
+        "batterName": "Agust\u00edn Ram\u00edrez",
         "pitcherName": "Yoshinobu Yamamoto",
         "distance": null
       },
@@ -4263,7 +4263,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Ramón Laureano singles on a soft ground ball to third baseman Alex Bregman.",
+        "desc": "Ram\u00f3n Laureano singles on a soft ground ball to third baseman Alex Bregman.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 4,
@@ -4274,7 +4274,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T03:03:31.671Z",
         "batterId": 657656,
-        "batterName": "Ramón Laureano",
+        "batterName": "Ram\u00f3n Laureano",
         "pitcherName": "Matthew Boyd",
         "distance": null
       },
@@ -4416,11 +4416,11 @@
       "gamePk": 822906,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "NYY 4, TEX 2"
       },
-      "ts": "2026-04-28T02:58:31.287Z"
+      "ts": "2026-04-28T02:58:01.010Z"
     },
     {
       "gamePk": 824609,
@@ -4493,7 +4493,7 @@
       "data": {
         "type": "play",
         "event": "Double",
-        "desc": "Otto Lopez doubles (6) on a line drive to left fielder Teoscar Hernández.",
+        "desc": "Otto Lopez doubles (6) on a line drive to left fielder Teoscar Hern\u00e1ndez.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -4515,7 +4515,7 @@
       "data": {
         "type": "play",
         "event": "Forceout",
-        "desc": "Ezequiel Duran grounds into a force out, shortstop José Caballero to second baseman Jazz Chisholm Jr. Alejandro Osuna out at 2nd.",
+        "desc": "Ezequiel Duran grounds into a force out, shortstop Jos\u00e9 Caballero to second baseman Jazz Chisholm Jr. Alejandro Osuna out at 2nd.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 2,
@@ -4537,7 +4537,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Michael Busch flies out to left fielder Ramón Laureano.",
+        "desc": "Michael Busch flies out to left fielder Ram\u00f3n Laureano.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 4,
@@ -4549,7 +4549,7 @@
         "playTime": "2026-04-28T02:55:55.894Z",
         "batterId": 683737,
         "batterName": "Michael Busch",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:55:55.894Z"
@@ -4571,7 +4571,7 @@
         "playTime": "2026-04-28T02:53:52.053Z",
         "batterId": 663538,
         "batterName": "Nico Hoerner",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:53:52.053Z"
@@ -4778,7 +4778,7 @@
       "gamePk": 822906,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "NYY @ TEX"
       },
@@ -4845,7 +4845,7 @@
         "playTime": "2026-04-28T02:49:19.369Z",
         "batterId": 691718,
         "batterName": "Pete Crow-Armstrong",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:49:19.369Z"
@@ -4867,7 +4867,7 @@
         "playTime": "2026-04-28T02:46:55.409Z",
         "batterId": 621020,
         "batterName": "Dansby Swanson",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:46:55.409Z"
@@ -5162,11 +5162,11 @@
       "gamePk": 824609,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "LAA @ CWS"
       },
-      "ts": "2026-04-28T02:40:31.278Z"
+      "ts": "2026-04-28T02:39:29.731Z"
     },
     {
       "gamePk": 824609,
@@ -5216,7 +5216,7 @@
       "gamePk": 822906,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "NYY @ TEX"
       },
@@ -5381,7 +5381,7 @@
       "data": {
         "type": "play",
         "event": "Hit By Pitch",
-        "desc": "José Caballero hit by pitch.",
+        "desc": "Jos\u00e9 Caballero hit by pitch.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 1,
@@ -5392,7 +5392,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T02:33:04.904Z",
         "batterId": 676609,
-        "batterName": "José Caballero",
+        "batterName": "Jos\u00e9 Caballero",
         "pitcherName": "Gavin Collyer",
         "distance": null
       },
@@ -5403,7 +5403,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Agustín Ramírez grounds out, shortstop Hyeseong Kim to first baseman Freddie Freeman.",
+        "desc": "Agust\u00edn Ram\u00edrez grounds out, shortstop Hyeseong Kim to first baseman Freddie Freeman.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -5414,7 +5414,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T02:32:33.323Z",
         "batterId": 682663,
-        "batterName": "Agustín Ramírez",
+        "batterName": "Agust\u00edn Ram\u00edrez",
         "pitcherName": "Yoshinobu Yamamoto",
         "distance": null
       },
@@ -5437,7 +5437,7 @@
         "playTime": "2026-04-28T02:30:53.064Z",
         "batterId": 624424,
         "batterName": "Michael Conforto",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:30:53.064Z"
@@ -5469,7 +5469,7 @@
       "data": {
         "type": "play",
         "event": "Home Run",
-        "desc": "Moisés Ballesteros hits a grand slam (5) to right field. Alex Bregman scores. Ian Happ scores. Seiya Suzuki scores.",
+        "desc": "Mois\u00e9s Ballesteros hits a grand slam (5) to right field. Alex Bregman scores. Ian Happ scores. Seiya Suzuki scores.",
         "scoring": true,
         "awayScore": 5,
         "homeScore": 3,
@@ -5480,8 +5480,8 @@
         "playClass": "homerun",
         "playTime": "2026-04-28T02:29:51.863Z",
         "batterId": 694208,
-        "batterName": "Moisés Ballesteros",
-        "pitcherName": "Randy Vásquez",
+        "batterName": "Mois\u00e9s Ballesteros",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:29:51.863Z"
@@ -5535,7 +5535,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Seiya Suzuki singles on a line drive to left fielder Ramón Laureano. Alex Bregman to 3rd. Ian Happ to 2nd.",
+        "desc": "Seiya Suzuki singles on a line drive to left fielder Ram\u00f3n Laureano. Alex Bregman to 3rd. Ian Happ to 2nd.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 3,
@@ -5547,7 +5547,7 @@
         "playTime": "2026-04-28T02:28:03.486Z",
         "batterId": 673548,
         "batterName": "Seiya Suzuki",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:28:03.486Z"
@@ -5556,11 +5556,11 @@
       "gamePk": 823719,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "SEA 4, MIN 11"
       },
-      "ts": "2026-04-28T02:27:31.284Z"
+      "ts": "2026-04-28T02:25:16.415Z"
     },
     {
       "gamePk": 822906,
@@ -5601,7 +5601,7 @@
         "playTime": "2026-04-28T02:25:19.352Z",
         "batterId": 664023,
         "batterName": "Ian Happ",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:25:19.352Z"
@@ -5633,7 +5633,7 @@
       "data": {
         "type": "play",
         "event": "Forceout",
-        "desc": "Brandon Nimmo grounds into a force out, second baseman Jazz Chisholm Jr. to shortstop José Caballero. Ezequiel Duran out at 2nd. Brandon Nimmo to 1st.",
+        "desc": "Brandon Nimmo grounds into a force out, second baseman Jazz Chisholm Jr. to shortstop Jos\u00e9 Caballero. Ezequiel Duran out at 2nd. Brandon Nimmo to 1st.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 1,
@@ -5689,7 +5689,7 @@
         "playTime": "2026-04-28T02:23:40.583Z",
         "batterId": 608324,
         "batterName": "Alex Bregman",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:23:40.583Z"
@@ -5699,7 +5699,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Teoscar Hernández singles on a ground ball to center fielder Jakob Marsee. Shohei Ohtani scores. Freddie Freeman scores.",
+        "desc": "Teoscar Hern\u00e1ndez singles on a ground ball to center fielder Jakob Marsee. Shohei Ohtani scores. Freddie Freeman scores.",
         "scoring": true,
         "awayScore": 0,
         "homeScore": 2,
@@ -5710,7 +5710,7 @@
         "playClass": "scoring",
         "playTime": "2026-04-28T02:22:56.527Z",
         "batterId": 606192,
-        "batterName": "Teoscar Hernández",
+        "batterName": "Teoscar Hern\u00e1ndez",
         "pitcherName": "Chris Paddack",
         "distance": null
       },
@@ -5765,7 +5765,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Danny Jansen grounds out, shortstop José Caballero to first baseman Ben Rice.",
+        "desc": "Danny Jansen grounds out, shortstop Jos\u00e9 Caballero to first baseman Ben Rice.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 1,
@@ -5821,7 +5821,7 @@
         "playTime": "2026-04-28T02:22:08.208Z",
         "batterId": 683737,
         "batterName": "Michael Busch",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:22:08.208Z"
@@ -5843,7 +5843,7 @@
         "playTime": "2026-04-28T02:21:13.450Z",
         "batterId": 663538,
         "batterName": "Nico Hoerner",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:21:13.450Z"
@@ -5985,7 +5985,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Ramón Laureano flies out to left fielder Michael Conforto.",
+        "desc": "Ram\u00f3n Laureano flies out to left fielder Michael Conforto.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 3,
@@ -5996,7 +5996,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T02:16:53.900Z",
         "batterId": 657656,
-        "batterName": "Ramón Laureano",
+        "batterName": "Ram\u00f3n Laureano",
         "pitcherName": "Matthew Boyd",
         "distance": null
       },
@@ -6117,7 +6117,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Kody Clemens singles on a sharp line drive to center fielder Julio Rodríguez. James Outman scores. Ryan Jeffers scores.",
+        "desc": "Kody Clemens singles on a sharp line drive to center fielder Julio Rodr\u00edguez. James Outman scores. Ryan Jeffers scores.",
         "scoring": true,
         "awayScore": 4,
         "homeScore": 11,
@@ -6139,7 +6139,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Jasson Domínguez grounds out, first baseman Jake Burger to pitcher Peyton Gray.",
+        "desc": "Jasson Dom\u00ednguez grounds out, first baseman Jake Burger to pitcher Peyton Gray.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 1,
@@ -6150,7 +6150,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T02:13:09.735Z",
         "batterId": 691176,
-        "batterName": "Jasson Domínguez",
+        "batterName": "Jasson Dom\u00ednguez",
         "pitcherName": "Peyton Gray",
         "distance": null
       },
@@ -6161,7 +6161,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Ryan Jeffers singles on a sharp ground ball to center fielder Julio Rodríguez. Brooks Lee scores. James Outman to 3rd.",
+        "desc": "Ryan Jeffers singles on a sharp ground ball to center fielder Julio Rodr\u00edguez. Brooks Lee scores. James Outman to 3rd.",
         "scoring": true,
         "awayScore": 4,
         "homeScore": 9,
@@ -6239,7 +6239,7 @@
         "playTime": "2026-04-28T02:11:26.756Z",
         "batterId": 691718,
         "batterName": "Pete Crow-Armstrong",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:11:26.756Z"
@@ -6249,7 +6249,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Dansby Swanson singles on a ground ball to left fielder Ramón Laureano.",
+        "desc": "Dansby Swanson singles on a ground ball to left fielder Ram\u00f3n Laureano.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 3,
@@ -6261,7 +6261,7 @@
         "playTime": "2026-04-28T02:10:52.812Z",
         "batterId": 621020,
         "batterName": "Dansby Swanson",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:10:52.812Z"
@@ -6292,7 +6292,7 @@
       "gamePk": 823961,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "MIA @ LAD"
       },
@@ -6315,7 +6315,7 @@
         "playTime": "2026-04-28T02:10:24.351Z",
         "batterId": 624424,
         "batterName": "Michael Conforto",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:10:24.351Z"
@@ -6347,7 +6347,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Moisés Ballesteros grounds out, first baseman Ty France to pitcher Randy Vásquez.",
+        "desc": "Mois\u00e9s Ballesteros grounds out, first baseman Ty France to pitcher Randy V\u00e1squez.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 3,
@@ -6358,8 +6358,8 @@
         "playClass": "normal",
         "playTime": "2026-04-28T02:08:46.048Z",
         "batterId": 694208,
-        "batterName": "Moisés Ballesteros",
-        "pitcherName": "Randy Vásquez",
+        "batterName": "Mois\u00e9s Ballesteros",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:08:46.048Z"
@@ -6425,7 +6425,7 @@
         "playTime": "2026-04-28T02:06:30.919Z",
         "batterId": 673548,
         "batterName": "Seiya Suzuki",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T02:06:30.919Z"
@@ -6611,7 +6611,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Julio Rodríguez flies out to right fielder Matt Wallner.",
+        "desc": "Julio Rodr\u00edguez flies out to right fielder Matt Wallner.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 8,
@@ -6622,7 +6622,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:59:14.605Z",
         "batterId": 677594,
-        "batterName": "Julio Rodríguez",
+        "batterName": "Julio Rodr\u00edguez",
         "pitcherName": "Andrew Morris",
         "distance": null
       },
@@ -6809,7 +6809,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Jackson Merrill singles on a ground ball to right fielder Seiya Suzuki. Ramón Laureano scores.",
+        "desc": "Jackson Merrill singles on a ground ball to right fielder Seiya Suzuki. Ram\u00f3n Laureano scores.",
         "scoring": true,
         "awayScore": 0,
         "homeScore": 1,
@@ -6853,7 +6853,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Fernando Tatis Jr. grounds out, pitcher Matthew Boyd to first baseman Michael Busch. Ramón Laureano to 2nd.",
+        "desc": "Fernando Tatis Jr. grounds out, pitcher Matthew Boyd to first baseman Michael Busch. Ram\u00f3n Laureano to 2nd.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -6919,7 +6919,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "José Caballero pops out to shortstop Corey Seager.",
+        "desc": "Jos\u00e9 Caballero pops out to shortstop Corey Seager.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -6930,7 +6930,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:51:00.052Z",
         "batterId": 676609,
-        "batterName": "José Caballero",
+        "batterName": "Jos\u00e9 Caballero",
         "pitcherName": "Peyton Gray",
         "distance": null
       },
@@ -6941,7 +6941,7 @@
       "data": {
         "type": "play",
         "event": "Walk",
-        "desc": "Ramón Laureano walks.",
+        "desc": "Ram\u00f3n Laureano walks.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -6952,7 +6952,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:50:57.467Z",
         "batterId": 657656,
-        "batterName": "Ramón Laureano",
+        "batterName": "Ram\u00f3n Laureano",
         "pitcherName": "Matthew Boyd",
         "distance": null
       },
@@ -6984,7 +6984,7 @@
       "gamePk": 822906,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "NYY @ TEX"
       },
@@ -7007,7 +7007,7 @@
         "playTime": "2026-04-28T01:48:06.330Z",
         "batterId": 664023,
         "batterName": "Ian Happ",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T01:48:06.330Z"
@@ -7061,7 +7061,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Alex Bregman flies out sharply to left fielder Ramón Laureano.",
+        "desc": "Alex Bregman flies out sharply to left fielder Ram\u00f3n Laureano.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -7073,7 +7073,7 @@
         "playTime": "2026-04-28T01:45:43.223Z",
         "batterId": 608324,
         "batterName": "Alex Bregman",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T01:45:43.223Z"
@@ -7139,7 +7139,7 @@
         "playTime": "2026-04-28T01:43:51.095Z",
         "batterId": 683737,
         "batterName": "Michael Busch",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T01:43:51.095Z"
@@ -7149,7 +7149,7 @@
       "data": {
         "type": "play",
         "event": "Grounded Into DP",
-        "desc": "Brandon Nimmo grounds into a double play, shortstop José Caballero to first baseman Ben Rice. Ezequiel Duran out at 2nd. Brandon Nimmo out at 1st.",
+        "desc": "Brandon Nimmo grounds into a double play, shortstop Jos\u00e9 Caballero to first baseman Ben Rice. Ezequiel Duran out at 2nd. Brandon Nimmo out at 1st.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -7227,7 +7227,7 @@
         "playTime": "2026-04-28T01:41:15.579Z",
         "batterId": 663538,
         "batterName": "Nico Hoerner",
-        "pitcherName": "Randy Vásquez",
+        "pitcherName": "Randy V\u00e1squez",
         "distance": null
       },
       "ts": "2026-04-28T01:41:15.579Z"
@@ -7236,7 +7236,7 @@
       "gamePk": 823311,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "CHC @ SD"
       },
@@ -7246,11 +7246,11 @@
       "gamePk": 822825,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "BOS 5, TOR 0"
       },
-      "ts": "2026-04-28T01:39:31.309Z"
+      "ts": "2026-04-28T01:37:17.252Z"
     },
     {
       "gamePk": 823719,
@@ -7455,7 +7455,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Jasson Domínguez singles on a fly ball to left fielder Sam Haggerty.",
+        "desc": "Jasson Dom\u00ednguez singles on a fly ball to left fielder Sam Haggerty.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -7466,7 +7466,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:31:55.551Z",
         "batterId": 691176,
-        "batterName": "Jasson Domínguez",
+        "batterName": "Jasson Dom\u00ednguez",
         "pitcherName": "Jack Leiter",
         "distance": null
       },
@@ -7521,7 +7521,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Josh Bell flies out to center fielder Julio Rodríguez.",
+        "desc": "Josh Bell flies out to center fielder Julio Rodr\u00edguez.",
         "scoring": false,
         "awayScore": 2,
         "homeScore": 8,
@@ -7829,7 +7829,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Jesús Sánchez called out on strikes.",
+        "desc": "Jes\u00fas S\u00e1nchez called out on strikes.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 0,
@@ -7840,7 +7840,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:21:09.308Z",
         "batterId": 660821,
-        "batterName": "Jesús Sánchez",
+        "batterName": "Jes\u00fas S\u00e1nchez",
         "pitcherName": "Ranger Suarez",
         "distance": null
       },
@@ -7850,11 +7850,11 @@
       "gamePk": 823395,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "STL 4, PIT 2"
       },
-      "ts": "2026-04-28T01:20:31.277Z"
+      "ts": "2026-04-28T01:17:14.264Z"
     },
     {
       "gamePk": 822906,
@@ -7905,7 +7905,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "Eloy Jiménez pops out to third baseman Caleb Durbin in foul territory.",
+        "desc": "Eloy Jim\u00e9nez pops out to third baseman Caleb Durbin in foul territory.",
         "scoring": false,
         "awayScore": 5,
         "homeScore": 0,
@@ -7916,7 +7916,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:19:09.315Z",
         "batterId": 650391,
-        "batterName": "Eloy Jiménez",
+        "batterName": "Eloy Jim\u00e9nez",
         "pitcherName": "Ranger Suarez",
         "distance": null
       },
@@ -7927,7 +7927,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Julio Rodríguez grounds out softly, pitcher Andrew Morris to first baseman Kody Clemens.",
+        "desc": "Julio Rodr\u00edguez grounds out softly, pitcher Andrew Morris to first baseman Kody Clemens.",
         "scoring": false,
         "awayScore": 2,
         "homeScore": 7,
@@ -7938,7 +7938,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:18:16.830Z",
         "batterId": 677594,
-        "batterName": "Julio Rodríguez",
+        "batterName": "Julio Rodr\u00edguez",
         "pitcherName": "Andrew Morris",
         "distance": null
       },
@@ -8037,7 +8037,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "Andrew McCutchen pops out to shortstop José Caballero.",
+        "desc": "Andrew McCutchen pops out to shortstop Jos\u00e9 Caballero.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -8191,7 +8191,7 @@
       "data": {
         "type": "play",
         "event": "Home Run",
-        "desc": "Carlos Narváez homers (2) on a line drive to left center field.",
+        "desc": "Carlos Narv\u00e1ez homers (2) on a line drive to left center field.",
         "scoring": true,
         "awayScore": 5,
         "homeScore": 0,
@@ -8202,7 +8202,7 @@
         "playClass": "homerun",
         "playTime": "2026-04-28T01:11:09.084Z",
         "batterId": 665966,
-        "batterName": "Carlos Narváez",
+        "batterName": "Carlos Narv\u00e1ez",
         "pitcherName": "Chase Lee",
         "distance": null
       },
@@ -8322,7 +8322,7 @@
       "gamePk": 823395,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "STL @ PIT"
       },
@@ -8399,7 +8399,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "José Caballero grounds out to first baseman Jake Burger.",
+        "desc": "Jos\u00e9 Caballero grounds out to first baseman Jake Burger.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -8410,7 +8410,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:05:30.709Z",
         "batterId": 676609,
-        "batterName": "José Caballero",
+        "batterName": "Jos\u00e9 Caballero",
         "pitcherName": "Jack Leiter",
         "distance": null
       },
@@ -8487,7 +8487,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "Ernie Clement pops out to catcher Carlos Narváez in foul territory.",
+        "desc": "Ernie Clement pops out to catcher Carlos Narv\u00e1ez in foul territory.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -8575,7 +8575,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Trevor Story flies out to right fielder Jesús Sánchez.",
+        "desc": "Trevor Story flies out to right fielder Jes\u00fas S\u00e1nchez.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -8597,7 +8597,7 @@
       "data": {
         "type": "play",
         "event": "Double",
-        "desc": "José Fermín doubles (2) on a line drive to left fielder Jake Mangum. Victor Scott II scores. Alec Burleson scores. Jordan Walker to 3rd.",
+        "desc": "Jos\u00e9 Ferm\u00edn doubles (2) on a line drive to left fielder Jake Mangum. Victor Scott II scores. Alec Burleson scores. Jordan Walker to 3rd.",
         "scoring": true,
         "awayScore": 4,
         "homeScore": 2,
@@ -8608,7 +8608,7 @@
         "playClass": "scoring",
         "playTime": "2026-04-28T01:00:26.829Z",
         "batterId": 665877,
-        "batterName": "José Fermín",
+        "batterName": "Jos\u00e9 Ferm\u00edn",
         "pitcherName": "Dennis Santana",
         "distance": null
       },
@@ -8619,7 +8619,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "Jasson Domínguez pops out to third baseman Josh Jung.",
+        "desc": "Jasson Dom\u00ednguez pops out to third baseman Josh Jung.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -8630,7 +8630,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T01:00:05.428Z",
         "batterId": 691176,
-        "batterName": "Jasson Domínguez",
+        "batterName": "Jasson Dom\u00ednguez",
         "pitcherName": "Jack Leiter",
         "distance": null
       },
@@ -8883,7 +8883,7 @@
       "data": {
         "type": "play",
         "event": "Walk",
-        "desc": "Iván Herrera walks.",
+        "desc": "Iv\u00e1n Herrera walks.",
         "scoring": false,
         "awayScore": 2,
         "homeScore": 2,
@@ -8894,7 +8894,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:52:52.586Z",
         "batterId": 671056,
-        "batterName": "Iván Herrera",
+        "batterName": "Iv\u00e1n Herrera",
         "pitcherName": "Dennis Santana",
         "distance": null
       },
@@ -9081,7 +9081,7 @@
       "data": {
         "type": "play",
         "event": "Home Run",
-        "desc": "Pedro Pagés homers (3) on a fly ball to left field.",
+        "desc": "Pedro Pag\u00e9s homers (3) on a fly ball to left field.",
         "scoring": true,
         "awayScore": 1,
         "homeScore": 2,
@@ -9092,7 +9092,7 @@
         "playClass": "homerun",
         "playTime": "2026-04-28T00:48:49.044Z",
         "batterId": 686780,
-        "batterName": "Pedro Pagés",
+        "batterName": "Pedro Pag\u00e9s",
         "pitcherName": "Dennis Santana",
         "distance": null
       },
@@ -9191,7 +9191,7 @@
       "data": {
         "type": "play",
         "event": "Double",
-        "desc": "Jesús Sánchez doubles (4) on a ground ball to left fielder Jarren Duran.",
+        "desc": "Jes\u00fas S\u00e1nchez doubles (4) on a ground ball to left fielder Jarren Duran.",
         "scoring": false,
         "awayScore": 4,
         "homeScore": 0,
@@ -9202,7 +9202,7 @@
         "playClass": "risp",
         "playTime": "2026-04-28T00:45:56.701Z",
         "batterId": 660821,
-        "batterName": "Jesús Sánchez",
+        "batterName": "Jes\u00fas S\u00e1nchez",
         "pitcherName": "Ranger Suarez",
         "distance": null
       },
@@ -9213,7 +9213,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Bryan Reynolds flies out to left fielder José Fermín.",
+        "desc": "Bryan Reynolds flies out to left fielder Jos\u00e9 Ferm\u00edn.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -9345,7 +9345,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Julio Rodríguez strikes out swinging.",
+        "desc": "Julio Rodr\u00edguez strikes out swinging.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 5,
@@ -9356,7 +9356,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:43:13.834Z",
         "batterId": 677594,
-        "batterName": "Julio Rodríguez",
+        "batterName": "Julio Rodr\u00edguez",
         "pitcherName": "Connor Prielipp",
         "distance": null
       },
@@ -9433,7 +9433,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "José Caballero singles on a ground ball to center fielder Evan Carter.",
+        "desc": "Jos\u00e9 Caballero singles on a ground ball to center fielder Evan Carter.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -9444,7 +9444,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:39:40.890Z",
         "batterId": 676609,
-        "batterName": "José Caballero",
+        "batterName": "Jos\u00e9 Caballero",
         "pitcherName": "Jack Leiter",
         "distance": null
       },
@@ -9476,12 +9476,12 @@
       "gamePk": 824446,
       "data": {
         "type": "status",
-        "icon": "🏁",
+        "icon": "\ud83c\udfc1",
         "label": "Game Final",
         "sub": "TB 3, CLE 2",
         "playTime": "2026-04-28T00:38:45.641Z"
       },
-      "ts": "2026-04-28T00:38:45.641Z"
+      "ts": "2026-04-28T00:38:56.641Z"
     },
     {
       "gamePk": 822825,
@@ -9576,7 +9576,7 @@
       "data": {
         "type": "play",
         "event": "Grounded Into DP",
-        "desc": "Masyn Winn grounds into a double play, second baseman Brandon Lowe to shortstop Konnor Griffin to first baseman Spencer Horwitz. José Fermín out at 2nd. Masyn Winn out at 1st.",
+        "desc": "Masyn Winn grounds into a double play, second baseman Brandon Lowe to shortstop Konnor Griffin to first baseman Spencer Horwitz. Jos\u00e9 Ferm\u00edn out at 2nd. Masyn Winn out at 1st.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -9642,7 +9642,7 @@
       "data": {
         "type": "play",
         "event": "Grounded Into DP",
-        "desc": "Carlos Narváez grounds into a double play, shortstop Ernie Clement to second baseman Lenyn Sosa to first baseman Vladimir Guerrero Jr. Marcelo Mayer to 3rd. Ceddanne Rafaela out at 2nd. Carlos Narváez out at 1st.",
+        "desc": "Carlos Narv\u00e1ez grounds into a double play, shortstop Ernie Clement to second baseman Lenyn Sosa to first baseman Vladimir Guerrero Jr. Marcelo Mayer to 3rd. Ceddanne Rafaela out at 2nd. Carlos Narv\u00e1ez out at 1st.",
         "scoring": false,
         "awayScore": 3,
         "homeScore": 0,
@@ -9653,7 +9653,7 @@
         "playClass": "risp",
         "playTime": "2026-04-28T00:35:42.218Z",
         "batterId": 665966,
-        "batterName": "Carlos Narváez",
+        "batterName": "Carlos Narv\u00e1ez",
         "pitcherName": "Dylan Cease",
         "distance": null
       },
@@ -9730,7 +9730,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "José Fermín singles on a ground ball to left fielder Bryan Reynolds.",
+        "desc": "Jos\u00e9 Ferm\u00edn singles on a ground ball to left fielder Bryan Reynolds.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -9741,7 +9741,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:33:54.540Z",
         "batterId": 665877,
-        "batterName": "José Fermín",
+        "batterName": "Jos\u00e9 Ferm\u00edn",
         "pitcherName": "Gregory Soto",
         "distance": null
       },
@@ -9906,7 +9906,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "José Ramírez grounds out, second baseman Richie Palacios to first baseman Jonathan Aranda.",
+        "desc": "Jos\u00e9 Ram\u00edrez grounds out, second baseman Richie Palacios to first baseman Jonathan Aranda.",
         "scoring": false,
         "awayScore": 3,
         "homeScore": 2,
@@ -9917,7 +9917,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:29:42.048Z",
         "batterId": 608070,
-        "batterName": "José Ramírez",
+        "batterName": "Jos\u00e9 Ram\u00edrez",
         "pitcherName": "Bryan Baker",
         "distance": null
       },
@@ -9950,7 +9950,7 @@
       "data": {
         "type": "play",
         "event": "Triple",
-        "desc": "Trevor Larnach triples (1) on a sharp fly ball to right fielder Rob Refsnyder, deflected by center fielder Julio Rodríguez.",
+        "desc": "Trevor Larnach triples (1) on a sharp fly ball to right fielder Rob Refsnyder, deflected by center fielder Julio Rodr\u00edguez.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 1,
@@ -9994,7 +9994,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Eloy Jiménez strikes out swinging.",
+        "desc": "Eloy Jim\u00e9nez strikes out swinging.",
         "scoring": false,
         "awayScore": 3,
         "homeScore": 0,
@@ -10005,7 +10005,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:28:21.587Z",
         "batterId": 650391,
-        "batterName": "Eloy Jiménez",
+        "batterName": "Eloy Jim\u00e9nez",
         "pitcherName": "Ranger Suarez",
         "distance": null
       },
@@ -10148,7 +10148,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Yandy Díaz flies out sharply to center fielder Steven Kwan.",
+        "desc": "Yandy D\u00edaz flies out sharply to center fielder Steven Kwan.",
         "scoring": false,
         "awayScore": 3,
         "homeScore": 2,
@@ -10159,7 +10159,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:25:29.159Z",
         "batterId": 650490,
-        "batterName": "Yandy Díaz",
+        "batterName": "Yandy D\u00edaz",
         "pitcherName": "Colin Holderman",
         "distance": null
       },
@@ -10192,7 +10192,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Jasson Domínguez strikes out on a foul tip.",
+        "desc": "Jasson Dom\u00ednguez strikes out on a foul tip.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -10203,7 +10203,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:24:14.314Z",
         "batterId": 691176,
-        "batterName": "Jasson Domínguez",
+        "batterName": "Jasson Dom\u00ednguez",
         "pitcherName": "Jack Leiter",
         "distance": null
       },
@@ -10390,7 +10390,7 @@
       "data": {
         "type": "play",
         "event": "Double",
-        "desc": "Wilyer Abreu doubles (6) on a sharp line drive to right fielder Jesús Sánchez. Willson Contreras scores. Roman Anthony to 3rd.",
+        "desc": "Wilyer Abreu doubles (6) on a sharp line drive to right fielder Jes\u00fas S\u00e1nchez. Willson Contreras scores. Roman Anthony to 3rd.",
         "scoring": true,
         "awayScore": 3,
         "homeScore": 0,
@@ -10434,7 +10434,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Angel Martínez strikes out on a foul tip.",
+        "desc": "Angel Mart\u00ednez strikes out on a foul tip.",
         "scoring": false,
         "awayScore": 3,
         "homeScore": 2,
@@ -10445,7 +10445,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:18:27.466Z",
         "batterId": 682657,
-        "batterName": "Angel Martínez",
+        "batterName": "Angel Mart\u00ednez",
         "pitcherName": "Ian Seymour",
         "distance": null
       },
@@ -10500,7 +10500,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Iván Herrera grounds out, third baseman Nick Gonzales to first baseman Spencer Horwitz.",
+        "desc": "Iv\u00e1n Herrera grounds out, third baseman Nick Gonzales to first baseman Spencer Horwitz.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -10511,7 +10511,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:16:29.582Z",
         "batterId": 671056,
-        "batterName": "Iván Herrera",
+        "batterName": "Iv\u00e1n Herrera",
         "pitcherName": "Evan Sisk",
         "distance": null
       },
@@ -10544,7 +10544,7 @@
       "data": {
         "type": "play",
         "event": "Grounded Into DP",
-        "desc": "Josh Jung grounds into a double play, shortstop José Caballero to second baseman Jazz Chisholm Jr. to first baseman Ben Rice. Brandon Nimmo out at 2nd. Josh Jung out at 1st.",
+        "desc": "Josh Jung grounds into a double play, shortstop Jos\u00e9 Caballero to second baseman Jazz Chisholm Jr. to first baseman Ben Rice. Brandon Nimmo out at 2nd. Josh Jung out at 1st.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -10720,7 +10720,7 @@
       "data": {
         "type": "play",
         "event": "Caught Stealing 2B",
-        "desc": "Nick Gonzales caught stealing 2nd base, catcher Pedro Pagés to second baseman JJ Wetherholt.",
+        "desc": "Nick Gonzales caught stealing 2nd base, catcher Pedro Pag\u00e9s to second baseman JJ Wetherholt.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -10764,7 +10764,7 @@
       "data": {
         "type": "play",
         "event": "Lineout",
-        "desc": "Ben Williamson lines out to third baseman José Ramírez.",
+        "desc": "Ben Williamson lines out to third baseman Jos\u00e9 Ram\u00edrez.",
         "scoring": false,
         "awayScore": 3,
         "homeScore": 2,
@@ -11028,7 +11028,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Carlos Narváez grounds out, second baseman Lenyn Sosa to first baseman Vladimir Guerrero Jr.",
+        "desc": "Carlos Narv\u00e1ez grounds out, second baseman Lenyn Sosa to first baseman Vladimir Guerrero Jr.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 0,
@@ -11039,7 +11039,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:06:17.931Z",
         "batterId": 665966,
-        "batterName": "Carlos Narváez",
+        "batterName": "Carlos Narv\u00e1ez",
         "pitcherName": "Dylan Cease",
         "distance": null
       },
@@ -11049,7 +11049,7 @@
       "gamePk": 822906,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "NYY @ TEX",
         "playTime": "2026-04-28T00:05:00.000Z"
@@ -11061,7 +11061,7 @@
       "data": {
         "type": "play",
         "event": "Flyout",
-        "desc": "Pedro Pagés flies out to right fielder Ryan O'Hearn in foul territory.",
+        "desc": "Pedro Pag\u00e9s flies out to right fielder Ryan O'Hearn in foul territory.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -11072,7 +11072,7 @@
         "playClass": "normal",
         "playTime": "2026-04-28T00:04:47.249Z",
         "batterId": 686780,
-        "batterName": "Pedro Pagés",
+        "batterName": "Pedro Pag\u00e9s",
         "pitcherName": "Wilber Dotel",
         "distance": null
       },
@@ -11259,7 +11259,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Junior Caminero singles on a ground ball to left fielder Angel Martínez.",
+        "desc": "Junior Caminero singles on a ground ball to left fielder Angel Mart\u00ednez.",
         "scoring": false,
         "awayScore": 2,
         "homeScore": 2,
@@ -11655,7 +11655,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Yandy Díaz grounds out, second baseman Daniel Schneemann to first baseman Rhys Hoskins.",
+        "desc": "Yandy D\u00edaz grounds out, second baseman Daniel Schneemann to first baseman Rhys Hoskins.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 2,
@@ -11666,7 +11666,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:49:32.502Z",
         "batterId": 650490,
-        "batterName": "Yandy Díaz",
+        "batterName": "Yandy D\u00edaz",
         "pitcherName": "Hunter Gaddis",
         "distance": null
       },
@@ -11809,7 +11809,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Willson Contreras singles on a line drive to right fielder Jesús Sánchez.",
+        "desc": "Willson Contreras singles on a line drive to right fielder Jes\u00fas S\u00e1nchez.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -11875,7 +11875,7 @@
       "data": {
         "type": "play",
         "event": "Lineout",
-        "desc": "Julio Rodríguez lines out to left fielder Trevor Larnach.",
+        "desc": "Julio Rodr\u00edguez lines out to left fielder Trevor Larnach.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -11886,7 +11886,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:44:02.626Z",
         "batterId": 677594,
-        "batterName": "Julio Rodríguez",
+        "batterName": "Julio Rodr\u00edguez",
         "pitcherName": "Connor Prielipp",
         "distance": null
       },
@@ -11897,7 +11897,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Nick Fortes singles on a line drive to left fielder Angel Martínez.",
+        "desc": "Nick Fortes singles on a line drive to left fielder Angel Mart\u00ednez.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 2,
@@ -12029,7 +12029,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Henry Davis singles on a ground ball to shortstop Masyn Winn. Jake Mangum out at home, shortstop Masyn Winn to third baseman Nolan Gorman to catcher Pedro Pagés to third baseman Nolan Gorman to first baseman Alec Burleson.",
+        "desc": "Henry Davis singles on a ground ball to shortstop Masyn Winn. Jake Mangum out at home, shortstop Masyn Winn to third baseman Nolan Gorman to catcher Pedro Pag\u00e9s to third baseman Nolan Gorman to first baseman Alec Burleson.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -12072,9 +12072,9 @@
       "gamePk": 824609,
       "data": {
         "type": "status",
-        "icon": "🌧️",
+        "icon": "\ud83c\udf27\ufe0f",
         "label": "Game Delayed",
-        "sub": "LAA @ CWS · Delayed Start",
+        "sub": "LAA @ CWS \u00b7 Delayed Start",
         "playTime": "2026-04-27T23:40:00.000Z"
       },
       "ts": "2026-04-27T23:40:00.000Z"
@@ -12083,7 +12083,7 @@
       "gamePk": 823719,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "SEA @ MIN",
         "playTime": "2026-04-27T23:40:00.000Z"
@@ -12095,7 +12095,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Jesús Sánchez strikes out swinging.",
+        "desc": "Jes\u00fas S\u00e1nchez strikes out swinging.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -12106,7 +12106,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:39:31.354Z",
         "batterId": 660821,
-        "batterName": "Jesús Sánchez",
+        "batterName": "Jes\u00fas S\u00e1nchez",
         "pitcherName": "Ranger Suarez",
         "distance": null
       },
@@ -12161,7 +12161,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "José Ramírez grounds out, third baseman Junior Caminero to first baseman Jonathan Aranda.",
+        "desc": "Jos\u00e9 Ram\u00edrez grounds out, third baseman Junior Caminero to first baseman Jonathan Aranda.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 2,
@@ -12172,7 +12172,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:37:14.822Z",
         "batterId": 608070,
-        "batterName": "José Ramírez",
+        "batterName": "Jos\u00e9 Ram\u00edrez",
         "pitcherName": "Steven Matz",
         "distance": null
       },
@@ -12227,7 +12227,7 @@
       "data": {
         "type": "play",
         "event": "Lineout",
-        "desc": "Angel Martínez lines out to second baseman Ben Williamson.",
+        "desc": "Angel Mart\u00ednez lines out to second baseman Ben Williamson.",
         "scoring": false,
         "awayScore": 1,
         "homeScore": 2,
@@ -12238,7 +12238,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:34:56.640Z",
         "batterId": 682657,
-        "batterName": "Angel Martínez",
+        "batterName": "Angel Mart\u00ednez",
         "pitcherName": "Steven Matz",
         "distance": null
       },
@@ -12271,7 +12271,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Carlos Narváez strikes out swinging.",
+        "desc": "Carlos Narv\u00e1ez strikes out swinging.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -12282,7 +12282,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:34:20.804Z",
         "batterId": 665966,
-        "batterName": "Carlos Narváez",
+        "batterName": "Carlos Narv\u00e1ez",
         "pitcherName": "Dylan Cease",
         "distance": null
       },
@@ -12337,7 +12337,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "Iván Herrera pops out to first baseman Spencer Horwitz.",
+        "desc": "Iv\u00e1n Herrera pops out to first baseman Spencer Horwitz.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -12348,7 +12348,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:32:02.182Z",
         "batterId": 671056,
-        "batterName": "Iván Herrera",
+        "batterName": "Iv\u00e1n Herrera",
         "pitcherName": "Wilber Dotel",
         "distance": null
       },
@@ -12381,7 +12381,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Eloy Jiménez called out on strikes.",
+        "desc": "Eloy Jim\u00e9nez called out on strikes.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -12392,7 +12392,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:30:31.690Z",
         "batterId": 650391,
-        "batterName": "Eloy Jiménez",
+        "batterName": "Eloy Jim\u00e9nez",
         "pitcherName": "Ranger Suarez",
         "distance": null
       },
@@ -12535,7 +12535,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "Ryan Vilade singles on a ground ball to right fielder Chase DeLauter. Yandy Díaz scores.",
+        "desc": "Ryan Vilade singles on a ground ball to right fielder Chase DeLauter. Yandy D\u00edaz scores.",
         "scoring": true,
         "awayScore": 1,
         "homeScore": 2,
@@ -12667,7 +12667,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Pedro Pagés grounds out, shortstop Konnor Griffin to first baseman Spencer Horwitz.",
+        "desc": "Pedro Pag\u00e9s grounds out, shortstop Konnor Griffin to first baseman Spencer Horwitz.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -12678,7 +12678,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:20:27.677Z",
         "batterId": 686780,
-        "batterName": "Pedro Pagés",
+        "batterName": "Pedro Pag\u00e9s",
         "pitcherName": "Wilber Dotel",
         "distance": null
       },
@@ -12689,7 +12689,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Jonathan Aranda grounds out, third baseman José Ramírez to first baseman Rhys Hoskins. Yandy Díaz to 2nd.",
+        "desc": "Jonathan Aranda grounds out, third baseman Jos\u00e9 Ram\u00edrez to first baseman Rhys Hoskins. Yandy D\u00edaz to 2nd.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -12755,7 +12755,7 @@
       "data": {
         "type": "play",
         "event": "Walk",
-        "desc": "Yandy Díaz walks.",
+        "desc": "Yandy D\u00edaz walks.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -12766,7 +12766,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:18:00.685Z",
         "batterId": 650490,
-        "batterName": "Yandy Díaz",
+        "batterName": "Yandy D\u00edaz",
         "pitcherName": "Parker Messick",
         "distance": null
       },
@@ -12953,7 +12953,7 @@
       "data": {
         "type": "play",
         "event": "Pop Out",
-        "desc": "Henry Davis pops out to catcher Pedro Pagés in foul territory.",
+        "desc": "Henry Davis pops out to catcher Pedro Pag\u00e9s in foul territory.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 2,
@@ -13128,7 +13128,7 @@
       "gamePk": 822825,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "BOS @ TOR",
         "playTime": "2026-04-27T23:07:00.000Z"
@@ -13250,7 +13250,7 @@
       "data": {
         "type": "play",
         "event": "Grounded Into DP",
-        "desc": "Rhys Hoskins grounds into a double play, third baseman Junior Caminero to second baseman Ben Williamson to first baseman Jonathan Aranda. José Ramírez out at 2nd. Rhys Hoskins out at 1st.",
+        "desc": "Rhys Hoskins grounds into a double play, third baseman Junior Caminero to second baseman Ben Williamson to first baseman Jonathan Aranda. Jos\u00e9 Ram\u00edrez out at 2nd. Rhys Hoskins out at 1st.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -13294,7 +13294,7 @@
       "data": {
         "type": "play",
         "event": "Single",
-        "desc": "José Ramírez singles on a ground ball to center fielder Jonny DeLuca.",
+        "desc": "Jos\u00e9 Ram\u00edrez singles on a ground ball to center fielder Jonny DeLuca.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -13305,7 +13305,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T23:00:45.786Z",
         "batterId": 608070,
-        "batterName": "José Ramírez",
+        "batterName": "Jos\u00e9 Ram\u00edrez",
         "pitcherName": "Steven Matz",
         "distance": null
       },
@@ -13316,7 +13316,7 @@
       "data": {
         "type": "play",
         "event": "Lineout",
-        "desc": "Angel Martínez lines out to left fielder Chandler Simpson.",
+        "desc": "Angel Mart\u00ednez lines out to left fielder Chandler Simpson.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -13327,7 +13327,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T22:59:46.249Z",
         "batterId": 682657,
-        "batterName": "Angel Martínez",
+        "batterName": "Angel Mart\u00ednez",
         "pitcherName": "Steven Matz",
         "distance": null
       },
@@ -13668,7 +13668,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Iván Herrera strikes out swinging.",
+        "desc": "Iv\u00e1n Herrera strikes out swinging.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -13679,7 +13679,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T22:43:23.400Z",
         "batterId": 671056,
-        "batterName": "Iván Herrera",
+        "batterName": "Iv\u00e1n Herrera",
         "pitcherName": "Mason Montgomery",
         "distance": null
       },
@@ -13733,7 +13733,7 @@
       "gamePk": 823395,
       "data": {
         "type": "status",
-        "icon": "⚾",
+        "icon": "\u26be",
         "label": "Game underway!",
         "sub": "STL @ PIT",
         "playTime": "2026-04-27T22:40:00.000Z"
@@ -13745,7 +13745,7 @@
       "data": {
         "type": "play",
         "event": "Walk",
-        "desc": "Yandy Díaz walks.",
+        "desc": "Yandy D\u00edaz walks.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -13756,7 +13756,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T22:39:55.346Z",
         "batterId": 650490,
-        "batterName": "Yandy Díaz",
+        "batterName": "Yandy D\u00edaz",
         "pitcherName": "Parker Messick",
         "distance": null
       },
@@ -13965,7 +13965,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "José Ramírez grounds out, shortstop Taylor Walls to first baseman Jonathan Aranda.",
+        "desc": "Jos\u00e9 Ram\u00edrez grounds out, shortstop Taylor Walls to first baseman Jonathan Aranda.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -13976,7 +13976,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T22:20:05.124Z",
         "batterId": 608070,
-        "batterName": "José Ramírez",
+        "batterName": "Jos\u00e9 Ram\u00edrez",
         "pitcherName": "Steven Matz",
         "distance": null
       },
@@ -13987,7 +13987,7 @@
       "data": {
         "type": "play",
         "event": "Groundout",
-        "desc": "Angel Martínez grounds out, second baseman Ben Williamson to first baseman Jonathan Aranda.",
+        "desc": "Angel Mart\u00ednez grounds out, second baseman Ben Williamson to first baseman Jonathan Aranda.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -13998,7 +13998,7 @@
         "playClass": "normal",
         "playTime": "2026-04-27T22:18:38.576Z",
         "batterId": 682657,
-        "batterName": "Angel Martínez",
+        "batterName": "Angel Mart\u00ednez",
         "pitcherName": "Steven Matz",
         "distance": null
       },
@@ -14075,7 +14075,7 @@
       "data": {
         "type": "play",
         "event": "Strikeout",
-        "desc": "Yandy Díaz strikes out swinging.",
+        "desc": "Yandy D\u00edaz strikes out swinging.",
         "scoring": false,
         "awayScore": 0,
         "homeScore": 0,
@@ -14086,11 +14086,21 @@
         "playClass": "normal",
         "playTime": "2026-04-27T22:10:51.405Z",
         "batterId": 650490,
-        "batterName": "Yandy Díaz",
+        "batterName": "Yandy D\u00edaz",
         "pitcherName": "Parker Messick",
         "distance": null
       },
       "ts": "2026-04-27T22:10:51.405Z"
+    },
+    {
+      "gamePk": 824446,
+      "data": {
+        "type": "status",
+        "icon": "\u26be",
+        "label": "Game underway!",
+        "sub": null
+      },
+      "ts": "2026-04-27T22:09:51.405Z"
     }
   ],
   "dailyLeadersCache": {
@@ -14110,10 +14120,10 @@
         },
         "person": {
           "id": 683083,
-          "fullName": "Nasim Nuñez",
+          "fullName": "Nasim Nu\u00f1ez",
           "link": "/api/v1/people/683083",
           "firstName": "Nasim",
-          "lastName": "Nuñez"
+          "lastName": "Nu\u00f1ez"
         },
         "sport": {
           "id": 1,
@@ -14138,9 +14148,9 @@
         },
         "person": {
           "id": 676609,
-          "fullName": "José Caballero",
+          "fullName": "Jos\u00e9 Caballero",
           "link": "/api/v1/people/676609",
-          "firstName": "José",
+          "firstName": "Jos\u00e9",
           "lastName": "Caballero"
         },
         "sport": {
@@ -14166,10 +14176,10 @@
         },
         "person": {
           "id": 608070,
-          "fullName": "José Ramírez",
+          "fullName": "Jos\u00e9 Ram\u00edrez",
           "link": "/api/v1/people/608070",
-          "firstName": "José",
-          "lastName": "Ramírez"
+          "firstName": "Jos\u00e9",
+          "lastName": "Ram\u00edrez"
         },
         "sport": {
           "id": 1,
@@ -14506,10 +14516,10 @@
         },
         "person": {
           "id": 650490,
-          "fullName": "Yandy Díaz",
+          "fullName": "Yandy D\u00edaz",
           "link": "/api/v1/people/650490",
           "firstName": "Yandy",
-          "lastName": "Díaz"
+          "lastName": "D\u00edaz"
         },
         "sport": {
           "id": 1,
@@ -14932,9 +14942,9 @@
         },
         "person": {
           "id": 667755,
-          "fullName": "José Soriano",
+          "fullName": "Jos\u00e9 Soriano",
           "link": "/api/v1/people/667755",
-          "firstName": "José",
+          "firstName": "Jos\u00e9",
           "lastName": "Soriano"
         },
         "sport": {
@@ -15146,336 +15156,336 @@
   "onThisDayCache": [
     {
       "id": "otd_2025_778153",
-      "icon": "📅",
-      "headline": "On this day in 2025: WSH beat NYM 8-7 · Call 2-3 · W: Megill 6.1IP, 9K, 3 ER · L: Parker 5.0IP, 0K, 6 ER · Adams HR · Crews HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: WSH beat NYM 8-7 \u00b7 Call 2-3 \u00b7 W: Megill 6.1IP, 9K, 3 ER \u00b7 L: Parker 5.0IP, 0K, 6 ER \u00b7 Adams HR \u00b7 Crews HR",
       "sub": "Nationals Park",
       "gamePk": 778153,
       "ts": "2025-04-27T17:35:00.000Z"
     },
     {
       "id": "otd_2025_778156",
-      "icon": "📅",
-      "headline": "On this day in 2025: NYY beat TOR 11-2 · Barger 2-2 · W: Fried 6.0IP, 3K, 0 ER · L: Gausman 2.2IP, 2K, 6 ER · Volpe HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: NYY beat TOR 11-2 \u00b7 Barger 2-2 \u00b7 W: Fried 6.0IP, 3K, 0 ER \u00b7 L: Gausman 2.2IP, 2K, 6 ER \u00b7 Volpe HR",
       "sub": "Yankee Stadium",
       "gamePk": 778156,
       "ts": "2025-04-27T17:35:00.000Z"
     },
     {
       "id": "otd_2025_778170",
-      "icon": "📅",
-      "headline": "On this day in 2025: NYY beat TOR 5-1 · Domínguez 2-4 · W: Bassitt 5.2IP, 5K, 4 ER · L: Schmidt 5.0IP, 6K, 1 ER · Judge HR · Escarra HR · Grisham HR · Santander HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: NYY beat TOR 5-1 \u00b7 Dom\u00ednguez 2-4 \u00b7 W: Bassitt 5.2IP, 5K, 4 ER \u00b7 L: Schmidt 5.0IP, 6K, 1 ER \u00b7 Judge HR \u00b7 Escarra HR \u00b7 Grisham HR \u00b7 Santander HR",
       "sub": "Yankee Stadium",
       "gamePk": 778170,
       "ts": "2025-04-27T17:40:00.000Z"
     },
     {
       "id": "otd_2025_778157",
-      "icon": "📅",
-      "headline": "On this day in 2025: BOS beat CLE 13-3 · Campbell 2-2 · W: Bello 6.0IP, 4K, 3 ER · L: Allen 4.1IP, 2K, 7 ER · Jones HR · Refsnyder HR · Devers HR · Rafaela HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: BOS beat CLE 13-3 \u00b7 Campbell 2-2 \u00b7 W: Bello 6.0IP, 4K, 3 ER \u00b7 L: Allen 4.1IP, 2K, 7 ER \u00b7 Jones HR \u00b7 Refsnyder HR \u00b7 Devers HR \u00b7 Rafaela HR",
       "sub": "Progressive Field",
       "gamePk": 778157,
       "ts": "2025-04-27T17:40:00.000Z"
     },
     {
       "id": "otd_2025_778155",
-      "icon": "📅",
-      "headline": "On this day in 2025: DET beat BAL 7-0 · Báez 2-3 · W: Skubal 6.0IP, 11K, 0 ER · L: Kremer 5.2IP, 3K, 5 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: DET beat BAL 7-0 \u00b7 B\u00e1ez 2-3 \u00b7 W: Skubal 6.0IP, 11K, 0 ER \u00b7 L: Kremer 5.2IP, 3K, 5 ER",
       "sub": "Comerica Park",
       "gamePk": 778155,
       "ts": "2025-04-27T17:40:00.000Z"
     },
     {
       "id": "otd_2025_778144",
-      "icon": "📅",
-      "headline": "On this day in 2025: MIN beat LAA 5-0 · Correa 3-4 · W: Ryan 7.0IP, 11K, 0 ER · L: Soriano 5.0IP, 4K, 3 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: MIN beat LAA 5-0 \u00b7 Correa 3-4 \u00b7 W: Ryan 7.0IP, 11K, 0 ER \u00b7 L: Soriano 5.0IP, 4K, 3 ER",
       "sub": "Target Field",
       "gamePk": 778144,
       "ts": "2025-04-27T17:40:00.000Z"
     },
     {
       "id": "otd_2025_778152",
-      "icon": "📅",
-      "headline": "On this day in 2025: HOU beat KC 7-3 · McCormick 3-4 · W: Brown 6.0IP, 9K, 1 ER · L: Bubic 5.0IP, 4K, 4 ER · Diaz HR · Alvarez HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: HOU beat KC 7-3 \u00b7 McCormick 3-4 \u00b7 W: Brown 6.0IP, 9K, 1 ER \u00b7 L: Bubic 5.0IP, 4K, 4 ER \u00b7 Diaz HR \u00b7 Alvarez HR",
       "sub": "Kauffman Stadium",
       "gamePk": 778152,
       "ts": "2025-04-27T18:10:00.000Z"
     },
     {
       "id": "otd_2025_778150",
-      "icon": "📅",
-      "headline": "On this day in 2025: MIL beat STL 7-1 · Nootbaar 2-4 · W: Fedde 5.2IP, 4K, 7 ER · L: Quintana 5.0IP, 6K, 1 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: MIL beat STL 7-1 \u00b7 Nootbaar 2-4 \u00b7 W: Fedde 5.2IP, 4K, 7 ER \u00b7 L: Quintana 5.0IP, 6K, 1 ER",
       "sub": "Busch Stadium",
       "gamePk": 778150,
       "ts": "2025-04-27T18:15:00.000Z"
     },
     {
       "id": "otd_2025_778148",
-      "icon": "📅",
-      "headline": "On this day in 2025: CIN beat COL 8-1 · Marte 3-5 · W: Lodolo 7.0IP, 9K, 0 ER · L: Blalock 4.0IP, 1K, 6 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: CIN beat COL 8-1 \u00b7 Marte 3-5 \u00b7 W: Lodolo 7.0IP, 9K, 0 ER \u00b7 L: Blalock 4.0IP, 1K, 6 ER",
       "sub": "Coors Field",
       "gamePk": 778148,
       "ts": "2025-04-27T19:10:00.000Z"
     },
     {
       "id": "otd_2025_778151",
-      "icon": "📅",
-      "headline": "On this day in 2025: SF beat TEX 3-2 · Ramos 2-3 · W: Hicks 5.0IP, 3K, 2 ER · L: Leiter 3.1IP, 3K, 2 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: SF beat TEX 3-2 \u00b7 Ramos 2-3 \u00b7 W: Hicks 5.0IP, 3K, 2 ER \u00b7 L: Leiter 3.1IP, 3K, 2 ER",
       "sub": "Oracle Park",
       "gamePk": 778151,
       "ts": "2025-04-27T20:05:00.000Z"
     },
     {
       "id": "otd_2025_778149",
-      "icon": "📅",
-      "headline": "On this day in 2025: ATH beat CWS 3-2 · Rooker 2-3 · W: Martin 6.0IP, 5K, 0 ER · L: Bido 5.1IP, 1K, 1 ER · Urías HR · Palacios HR · Walk-off HR!",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: ATH beat CWS 3-2 \u00b7 Rooker 2-3 \u00b7 W: Martin 6.0IP, 5K, 0 ER \u00b7 L: Bido 5.1IP, 1K, 1 ER \u00b7 Ur\u00edas HR \u00b7 Palacios HR \u00b7 Walk-off HR!",
       "sub": "Sutter Health Park",
       "gamePk": 778149,
       "ts": "2025-04-27T20:05:00.000Z"
     },
     {
       "id": "otd_2025_778145",
-      "icon": "📅",
-      "headline": "On this day in 2025: LAD beat PIT 9-2 · McCutchen 4-4 · W: Falter 4.1IP, 2K, 5 ER · L: Casparius 3.2IP, 5K, 0 ER · Hernández HR · Pages HR · McCutchen HR · Valdez HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: LAD beat PIT 9-2 \u00b7 McCutchen 4-4 \u00b7 W: Falter 4.1IP, 2K, 5 ER \u00b7 L: Casparius 3.2IP, 5K, 0 ER \u00b7 Hern\u00e1ndez HR \u00b7 Pages HR \u00b7 McCutchen HR \u00b7 Valdez HR",
       "sub": "Dodger Stadium",
       "gamePk": 778145,
       "ts": "2025-04-27T20:10:00.000Z"
     },
     {
       "id": "otd_2025_778146",
-      "icon": "📅",
-      "headline": "On this day in 2025: TB beat SD 4-2 · Simpson 3-4 · W: Littell 5.0IP, 1K, 2 ER · L: Vásquez 4.2IP, 1K, 3 ER · Walls HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: TB beat SD 4-2 \u00b7 Simpson 3-4 \u00b7 W: Littell 5.0IP, 1K, 2 ER \u00b7 L: V\u00e1squez 4.2IP, 1K, 3 ER \u00b7 Walls HR",
       "sub": "Petco Park",
       "gamePk": 778146,
       "ts": "2025-04-27T20:10:00.000Z"
     },
     {
       "id": "otd_2025_778147",
-      "icon": "📅",
-      "headline": "On this day in 2025: AZ beat ATL 6-4 · Verdugo 4-4 · W: Pfaadt 6.0IP, 6K, 2 ER · L: Schwellenbach 6.0IP, 6K, 3 ER · Perdomo HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: AZ beat ATL 6-4 \u00b7 Verdugo 4-4 \u00b7 W: Pfaadt 6.0IP, 6K, 2 ER \u00b7 L: Schwellenbach 6.0IP, 6K, 3 ER \u00b7 Perdomo HR",
       "sub": "Chase Field",
       "gamePk": 778147,
       "ts": "2025-04-27T20:10:00.000Z"
     },
     {
       "id": "otd_2025_778136",
-      "icon": "📅",
-      "headline": "On this day in 2025: SEA beat MIA 7-6 · Polanco 3-4 · W: Evans 5.0IP, 3K, 2 ER · L: Meyer 4.0IP, 6K, 5 ER · Ramírez 2HR · Crawford HR · Raleigh HR · Norby HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: SEA beat MIA 7-6 \u00b7 Polanco 3-4 \u00b7 W: Evans 5.0IP, 3K, 2 ER \u00b7 L: Meyer 4.0IP, 6K, 5 ER \u00b7 Ram\u00edrez 2HR \u00b7 Crawford HR \u00b7 Raleigh HR \u00b7 Norby HR",
       "sub": "T-Mobile Park",
       "gamePk": 778136,
       "ts": "2025-04-27T20:10:00.000Z"
     },
     {
       "id": "otd_2025_778158",
-      "icon": "📅",
-      "headline": "On this day in 2025: PHI beat CHC 3-1 · Turner 3-5 · W: Taillon 7.0IP, 2K, 1 ER · L: Nola 7.0IP, 6K, 1 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2025: PHI beat CHC 3-1 \u00b7 Turner 3-5 \u00b7 W: Taillon 7.0IP, 2K, 1 ER \u00b7 L: Nola 7.0IP, 6K, 1 ER",
       "sub": "Wrigley Field",
       "gamePk": 778158,
       "ts": "2025-04-27T23:10:00.000Z"
     },
     {
       "id": "otd_2024_744946",
-      "icon": "📅",
-      "headline": "On this day in 2024: LAD beat TOR 4-2 · Schneider 2-3 · W: Kikuchi 6.0IP, 3K, 4 ER · L: Glasnow 6.0IP, 9K, 1 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: LAD beat TOR 4-2 \u00b7 Schneider 2-3 \u00b7 W: Kikuchi 6.0IP, 3K, 4 ER \u00b7 L: Glasnow 6.0IP, 9K, 1 ER",
       "sub": "Rogers Centre",
       "gamePk": 744946,
       "ts": "2024-04-27T19:07:00.000Z"
     },
     {
       "id": "otd_2024_747052",
-      "icon": "📅",
-      "headline": "On this day in 2024: BAL beat OAK 7-0 · Henderson 2-4 · W: Irvin 7.0IP, 5K, 0 ER · L: Sears 6.1IP, 8K, 7 ER · Henderson HR · Mountcastle HR · Rutschman HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: BAL beat OAK 7-0 \u00b7 Henderson 2-4 \u00b7 W: Irvin 7.0IP, 5K, 0 ER \u00b7 L: Sears 6.1IP, 8K, 7 ER \u00b7 Henderson HR \u00b7 Mountcastle HR \u00b7 Rutschman HR",
       "sub": "Oriole Park at Camden Yards",
       "gamePk": 747052,
       "ts": "2024-04-27T20:05:00.000Z"
     },
     {
       "id": "otd_2024_745833",
-      "icon": "📅",
-      "headline": "On this day in 2024: STL beat NYM 7-4 · Vientos 1-2 · W: Gray 6.0IP, 9K, 1 ER · L: Houser 4.1IP, 2K, 6 ER · Alonso HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: STL beat NYM 7-4 \u00b7 Vientos 1-2 \u00b7 W: Gray 6.0IP, 9K, 1 ER \u00b7 L: Houser 4.1IP, 2K, 6 ER \u00b7 Alonso HR",
       "sub": "Citi Field",
       "gamePk": 745833,
       "ts": "2024-04-27T20:05:00.000Z"
     },
     {
       "id": "otd_2024_745020",
-      "icon": "📅",
-      "headline": "On this day in 2024: CIN beat TEX 8-4 · India 4-4 · W: Greene 7.0IP, 6K, 0 ER · L: Lorenzen 6.0IP, 3K, 5 ER · Seager HR · India HR · Benson HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: CIN beat TEX 8-4 \u00b7 India 4-4 \u00b7 W: Greene 7.0IP, 6K, 0 ER \u00b7 L: Lorenzen 6.0IP, 3K, 5 ER \u00b7 Seager HR \u00b7 India HR \u00b7 Benson HR",
       "sub": "Globe Life Field",
       "gamePk": 745020,
       "ts": "2024-04-27T20:05:00.000Z"
     },
     {
       "id": "otd_2024_746971",
-      "icon": "📅",
-      "headline": "On this day in 2024: BOS beat CHC 17-0 · Rafaela 4-4 · W: Brown 3.2IP, 4K, 3 ER · L: Winckowski 3.0IP, 1K, 0 ER · O'Neill HR · Rafaela HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: BOS beat CHC 17-0 \u00b7 Rafaela 4-4 \u00b7 W: Brown 3.2IP, 4K, 3 ER \u00b7 L: Winckowski 3.0IP, 1K, 0 ER \u00b7 O'Neill HR \u00b7 Rafaela HR",
       "sub": "Fenway Park",
       "gamePk": 746971,
       "ts": "2024-04-27T20:10:00.000Z"
     },
     {
       "id": "otd_2024_746075",
-      "icon": "📅",
-      "headline": "On this day in 2024: WSH beat MIA 11-4 · Lopez 2-2 · W: Cabrera 4.1IP, 4K, 5 ER · L: Parker 4.0IP, 2K, 1 ER · Lopez HR · Winker HR · Senzel HR · Ruiz HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: WSH beat MIA 11-4 \u00b7 Lopez 2-2 \u00b7 W: Cabrera 4.1IP, 4K, 5 ER \u00b7 L: Parker 4.0IP, 2K, 1 ER \u00b7 Lopez HR \u00b7 Winker HR \u00b7 Senzel HR \u00b7 Ruiz HR",
       "sub": "loanDepot park",
       "gamePk": 746075,
       "ts": "2024-04-27T20:10:00.000Z"
     },
     {
       "id": "otd_2024_746560",
-      "icon": "📅",
-      "headline": "On this day in 2024: HOU beat COL 12-4 · Diaz 3-4 · W: Blanco 5.2IP, 8K, 2 ER · L: Quantrill 5.0IP, 2K, 6 ER · Alvarez 2HR · McMahon HR · Tucker HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: HOU beat COL 12-4 \u00b7 Diaz 3-4 \u00b7 W: Blanco 5.2IP, 8K, 2 ER \u00b7 L: Quantrill 5.0IP, 2K, 6 ER \u00b7 Alvarez 2HR \u00b7 McMahon HR \u00b7 Tucker HR",
       "sub": "Estadio Alfredo Harp Helu",
       "gamePk": 746560,
       "ts": "2024-04-27T22:05:00.000Z"
     },
     {
       "id": "otd_2024_746484",
-      "icon": "📅",
-      "headline": "On this day in 2024: DET beat KC 6-5 · McKinstry 1-2 · W: Mize 5.0IP, 2K, 2 ER · L: Singer 5.0IP, 6K, 1 ER · Vierling HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: DET beat KC 6-5 \u00b7 McKinstry 1-2 \u00b7 W: Mize 5.0IP, 2K, 2 ER \u00b7 L: Singer 5.0IP, 6K, 1 ER \u00b7 Vierling HR",
       "sub": "Comerica Park",
       "gamePk": 746484,
       "ts": "2024-04-27T22:10:00.000Z"
     },
     {
       "id": "otd_2024_746803",
-      "icon": "📅",
-      "headline": "On this day in 2024: CWS beat TB 8-7 · Rortvedt 3-3 · W: Cannon 5.0IP, 5K, 4 ER · L: Civale 4.1IP, 3K, 6 ER · Benintendi 2HR · Palacios HR · Shenton HR · Walk-off HR!",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: CWS beat TB 8-7 \u00b7 Rortvedt 3-3 \u00b7 W: Cannon 5.0IP, 5K, 4 ER \u00b7 L: Civale 4.1IP, 3K, 6 ER \u00b7 Benintendi 2HR \u00b7 Palacios HR \u00b7 Shenton HR \u00b7 Walk-off HR!",
       "sub": "Guaranteed Rate Field",
       "gamePk": 746803,
       "ts": "2024-04-27T23:10:00.000Z"
     },
     {
       "id": "otd_2024_745998",
-      "icon": "📅",
-      "headline": "On this day in 2024: NYY beat MIL 15-3 · Rizzo 3-4 · W: Rodón 6.0IP, 8K, 1 ER · L: Ross 5.0IP, 5K, 6 ER · Hoskins HR · Rizzo HR · Verdugo HR · Judge HR · Stanton HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: NYY beat MIL 15-3 \u00b7 Rizzo 3-4 \u00b7 W: Rod\u00f3n 6.0IP, 8K, 1 ER \u00b7 L: Ross 5.0IP, 5K, 6 ER \u00b7 Hoskins HR \u00b7 Rizzo HR \u00b7 Verdugo HR \u00b7 Judge HR \u00b7 Stanton HR",
       "sub": "American Family Field",
       "gamePk": 745998,
       "ts": "2024-04-27T23:10:00.000Z"
     },
     {
       "id": "otd_2024_747131",
-      "icon": "📅",
-      "headline": "On this day in 2024: CLE beat ATL 4-2 · Ozuna 2-3 · W: Morton 7.0IP, 6K, 0 ER · L: Bibee 7.0IP, 9K, 0 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: CLE beat ATL 4-2 \u00b7 Ozuna 2-3 \u00b7 W: Morton 7.0IP, 6K, 0 ER \u00b7 L: Bibee 7.0IP, 9K, 0 ER",
       "sub": "Truist Park",
       "gamePk": 747131,
       "ts": "2024-04-27T23:20:00.000Z"
     },
     {
       "id": "otd_2024_745425",
-      "icon": "📅",
-      "headline": "On this day in 2024: PHI beat SD 5-1 · Turner 3-5 · W: Suarez 8.0IP, 8K, 1 ER · L: Cease 6.0IP, 5K, 5 ER · Rosario HR · Bohm HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: PHI beat SD 5-1 \u00b7 Turner 3-5 \u00b7 W: Suarez 8.0IP, 8K, 1 ER \u00b7 L: Cease 6.0IP, 5K, 5 ER \u00b7 Rosario HR \u00b7 Bohm HR",
       "sub": "Petco Park",
       "gamePk": 745425,
       "ts": "2024-04-28T00:40:00.000Z"
     },
     {
       "id": "otd_2024_745350",
-      "icon": "📅",
-      "headline": "On this day in 2024: PIT beat SF 4-3 · Bailey 2-4 · W: Hicks 6.0IP, 9K, 1 ER · L: Pérez 6.0IP, 4K, 0 ER · Soler HR · Reynolds HR · Hayes HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: PIT beat SF 4-3 \u00b7 Bailey 2-4 \u00b7 W: Hicks 6.0IP, 9K, 1 ER \u00b7 L: P\u00e9rez 6.0IP, 4K, 0 ER \u00b7 Soler HR \u00b7 Reynolds HR \u00b7 Hayes HR",
       "sub": "Oracle Park",
       "gamePk": 745350,
       "ts": "2024-04-28T01:05:00.000Z"
     },
     {
       "id": "otd_2024_746245",
-      "icon": "📅",
-      "headline": "On this day in 2024: MIN beat LAA 16-5 · Adell 3-4 · W: Paddack 5.0IP, 2K, 4 ER · L: Fulmer 3.1IP, 2K, 4 ER · Adell HR · Jeffers HR · Kepler HR · Santana HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: MIN beat LAA 16-5 \u00b7 Adell 3-4 \u00b7 W: Paddack 5.0IP, 2K, 4 ER \u00b7 L: Fulmer 3.1IP, 2K, 4 ER \u00b7 Adell HR \u00b7 Jeffers HR \u00b7 Kepler HR \u00b7 Santana HR",
       "sub": "Angel Stadium",
       "gamePk": 746245,
       "ts": "2024-04-28T01:38:00.000Z"
     },
     {
       "id": "otd_2024_745266",
-      "icon": "📅",
-      "headline": "On this day in 2024: SEA beat AZ 3-1 · Raley 2-3 · W: Kirby 7.0IP, 12K, 0 ER · L: Cecconi 6.0IP, 8K, 1 ER · France HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2024: SEA beat AZ 3-1 \u00b7 Raley 2-3 \u00b7 W: Kirby 7.0IP, 12K, 0 ER \u00b7 L: Cecconi 6.0IP, 8K, 1 ER \u00b7 France HR",
       "sub": "T-Mobile Park",
       "gamePk": 745266,
       "ts": "2024-04-28T01:40:00.000Z"
     },
     {
       "id": "otd_2023_718410",
-      "icon": "📅",
-      "headline": "On this day in 2023: MIA beat ATL 5-4 · Rosario 2-4 · W: Wright 3.0IP, 6K, 0 ER · L: Garrett 3.0IP, 3K, 0 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: MIA beat ATL 5-4 \u00b7 Rosario 2-4 \u00b7 W: Wright 3.0IP, 6K, 0 ER \u00b7 L: Garrett 3.0IP, 3K, 0 ER",
       "sub": "Truist Park",
       "gamePk": 718410,
       "ts": "2023-04-27T16:20:00.000Z"
     },
     {
       "id": "otd_2023_718403",
-      "icon": "📅",
-      "headline": "On this day in 2023: PIT beat LAD 6-2 · Heyward 2-3 · W: Keller 6.0IP, 10K, 2 ER · L: Urías 5.2IP, 5K, 6 ER · Castro HR · Joe HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: PIT beat LAD 6-2 \u00b7 Heyward 2-3 \u00b7 W: Keller 6.0IP, 10K, 2 ER \u00b7 L: Ur\u00edas 5.2IP, 5K, 6 ER \u00b7 Castro HR \u00b7 Joe HR",
       "sub": "PNC Park",
       "gamePk": 718403,
       "ts": "2023-04-27T16:35:00.000Z"
     },
     {
       "id": "otd_2023_718404",
-      "icon": "📅",
-      "headline": "On this day in 2023: PHI beat SEA 1-0 · Murphy 2-3 · W: Kirby 8.0IP, 7K, 1 ER · L: Strahm 5.1IP, 5K, 0 ER",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: PHI beat SEA 1-0 \u00b7 Murphy 2-3 \u00b7 W: Kirby 8.0IP, 7K, 1 ER \u00b7 L: Strahm 5.1IP, 5K, 0 ER",
       "sub": "Citizens Bank Park",
       "gamePk": 718404,
       "ts": "2023-04-27T17:05:00.000Z"
     },
     {
       "id": "otd_2023_718406",
-      "icon": "📅",
-      "headline": "On this day in 2023: CHC beat SD 5-2 · Happ 2-4 · W: Wesneski 5.0IP, 3K, 1 ER · L: Lugo 5.0IP, 3K, 4 ER · Swanson HR · Hosmer HR · Velázquez HR · Machado HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: CHC beat SD 5-2 \u00b7 Happ 2-4 \u00b7 W: Wesneski 5.0IP, 3K, 1 ER \u00b7 L: Lugo 5.0IP, 3K, 4 ER \u00b7 Swanson HR \u00b7 Hosmer HR \u00b7 Vel\u00e1zquez HR \u00b7 Machado HR",
       "sub": "Wrigley Field",
       "gamePk": 718406,
       "ts": "2023-04-27T18:20:00.000Z"
     },
     {
       "id": "otd_2023_718409",
-      "icon": "📅",
-      "headline": "On this day in 2023: STL beat SF 6-0 · DeJong 2-4 · W: Webb 6.2IP, 7K, 2 ER · L: Mikolas 6.1IP, 6K, 0 ER · Burleson HR · DeJong HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: STL beat SF 6-0 \u00b7 DeJong 2-4 \u00b7 W: Webb 6.2IP, 7K, 2 ER \u00b7 L: Mikolas 6.1IP, 6K, 0 ER \u00b7 Burleson HR \u00b7 DeJong HR",
       "sub": "Oracle Park",
       "gamePk": 718409,
       "ts": "2023-04-27T19:45:00.000Z"
     },
     {
       "id": "otd_2023_718402",
-      "icon": "📅",
-      "headline": "On this day in 2023: LAA beat OAK 8-7 · Drury 2-2 · W: Ohtani 6.0IP, 8K, 5 ER · L: Sears 4.1IP, 4K, 6 ER · Drury HR · Rooker HR · Langeliers HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: LAA beat OAK 8-7 \u00b7 Drury 2-2 \u00b7 W: Ohtani 6.0IP, 8K, 5 ER \u00b7 L: Sears 4.1IP, 4K, 6 ER \u00b7 Drury HR \u00b7 Rooker HR \u00b7 Langeliers HR",
       "sub": "Angel Stadium",
       "gamePk": 718402,
       "ts": "2023-04-27T20:07:00.000Z"
     },
     {
       "id": "otd_2023_718405",
-      "icon": "📅",
-      "headline": "On this day in 2023: BAL beat DET 7-4 · McKinstry 2-3 · W: Wentz 5.2IP, 6K, 2 ER · L: Gibson 4.1IP, 3K, 3 ER · Santander HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: BAL beat DET 7-4 \u00b7 McKinstry 2-3 \u00b7 W: Wentz 5.2IP, 6K, 2 ER \u00b7 L: Gibson 4.1IP, 3K, 3 ER \u00b7 Santander HR",
       "sub": "Comerica Park",
       "gamePk": 718405,
       "ts": "2023-04-27T22:40:00.000Z"
     },
     {
       "id": "otd_2023_718398",
-      "icon": "📅",
-      "headline": "On this day in 2023: NYM beat WSH 9-8 · Baty 3-3 · W: Lucchesi 5.1IP, 3K, 3 ER · L: Williams 5.0IP, 4K, 4 ER · Baty HR · Abrams HR · Call HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: NYM beat WSH 9-8 \u00b7 Baty 3-3 \u00b7 W: Lucchesi 5.1IP, 3K, 3 ER \u00b7 L: Williams 5.0IP, 4K, 4 ER \u00b7 Baty HR \u00b7 Abrams HR \u00b7 Call HR",
       "sub": "Citi Field",
       "gamePk": 718398,
       "ts": "2023-04-27T23:10:00.000Z"
     },
     {
       "id": "otd_2023_718396",
-      "icon": "📅",
-      "headline": "On this day in 2023: TB beat CWS 14-5 · Haseley 2-2 · W: McClanahan 5.0IP, 5K, 2 ER · L: Cease 4.0IP, 3K, 6 ER · Burger HR · Lowe HR · Díaz HR · Raley HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: TB beat CWS 14-5 \u00b7 Haseley 2-2 \u00b7 W: McClanahan 5.0IP, 5K, 2 ER \u00b7 L: Cease 4.0IP, 3K, 6 ER \u00b7 Burger HR \u00b7 Lowe HR \u00b7 D\u00edaz HR \u00b7 Raley HR",
       "sub": "Guaranteed Rate Field",
       "gamePk": 718396,
       "ts": "2023-04-27T23:10:00.000Z"
     },
     {
       "id": "otd_2023_718400",
-      "icon": "📅",
-      "headline": "On this day in 2023: MIN beat KC 7-1 · Vázquez 2-3 · W: Mahle 4.0IP, 6K, 1 ER · L: Greinke 3.2IP, 3K, 7 ER · Correa HR · Buxton HR · Pasquantino HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: MIN beat KC 7-1 \u00b7 V\u00e1zquez 2-3 \u00b7 W: Mahle 4.0IP, 6K, 1 ER \u00b7 L: Greinke 3.2IP, 3K, 7 ER \u00b7 Correa HR \u00b7 Buxton HR \u00b7 Pasquantino HR",
       "sub": "Target Field",
       "gamePk": 718400,
       "ts": "2023-04-27T23:40:00.000Z"
     },
     {
       "id": "otd_2023_718397",
-      "icon": "📅",
-      "headline": "On this day in 2023: NYY beat TEX 4-2 · Trevino 3-4 · W: Cole 6.2IP, 8K, 2 ER · L: Heaney 6.0IP, 6K, 3 ER · LeMahieu HR · Torres HR · Trevino HR",
+      "icon": "\ud83d\udcc5",
+      "headline": "On this day in 2023: NYY beat TEX 4-2 \u00b7 Trevino 3-4 \u00b7 W: Cole 6.2IP, 8K, 2 ER \u00b7 L: Heaney 6.0IP, 6K, 3 ER \u00b7 LeMahieu HR \u00b7 Torres HR \u00b7 Trevino HR",
       "sub": "Globe Life Field",
       "gamePk": 718397,
       "ts": "2023-04-28T00:05:00.000Z"
@@ -15484,128 +15494,128 @@
   "yesterdayCache": [
     {
       "id": "yday_824852_result",
-      "icon": "✅",
-      "headline": "Yesterday: BOS beat BAL 5-3 · Basallo 2-4 1HR 1RBI · W: Early 6.2IP, 4K, 2 ER · L: Bradish 5.0IP, 3K, 3 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: BOS beat BAL 5-3 \u00b7 Basallo 2-4 1HR 1RBI \u00b7 W: Early 6.2IP, 4K, 2 ER \u00b7 L: Bradish 5.0IP, 3K, 3 ER",
       "sub": "Oriole Park at Camden Yards",
       "gamePk": 824852,
       "ts": "2026-04-26T17:35:00.000Z"
     },
     {
       "id": "yday_824934_result",
-      "icon": "✅",
-      "headline": "Yesterday: ATL beat PHI 6-2 · Baldwin 2-3 1RBI · W: Sale 6.0IP, 9K, 0 ER · L: Nola 4.2IP, 6K, 6 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: ATL beat PHI 6-2 \u00b7 Baldwin 2-3 1RBI \u00b7 W: Sale 6.0IP, 9K, 0 ER \u00b7 L: Nola 4.2IP, 6K, 6 ER",
       "sub": "Truist Park",
       "gamePk": 824934,
       "ts": "2026-04-26T17:35:00.000Z"
     },
     {
       "id": "yday_822824_result",
-      "icon": "✅",
-      "headline": "Yesterday: TOR beat CLE 4-2 · Jr. 3-4 1RBI · W: Cecconi 5.2IP, 5K, 4 ER · L: Corbin 4.2IP, 4K, 2 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: TOR beat CLE 4-2 \u00b7 Jr. 3-4 1RBI \u00b7 W: Cecconi 5.2IP, 5K, 4 ER \u00b7 L: Corbin 4.2IP, 4K, 2 ER",
       "sub": "Rogers Centre",
       "gamePk": 822824,
       "ts": "2026-04-26T17:37:00.000Z"
     },
     {
       "id": "yday_824528_result",
-      "icon": "✅",
-      "headline": "Yesterday: DET beat CIN 8-3 · Torkelson 3-4 1HR 1RBI · W: Lowder 5.0IP, 7K, 2 ER · L: Montero 5.0IP, 5K, 3 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: DET beat CIN 8-3 \u00b7 Torkelson 3-4 1HR 1RBI \u00b7 W: Lowder 5.0IP, 7K, 2 ER \u00b7 L: Montero 5.0IP, 5K, 3 ER",
       "sub": "Great American Ball Park",
       "gamePk": 824528,
       "ts": "2026-04-26T17:40:00.000Z"
     },
     {
       "id": "yday_823635_result",
-      "icon": "✅",
-      "headline": "Yesterday: COL beat NYM 3-1 · McCarthy 2-3 1RBI · W: Quintana 5.1IP, 5K, 1 ER · L: McLean 5.0IP, 7K, 1 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: COL beat NYM 3-1 \u00b7 McCarthy 2-3 1RBI \u00b7 W: Quintana 5.1IP, 5K, 1 ER \u00b7 L: McLean 5.0IP, 7K, 1 ER",
       "sub": "Citi Field",
       "gamePk": 823635,
       "ts": "2026-04-26T17:40:00.000Z"
     },
     {
       "id": "yday_823637_result",
-      "icon": "✅",
-      "headline": "Yesterday: COL beat NYM 3-0 · Benge 2-4 · W: Dollander 7.0IP, 7K, 0 ER · L: Jr. 3.1IP, 5K, 0 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: COL beat NYM 3-0 \u00b7 Benge 2-4 \u00b7 W: Dollander 7.0IP, 7K, 0 ER \u00b7 L: Jr. 3.1IP, 5K, 0 ER",
       "sub": "Citi Field",
       "gamePk": 823637,
       "ts": "2026-04-26T17:45:00.000Z"
     },
     {
       "id": "yday_822991_result",
-      "icon": "✅",
-      "headline": "Yesterday: TB beat MIN 4-2 · Simpson 3-4 · W: Scholtens 4.1IP, 1K, 2 ER · L: Richardson 4.1IP, 2K, 4 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: TB beat MIN 4-2 \u00b7 Simpson 3-4 \u00b7 W: Scholtens 4.1IP, 1K, 2 ER \u00b7 L: Richardson 4.1IP, 2K, 4 ER",
       "sub": "Tropicana Field",
       "gamePk": 822991,
       "ts": "2026-04-26T17:40:00.000Z"
     },
     {
       "id": "yday_824612_result",
-      "icon": "✅",
-      "headline": "Yesterday: WSH beat CWS 2-1 · Murray 1-3 · W: Burke 7.1IP, 4K, 0 ER · L: Griffin 7.0IP, 8K, 0 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: WSH beat CWS 2-1 \u00b7 Murray 1-3 \u00b7 W: Burke 7.1IP, 4K, 0 ER \u00b7 L: Griffin 7.0IP, 8K, 0 ER",
       "sub": "Rate Field",
       "gamePk": 824612,
       "ts": "2026-04-26T18:10:00.000Z"
     },
     {
       "id": "yday_824202_result",
-      "icon": "✅",
-      "headline": "Yesterday: HOU beat NYY 7-4 · Walker 3-4 1HR 4RBI · W: Arrighetti 7.0IP, 8K, 1 ER · L: Gil 4.0IP, 0K, 6 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: HOU beat NYY 7-4 \u00b7 Walker 3-4 1HR 4RBI \u00b7 W: Arrighetti 7.0IP, 8K, 1 ER \u00b7 L: Gil 4.0IP, 0K, 6 ER",
       "sub": "Daikin Park",
       "gamePk": 824202,
       "ts": "2026-04-26T18:10:00.000Z"
     },
     {
       "id": "yday_823797_result",
-      "icon": "✅",
-      "headline": "Yesterday: MIL beat PIT 5-0 · Bauers 2-4 · W: Harrison 6.0IP, 12K, 0 ER · L: Mlodzinski 3.2IP, 4K, 4 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: MIL beat PIT 5-0 \u00b7 Bauers 2-4 \u00b7 W: Harrison 6.0IP, 12K, 0 ER \u00b7 L: Mlodzinski 3.2IP, 4K, 4 ER",
       "sub": "American Family Field",
       "gamePk": 823797,
       "ts": "2026-04-26T18:10:00.000Z"
     },
     {
       "id": "yday_823068_result",
-      "icon": "✅",
-      "headline": "Yesterday: SEA beat STL 3-2 · Young 2-3 1RBI · W: McGreevy 6.0IP, 6K, 1 ER · L: Hancock 6.0IP, 4K, 2 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: SEA beat STL 3-2 \u00b7 Young 2-3 1RBI \u00b7 W: McGreevy 6.0IP, 6K, 1 ER \u00b7 L: Hancock 6.0IP, 4K, 2 ER",
       "sub": "Busch Stadium",
       "gamePk": 823068,
       "ts": "2026-04-26T18:15:00.000Z"
     },
     {
       "id": "yday_822911_result",
-      "icon": "✅",
-      "headline": "Yesterday: ATH beat TEX 2-1 · Cortes 3-4 2RBI · W: Rocker 6.0IP, 3K, 2 ER · L: Ginn 3.1IP, 2K, 0 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: ATH beat TEX 2-1 \u00b7 Cortes 3-4 2RBI \u00b7 W: Rocker 6.0IP, 3K, 2 ER \u00b7 L: Ginn 3.1IP, 2K, 0 ER",
       "sub": "Globe Life Field",
       "gamePk": 822911,
       "ts": "2026-04-26T18:35:00.000Z"
     },
     {
       "id": "yday_825094_result",
-      "icon": "✅",
-      "headline": "Yesterday: AZ beat SD 12-7 · Fernandez 3-4 1HR 1RBI · W: King 6.0IP, 8K, 2 ER · L: Nelson 5.0IP, 4K, 6 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: AZ beat SD 12-7 \u00b7 Fernandez 3-4 1HR 1RBI \u00b7 W: King 6.0IP, 8K, 2 ER \u00b7 L: Nelson 5.0IP, 4K, 6 ER",
       "sub": "Estadio Alfredo Harp Helu",
       "gamePk": 825094,
       "ts": "2026-04-26T20:05:00.000Z"
     },
     {
       "id": "yday_823230_result",
-      "icon": "✅",
-      "headline": "Yesterday: SF beat MIA 6-3 · Lee 4-5 · W: Roupp 7.2IP, 6K, 3 ER · L: Meyer 5.0IP, 5K, 0 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: SF beat MIA 6-3 \u00b7 Lee 4-5 \u00b7 W: Roupp 7.2IP, 6K, 3 ER \u00b7 L: Meyer 5.0IP, 5K, 0 ER",
       "sub": "Oracle Park",
       "gamePk": 823230,
       "ts": "2026-04-26T20:05:00.000Z"
     },
     {
       "id": "yday_824122_result",
-      "icon": "✅",
-      "headline": "Yesterday: KC beat LAA 11-9 · Lowe 3-4 · W: Lugo 6.1IP, 3K, 7 ER · L: Detmers 5.0IP, 5K, 3 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: KC beat LAA 11-9 \u00b7 Lowe 3-4 \u00b7 W: Lugo 6.1IP, 3K, 7 ER \u00b7 L: Detmers 5.0IP, 5K, 3 ER",
       "sub": "Kauffman Stadium",
       "gamePk": 824122,
       "ts": "2026-04-26T20:10:00.000Z"
     },
     {
       "id": "yday_823959_result",
-      "icon": "✅",
-      "headline": "Yesterday: LAD beat CHC 6-0 · Ohtani 3-3 1HR 1RBI · W: Wrobleski 6.0IP, 6K, 0 ER · L: Imanaga 5.1IP, 6K, 5 ER",
+      "icon": "\u2705",
+      "headline": "Yesterday: LAD beat CHC 6-0 \u00b7 Ohtani 3-3 1HR 1RBI \u00b7 W: Wrobleski 6.0IP, 6K, 0 ER \u00b7 L: Imanaga 5.1IP, 6K, 5 ER",
       "sub": "UNIQLO Field at Dodger Stadium",
       "gamePk": 823959,
       "ts": "2026-04-26T20:10:00.000Z"
@@ -16517,7 +16527,7 @@
       "gamePk": 823719
     },
     "606192": {
-      "name": "Teoscar Hernández",
+      "name": "Teoscar Hern\u00e1ndez",
       "hits": 1,
       "hrs": 0,
       "gamePk": 823961
@@ -16529,7 +16539,7 @@
       "gamePk": 822906
     },
     "608070": {
-      "name": "José Ramírez",
+      "name": "Jos\u00e9 Ram\u00edrez",
       "hits": 1,
       "hrs": 0,
       "gamePk": 824446
@@ -16601,7 +16611,7 @@
       "gamePk": 823395
     },
     "657656": {
-      "name": "Ramón Laureano",
+      "name": "Ram\u00f3n Laureano",
       "hits": 1,
       "hrs": 0,
       "gamePk": 823311
@@ -16619,7 +16629,7 @@
       "gamePk": 823961
     },
     "660821": {
-      "name": "Jesús Sánchez",
+      "name": "Jes\u00fas S\u00e1nchez",
       "hits": 1,
       "hrs": 0,
       "gamePk": 822825
@@ -16697,13 +16707,13 @@
       "gamePk": 822906
     },
     "665877": {
-      "name": "José Fermín",
+      "name": "Jos\u00e9 Ferm\u00edn",
       "hits": 2,
       "hrs": 0,
       "gamePk": 823395
     },
     "665966": {
-      "name": "Carlos Narváez",
+      "name": "Carlos Narv\u00e1ez",
       "hits": 1,
       "hrs": 1,
       "gamePk": 822825
@@ -16793,7 +16803,7 @@
       "gamePk": 823395
     },
     "676609": {
-      "name": "José Caballero",
+      "name": "Jos\u00e9 Caballero",
       "hits": 1,
       "hrs": 0,
       "gamePk": 822906
@@ -16847,13 +16857,13 @@
       "gamePk": 824446
     },
     "682663": {
-      "name": "Agustín Ramírez",
+      "name": "Agust\u00edn Ram\u00edrez",
       "hits": 1,
       "hrs": 0,
       "gamePk": 823961
     },
     "686780": {
-      "name": "Pedro Pagés",
+      "name": "Pedro Pag\u00e9s",
       "hits": 1,
       "hrs": 1,
       "gamePk": 823395
@@ -16883,7 +16893,7 @@
       "gamePk": 823961
     },
     "691176": {
-      "name": "Jasson Domínguez",
+      "name": "Jasson Dom\u00ednguez",
       "hits": 1,
       "hrs": 0,
       "gamePk": 822906
@@ -16913,7 +16923,7 @@
       "gamePk": 823395
     },
     "694208": {
-      "name": "Moisés Ballesteros",
+      "name": "Mois\u00e9s Ballesteros",
       "hits": 1,
       "hrs": 1,
       "gamePk": 823311
@@ -17127,7 +17137,7 @@
       "gamePk": 823719
     },
     "823311_681190": {
-      "name": "Randy Vásquez",
+      "name": "Randy V\u00e1squez",
       "ks": 4,
       "gamePk": 823311
     },
@@ -17262,7 +17272,7 @@
       "gamePk": 824609
     },
     "824609_820862": {
-      "name": "José Fermin",
+      "name": "Jos\u00e9 Fermin",
       "ks": 2,
       "gamePk": 824609
     }
@@ -18202,7 +18212,7 @@
           },
           "probablePitcher": {
             "id": 666200,
-            "fullName": "Jesús Luzardo",
+            "fullName": "Jes\u00fas Luzardo",
             "link": "/api/v1/people/666200"
           },
           "splitSquad": false,
@@ -19525,7 +19535,7 @@
           },
           "probablePitcher": {
             "id": 667755,
-            "fullName": "José Soriano",
+            "fullName": "Jos\u00e9 Soriano",
             "link": "/api/v1/people/667755"
           },
           "splitSquad": false,
@@ -19992,7 +20002,7 @@
           },
           "probablePitcher": {
             "id": 527048,
-            "fullName": "Martín Pérez",
+            "fullName": "Mart\u00edn P\u00e9rez",
             "link": "/api/v1/people/527048"
           },
           "splitSquad": false,
