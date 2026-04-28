@@ -1745,7 +1745,14 @@ function advanceDemoPlay(play) {
     feedData.homeScore=play.homeScore;
     feedData.risp=play.risp;
     feedData.playClass=play.playClass;
-    if(play.scoring) playSound('run');
+    // Fire alerts and sounds
+    if(play.event==='Home Run'){
+      playSound('hr');
+      if(play.batterId) showPlayerCard(play.batterId,play.batterName||'',g.awayId,g.homeId,play.halfInning,null,play.desc);
+    }else if(play.scoring){
+      showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.awayScore+', '+g.homeAbbr+' '+play.homeScore,desc:play.desc,color:g.homePrimary,duration:4000});
+      playSound('run');
+    }
   }
   addFeedItem(play.gamePk,feedData);
   renderTicker();
