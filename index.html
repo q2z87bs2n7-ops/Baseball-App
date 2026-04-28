@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.26.1</title>
+<title>MLB Tracker v2.26.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -688,7 +688,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.26.2</div>
       </div>
     </div>
   </div>
@@ -1357,7 +1357,7 @@ async function pollGamePlays(gamePk) {
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
-        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible)showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc);}
+        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge);}}
         else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=90000;if(_rbi>0&&_rs>=30&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
@@ -2434,7 +2434,7 @@ function showAlert(opts) {
 }
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}
 
-async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint) {
+async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText) {
   var overlay = document.getElementById('playerCardOverlay');
   var card    = document.getElementById('playerCard');
   if (!overlay || !card) return;
@@ -2494,7 +2494,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
     +   '<div class="pc-identity">'
     +     '<div class="pc-name">' + batterName + '</div>'
     +     '<div class="pc-team">' + teamAbbr + '</div>'
-    +     '<div class="pc-event-badge">💥 HOME RUN!</div>'
+    +     '<div class="pc-event-badge">' + (badgeText || '💥 HOME RUN!') + '</div>'
     +   '</div>'
     + '</div>'
     + '<div class="pc-stats">'
@@ -2521,6 +2521,22 @@ function dismissPlayerCard() {
   if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
   overlay.classList.add('closing');
   setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, 280);
+}
+
+function getHRBadge(rbi, halfInning, inning, aScore, hScore) {
+  var battingAfter = halfInning === 'bottom' ? hScore : aScore;
+  var fieldingScore = halfInning === 'bottom' ? aScore : hScore;
+  var battingBefore = battingAfter - rbi;
+  var deficitBefore = fieldingScore - battingBefore;
+  var marginAfter = battingAfter - fieldingScore;
+  var isWalkoff = halfInning === 'bottom' && inning >= 9 && deficitBefore >= 0 && marginAfter > 0;
+  var isGoAhead = deficitBefore >= 0 && marginAfter > 0;
+  var isGrandSlam = rbi === 4;
+  if (isWalkoff && isGrandSlam) return 'WALK-OFF GRAND SLAM!';
+  if (isWalkoff) return 'WALK-OFF HOME RUN!';
+  if (isGrandSlam) return 'GRAND SLAM!';
+  if (isGoAhead) return 'GO-AHEAD HOME RUN!';
+  return '💥 HOME RUN!';
 }
 
 // ── Key RBI card helpers ──────────────────────────────────────────────────────
