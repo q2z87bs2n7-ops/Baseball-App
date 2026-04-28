@@ -414,8 +414,6 @@
 .upcoming-foot-countdown { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.55); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 3px; }
 .upcoming-foot-venue { font-size: 11px; color: rgba(255,255,255,0.45); text-align: right; }
 .upcoming-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.demo-cta { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.2s; }
-.demo-cta:hover { color: var(--text); }
 .demo-active .empty-hype-block { position: relative; }
 .demo-active #main { display: none !important; }
 .demo-active #feedWrap { display: block !important; }
@@ -677,6 +675,10 @@
           <div onclick="togglePulseMockMode()" id="pulseMockToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="pulseMockToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <button onclick="initDemo();toggleSettings()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">▶ Try Demo</button>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:center">Load snapshot &amp; replay from April 27</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
@@ -2756,7 +2758,7 @@ function renderEmptyState() {
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><button class="demo-cta" onclick="initDemo()">▶ Try Demo</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    +'<div class="empty-hype-block"><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
