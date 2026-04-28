@@ -991,6 +991,9 @@ const STORY_ROTATE_MS=10000;
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0;
 const DEMO_BACKUP_GAMES=[];  // Hardcoded real games as fallback when API unavailable
+// TO POPULATE: Use exportPulseStateAsSnapshot() while Pulse is running with live games,
+// then extract games from the snapshot and paste here with structure:
+// {gamePk, gameDateTime, awayTeam:{id,name,shortName}, homeTeam:{id,name,shortName}, venue, gameDetails}
 
 // ── Side Rail News globals ──────────────────────────────────────────────────────
 let mlbNewsFeed=[],newsCardIndex=0,newsRotateTimer=null;
@@ -1478,9 +1481,13 @@ async function initDemo() {
     console.log('Demo: No saved snapshot, loading from API');
     var games=await loadDemoGames();
     if(!games||games.length<1){
-      console.error('Demo: No real games available from API');
-      showAlert({icon:'⚠️',event:'Demo Unavailable',desc:'No recent games found',color:'#e85d4f',duration:3000});
-      return;
+      console.warn('Demo: API unavailable, using hardcoded backup games');
+      games=DEMO_BACKUP_GAMES;
+      if(!games||games.length<1){
+        console.error('Demo: No backup games available');
+        showAlert({icon:'⚠️',event:'Demo Unavailable',desc:'No recent games found',color:'#e85d4f',duration:3000});
+        return;
+      }
     }
     games.forEach(function(g){
       gameStates[g.gamePk]={gamePk:g.gamePk,awayAbbr:g.awayTeam.shortName,homeAbbr:g.homeTeam.shortName,awayName:g.awayTeam.name,homeName:g.homeTeam.name,awayPrimary:g.awayPrimary||tcLookup(g.awayTeam.id).primary,homePrimary:g.homePrimary||tcLookup(g.homeTeam.id).primary,awayId:g.awayTeam.id,homeId:g.homeTeam.id,awayScore:0,homeScore:0,awayHits:0,homeHits:0,status:'Live',detailedState:'In Progress',inning:1,halfInning:'top',outs:0,playCount:0,lastTimestamp:null,gameTime:g.gameDateTime?new Date(g.gameDateTime).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}):'TBD',gameDateMs:new Date(g.gameDateTime).getTime(),venueName:g.venue||'',onFirst:false,onSecond:false,onThird:false};
