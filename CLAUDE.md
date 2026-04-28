@@ -345,7 +345,7 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 
 **Mock mode:** Controlled by `pulseMockMode` (toggle in Settings, persisted to `localStorage('mlb_pulse_mock')`). `MOCK_DATA` contains 4 games (NYM@ATL, NYY@BOS, LAD@SF, HOU@TEX) with ~55 scripted plays. Round-robin engine (`mockTick()`) advances one play per tick across games. Mock bar (Normal/Fast/Skip/Reset controls) is inline below the ticker. Each mock HR play has an embedded `mockStats` object `{avg, homeRuns, rbi, ops}` — passed as `overrideStats` to `showPlayerCard` to bypass the live API fetch in mock mode.
 
-**Player card overlay (v2.7):** When a home run fires (real or mock), `showPlayerCard` renders a baseball-card-style overlay: player headshot from `img.mlbstatic.com` (generic silhouette fallback), name, team abbreviation, dynamic badge (see below), and a stat grid (AVG · OPS · HR with count-up animation from N−1 → N · RBI). A context pill shows "HR #N in SEASON — milestone!" on multiples of 5, or "🏆 HR leader on the team" if `statsCache` confirms it — no extra API calls needed. Card auto-dismisses after 5.5s or on tap/click anywhere. `isHistory` guard prevents cards from firing on initial feed load. In real mode, `statsCache` is checked first; if the player isn't in cache (opponent player), `/people/{id}/stats` is fetched. In mock mode, `overrideStats` bypasses the fetch entirely.
+**Player card overlay (v2.7):** When a home run fires (real or mock), `showPlayerCard` renders a baseball-card-style overlay: player headshot from `img.mlbstatic.com` (generic silhouette fallback), name, team abbreviation, dynamic badge (see below), and a stat grid (AVG · OPS · HR with count-up animation · RBI). Animation logic: HR counter animates from `rbiPrev` (previous RBI total, or seasonRBI − rbi if fresh) → `rbiSeason` (current season total). Context pill shows "HR #N in SEASON — milestone!" on multiples of 5, or "🏆 HR leader on the team" if `statsCache` confirms it — no extra API calls needed. Card auto-dismisses after 5.5s or on tap/click anywhere. `isHistory` guard prevents cards from firing on initial feed load. In real mode, `statsCache` is checked first; if the player isn't in cache (opponent player), `/people/{id}/stats` is fetched. In mock mode, `overrideStats` bypasses the fetch entirely.
 
 **HR card badge logic (`getHRBadge`, v2.28):** Badge label is computed at the `pollGamePlays` call site using score/inning data and passed as optional 8th parameter `badgeText` to `showPlayerCard`. Priority order:
 1. `WALK-OFF GRAND SLAM!` — bottom 9th+, 4 RBIs, batting team was tied/behind, now leads
@@ -362,7 +362,7 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 | Component | Values |
 |---|---|
 | Base RBI score | 1 RBI → 10, 2 → 25, 3 → 40, 4 → 55 |
-| Hit type multiplier | Sac fly/walk/GIDP/FC → 0.7; Single → 1.0; Double → 1.5; Triple → 2.0 |
+| Hit type multiplier | Sac fly/Sac bunt/walk/HBP/GIDP/FC → 0.7; Single → 1.0; Double → 1.5; Triple → 2.0 |
 | Context bonus (additive) | Go-ahead (was tied/behind, now leads) +30; Equalizer (was behind, now tied) +25; Comeback (was down 3+, now within 1 or better) +20; Blowout suppressor (was already leading by 5+) −15 |
 | Inning multiplier | Inn 1–3 → 0.4; 4–6 → 0.75; 7–8 → 1.0; 9 → 1.4; 10+ → 1.6 |
 
@@ -437,11 +437,13 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 | 2 | `game_status` | Final score + comeback label | 15 min | 30% | One per game (stable ID) |
 | 2 | `game_status` | Win/loss streak ≥3 games | 20 min | 10% | Checks all 30 teams in scheduleData |
 | 3 | `daily_stat` | Multi-hit day (≥3 hits or ≥2 hits+1 HR) | 15 min | 10% | One per batter per day; tracks `dailyHitsTracker` |
-| 3 | `daily_stat` | Daily leaders — top 3 per stat | 30 min | — | HR/RBI/H (hitting); K/SV (pitching); weighted priority [1.0, 0.7, 0.45] |
+| 3 | `daily_stat` | Daily leaders — top 5 per stat | 30 min | 5% | HR/AVG/RBI/SB (hitting); Wins/Saves (pitching); priority 65; one story per stat |
 | 3 | `daily_stat` | Pitcher gem (≥8 Ks in-progress) | 10 min | 20% | One per pitcher per game |
 | 4 | `historical` | On This Day (same date, last 3 seasons) | 60 min | 50% | Loaded once at Pulse init |
 | 4 | `contextual` | Yesterday's game highlights (final scores + W/L pitcher stats + top batter) | 30 min | 30% | Loaded once at Pulse init; naturally deprioritised when live games exist |
 | 4 | `contextual` | Probable pitchers for today (all teams) | 60 min | 5% | Format: "PitcherName [ABR] vs PitcherName [ABR]" |
+
+**Story object internal types:** Generators use `type` field internally: `'realtime'` (live plays), `'game_status'` (final scores, streaks), `'daily_stat'` (leaders, multi-hit, pitcher gems), `'historical'` (on this day), `'yesterday'` (yesterday highlights, conceptually contextual), `'contextual'` (all non-realtime). Badge rendering maps internal type → display label (e.g., `type:'yesterday'` → badge `'YESTERDAY'` → label "YESTERDAY").
 
 **Story generators (called every 15s poll):**
 
@@ -463,7 +465,7 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 9. **`genMultiHitDay()`** — Source: `feedItems` (aggregates hits per batter). Threshold: ≥3 hits OR ≥2 hits + 1 HR. Uses `dailyHitsTracker` for in-memory count. ID: `multihit_{batterId}_{date}`. Headline: "Alonso goes 3-for-4 with a homer". Priority: 55. Cooldown: 15 min per player.
 
-10. **`genDailyLeaders()`** — Source: `/stats/leaders` (fresh fetch every 5 min, cached in `dailyLeadersCache`). Covers: HR, AVG, RBI, SB (hitting); Wins, SV (pitching). Top 5 per category in a single story per stat (` · `-separated inline list). ID: `leader_{stat}_{date}`. Headline: "MLB Home Run Leaders". Sub: "1. LastName N · 2. LastName N · …". Sub styled via `.story-leaders` class (14px, `var(--text)`, weight 600 — matches headline). Cooldown: 30 min.
+10. **`genDailyLeaders()`** — Source: `/stats/leaders` (fresh fetch every 5 min, cached in `dailyLeadersCache`). Covers: HR, AVG, RBI, SB (hitting); Wins, Saves (pitching). Top 5 per category in a single story per stat (` · `-separated inline list). ID: `leader_{stat}_{date}`. Headline: "MLB Home Run Leaders". Sub: "1. LastName N · 2. LastName N · …". Sub styled via `.story-leaders` class (14px, `var(--text)`, weight 600 — matches headline). Priority: 65. Cooldown: 30 min. Decay: 5% per 30-min window.
 
 11. **`genPitcherGem()`** — Source: `feedItems` + linescore (pitcher K count). Detects: ≥8 Ks in progress. Uses `dailyPitcherKs` for in-memory tracking. ID: `kgem_{gamePk}_{pitcherId}`. Headline: "Senga has 10 Ks through 7". Priority: 58. Cooldown: 10 min.
 
