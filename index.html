@@ -1576,6 +1576,7 @@ async function initDemo() {
   });
   demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
   demoPlayIdx=0;
+  demoCurrentTime=demoPlayQueue.length>0?demoPlayQueue[0].ts:0;
   console.log('Demo: Loaded',Object.keys(gameStates).length,'games and',feedItems.length,'plays');
   renderTicker();
   renderSideRailGames();
