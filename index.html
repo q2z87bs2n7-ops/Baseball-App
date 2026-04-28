@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.13</title>
+<title>MLB Tracker v2.27.14</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.13</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.14</div>
       </div>
     </div>
   </div>
@@ -890,13 +890,12 @@
     <span class="mock-badge" id="mockBarBadge">⚡ Mock</span>
     <span class="mock-bar-label">Speed:</span>
     <button class="mock-btn" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)" style="display:none">1x</button>
-    <button class="mock-btn" id="demoSpeed2x" onclick="setDemoSpeed(5000,this)" style="display:none">2x</button>
-    <button class="mock-btn" id="demoSpeed5x" onclick="setDemoSpeed(2000,this)" style="display:none">5x</button>
     <button class="mock-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)" style="display:none">10x</button>
+    <button class="mock-btn" id="demoSpeed25x" onclick="setDemoSpeed(400,this)" style="display:none">25x</button>
+    <button class="mock-btn" id="demoSpeed200x" onclick="setDemoSpeed(50,this)" style="display:none">200x</button>
     <button class="mock-btn active" id="btnNormal" onclick="setMockSpeed(6000,this)">Normal</button>
     <button class="mock-btn" id="btnFast" onclick="setMockSpeed(1500,this)">Fast</button>
     <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()" style="display:none">⏸ Pause</button>
-    <button class="mock-btn" id="demoBackBtn" onclick="backDemoPlay()" style="display:none">◀ Back</button>
     <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()" style="display:none">Forward ▶</button>
     <button class="mock-btn" id="btnSkip" onclick="skipMockPlay()">Skip ▶</button>
     <button class="mock-btn" id="btnReset" onclick="resetMock()">↺ Reset</button>
@@ -1485,12 +1484,11 @@ async function initDemo() {
     document.getElementById('btnFast').style.display='none';
     document.getElementById('btnSkip').style.display='none';
     document.getElementById('demoSpeed1x').style.display='';
-    document.getElementById('demoSpeed2x').style.display='';
-    document.getElementById('demoSpeed5x').style.display='';
     document.getElementById('demoSpeed10x').style.display='';
+    document.getElementById('demoSpeed25x').style.display='';
+    document.getElementById('demoSpeed200x').style.display='';
     document.getElementById('demoSpeed1x').classList.add('active');
     document.getElementById('demoPauseBtn').style.display='';
-    document.getElementById('demoBackBtn').style.display='';
     document.getElementById('demoForwardBtn').style.display='';
     document.getElementById('demoPauseBtn').textContent='⏸ Pause';
   }
@@ -1651,7 +1649,7 @@ function pollDemoFeeds(){
 function setDemoSpeed(ms,btn){
   demoSpeedMs=ms;
   if(btn){
-    document.querySelectorAll('#demoSpeed1x,#demoSpeed2x,#demoSpeed5x,#demoSpeed10x').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#demoSpeed1x,#demoSpeed10x,#demoSpeed25x,#demoSpeed200x').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   }
 }
@@ -1759,11 +1757,10 @@ function exitDemo() {
     document.getElementById('btnFast').style.display='';
     document.getElementById('btnSkip').style.display='';
     document.getElementById('demoSpeed1x').style.display='none';
-    document.getElementById('demoSpeed2x').style.display='none';
-    document.getElementById('demoSpeed5x').style.display='none';
     document.getElementById('demoSpeed10x').style.display='none';
+    document.getElementById('demoSpeed25x').style.display='none';
+    document.getElementById('demoSpeed200x').style.display='none';
     document.getElementById('demoPauseBtn').style.display='none';
-    document.getElementById('demoBackBtn').style.display='none';
     document.getElementById('demoForwardBtn').style.display='none';
     var badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='⚡ Mock';
