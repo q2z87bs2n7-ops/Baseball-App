@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.27.9</title>
+<title>MLB Tracker v2.27.10</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -692,7 +692,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.9</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.27.10</div>
       </div>
     </div>
   </div>
@@ -1424,6 +1424,40 @@ function exportPulseStateAsSnapshot(){
 }
 
 // ── Demo Mode Functions ──────────────────────────────────────────────────────────
+async function loadDailyEventsJSON(){
+  try{
+    var r=await fetch('./daily-events.json');
+    if(!r.ok) return null;
+    var data=await r.json();
+    if(data.feedItems){
+      data.feedItems.forEach(function(item){
+        if(item.playTime&&typeof item.playTime==='string'){
+          item.playTime=new Date(item.playTime);
+        }
+      });
+    }
+    if(data.onThisDayCache){
+      data.onThisDayCache.forEach(function(item){
+        if(item.ts&&typeof item.ts==='string'){
+          item.ts=new Date(item.ts);
+        }
+      });
+    }
+    if(data.yesterdayCache){
+      data.yesterdayCache.forEach(function(item){
+        if(item.ts&&typeof item.ts==='string'){
+          item.ts=new Date(item.ts);
+        }
+      });
+    }
+    console.log('Demo: Loaded daily-events.json —',Object.keys(data.gameStates).length,'games,',data.feedItems.length,'plays');
+    return data;
+  }catch(e){
+    console.error('Demo: Failed to load daily-events.json',e);
+    return null;
+  }
+}
+
 async function initDemo() {
   demoMode=true;
   pulseMockMode=false;
@@ -1478,8 +1512,39 @@ async function initDemo() {
     demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
     demoPlayIdx=0;
   }else{
-    console.log('Demo: No saved snapshot, loading from API');
-    var games=await loadDemoGames();
+    console.log('Demo: No saved snapshot, trying daily-events.json');
+    var jsonData=await loadDailyEventsJSON();
+    if(jsonData&&jsonData.gameStates){
+      console.log('Demo: Using daily-events.json');
+      gameStates=jsonData.gameStates;
+      feedItems=jsonData.feedItems||[];
+      dailyLeadersCache=jsonData.dailyLeadersCache||null;
+      onThisDayCache=jsonData.onThisDayCache||[];
+      yesterdayCache=jsonData.yesterdayCache||[];
+      hrBatterStatsCache=jsonData.hrBatterStatsCache||{};
+      probablePitcherStatsCache=jsonData.probablePitcherStatsCache||{};
+      dailyHitsTracker=jsonData.dailyHitsTracker||{};
+      dailyPitcherKs=jsonData.dailyPitcherKs||{};
+      storyCarouselRawGameData=jsonData.storyCarouselRawGameData||{};
+      stolenBaseEvents=jsonData.stolenBaseEvents||[];
+      scheduleData=jsonData.scheduleData||[];
+      Object.keys(gameStates).forEach(function(pk){enabledGames.add(parseInt(pk));});
+      demoPlayQueue=[];
+      feedItems.forEach(function(item){
+        var ts=item.playTime&&item.playTime.getTime?item.playTime.getTime():(new Date(item.ts)).getTime();
+        var d=item.data||{};
+        demoPlayQueue.push({
+          gamePk:item.gamePk,ts:ts,
+          event:d.event,desc:d.desc,type:d.type||'play',inning:d.inning,halfInning:d.halfInning,outs:d.outs,
+          awayScore:d.awayScore,homeScore:d.homeScore,scoring:d.scoring,risp:d.risp,playClass:d.playClass,
+          playTime:new Date(ts),batterId:d.batterId,batterName:d.batterName,pitcherName:d.pitcherName,distance:d.distance
+        });
+      });
+      demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
+      demoPlayIdx=0;
+    }else{
+      console.log('Demo: daily-events.json unavailable, loading from API');
+      var games=await loadDemoGames();
     if(!games||games.length<1){
       console.warn('Demo: API unavailable, using hardcoded backup games');
       games=DEMO_BACKUP_GAMES;
@@ -1494,6 +1559,7 @@ async function initDemo() {
       enabledGames.add(g.gamePk);
     });
     await buildDemoPlayQueue(games);
+    }
   }
   renderTicker();
   buildStoryPool();
