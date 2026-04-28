@@ -1522,7 +1522,11 @@ async function initDemo() {
   });
   onThisDayCache.forEach(function(item){if(item.ts&&typeof item.ts==='string') item.ts=new Date(item.ts);});
   yesterdayCache.forEach(function(item){if(item.ts&&typeof item.ts==='string') item.ts=new Date(item.ts);});
-  Object.keys(gameStates).forEach(function(pk){enabledGames.add(parseInt(pk));});
+  Object.keys(gameStates).forEach(function(pk){
+    enabledGames.add(parseInt(pk));
+    gameStates[pk].status='Live';
+    gameStates[pk].detailedState='In Progress';
+  });
   demoPlayQueue=[];
   feedItems.forEach(function(item){
     var ts=item.playTime&&item.playTime.getTime?item.playTime.getTime():(new Date(item.ts)).getTime();
