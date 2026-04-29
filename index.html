@@ -3052,21 +3052,16 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   }
   var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">' + jerseyNumber + '</div>' : '';
 
-  card.innerHTML = ''
-    + '<div class="pc-photo-bg" style="background-image:url(\'' + photoUrl + '\')">' + jerseyHtml + '</div>'
-    + '<div class="pc-header">'
-    +   '<div class="pc-identity">'
-    +     '<div class="pc-name">' + batterName + '</div>'
-    +     '<div class="pc-team-pos">POS: ' + position + ' · ' + teamAbbr + '</div>'
-    +     '<div class="pc-event-badge">' + (badgeText || '💥 HOME RUN!') + '</div>'
-    +   '</div>'
-    + '</div>'
-    + '<div class="pc-stats">'
-    +   '<div class="pc-stat"><div class="pc-stat-val">' + avg + '</div><div class="pc-stat-lbl">AVG</div></div>'
-    +   '<div class="pc-stat"><div class="pc-stat-val">' + ops + '</div><div class="pc-stat-lbl">OPS</div></div>'
-    +   '<div class="pc-stat pc-hr-highlight"><div class="pc-stat-val pc-hr-val">' + hrPrev + '</div><div class="pc-stat-lbl">HR</div></div>'
-    +   '<div class="pc-stat"><div class="pc-stat-val">' + rbi + '</div><div class="pc-stat-lbl">RBI</div></div>'
-    + '</div>';
+  card.innerHTML = window.PulseCard.render({
+    batterId: batterId,
+    name: batterName,
+    team: { short: teamAbbr, primary: teamData.primary, secondary: teamData.secondary },
+    position: position,
+    jersey: jerseyNumber,
+    badge: (badgeText || 'HOME RUN'),
+    stats: { avg: avg, ops: ops, hr: hrPrev, rbi: rbi },
+    highlight: 'hr',
+  });
   if (typeof hrCount === 'number' && hrCount >= 1) {
     setTimeout(function() {
       var el = card.querySelector('.pc-hr-val');
