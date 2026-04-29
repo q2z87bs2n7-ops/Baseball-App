@@ -846,6 +846,38 @@ On every commit that changes app content, bump **three** things:
 
 ---
 
+## Debug Features
+
+### Pulse HR Card Replay (v2.49+)
+
+**Keyboard Shortcut:** `Shift+R` in Pulse view
+
+**Console Function:** `replayHRCard(itemIndex)`
+
+Replays a home run card from the live feed without demo mode overhead. Useful for QC'ing the four card variants (V1–V4) with real game data.
+
+**Usage:**
+- **Most recent HR:** Press `Shift+R` (no arguments)
+- **Specific HR by index:** Open browser console and call `replayHRCard(0)` for first HR, `replayHRCard(1)` for second, etc.
+
+**What it does:**
+- Scans `feedItems` array for all plays with `event === 'Home Run'`
+- Extracts batter, team, and game context
+- Calls `showPlayerCard()` with the HR data
+- Displays a random template variant (or last shown variant if replayed immediately)
+- Logs action to console: `"Replaying HR: {name} at {away} @ {home}"`
+
+**Keyboard Listener:**
+Located in `index.html` near the end, after the `visibilitychange` event listener:
+```javascript
+document.addEventListener('keydown',function(e){
+  if(e.shiftKey && e.key === 'H') { window.PulseCard.demo(); }
+  if(e.shiftKey && e.key === 'R') { replayHRCard(); }
+});
+```
+
+---
+
 ## Known Open Issues
 
 1. **News fallback** — if ESPN API is CORS-blocked, no fallback source.
