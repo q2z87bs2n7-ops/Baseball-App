@@ -1183,9 +1183,25 @@ async function pollLeaguePulse() {
   if (!hasLive) pollDateStr=localDateStr(getEffectiveDate());
   var dateStr=pollDateStr;
   try {
+    // Fetch from primary date
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
     var d=await r.json();
-    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
+
+    // If no games found on primary date and it's a fresh poll (no prior state), also try yesterday
+    if (!games.length && !hasLive && isFirstPoll) {
+      var yesterday=new Date();
+      yesterday.setDate(yesterday.getDate()-1);
+      var yDateStr=localDateStr(yesterday);
+      var yr=await fetch(MLB_BASE+'/schedule?sportId=1&date='+yDateStr+'&hydrate=linescore,team,probablePitcher');
+      var yd=await yr.json();
+      var yGames=(yd.dates||[]).flatMap(function(dt){return dt.games||[]});
+      if (yGames.length) {
+        games=yGames;
+        dateStr=yDateStr;
+        pollDateStr=dateStr;
+      }
+    }
     storyCarouselRawGameData={};
     games.forEach(function(g){storyCarouselRawGameData[g.gamePk]=g;});
     var pendingFinalItems={};
@@ -1790,7 +1806,11 @@ function exitDemo() {
 
   // Reset poll state so next poll fetches fresh data
   isFirstPoll=true;
-  pollDateStr=null;
+  // Fetch games from yesterday + today in case games span past midnight
+  var endDate=new Date();
+  var startDate=new Date();
+  startDate.setDate(startDate.getDate()-1);
+  pollDateStr=null;  // Will be set by pollLeaguePulse()
 
   // Update UI
   var demoBtnSettings=document.getElementById('demoBtnSettings');
