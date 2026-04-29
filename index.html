@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.38</title>
+<title>MLB Tracker v2.39</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -779,7 +779,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.38</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.39</div>
       </div>
     </div>
   </div>
@@ -1063,6 +1063,7 @@ let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
 let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
+let screenWakeLock=null;
 
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null;
@@ -3144,6 +3145,27 @@ function switchTeam(teamId){
   if(document.getElementById('media').classList.contains('active'))loadMedia();
 }
 
+async function requestScreenWakeLock(){
+  if(!navigator.wakeLock)return;
+  try{
+    screenWakeLock=await navigator.wakeLock.request('screen');
+    screenWakeLock.addEventListener('release',()=>{screenWakeLock=null;});
+  }catch(e){
+    console.warn('Wake lock request failed:',e);
+  }
+}
+
+async function releaseScreenWakeLock(){
+  if(screenWakeLock){
+    try{
+      await screenWakeLock.release();
+      screenWakeLock=null;
+    }catch(e){
+      console.warn('Wake lock release failed:',e);
+    }
+  }
+}
+
 function showSection(id,btn){
   if(demoMode)exitDemo();
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
@@ -3153,7 +3175,9 @@ function showSection(id,btn){
   if(id==='pulse'){
     savedThemeForPulse=themeOverride;
     applyPulseMLBTheme();
+    requestScreenWakeLock();
   }else{
+    releaseScreenWakeLock();
     if(savedThemeForPulse!==undefined){applyTeamTheme(activeTeam);}
   }
   if(id==='schedule'&&!scheduleLoaded)loadSchedule();
@@ -3876,6 +3900,12 @@ function togglePush(){
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
   pulseInitialized=true;initLeaguePulse();
 })();
+
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){
+    releaseScreenWakeLock();
+  }
+});
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
 </script>
