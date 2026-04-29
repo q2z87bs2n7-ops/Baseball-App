@@ -979,8 +979,8 @@
     <span class="mock-bar-label">Speed:</span>
     <button class="mock-btn" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)">1x</button>
     <button class="mock-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)">10x</button>
-    <button class="mock-btn" id="demoSpeed25x" onclick="setDemoSpeed(400,this)">25x</button>
-    <button class="mock-btn" id="demoSpeed200x" onclick="setDemoSpeed(50,this)">200x</button>
+    <button class="mock-btn" id="demoSpeed100x" onclick="setDemoSpeed(100,this)">100x</button>
+    <button class="mock-btn" id="demoNextHRBtn" onclick="demoNextHR()" style="margin-left:8px">🔥 Next HR</button>
     <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()">⏸ Pause</button>
     <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()">Forward ▶</button>
     <span class="mock-progress" id="mockProgress"></span>
@@ -1466,9 +1466,9 @@ async function initDemo() {
     if(badge) badge.textContent='📽️ Demo';
     document.getElementById('demoSpeed1x').style.display='';
     document.getElementById('demoSpeed10x').style.display='';
-    document.getElementById('demoSpeed25x').style.display='';
-    document.getElementById('demoSpeed200x').style.display='';
+    document.getElementById('demoSpeed100x').style.display='';
     document.getElementById('demoSpeed1x').classList.add('active');
+    document.getElementById('demoNextHRBtn').style.display='';
     document.getElementById('demoPauseBtn').style.display='';
     document.getElementById('demoForwardBtn').style.display='';
     document.getElementById('demoPauseBtn').textContent='⏸ Pause';
@@ -1688,6 +1688,30 @@ function forwardDemoPlay(){
   if(!demoPaused) pollDemoFeeds();
 }
 
+function demoNextHR(){
+  // Find next HR in queue starting from current position
+  var nextHRIdx=-1;
+  for(var i=demoPlayIdx;i<demoPlayQueue.length;i++){
+    if(demoPlayQueue[i].event==='Home Run'){nextHRIdx=i;break;}
+  }
+  if(nextHRIdx===-1){showAlert({icon:'⚠️',event:'No more HRs',desc:'Reached end of demo',duration:2000});return;}
+  // Jump to one before the HR
+  demoPlayIdx=nextHRIdx-1;
+  clearTimeout(demoTimer);
+  // Advance to the HR
+  if(demoPlayIdx<demoPlayQueue.length) demoPlayIdx++;
+  var play=demoPlayQueue[demoPlayIdx];
+  if(play){
+    demoCurrentTime=play.ts;
+    advanceDemoPlay(play).then(function(){
+      demoPlayIdx++;
+      demoPaused=true;
+      var btn=document.getElementById('demoPauseBtn');
+      if(btn) btn.textContent='▶ Resume';
+    });
+  }
+}
+
 async function advanceDemoPlay(play) {
   demoCurrentTime=play.ts;
   var g=gameStates[play.gamePk];
@@ -1800,10 +1824,10 @@ function exitDemo() {
     if(demoSpeed1x) demoSpeed1x.style.display='none';
     var demoSpeed10x=document.getElementById('demoSpeed10x');
     if(demoSpeed10x) demoSpeed10x.style.display='none';
-    var demoSpeed25x=document.getElementById('demoSpeed25x');
-    if(demoSpeed25x) demoSpeed25x.style.display='none';
-    var demoSpeed200x=document.getElementById('demoSpeed200x');
-    if(demoSpeed200x) demoSpeed200x.style.display='none';
+    var demoSpeed100x=document.getElementById('demoSpeed100x');
+    if(demoSpeed100x) demoSpeed100x.style.display='none';
+    var demoNextHRBtn=document.getElementById('demoNextHRBtn');
+    if(demoNextHRBtn) demoNextHRBtn.style.display='none';
     var demoPauseBtn=document.getElementById('demoPauseBtn');
     if(demoPauseBtn) demoPauseBtn.style.display='none';
     var demoForwardBtn=document.getElementById('demoForwardBtn');
