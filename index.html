@@ -3174,21 +3174,16 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
   var position = rEntry && rEntry.position ? rEntry.position.abbreviation : '—';
   var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">' + jerseyNumber + '</div>' : '';
-  card.innerHTML = ''
-    + '<div class="pc-photo-bg" style="background-image:url(\'' + photoUrl + '\')">' + jerseyHtml + '</div>'
-    + '<div class="pc-header">'
-    +   '<div class="pc-identity">'
-    +     '<div class="pc-name">' + batterName + '</div>'
-    +     '<div class="pc-team-pos">POS: ' + position + ' · ' + teamAbbr + '</div>'
-    +     '<div class="pc-event-badge pc-rbi-badge">' + badge + '</div>'
-    +   '</div>'
-    + '</div>'
-    + '<div class="pc-stats">'
-    +   '<div class="pc-stat"><div class="pc-stat-val">' + avg + '</div><div class="pc-stat-lbl">AVG</div></div>'
-    +   '<div class="pc-stat"><div class="pc-stat-val">' + ops + '</div><div class="pc-stat-lbl">OPS</div></div>'
-    +   '<div class="pc-stat"><div class="pc-stat-val">' + hits + '</div><div class="pc-stat-lbl">H</div></div>'
-    +   '<div class="pc-stat pc-rbi-highlight"><div class="pc-stat-val pc-rbi-val">' + rbiPrev + '</div><div class="pc-stat-lbl">RBI</div></div>'
-    + '</div>';
+  card.innerHTML = window.PulseCard.render({
+    batterId: batterId,
+    name: batterName,
+    team: { short: teamAbbr, primary: teamData.primary, secondary: teamData.secondary },
+    position: position,
+    jersey: jerseyNumber,
+    badge: badge,
+    stats: { avg: avg, ops: ops, h: hits, rbi: rbiPrev },
+    highlight: 'rbi',
+  });
   if (typeof rbiSeason === 'number' && rbiSeason >= 1) {
     setTimeout(function() {
       var el = card.querySelector('.pc-rbi-val');
