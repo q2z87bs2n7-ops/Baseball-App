@@ -1780,24 +1780,22 @@ function exitDemo() {
     if(feed) feed.innerHTML='';
   }
 
-  // Re-initialize real polling
-  if(!pulseTimer){
-    pulseTimer=setInterval(pollLeaguePulse,15000);
-    pollLeaguePulse();
-  }
-
-  // Update story rotation
-  if(storyRotateTimer) clearInterval(storyRotateTimer);
-  storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+  // Reset poll state so next poll fetches fresh data
+  isFirstPoll=true;
+  pollDateStr=null;
 
   // Update UI
   var demoBtnSettings=document.getElementById('demoBtnSettings');
   if(demoBtnSettings) demoBtnSettings.textContent='▶ Try Demo';
 
-  // Render empty state, ticker, and sidebar
-  updateFeedEmpty();
-  renderTicker();
-  renderSideRailGames();
+  // Re-initialize real polling and story rotation
+  if(pulseTimer) clearInterval(pulseTimer);
+  pulseTimer=setInterval(pollLeaguePulse,15000);
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+
+  // Fetch real data immediately - pollLeaguePulse() will handle all rendering
+  pollLeaguePulse();
 }
 
 function renderTicker() {
