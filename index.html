@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.39.6</title>
+<title>MLB Tracker v2.39.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -704,63 +704,38 @@
 /* V1 — STYLIZED GRAPHIC */
 /* ─────────────────────────────────────────────── */
 #playerCard.pc-v1 {
-  background:var(--primary);
+  background:var(--primary) !important;
   overflow:hidden;
+  position:relative;
 }
 #playerCard.pc-v1::before {
   display:none;
 }
-/* Secondary color gradient slash at top */
+/* Secondary color slash/gradient - ONLY at top */
 #playerCard.pc-v1::after {
   content:'';
   position:absolute;
   top:0;
   left:0;
   right:0;
-  height:40%;
-  background:linear-gradient(135deg, var(--secondary) 0%, transparent 70%);
+  height:120px;
+  background:linear-gradient(135deg, var(--secondary) 0%, var(--secondary) 50%, transparent 100%);
   z-index:1;
   pointer-events:none;
+  clip-path:polygon(0 0, 100% 0, 100% 100%, 0 60%);
 }
-#playerCard.pc-v1 .pc-photo-bg {
-  position:absolute;
-  top:130px;
-  right:12px;
-  width:170px;
-  height:170px;
-  border-radius:50%;
-  bottom:auto;
-  background-size:80% auto;
-  background-position:center 20%;
-  background-color:var(--secondary);
-  border:5px solid #fff;
-  box-shadow:0 10px 25px rgba(0,0,0,.4);
-  z-index:5;
-  background-repeat:no-repeat;
-}
-#playerCard.pc-v1 .pc-photo-bg::after {
-  display:none;
-}
-#playerCard.pc-v1 .pc-header {
-  position:static;
-  height:auto;
-  background:transparent;
-  border:none;
-  padding:12px 14px 0;
-  min-height:0;
-  z-index:4;
-}
+/* Event badge - top text */
 #playerCard.pc-v1 .pc-event-badge {
-  position:relative;
-  top:auto;
-  left:auto;
-  right:auto;
-  width:100%;
+  position:absolute;
+  top:16px;
+  left:14px;
+  right:14px;
+  width:auto;
   background:transparent;
   border:none;
-  border-bottom:2px solid rgba(255,255,255,.6);
+  border-bottom:2px solid rgba(255,255,255,.7);
   color:#fff;
-  font-size:12px;
+  font-size:11px;
   font-weight:900;
   letter-spacing:.2em;
   padding:0 0 10px 0;
@@ -768,93 +743,119 @@
   animation:none;
   box-shadow:none;
   text-transform:uppercase;
+  z-index:10;
   display:block;
   text-align:left;
 }
+/* Player name - large left column */
 #playerCard.pc-v1 .pc-identity {
-  position:relative;
-  top:auto;
-  left:auto;
-  width:100%;
+  position:absolute;
+  top:50px;
+  left:14px;
+  right:100px;
+  width:auto;
+  flex-direction:column;
   align-items:flex-start;
-  margin-top:6px;
+  z-index:5;
 }
 #playerCard.pc-v1 .pc-name {
-  font-size:52px;
+  font-size:56px;
   font-weight:900;
   letter-spacing:-.03em;
-  line-height:0.95;
+  line-height:0.92;
   text-transform:uppercase;
   color:#fff;
   text-shadow:none;
   text-align:left;
-  max-width:200px;
   word-break:break-word;
 }
 #playerCard.pc-v1 .pc-team-pos {
-  position:relative;
-  top:auto;
-  left:auto;
+  position:absolute;
+  top:108px;
+  left:14px;
   background:#fff;
   color:var(--primary);
   font-weight:900;
-  font-size:11px;
-  letter-spacing:.15em;
-  padding:5px 10px;
+  font-size:10px;
+  letter-spacing:.12em;
+  padding:4px 10px;
   text-transform:uppercase;
-  margin:8px 0 0 0;
-  display:inline-block;
-  z-index:5;
+  margin:0;
+  z-index:6;
 }
+/* Jersey number - left side, big */
 #playerCard.pc-v1 .pc-jersey {
   position:absolute;
-  top:120px;
-  left:10px;
+  top:140px;
+  left:8px;
   display:block;
-  font-size:140px;
+  font-size:150px;
   font-weight:900;
   letter-spacing:-.06em;
-  color:rgba(255,255,255,.85);
+  color:rgba(255,255,255,.75);
   line-height:0.7;
-  text-shadow:5px 5px 0 rgba(0,0,0,.3);
+  text-shadow:4px 6px 0 rgba(0,0,0,.25);
   z-index:4;
-  font-style:normal;
 }
+/* Photo - circular on right */
+#playerCard.pc-v1 .pc-photo-bg {
+  position:absolute !important;
+  top:125px;
+  right:10px;
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  bottom:auto;
+  left:auto;
+  background-size:85% auto !important;
+  background-position:center 22% !important;
+  background-color:var(--secondary) !important;
+  border:5px solid #fff;
+  box-shadow:0 12px 30px rgba(0,0,0,.45);
+  z-index:5;
+  background-repeat:no-repeat !important;
+}
+#playerCard.pc-v1 .pc-photo-bg::after {
+  display:none !important;
+}
+/* Stats grid - bottom black bar */
 #playerCard.pc-v1 .pc-stats {
-  background:#000;
-  height:90px;
-  gap:0;
+  background:#000 !important;
+  height:92px;
+  gap:0 !important;
   border:none;
-  grid-template-columns:repeat(4,1fr);
-  position:absolute;
+  grid-template-columns:repeat(4,1fr) !important;
+  position:absolute !important;
   bottom:0;
   left:0;
   right:0;
   margin:0;
+  z-index:5;
 }
 #playerCard.pc-v1 .pc-stat {
-  border-right:1px solid rgba(255,255,255,.15);
+  border-right:1px solid rgba(255,255,255,.12);
   border-top:none;
-  padding:6px 4px;
+  padding:8px 4px;
+  background:transparent;
 }
 #playerCard.pc-v1 .pc-stat:nth-child(4n) {
   border-right:none;
 }
 #playerCard.pc-v1 .pc-stat-val {
-  font-size:28px;
+  font-size:30px;
   color:#fff;
   font-weight:900;
 }
 #playerCard.pc-v1 .pc-stat-lbl {
   font-size:9px;
-  color:rgba(255,255,255,.7);
+  color:rgba(255,255,255,.6);
+  font-weight:700;
 }
 #playerCard.pc-v1 .pc-stat.pc-hr-highlight {
-  background:var(--secondary);
+  background:var(--secondary) !important;
 }
 #playerCard.pc-v1 .pc-stat.pc-hr-highlight .pc-stat-val {
   color:#fff;
-  background:transparent;
 }
 #playerCard.pc-v1 .pc-stat.pc-hr-highlight .pc-stat-lbl {
   color:#fff;
@@ -940,7 +941,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.39.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.39.7</div>
       </div>
     </div>
   </div>
