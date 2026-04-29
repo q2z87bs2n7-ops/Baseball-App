@@ -763,7 +763,7 @@
           </div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <button onclick="initDemo();toggleSettings()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">▶ Try Demo</button>
+          <button id="demoBtnSettings" onclick="toggleDemoMode();toggleSettings()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">▶ Try Demo</button>
           <div style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:center">Load snapshot &amp; replay from April 27</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -1421,6 +1421,11 @@ function getEffectiveDate(){
   return demoMode&&demoDate?demoDate:new Date();
 }
 
+function toggleDemoMode() {
+  if(demoMode) exitDemo();
+  else initDemo();
+}
+
 async function initDemo() {
   if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
   if (storyRotateTimer) { clearInterval(storyRotateTimer); storyRotateTimer = null; }
@@ -1548,7 +1553,8 @@ async function initDemo() {
   if(storyRotateTimer) clearInterval(storyRotateTimer);
   storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
   demoStartTime=Date.now();
-  renderFeed();
+  var demoBtnSettings=document.getElementById('demoBtnSettings');
+  if(demoBtnSettings) demoBtnSettings.textContent='⏹ Exit Demo';
   pollDemoFeeds();
 }
 
@@ -1765,6 +1771,8 @@ function exitDemo() {
   if(main) main.style.display='block';
   var feedWrap=document.getElementById('feedWrap');
   if(feedWrap) feedWrap.style.display='none';
+  var demoBtnSettings=document.getElementById('demoBtnSettings');
+  if(demoBtnSettings) demoBtnSettings.textContent='▶ Try Demo';
   updateFeedEmpty();
 }
 
@@ -2729,7 +2737,7 @@ function renderEmptyState() {
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><button class="demo-cta" onclick="initDemo()">▶ Try Demo</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    +'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
