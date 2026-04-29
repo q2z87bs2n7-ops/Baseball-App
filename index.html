@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.40</title>
+<title>MLB Tracker v2.41</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -780,7 +780,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.40</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.41</div>
       </div>
     </div>
   </div>
@@ -2697,10 +2697,10 @@ function updateFeedEmpty() {
   document.getElementById('feedEmpty').style.display=hasVisible?'none':'';
   // Hide UI elements when no visible feed items (storyCarousel stays visible for Probable Pitchers)
   var hideWhenEmpty=['gameTicker','pulseFeedHeader','sideRailNews','sideRailGames'];
-  // Apply pulse-empty layout only when there are NO games at all, not just no visible feed items
-  // This preserves wide layout + sidebar when games exist but are all disabled/filtered
+  // Apply pulse-empty layout when there are NO games at all OR no visible feed items
+  // This centers hype content whether in zero-game state or just pre-game/all-upcoming state
   var hasAnyGames = Object.keys(gameStates).length > 0;
-  document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames);
+  document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || !hasVisible);
   hideWhenEmpty.forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.style.display=hasVisible?'':'none';
