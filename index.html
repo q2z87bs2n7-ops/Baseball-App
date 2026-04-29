@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.46</title>
+<title>MLB Tracker v2.46.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -780,7 +780,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.46</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.46.1</div>
       </div>
     </div>
   </div>
@@ -1809,37 +1809,39 @@ function exitDemo() {
     if(badge) badge.textContent='⚡ Mock';
   }
 
-  // Restore real Pulse mode
-  var feedWrap=document.getElementById('feedWrap');
-  if(feedWrap) feedWrap.style.display='block';
-
-  // Explicitly clear and rebuild feed from empty feedItems
-  renderFeed();
-
-  // Reset poll state so next poll fetches fresh data
-  isFirstPoll=true;
-  // Fetch games from yesterday + today in case games span past midnight
-  var endDate=new Date();
-  var startDate=new Date();
-  startDate.setDate(startDate.getDate()-1);
-  pollDateStr=null;  // Will be set by pollLeaguePulse()
-
   // Update UI
   var demoBtnSettings=document.getElementById('demoBtnSettings');
   if(demoBtnSettings) demoBtnSettings.textContent='▶ Try Demo';
 
-  // Render empty state for both feed and ticker immediately
-  updateFeedEmpty();
-  renderTicker();
+  // Reset poll state so next poll fetches fresh data
+  isFirstPoll=true;
+  pollDateStr=null;  // Will be set by pollLeaguePulse()
 
-  // Re-initialize real polling and story rotation
-  if(pulseTimer) clearInterval(pulseTimer);
-  pulseTimer=setInterval(pollLeaguePulse,15000);
-  if(storyRotateTimer) clearInterval(storyRotateTimer);
-  storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+  // Only restore real polling and re-render if staying in Pulse section
+  var pulseSection=document.getElementById('pulse');
+  var stayingInPulse=pulseSection&&pulseSection.classList.contains('active');
 
-  // Fetch real data - pollLeaguePulse() will update with actual games/plays
-  pollLeaguePulse();
+  if(stayingInPulse){
+    // Explicitly clear and rebuild feed from empty feedItems
+    renderFeed();
+    // Render empty state for both feed and ticker immediately
+    updateFeedEmpty();
+    renderTicker();
+    // Re-initialize real polling and story rotation
+    if(pulseTimer) clearInterval(pulseTimer);
+    pulseTimer=setInterval(pollLeaguePulse,15000);
+    if(storyRotateTimer) clearInterval(storyRotateTimer);
+    storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+    // Fetch real data - pollLeaguePulse() will update with actual games/plays
+    pollLeaguePulse();
+  }else{
+    // Exiting demo AND navigating to another section
+    // Clear feed to prevent demo content from lingering
+    var feed=document.getElementById('feed');
+    if(feed) feed.innerHTML='';
+    // Don't set feedWrap display - let CSS class logic handle it
+    // showSection() will manage which section is visible
+  }
 }
 
 function renderTicker() {
