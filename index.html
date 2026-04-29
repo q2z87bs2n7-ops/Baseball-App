@@ -2749,7 +2749,7 @@ function refreshDebugPanel(){
 
 // DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+R)
 function replayHRCard(itemIndex) {
-  var hrs = feedItems.filter(function(item) { return item.type === 'play' && item.data.event === 'home_run'; });
+  var hrs = feedItems.filter(function(item) { return item.data && item.data.event === 'Home Run'; });
   if (!hrs.length) { alert('No home runs in feed yet'); return; }
 
   var idx = itemIndex !== undefined ? itemIndex : hrs.length - 1;
