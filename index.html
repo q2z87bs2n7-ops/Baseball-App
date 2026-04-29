@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.49.4</title>
+<title>MLB Tracker v2.49.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -410,10 +410,11 @@
 .empty-hype-block { margin-bottom: 18px; position: relative; }
 .empty-hype-headline { font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
 .empty-hype-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.hype-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; border: 1px solid; }
-.hype-pill.hr      { background: rgba(255,155,30,0.12); border-color: rgba(255,155,30,0.35); color: #ffaa30; }
-.hype-pill.scoring { background: rgba(60,190,100,0.10); border-color: rgba(60,190,100,0.30); color: #3dba5a; }
-.hype-pill.risp    { background: rgba(255,200,0,0.10);  border-color: rgba(255,200,0,0.30);  color: #ffd000; }
+.hype-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: #cfd3dc; }
+.hype-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.hype-pill.hr::before      { background: #ffaa30; }
+.hype-pill.scoring::before { background: #3dba5a; }
+.hype-pill.risp::before    { background: #ffd000; }
 .empty-hype-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
 .upcoming-hero { border-radius: 10px; padding: 18px 20px; margin-bottom: 10px; overflow: hidden; }
 .upcoming-hero-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 10px; }
@@ -694,7 +695,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.49.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.49.5</div>
       </div>
     </div>
   </div>
