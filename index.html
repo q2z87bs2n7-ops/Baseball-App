@@ -1758,6 +1758,12 @@ function exitDemo() {
   storyShownId=null;
   demoCurrentTime=0;
 
+  // Aggressive DOM cleanup - wipe feed and ticker directly
+  var feed=document.getElementById('feed');
+  if(feed) feed.innerHTML='';
+  var ticker=document.getElementById('gameTicker');
+  if(ticker) ticker.innerHTML='';
+
   // Hide mock bar controls
   var mockBar=document.getElementById('mockBar');
   if(mockBar){
@@ -1790,13 +1796,17 @@ function exitDemo() {
   var demoBtnSettings=document.getElementById('demoBtnSettings');
   if(demoBtnSettings) demoBtnSettings.textContent='▶ Try Demo';
 
+  // Render empty state for both feed and ticker immediately
+  updateFeedEmpty();
+  renderTicker();
+
   // Re-initialize real polling and story rotation
   if(pulseTimer) clearInterval(pulseTimer);
   pulseTimer=setInterval(pollLeaguePulse,15000);
   if(storyRotateTimer) clearInterval(storyRotateTimer);
   storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
 
-  // Fetch real data immediately - pollLeaguePulse() will handle all rendering
+  // Fetch real data - pollLeaguePulse() will update with actual games/plays
   pollLeaguePulse();
 }
 
