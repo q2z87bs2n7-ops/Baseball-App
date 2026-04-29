@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.37</title>
+<title>MLB Tracker v2.38</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -55,7 +55,7 @@
   .badge-final{background:#444;color:#ccc}
   .badge-upcoming{background:rgba(0,0,0,.4);color:#fff}
   .badge-w{background:rgba(34,197,94,.15);color:#7dd89e;border:1px solid rgba(34,197,94,.55)}
-  .badge-l{background:rgba(239,68,68,.12);color:#4ade80;border:1px solid rgba(34,197,94,.5)}
+  .badge-l{background:rgba(239,68,68,.12);color:#f08c8c;border:1px solid rgba(239,68,68,.5)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   .game-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);font-size:.88rem}
   .game-row:last-child{border-bottom:none}
@@ -110,7 +110,7 @@
   .cal-ha{color:var(--muted);font-size:.68rem}
   .cal-result{display:inline-block;padding:1px 6px;border-radius:10px;font-size:.68rem;font-weight:700;margin-top:2px;border:1px solid transparent}
   .cal-w{background:rgba(34,197,94,.15);color:#7dd89e;border-color:rgba(34,197,94,.5)}
-  .cal-l{background:rgba(239,68,68,.12);color:#4ade80;border-color:rgba(34,197,94,.45)}
+  .cal-l{background:rgba(239,68,68,.12);color:#f08c8c;border-color:rgba(239,68,68,.45)}
   .cal-upcoming{color:var(--muted);font-size:.68rem}
   .cal-dot{display:none;width:6px;height:6px;border-radius:50%;margin:2px auto 0}
   .cal-dot-w{background:#4ade80}
@@ -155,7 +155,7 @@
   .count-dot.out{width:16px;height:16px}
   .count-dot.ball.on{background:var(--accent);border-color:var(--accent)}
   .count-dot.strike.on{background:#ffb636;border-color:#ffb636}
-  .count-dot.out.on{background:#22c55e;border-color:#22c55e}
+  .count-dot.out.on{background:#ff4444;border-color:#ff4444}
   .diamond-wrap{display:flex;align-items:center;justify-content:center;padding:8px 0}
   .matchup-row{display:flex;flex-direction:column;gap:10px}
   .matchup-player{background:var(--card2);border-radius:8px;padding:10px}
@@ -779,7 +779,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.37</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.38</div>
       </div>
     </div>
   </div>
@@ -3392,7 +3392,8 @@ function renderCalendar(){
           inner+=wrap+'<span class="cal-result '+(mW?'cal-w':'cal-l')+'"'+(isDH?' style="font-size:.6rem;padding:1px 5px"':'')+'>'+(mW?'W':'L')+' '+sc+'</span>'+wrapEnd;
           if(mW)dotW=true;else dotL=true;
         } else if(calLive){
-          inner+=wrap+'<span class="cal-result" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.5)'+(isDH?';font-size:.6rem;padding:1px 5px':'')+'">LIVE</span>'+wrapEnd;
+          var sc=(myT.score!=null&&opT.score!=null)?myT.score+'-'+opT.score:'?-?';
+          inner+=wrap+'<span class="cal-result" style="background:rgba(100,100,120,.12);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)'+(isDH?';font-size:.6rem;padding:1px 5px':'')+'">LIVE '+sc+'</span>'+wrapEnd;
           dotLive=true;
         } else {
           var t=new Date(gm.gameDate),ts=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -3446,7 +3447,7 @@ async function selectCalGame(gamePk,evt){
     var badgeHtml='';
     if(isPostponed)badgeHtml='<span class="cal-result" style="background:rgba(150,150,150,.15);color:var(--muted);border:1px solid rgba(150,150,150,.4)">PPD</span>';
     else if(status==='Final'){var mW=myT.isWinner,sc=(myT.score!=null&&opp.score!=null)?myT.score+'-'+opp.score:'?-?';badgeHtml='<span class="cal-result '+(mW?'cal-w':'cal-l')+'">'+(mW?'W':'L')+' '+sc+'</span>';}
-    else if(status==='Live')badgeHtml='<span class="cal-result" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.5)">● LIVE</span>';
+    else if(status==='Live'){var sc=(myT.score!=null&&opp.score!=null)?myT.score+'-'+opp.score:'?-?';badgeHtml='<span class="cal-result" style="background:rgba(100,100,120,.12);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2)">● LIVE '+sc+'</span>';}
     else badgeHtml='<span style="font-size:.8rem;color:var(--accent)">'+gameDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</span>';
     var tt=document.getElementById('calTooltip');
     tt.innerHTML='<div class="cal-tt-opp">'+(teamHome?'vs ':'@ ')+opp.team.teamName+'</div><div class="cal-tt-date">'+dateStr+'</div>'+badgeHtml;
