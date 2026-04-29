@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.42</title>
+<title>MLB Tracker v2.43</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -780,7 +780,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.42</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.43</div>
       </div>
     </div>
   </div>
@@ -1073,7 +1073,7 @@ let dailyHitsTracker={},dailyPitcherKs={},stolenBaseEvents=[];
 let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
-const STORY_ROTATE_MS=3000;
+const STORY_ROTATE_MS=4500;
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -1330,7 +1330,8 @@ async function pollGamePlays(gamePk) {
       var hrDistance=(event==='Home Run'&&play.hitData&&play.hitData.totalDistance>0)?Math.round(play.hitData.totalDistance):null;
       addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime,batterId:batterId,batterName:batterName,pitcherName:pitcherName,distance:hrDistance});
       var isHitEvt=['Single','Double','Triple','Home Run'].indexOf(event)!==-1;
-      if (isHitEvt&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
+      var isAtBatEvt=['Single','Double','Triple','Home Run','Strikeout','Ground Out','Fly Out','Pop Out','Lineout','Field Error','Fielders Choice Out','Double Play','Grounded Into DP','Triple Play'].indexOf(event)!==-1;
+      if ((isHitEvt||isAtBatEvt)&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,abs:0,hrs:0,gamePk:gamePk};if(isHitEvt)dh.hits++;if(isAtBatEvt)dh.abs++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
       if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;dailyPitcherKs[kkey]=ke;}
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
@@ -2256,7 +2257,7 @@ function genMultiHitDay(){
     var entry=dailyHitsTracker[batterId];
     if(entry.hits<3&&!(entry.hits>=2&&entry.hrs>=1)) return;
     var id='multihit_'+batterId+'_'+dateStr;
-    var headline=entry.name+' goes '+entry.hits+'-for-today'+(entry.hrs?' with '+entry.hrs+' HR'+(entry.hrs>1?'s':''):'');
+    var headline=entry.name+' goes '+entry.hits+' for '+entry.abs+(entry.hrs?' with '+entry.hrs+' HR'+(entry.hrs>1?'s':''):'');
     var g=gameStates[entry.gamePk]||{};
     var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr:'';
     out.push(makeStory(id,'daily_stat',3,55,'🎯',headline,sub,'today',entry.gamePk,new Date(),15*60000,0.1));
