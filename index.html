@@ -2752,7 +2752,7 @@ function replayHRCard(itemIndex) {
   var hrs = feedItems.filter(function(item) { return item.data && item.data.event === 'Home Run'; });
   if (!hrs.length) { alert('No home runs in feed yet'); return; }
 
-  var idx = itemIndex !== undefined ? itemIndex : hrs.length - 1;
+  var idx = itemIndex !== undefined ? itemIndex : 0;
   if (idx < 0 || idx >= hrs.length) { alert('Index out of range'); return; }
 
   var item = hrs[idx];
