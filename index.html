@@ -1822,12 +1822,17 @@ function exitDemo() {
   var stayingInPulse=pulseSection&&pulseSection.classList.contains('active');
 
   if(stayingInPulse){
+    // Explicitly clear and rebuild feed from empty feedItems
+    renderFeed();
+    // Render empty state for both feed and ticker immediately
+    updateFeedEmpty();
+    renderTicker();
     // Re-initialize real polling and story rotation
     if(pulseTimer) clearInterval(pulseTimer);
     pulseTimer=setInterval(pollLeaguePulse,15000);
     if(storyRotateTimer) clearInterval(storyRotateTimer);
     storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
-    // Fetch real data - pollLeaguePulse() will handle all rendering (renderFeed, renderTicker, etc.)
+    // Fetch real data - pollLeaguePulse() will update with actual games/plays
     pollLeaguePulse();
   }else{
     // Exiting demo AND navigating to another section
