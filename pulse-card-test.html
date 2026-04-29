@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Pulse Card — Visual Spec (open this to see the four cards)</title>
+<style>
+  body { margin:0; padding:32px; background:#1a1a1a; font-family:Helvetica,Arial,sans-serif; color:#eee; }
+  h1 { font-size:18px; letter-spacing:.04em; margin:0 0 6px; }
+  p { color:#aaa; font-size:13px; line-height:1.5; max-width:680px; margin:0 0 28px; }
+  .controls { margin-bottom:24px; display:flex; gap:10px; flex-wrap:wrap; }
+  button {
+    background:#2a2a2a; color:#fff; border:1px solid #444; padding:8px 14px;
+    font-weight:700; font-size:12px; letter-spacing:.05em; cursor:pointer; border-radius:4px;
+  }
+  button:hover { background:#3a3a3a; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:32px; }
+  .slot {
+    width:320px; height:448px; position:relative; margin:0 auto;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.55);
+  }
+  .label { text-align:center; margin-top:10px; font-size:11px; letter-spacing:.18em; color:#888; }
+  .meta { font-size:11px; color:#888; margin-top:4px; text-align:center; }
+</style>
+</head>
+<body>
+<h1>Pulse Card — visual spec</h1>
+<p>This is what the four card variants must look like in <code>index.html</code>. The app picks one at random per popup. <strong>Below is the source of truth — match these exactly.</strong> Click "Shuffle" to cycle player + badge text and confirm the layout holds.</p>
+
+<div class="controls">
+  <button onclick="renderAll()">↻ Shuffle player + badge</button>
+  <button onclick="renderLong()">Test "WALK-OFF GRAND SLAM"</button>
+  <button onclick="renderShort()">Test "HOME RUN"</button>
+  <button onclick="renderRBI()">Test RBI variant</button>
+</div>
+
+<div class="grid">
+  <div>
+    <div class="slot" id="slot-v1"></div>
+    <div class="label">V1 — STYLIZED GRAPHIC</div>
+    <div class="meta">Diagonal slash · stacked typography · circle photo</div>
+  </div>
+  <div>
+    <div class="slot" id="slot-v2"></div>
+    <div class="label">V2 — STADIUM JUMBOTRON</div>
+    <div class="meta">LED scoreboard · scanlines · amber glow</div>
+  </div>
+  <div>
+    <div class="slot" id="slot-v3"></div>
+    <div class="label">V3 — COMIC / POP ART</div>
+    <div class="meta">Halftones · yellow burst · tilted stamp</div>
+  </div>
+  <div>
+    <div class="slot" id="slot-v4"></div>
+    <div class="label">V4 — SPORTS BROADCAST</div>
+    <div class="meta">Lower-third · skewed graphic · LIVE bug</div>
+  </div>
+</div>
+
+<script src="pulse-card-templates.js"></script>
+<script>
+  var SAMPLES = [
+    { id: 596019, name: 'Francisco Lindor',   jersey: '12', position: 'SS', team: { short: 'NYM', primary: '#002D72', secondary: '#FF5910' } },
+    { id: 592450, name: 'Aaron Judge',        jersey: '99', position: 'RF', team: { short: 'NYY', primary: '#003087', secondary: '#E4002C' } },
+    { id: 660271, name: 'Shohei Ohtani',      jersey: '17', position: 'DH', team: { short: 'LAD', primary: '#005A9C', secondary: '#EF3E42' } },
+    { id: 665742, name: 'Juan Soto',          jersey: '22', position: 'RF', team: { short: 'NYM', primary: '#002D72', secondary: '#FF5910' } },
+    { id: 605141, name: 'Mookie Betts',       jersey: '50', position: 'RF', team: { short: 'LAD', primary: '#005A9C', secondary: '#EF3E42' } },
+  ];
+  var BADGES = ['HOME RUN', 'GO-AHEAD HOME RUN', 'GRAND SLAM', 'WALK-OFF HOME RUN', 'WALK-OFF GRAND SLAM'];
+  var RBI_BADGES = ['RBI SINGLE!', 'GO-AHEAD DOUBLE!', '3-RUN DOUBLE', 'WALK-OFF SINGLE!'];
+
+  function ctxFor(s, badge, hl) {
+    return {
+      batterId: s.id, name: s.name, team: s.team,
+      position: s.position, jersey: s.jersey, badge: badge,
+      stats: hl === 'rbi'
+        ? { avg: '.284', ops: '.891', h: 112, rbi: 46 }
+        : { avg: '.284', ops: '.891', hr: 17, rbi: 47 },
+      highlight: hl || 'hr',
+    };
+  }
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function renderInto(slotId, variant, ctx) {
+    document.getElementById(slotId).innerHTML = window.PulseCard.renderForce(variant, ctx);
+  }
+
+  function renderAll() {
+    var s = pick(SAMPLES), b = pick(BADGES);
+    var ctx = ctxFor(s, b, 'hr');
+    renderInto('slot-v1', 'v1', ctx);
+    renderInto('slot-v2', 'v2', ctx);
+    renderInto('slot-v3', 'v3', ctx);
+    renderInto('slot-v4', 'v4', ctx);
+  }
+  function renderLong() {
+    var s = pick(SAMPLES);
+    var ctx = ctxFor(s, 'WALK-OFF GRAND SLAM', 'hr');
+    renderInto('slot-v1', 'v1', ctx);
+    renderInto('slot-v2', 'v2', ctx);
+    renderInto('slot-v3', 'v3', ctx);
+    renderInto('slot-v4', 'v4', ctx);
+  }
+  function renderShort() {
+    var s = pick(SAMPLES);
+    var ctx = ctxFor(s, 'HOME RUN', 'hr');
+    renderInto('slot-v1', 'v1', ctx);
+    renderInto('slot-v2', 'v2', ctx);
+    renderInto('slot-v3', 'v3', ctx);
+    renderInto('slot-v4', 'v4', ctx);
+  }
+  function renderRBI() {
+    var s = pick(SAMPLES), b = pick(RBI_BADGES);
+    var ctx = ctxFor(s, b, 'rbi');
+    renderInto('slot-v1', 'v1', ctx);
+    renderInto('slot-v2', 'v2', ctx);
+    renderInto('slot-v3', 'v3', ctx);
+    renderInto('slot-v4', 'v4', ctx);
+  }
+
+  renderAll();
+</script>
+</body>
+</html>
