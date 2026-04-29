@@ -2973,9 +2973,11 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   var battingTeamId = halfInning === 'top' ? awayTeamId : homeTeamId;
   var teamData = TEAMS.find(function(t) { return t.id === battingTeamId; }) || {};
   var teamAbbr = teamData.short || '???';
+  var variant = selectPlayerCardVariant();
   card.innerHTML = '<div class="pc-loading">Loading player card…</div>';
   overlay.classList.remove('closing');
   overlay.classList.add('open');
+  card.className = 'pc-' + variant;
   var stat = null, jerseyNumber = null;
   if (overrideStats) {
     stat = overrideStats;
@@ -3001,7 +3003,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   var avg     = stat ? fmtRate(stat.avg) : '—';
   var ops     = stat ? fmtRate(stat.ops) : '—';
   var rbi     = stat ? (stat.rbi != null ? stat.rbi : '—') : '—';
-  var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
+  var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_640,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
   var contextHtml = '';
   if (typeof hrCount === 'number' && hrCount > 0) {
     if (hrCount % 5 === 0) {
@@ -3139,7 +3141,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   var marginAfter   = battingAfter - fieldingScore;
   var badge    = getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter);
   var innLabel = (halfInning === 'top' ? '▲' : '▼') + inning;
-  var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
+  var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_640,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
   var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
