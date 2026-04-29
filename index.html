@@ -1317,6 +1317,9 @@ async function pollGamePlays(gamePk) {
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
+        // DEBUG START
+        if (isScoringP) console.log('SCORING PLAY INCOMING:',{event:event,rbi:(play.result&&play.result.rbi!=null)?play.result.rbi:0,away:aScore,home:hScore,inning:inning,half:halfInning});
+        // DEBUG END
         if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge);}}
         else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=90000;// DEBUG START
 console.log('RBI CARD DEBUG:',{event:event,rbi:_rbi,score:_rs,gameVisible:gameVisible,batterId:batterId,cooldownOk:_rbiOk,passes:_rbi>0&&_rs>=30&&gameVisible&&batterId&&_rbiOk});// DEBUG END
