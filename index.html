@@ -1184,7 +1184,7 @@ async function pollLeaguePulse() {
     if (isFirstPoll&&feedItems.length>0){feedItems.sort(function(a,b){return b.ts-a.ts;});renderFeed();}
     isFirstPoll=false;
     updateInningStates();
-    renderTicker(); updateHeader(); updateFeedEmpty();
+    renderTicker(); updateFeedEmpty();
     renderSideRailGames();
     await buildStoryPool();
     refreshDebugPanel();
@@ -1824,8 +1824,6 @@ function renderTicker() {
   });
   ticker.innerHTML=html;
 }
-
-function updateHeader() {}
 
 function renderSideRailGames() {
   var upcomingHtml='', completedHtml='';
