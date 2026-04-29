@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.39.7</title>
+<title>MLB Tracker v2.39.8</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -708,7 +708,14 @@
   overflow:hidden;
 }
 #playerCard.pc-v1::before {
-  display:none;
+  content:'';
+  position:absolute;
+  inset:0;
+  background-image:radial-gradient(circle, rgba(0,0,0,0.18) 1.5px, transparent 1.5px);
+  background-size:8px 8px;
+  clip-path:polygon(0 0, 100% 0, 100% 38%, 0 78%);
+  z-index:1;
+  pointer-events:none;
 }
 /* Secondary color gradient slash at top — diagonal clip polygon */
 #playerCard.pc-v1::after {
@@ -740,63 +747,56 @@
   display:none;
 }
 #playerCard.pc-v1 .pc-header {
+  display:none;
+}
+#playerCard.pc-v1 .pc-event-badge {
   position:absolute;
   top:16px;
   left:14px;
   right:14px;
-  height:auto;
-  background:transparent;
-  border:none;
-  padding:0;
-  min-height:0;
-  z-index:4;
-  flex-direction:column;
-  align-items:flex-start;
-}
-#playerCard.pc-v1 .pc-event-badge {
-  position:relative;
-  top:auto;
-  left:auto;
-  right:auto;
-  width:100%;
-  background:transparent;
-  border:none;
-  border-bottom:2px solid rgba(255,255,255,.5);
-  color:#fff;
-  font-size:14px;
+  font-family:'Helvetica Neue', sans-serif;
   font-weight:900;
-  letter-spacing:.25em;
-  padding:0 0 8px 0;
-  margin:0 0 6px 0;
+  font-size:14px;
+  letter-spacing:0.25em;
+  color:#fff;
+  text-transform:uppercase;
+  border-bottom:2px solid rgba(255,255,255,0.5);
+  padding:0;
+  padding-bottom:8px;
+  margin:0;
+  z-index:4;
+  background:transparent;
   animation:none;
   box-shadow:none;
-  text-transform:uppercase;
+  border-top:none;
+  border-left:none;
+  border-right:none;
   display:block;
   text-align:left;
+  width:auto;
 }
 #playerCard.pc-v1 .pc-identity {
+  display:none;
+}
+#playerCard.pc-v1 .pc-name {
   position:absolute;
   top:50px;
   left:14px;
   right:14px;
-  width:auto;
-  flex-direction:column;
-  align-items:flex-start;
-  margin-top:0;
-  z-index:2;
-}
-#playerCard.pc-v1 .pc-name {
-  font-size:48px;
+  font-family:'Helvetica Neue', sans-serif;
   font-weight:900;
-  letter-spacing:-.04em;
+  font-size:48px;
+  letter-spacing:-0.04em;
+  color:#fff;
   line-height:0.9;
   text-transform:uppercase;
-  color:#fff;
+  z-index:2;
   text-shadow:none;
   text-align:left;
   max-width:200px;
   word-break:break-word;
   margin:0;
+  padding:0;
 }
 #playerCard.pc-v1 .pc-team-pos {
   position:absolute;
@@ -806,7 +806,7 @@
   color:var(--primary);
   font-weight:900;
   font-size:11px;
-  letter-spacing:.15em;
+  letter-spacing:0.15em;
   padding:4px 10px;
   text-transform:uppercase;
   margin:0;
@@ -817,28 +817,33 @@
   position:absolute;
   top:145px;
   left:16px;
-  display:block;
-  font-size:130px;
+  font-family:'Helvetica Neue', sans-serif;
   font-weight:900;
-  letter-spacing:-.05em;
-  color:rgba(255,255,255,.92);
+  font-size:130px;
+  letter-spacing:-0.05em;
+  color:rgba(255,255,255,0.92);
   line-height:0.8;
-  text-shadow:4px 4px 0 var(--primary);
   z-index:2;
+  text-shadow:4px 4px 0 var(--primary);
   font-style:normal;
+  display:block;
+  margin:0;
+  padding:0;
 }
 #playerCard.pc-v1 .pc-stats {
-  background:#000;
-  height:86px;
-  gap:0;
-  border:none;
-  grid-template-columns:repeat(4,1fr);
   position:absolute;
   bottom:0;
   left:0;
   right:0;
-  margin:0;
+  height:86px;
+  background:#000;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
   z-index:4;
+  margin:0;
+  border:none;
+  gap:0;
+  padding:0;
 }
 #playerCard.pc-v1 .pc-stat {
   border-right:1px solid rgba(255,255,255,.15);
@@ -854,24 +859,27 @@
   border-right:none;
 }
 #playerCard.pc-v1 .pc-stat-val {
+  font-weight:900;
   font-size:26px;
   color:#fff;
-  font-weight:900;
-  line-height:1;
   font-variant-numeric:tabular-nums;
+  line-height:1;
+  margin:0;
+  padding:0;
 }
 #playerCard.pc-v1 .pc-stat-lbl {
   font-size:9px;
   font-weight:900;
-  letter-spacing:.2em;
-  color:rgba(255,255,255,.6);
+  letter-spacing:0.2em;
+  color:rgba(255,255,255,0.6);
+  margin:0;
+  padding:0;
 }
 #playerCard.pc-v1 .pc-stat.pc-hr-highlight {
   background:var(--secondary);
 }
 #playerCard.pc-v1 .pc-stat.pc-hr-highlight .pc-stat-val {
   color:#fff;
-  background:transparent;
 }
 #playerCard.pc-v1 .pc-stat.pc-hr-highlight .pc-stat-lbl {
   color:#fff;
@@ -957,7 +965,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.39.7</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.39.8</div>
       </div>
     </div>
   </div>
