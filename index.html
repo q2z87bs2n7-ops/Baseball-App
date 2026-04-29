@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.49.2</title>
+<title>MLB Tracker v2.50</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -624,6 +624,24 @@
   100% { transform:scale(1);    color:#34d399; }
 }
 .pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; background:var(--card); }
+/* Article modal (mobile only, v2.50+) */
+.article-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:300; opacity:0; transition:opacity .2s; flex-direction:column }
+.article-modal.open { display:flex; opacity:1 }
+.article-modal-content { display:flex; flex-direction:column; height:100%; background:var(--dark); }
+.article-header { background:var(--card); border-bottom:1px solid var(--border); padding:16px 20px; display:flex; align-items:center; gap:12px; flex-shrink:0; position:sticky; top:0; z-index:10 }
+.article-back-btn { background:none; border:none; color:var(--accent); font-size:1.2rem; cursor:pointer; padding:0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0 }
+.article-back-btn:hover { color:var(--text) }
+.article-title { font-size:1.1rem; font-weight:600; color:var(--text); flex:1; line-height:1.4 }
+.article-scroll { flex:1; overflow-y:auto; padding:20px; }
+.article-content { max-width:70ch; margin:0 auto; color:var(--text); line-height:1.7; font-size:1rem }
+.article-content img { max-width:100%; height:auto; margin:16px 0; border-radius:8px; display:block }
+.article-meta { color:var(--muted); font-size:.85rem; margin-top:20px; padding-top:12px; border-top:1px solid var(--border) }
+.article-error { padding:20px; text-align:center; color:#ff6b6b }
+.article-error a { color:var(--accent); text-decoration:none }
+.article-error a:hover { text-decoration:underline }
+.article-loading { padding:32px; text-align:center; color:var(--muted) }
+@media(max-width:1024px) { .article-modal.open { display:flex } }
+@media(min-width:1025px) { .article-modal { display:none !important } }
 </style>
 </head>
 <body>
@@ -695,7 +713,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.49.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.50</div>
       </div>
     </div>
   </div>
@@ -930,6 +948,22 @@
     </div>
   </div>
 </div>
+</div>
+
+<!-- Article modal (mobile only, v2.50+) -->
+<div id="article-modal" class="article-modal">
+  <div class="article-modal-content">
+    <div class="article-header">
+      <button class="article-back-btn" onclick="closeArticleModal()">✕</button>
+      <div class="article-title" id="article-title">Loading...</div>
+    </div>
+    <div class="article-scroll">
+      <div class="article-content" id="article-content">
+        <div class="article-loading">Loading article...</div>
+      </div>
+    </div>
+    <div class="article-meta" id="article-meta"></div>
+  </div>
 </div>
 
 <script>
@@ -3843,12 +3877,68 @@ async function loadNews(){
     var responses=await Promise.all(fetches);
     var fullD=await responses[0].json(),fullArticles=(fullD.articles||[]).filter(function(a){return a.headline;});
     if(!fullArticles.length)throw new Error('No articles');
-    function mkRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';return '<div class="news-item"><div class="news-dot"></div><div><div class="news-title"><a href="'+link+'" target="_blank">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
+    function mkRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';return '<div class="news-item"><div class="news-dot"></div><div><div class="news-title"><a href="'+link+'" class="news-link" target="_blank" data-url="'+link+'">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
     if(fullEl)fullEl.innerHTML=fullArticles.map(mkRow).join('');
     if(homeEl){var homeArts=fullArticles;if(newsFeedMode==='mlb'){var hD=await responses[1].json();homeArts=(hD.articles||[]).filter(function(a){return a.headline;});}homeEl.innerHTML=homeArts.slice(0,5).map(mkRow).join('')||'<div class="loading">No news available</div>';}
+    attachNewsClickHandlers();
   }catch(e){var msg='<div class="error">News unavailable (ESPN API may be blocked by browser).</div>';if(fullEl)fullEl.innerHTML=msg;if(homeEl)homeEl.innerHTML=msg;}
 }
 function switchNewsFeed(mode,btn){newsFeedMode=mode;['newsMlbBtn','newsTeamBtn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});if(btn)btn.classList.add('active');loadNews();}
+
+// Article modal (mobile only, v2.50+)
+function openArticleModal(url){
+  if(window.innerWidth>1024)return;
+  var modal=document.getElementById('article-modal');
+  if(!modal)return;
+  modal.classList.add('open');
+  document.getElementById('article-content').innerHTML='<div class="article-loading">Loading article...</div>';
+  document.getElementById('article-title').textContent='Loading...';
+  document.getElementById('article-meta').innerHTML='';
+  var apiUrl=(API_BASE||'')+'/api/proxy-article?url='+encodeURIComponent(url);
+  fetch(apiUrl).then(function(r){return r.json();}).then(function(d){
+    if(!d.success){
+      document.getElementById('article-content').innerHTML='<div class="article-error">Unable to load article.<br><br><a href="'+url+'" target="_blank">Open in browser ↗</a></div>';
+      return;
+    }
+    document.getElementById('article-title').textContent=d.title||'Article';
+    var bodyHtml='';if(d.body){bodyHtml='<div style="margin-bottom:20px;">'+d.body.replace(/\n/g,'<br>')+'</div>';}
+    if(d.images&&d.images.length>0){
+      d.images.slice(0,3).forEach(function(img){
+        bodyHtml+='<img src="'+img+'" alt="Article image" style="max-width:100%;height:auto;margin:16px 0;border-radius:8px;">';
+      });
+    }
+    document.getElementById('article-content').innerHTML=bodyHtml||'<p>No content found</p>';
+    var meta='';if(d.publishDate)meta+=d.publishDate;if(d.author)meta+=' · '+d.author;
+    document.getElementById('article-meta').textContent=meta;
+    document.getElementById('article-scroll').scrollTop=0;
+  }).catch(function(e){
+    console.error('Article load error:',e);
+    document.getElementById('article-content').innerHTML='<div class="article-error">Error loading article.<br><br><a href="'+url+'" target="_blank">Open in browser ↗</a></div>';
+  });
+}
+function closeArticleModal(){
+  var modal=document.getElementById('article-modal');
+  if(modal)modal.classList.remove('open');
+}
+function attachNewsClickHandlers(){
+  document.addEventListener('click',function(e){
+    if(e.target.classList&&e.target.classList.contains('news-link')){
+      if(window.innerWidth<=1024){
+        e.preventDefault();
+        var url=e.target.getAttribute('data-url');
+        if(url)openArticleModal(url);
+      }
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var modal=document.getElementById('article-modal');
+  if(modal){
+    modal.addEventListener('click',function(e){
+      if(e.target===modal)closeArticleModal();
+    });
+  }
+});
 
 var liveGamePk=null,liveInterval=null;
 function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,300000);}
