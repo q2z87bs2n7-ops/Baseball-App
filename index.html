@@ -2816,7 +2816,10 @@ function buildFeedEl(item) {
 
 function renderFeed() {
   var feed=document.getElementById('feed'); feed.innerHTML='';
-  feedItems.forEach(function(item){var el=buildFeedEl(item);el.dataset.ts=item.ts.getTime();if(!enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);});
+  feedItems.forEach(function(item){
+    if(demoMode&&item.ts.getTime()>demoCurrentTime) return;
+    var el=buildFeedEl(item);el.dataset.ts=item.ts.getTime();if(!enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);
+  });
   updateFeedEmpty();
 }
 
