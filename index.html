@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.49.1</title>
+<title>MLB Tracker v2.49.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -394,6 +394,12 @@
 #pulseFeedHeader { margin: 0 0 24px 0; padding: 8px 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .pulse-feed-label { font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .pulse-feed-label .pulse-bolt { color: var(--accent); }
+/* Pulse is team-neutral. Re-point --accent only inside the Pulse view. */
+#pulse {
+  --accent: #cfd3dc;
+  --accent-soft: rgba(255,255,255,0.08);
+  --accent-strong: #ffffff;
+}
 #feedWrap { margin: 8px 0 0; padding: 14px 12px 24px; border: 1px solid var(--border); border-radius: var(--radius); }
 #feedEmpty { text-align: center; padding: 64px 24px; color: var(--muted); }
 #feedEmpty .empty-icon { font-size: 40px; display: block; margin-bottom: 14px; opacity: 0.6; }
@@ -682,7 +688,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.49.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.49.2</div>
       </div>
     </div>
   </div>
