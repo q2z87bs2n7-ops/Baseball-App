@@ -848,23 +848,34 @@ On every commit that changes app content, bump **three** things:
 
 ## Debug Features
 
-### Pulse HR Card Replay (v2.49+)
+### Keyboard Shortcuts (Pulse View)
+
+| Shortcut | Command | Purpose |
+|---|---|---|
+| `Shift+H` | `window.PulseCard.demo()` | Launch demo mode with static 8-game snapshot (1x/10x/100x/200x playback) |
+| `Shift+R` | `replayHRCard()` | Replay most recent HR from live feed (no demo overhead) |
+
+### Demo Mode (Shift+H)
+
+Replays a full day of games (April 27-28, 2026) from `daily-events.json` snapshot without API calls. Shows all four HR card variants during playback. Includes speed controls (1x/10x/100x/200x), pause/resume, and "Next HR" button to fast-forward to next home run.
+
+### HR Card Replay (Shift+R) — v2.49+
+
+Replays a home run card from the live feed without demo mode overhead. Useful for QC'ing the four card variants (V1–V4) with real game data and team colors.
 
 **Keyboard Shortcut:** `Shift+R` in Pulse view
 
 **Console Function:** `replayHRCard(itemIndex)`
 
-Replays a home run card from the live feed without demo mode overhead. Useful for QC'ing the four card variants (V1–V4) with real game data.
-
 **Usage:**
-- **Most recent HR:** Press `Shift+R` (no arguments)
-- **Specific HR by index:** Open browser console and call `replayHRCard(0)` for first HR, `replayHRCard(1)` for second, etc.
+- **Most recent HR:** Press `Shift+R` (shows the last/most recent HR that occurred)
+- **Specific HR by index:** Open browser console and call `replayHRCard(0)` for most recent, `replayHRCard(1)` for second-most-recent, etc.
 
 **What it does:**
 - Scans `feedItems` array for all plays with `event === 'Home Run'`
-- Extracts batter, team, and game context
+- Extracts batter, team, and game context from boxscore (including position and jersey number)
 - Calls `showPlayerCard()` with the HR data
-- Displays a random template variant (or last shown variant if replayed immediately)
+- Displays a random template variant
 - Logs action to console: `"Replaying HR: {name} at {away} @ {home}"`
 
 **Keyboard Listener:**
