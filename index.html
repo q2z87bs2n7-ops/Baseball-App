@@ -1071,6 +1071,7 @@ function initReal() {
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
   pollDateStr=localDateStr(getEffectiveDate());
+  loadRoster();
   loadOnThisDayCache(); loadYesterdayCache();
   if(newsRotateTimer){clearTimeout(newsRotateTimer);newsRotateTimer=null;}
   fetchMLBNewsFeed();
