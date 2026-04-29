@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.49.2</title>
+<title>MLB Tracker v2.49.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -522,14 +522,19 @@
 .story-card.tier4 { border-left: 3px solid var(--border); }
 .story-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 7px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; }
 .story-badge.live { background: rgba(255,60,60,0.2); color: #ff6b6b; }
-.story-badge.today { background: rgba(60,190,100,0.2); color: #4caf7d; }
-.story-badge.final { background: rgba(80,140,255,0.15); color: #7aa8ff; }
-.story-badge.yesterday { background: rgba(155,160,168,0.15); color: var(--muted); }
-.story-badge.onthisday { background: rgba(155,100,255,0.15); color: #b07aff; }
-.story-badge.upcoming { background: rgba(255,190,60,0.15); color: #ffbe3c; }
-.story-badge.season { background: rgba(255,215,0,0.15); color: #ffd700; }
-.story-badge.probables { background: rgba(100,180,255,0.15); color: #64b4ff; }
-.story-badge.highlight { background: rgba(255,160,50,0.2); color: #ffa032; }
+/* Neutral chrome for all non-live story badges. The label text carries the meaning. */
+.story-badge.today,
+.story-badge.final,
+.story-badge.yesterday,
+.story-badge.onthisday,
+.story-badge.upcoming,
+.story-badge.season,
+.story-badge.probables,
+.story-badge.highlight {
+  background: rgba(255,255,255,0.06);
+  color: #cfd3dc;
+  border: 1px solid rgba(255,255,255,0.10);
+}
 .story-icon { font-size: 18px; margin-right: 6px; }
 .story-headline { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.35; }
 .story-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
@@ -688,7 +693,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.49.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.49.3</div>
       </div>
     </div>
   </div>
