@@ -2747,6 +2747,30 @@ function refreshDebugPanel(){
   panel.innerHTML=html;
 }
 
+// DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+R)
+function replayHRCard(itemIndex) {
+  var hrs = feedItems.filter(function(item) { return item.type === 'play' && item.data.event === 'home_run'; });
+  if (!hrs.length) { alert('No home runs in feed yet'); return; }
+
+  var idx = itemIndex !== undefined ? itemIndex : hrs.length - 1;
+  if (idx < 0 || idx >= hrs.length) { alert('Index out of range'); return; }
+
+  var item = hrs[idx];
+  var play = item.data;
+  var gs = gameStates[item.gamePk];
+  if (!gs) { alert('Game state not found'); return; }
+
+  var batterId = play.batter.id;
+  var batterName = play.batter.fullName;
+  var awayTeamId = gs.awayId;
+  var homeTeamId = gs.homeId;
+  var halfInning = play.about.halfInning || gs.halfInning;
+  var badgeText = play.result.description.includes('walk-off') ? 'WALK-OFF HOME RUN!' : '💥 HOME RUN!';
+
+  showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, null, null, badgeText);
+  console.log('Replaying HR:', batterName, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
+}
+
 function baseDiamondSvg(on1,on2,on3) {
   var dim='rgba(255,255,255,0.18)',lit='#ffd000',glow='filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
   var s1=on1?' style="'+glow+'"':'', s2=on2?' style="'+glow+'"':'', s3=on3?' style="'+glow+'"':'';
@@ -4006,6 +4030,7 @@ document.addEventListener('visibilitychange',function(){
 
 document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'H') { window.PulseCard.demo(); }
+  if(e.shiftKey && e.key === 'R') { replayHRCard(); }
 });
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
