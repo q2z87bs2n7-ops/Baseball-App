@@ -4082,22 +4082,14 @@ document.addEventListener('visibilitychange',function(){
   }
 });
 
-// ── Pulse Card Templates ─────────────────────────────────────────────────────
-// Load via inline script and register keyboard listener after it loads
-(function() {
-  var script = document.createElement('script');
-  script.src = 'pulse-card-templates.js';
-  script.onload = function() {
-    // Register keyboard listener AFTER PulseCard module loads
-    document.addEventListener('keydown',function(e){
-      if(e.shiftKey && e.key === 'H') { window.PulseCard.demo(); }
-    });
-  };
-  document.head.appendChild(script);
-})();
+document.addEventListener('keydown',function(e){
+  if(e.shiftKey && e.key === 'H') { window.PulseCard.demo(); }
+});
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
 </script>
+
+<script src="pulse-card-templates.js"></script>
 
 <div class="live-view" id="liveView">
   <div style="max-width:1360px;margin:0 auto;padding:20px">
