@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.39.2</title>
+<title>MLB Tracker v2.39.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -905,7 +905,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.39.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.39.3</div>
       </div>
     </div>
   </div>
@@ -2933,6 +2933,10 @@ function buildFeedEl(item) {
   else if (evt.indexOf('Triple Play')!==-1) playBadge='<span class="play-tag tp-tag">TP</span>';
   else if (evt.indexOf('Double Play')!==-1) playBadge='<span class="play-tag dp-tag">DP</span>';
   el.innerHTML=metaHtml+'<div class="feed-play">'+icon+d.desc+rispBadge+playBadge+scoreBadge+'</div>';
+  if (d.playClass==='homerun' && d.batterId) {
+    el.style.cursor='pointer';
+    el.addEventListener('click', function() { replayPlayerCard(item.gamePk); });
+  }
   return el;
 }
 
@@ -2951,6 +2955,14 @@ function showAlert(opts) {
   setTimeout(function(){dismissAlert(el);},duration);
 }
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}
+
+function replayPlayerCard(gamePk) {
+  var item = feedItems.find(function(fi) { return fi.gamePk == gamePk && fi.data.playClass === 'homerun'; });
+  if (!item || !item.data.batterId) return;
+  var d = item.data, g = gameStates[gamePk];
+  if (!g) return;
+  showPlayerCard(d.batterId, d.playerName, g.awayId, g.homeId, d.halfInning, null, d.desc, d.badge);
+}
 
 function selectPlayerCardVariant(){
   var variants=['v1','v2','v3','v4'];
