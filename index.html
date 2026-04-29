@@ -4086,6 +4086,14 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'H') { window.PulseCard.demo(); }
 });
 
+// ── Pulse Card Templates ─────────────────────────────────────────────────────
+// Load via inline script to ensure it's available before keyboard listeners
+(function() {
+  var script = document.createElement('script');
+  script.src = 'pulse-card-templates.js';
+  document.head.appendChild(script);
+})();
+
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
 </script>
 
@@ -4128,6 +4136,5 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
   </div>
 </div>
 <div id="calTooltip" class="cal-tooltip"></div>
-<script src="pulse-card-templates.js"></script>
 </body>
 </html>
