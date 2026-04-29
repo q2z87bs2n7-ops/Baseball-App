@@ -1182,10 +1182,17 @@ async function pollLeaguePulse() {
   var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live';});
   if (!hasLive) pollDateStr=localDateStr(getEffectiveDate());
   var dateStr=pollDateStr;
+  // DEBUG START - timezone issue tracking
+  var now=new Date();
+  console.log('[PULSE] pollLeaguePulse: fetching date='+dateStr+' | local time: '+now.toLocaleString()+' | hasLive: '+hasLive+' | gameStates.length: '+Object.keys(gameStates).length);
+  // DEBUG END
   try {
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    // DEBUG START
+    console.log('[PULSE] fetched '+games.length+' games for '+dateStr);
+    // DEBUG END
     storyCarouselRawGameData={};
     games.forEach(function(g){storyCarouselRawGameData[g.gamePk]=g;});
     var pendingFinalItems={};
@@ -2693,14 +2700,16 @@ function toggleGame(gamePk) {
 function updateFeedEmpty() {
   var feed=document.getElementById('feed');
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
+  // DEBUG START
+  var totalItems=feed.querySelectorAll('.feed-item').length;
+  var hiddenItems=feed.querySelectorAll('.feed-item.feed-hidden').length;
+  console.log('[PULSE] updateFeedEmpty: hasVisible='+hasVisible+' | total items='+totalItems+' | hidden='+hiddenItems+' | gameStates.length='+Object.keys(gameStates).length);
+  // DEBUG END
   if (!hasVisible) renderEmptyState();
   document.getElementById('feedEmpty').style.display=hasVisible?'none':'';
-  // Hide UI elements when no visible feed items (storyCarousel stays visible for Probable Pitchers)
+  // Hide UI elements when no live games (storyCarousel stays visible for Probable Pitchers)
   var hideWhenEmpty=['gameTicker','pulseFeedHeader','sideRailNews','sideRailGames'];
-  // Apply pulse-empty layout only when there are NO games at all, not just no visible feed items
-  // This preserves wide layout + sidebar when games exist but are all disabled/filtered
-  var hasAnyGames = Object.keys(gameStates).length > 0;
-  document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames);
+  document.getElementById('pulse').classList.toggle('pulse-empty', !hasVisible);
   hideWhenEmpty.forEach(function(id){
     var el=document.getElementById(id);
     if(el) el.style.display=hasVisible?'':'none';
