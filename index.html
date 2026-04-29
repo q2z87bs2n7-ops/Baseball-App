@@ -1747,13 +1747,16 @@ function exitDemo() {
   if(overlay) overlay.remove();
   document.body.classList.remove('demo-active');
 
-  // Clear demo state
+  // Clear demo state completely
+  demoMode=false;
   gameStates={};
   feedItems=[];
   enabledGames=new Set();
   storyPool=[];
   demoPlayQueue=[];
   demoPlayIdx=0;
+  storyShownId=null;
+  demoCurrentTime=0;
 
   // Hide mock bar controls
   var mockBar=document.getElementById('mockBar');
@@ -1774,11 +1777,10 @@ function exitDemo() {
 
   // Restore real Pulse mode
   var feedWrap=document.getElementById('feedWrap');
-  if(feedWrap){
-    feedWrap.style.display='block';
-    var feed=document.getElementById('feed');
-    if(feed) feed.innerHTML='';
-  }
+  if(feedWrap) feedWrap.style.display='block';
+
+  // Explicitly clear and rebuild feed from empty feedItems
+  renderFeed();
 
   // Reset poll state so next poll fetches fresh data
   isFirstPoll=true;
