@@ -980,3 +980,37 @@ On every commit that changes app content, bump **three** things:
 - [x] Invert Colours toggle in settings — swaps primary and secondary colours (v1.36)
 - [x] Settings panel closes on click outside (v1.36)
 - [x] iPad responsive layout — CSS grid classes + media queries at ≤1024px and ≤767px (v1.35)
+
+---
+
+## Technical Debt Management
+
+Technical debt audits are tracked in a dedicated workflow system. When code quality improvements are needed, a **technical debt sprint** can be triggered.
+
+### How It Works
+
+**You trigger it:** Say *"Start tech debt sprint"* in conversation with Claude.
+
+**Claude executes:**
+1. **Audit** — Full code review, findings documented in `docs/technical-debt/audits/`
+2. **Remediation** — Fixes applied with before/after code in `docs/technical-debt/remediation/`
+3. **QA** — Comprehensive testing, results in `docs/technical-debt/qa/`
+4. **UAT** — You test in browser
+5. **Finalization** — Code merged to main with summary in `docs/technical-debt/sprints/`
+
+### Key Features
+
+- **Checkpoints:** Explicit user acknowledgement before each stage (no auto-proceeding)
+- **Session continuity:** Can pause mid-sprint and resume across sessions without losing context
+- **Historical awareness:** Claude automatically reads all previous audit findings when starting a new sprint
+- **Permanent archive:** All audit reports stay in `docs/technical-debt/` forever, searchable by date
+- **Version tracking:** Each audit notes the app version it was conducted on
+
+### Entry Points
+
+- **Process guide:** See `docs/technical-debt/WORKFLOW.md` (read once to understand)
+- **Quick reference:** See `docs/technical-debt/README.md`
+- **Completed sprints:** See `docs/technical-debt/HISTORY.md` (append-only archive)
+- **All audits:** Browse `docs/technical-debt/audits/`, `remediation/`, `qa/`, `sprints/` folders
+
+---
