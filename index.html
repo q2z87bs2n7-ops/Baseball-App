@@ -2272,7 +2272,8 @@ async function genMultiHitDay(){
         if(!found){team=bs.teams&&bs.teams.home;if(team&&team.players){Object.keys(team.players).forEach(function(pk){var p=team.players[pk];if(p.person&&p.person.id===parseInt(batterId)){h=p.stats.batting.hits;ab=p.stats.batting.atBats;}});}}
       }
     }
-    var headline=entry.name+' goes '+h+' for '+ab+(entry.hrs?' with '+entry.hrs+' HR'+(entry.hrs>1?'s':''):'');
+    var hrStr=entry.hrs?' with '+entry.hrs+' HR'+(entry.hrs>1?'s':''):'';
+    var headline=demoMode?(entry.name+' goes '+h+'-for-today'+hrStr):(entry.name+' goes '+h+' for '+ab+hrStr);
     var g=gameStates[entry.gamePk]||{};
     var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr:'';
     out.push(makeStory(id,'daily_stat',3,55,'🎯',headline,sub,'today',entry.gamePk,new Date(),15*60000,0.1));
