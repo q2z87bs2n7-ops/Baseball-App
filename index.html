@@ -3892,7 +3892,7 @@ function openArticleModal(url){
   document.getElementById('article-content').innerHTML='<div class="article-loading">Loading article...</div>';
   document.getElementById('article-title').textContent='Loading...';
   document.getElementById('article-meta').innerHTML='';
-  var apiUrl='/api/proxy-article?url='+encodeURIComponent(url);
+  var apiUrl=(API_BASE||'')+'/api/proxy-article?url='+encodeURIComponent(url);
   fetch(apiUrl).then(function(r){return r.json();}).then(function(d){
     if(!d.success){
       document.getElementById('article-content').innerHTML='<div class="article-error">Unable to load article.<br><br><a href="'+url+'" target="_blank">Open in browser ↗</a></div>';
