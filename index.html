@@ -392,8 +392,14 @@
 #pulse:not(.active) { display: none !important; }
 #pulse .pulse-left { flex: 0 0 700px; }
 #pulseFeedHeader { margin: 0 0 24px 0; padding: 8px 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.pulse-feed-label { font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-.pulse-feed-label .pulse-bolt { color: var(--accent); }
+.pulse-feed-label { font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.pulse-feed-label .pulse-bolt { color: var(--muted); font-size: 14px; }
+/* Pulse is team-neutral. Re-point --accent only inside the Pulse view. */
+#pulse {
+  --accent: #cfd3dc;
+  --accent-soft: rgba(255,255,255,0.08);
+  --accent-strong: #ffffff;
+}
 #feedWrap { margin: 8px 0 0; padding: 14px 12px 24px; border: 1px solid var(--border); border-radius: var(--radius); }
 #feedEmpty { text-align: center; padding: 64px 24px; color: var(--muted); }
 #feedEmpty .empty-icon { font-size: 40px; display: block; margin-bottom: 14px; opacity: 0.6; }
@@ -404,10 +410,11 @@
 .empty-hype-block { margin-bottom: 18px; position: relative; }
 .empty-hype-headline { font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
 .empty-hype-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.hype-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; border: 1px solid; }
-.hype-pill.hr      { background: rgba(255,155,30,0.12); border-color: rgba(255,155,30,0.35); color: #ffaa30; }
-.hype-pill.scoring { background: rgba(60,190,100,0.10); border-color: rgba(60,190,100,0.30); color: #3dba5a; }
-.hype-pill.risp    { background: rgba(255,200,0,0.10);  border-color: rgba(255,200,0,0.30);  color: #ffd000; }
+.hype-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: #cfd3dc; }
+.hype-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.hype-pill.hr::before      { background: #ffaa30; }
+.hype-pill.scoring::before { background: #3dba5a; }
+.hype-pill.risp::before    { background: #ffd000; }
 .empty-hype-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
 .upcoming-hero { border-radius: 10px; padding: 18px 20px; margin-bottom: 10px; overflow: hidden; }
 .upcoming-hero-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 10px; }
@@ -511,19 +518,25 @@
 @keyframes storyFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 .story-card.tier1 { border-left: 3px solid rgba(0,195,175,0.85); background: rgba(0,195,175,0.13); }
 .story-card.story-biginning { background: rgba(220,60,60,0.13); border-left-color: rgba(220,60,60,0.75); }
-.story-card.tier2 { border-left: 3px solid rgba(60,190,100,0.6); background: var(--scoring-bg); }
-.story-card.tier3 { border-left: 3px solid rgba(80,140,255,0.6); background: var(--status-bg); }
+/* Mute tier 2–4 backgrounds — keep the left rail as the priority cue. */
+.story-card.tier2 { border-left: 3px solid rgba(155,165,180,0.55); }
+.story-card.tier3 { border-left: 3px solid rgba(155,165,180,0.30); }
 .story-card.tier4 { border-left: 3px solid var(--border); }
 .story-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 7px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; }
 .story-badge.live { background: rgba(255,60,60,0.2); color: #ff6b6b; }
-.story-badge.today { background: rgba(60,190,100,0.2); color: #4caf7d; }
-.story-badge.final { background: rgba(80,140,255,0.15); color: #7aa8ff; }
-.story-badge.yesterday { background: rgba(155,160,168,0.15); color: var(--muted); }
-.story-badge.onthisday { background: rgba(155,100,255,0.15); color: #b07aff; }
-.story-badge.upcoming { background: rgba(255,190,60,0.15); color: #ffbe3c; }
-.story-badge.season { background: rgba(255,215,0,0.15); color: #ffd700; }
-.story-badge.probables { background: rgba(100,180,255,0.15); color: #64b4ff; }
-.story-badge.highlight { background: rgba(255,160,50,0.2); color: #ffa032; }
+/* Neutral chrome for all non-live story badges. The label text carries the meaning. */
+.story-badge.today,
+.story-badge.final,
+.story-badge.yesterday,
+.story-badge.onthisday,
+.story-badge.upcoming,
+.story-badge.season,
+.story-badge.probables,
+.story-badge.highlight {
+  background: rgba(255,255,255,0.06);
+  color: #cfd3dc;
+  border: 1px solid rgba(255,255,255,0.10);
+}
 .story-icon { font-size: 18px; margin-right: 6px; }
 .story-headline { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.35; }
 .story-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
@@ -630,10 +643,10 @@
   <div class="settings-wrap">
     <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
       <div class="settings-panel" id="settingsPanel">
-        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px">Select Team</div>
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Select Team</div>
         <select id="teamSelect" onchange="switchTeam(this.value)" style="width:100%"></select>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:10px">Color Theme</div>
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Color Theme</div>
           <select id="themeSelect" onchange="switchTheme(this.value)" style="width:100%"></select>
           <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Override Team Colours</div>
         </div>
