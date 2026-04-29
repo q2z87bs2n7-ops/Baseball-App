@@ -1060,6 +1060,7 @@ let newsFeedMode='mlb';
 const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
 let pulseInitialized=false;
 let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
+let lastPlayerCardVariant=null; // Track last variant to avoid back-to-back repeats
 let gameStates={},feedItems=[],enabledGames=new Set();
 let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
