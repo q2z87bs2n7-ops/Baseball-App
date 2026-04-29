@@ -967,6 +967,7 @@ let gameStates={},feedItems=[],enabledGames=new Set();
 let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 let screenWakeLock=null;
+let soundPanelClickListenerAttached=false;
 
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null;
@@ -3304,6 +3305,11 @@ async function releaseScreenWakeLock(){
   }
 }
 
+function onSoundPanelClickOutside(e){
+  var panel=document.getElementById('soundPanel'),btn=document.getElementById('btnSound');
+  if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
+}
+
 function showSection(id,btn){
   if(demoMode)exitDemo();
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
@@ -3314,9 +3320,17 @@ function showSection(id,btn){
     savedThemeForPulse=themeOverride;
     applyPulseMLBTheme();
     requestScreenWakeLock();
+    if(!soundPanelClickListenerAttached){
+      document.addEventListener('click',onSoundPanelClickOutside);
+      soundPanelClickListenerAttached=true;
+    }
   }else{
     releaseScreenWakeLock();
     if(savedThemeForPulse!==undefined){applyTeamTheme(activeTeam);}
+    if(soundPanelClickListenerAttached){
+      document.removeEventListener('click',onSoundPanelClickOutside);
+      soundPanelClickListenerAttached=false;
+    }
   }
   if(id==='schedule'&&!scheduleLoaded)loadSchedule();
   if(id==='standings')loadStandings();
@@ -3324,12 +3338,6 @@ function showSection(id,btn){
   if(id==='media')loadMedia();
   if(id==='league')loadLeagueView();
   if(id==='news')loadNews();
-  if(id==='pulse'){
-    document.addEventListener('click',function(e){
-      var panel=document.getElementById('soundPanel'),btn=document.getElementById('btnSound');
-      if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
-    });
-  }
 }
 
 function gameGradient(g){
