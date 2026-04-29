@@ -763,7 +763,7 @@
           </div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <button onclick="initDemo();toggleSettings()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">▶ Try Demo</button>
+          <button id="demoBtnSettings" onclick="toggleDemoMode();toggleSettings()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">▶ Try Demo</button>
           <div style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:center">Load snapshot &amp; replay from April 27</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -1183,9 +1183,25 @@ async function pollLeaguePulse() {
   if (!hasLive) pollDateStr=localDateStr(getEffectiveDate());
   var dateStr=pollDateStr;
   try {
+    // Fetch from primary date
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
     var d=await r.json();
-    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
+
+    // If no games found on primary date and it's a fresh poll (no prior state), also try yesterday
+    if (!games.length && !hasLive && isFirstPoll) {
+      var yesterday=new Date();
+      yesterday.setDate(yesterday.getDate()-1);
+      var yDateStr=localDateStr(yesterday);
+      var yr=await fetch(MLB_BASE+'/schedule?sportId=1&date='+yDateStr+'&hydrate=linescore,team,probablePitcher');
+      var yd=await yr.json();
+      var yGames=(yd.dates||[]).flatMap(function(dt){return dt.games||[]});
+      if (yGames.length) {
+        games=yGames;
+        dateStr=yDateStr;
+        pollDateStr=dateStr;
+      }
+    }
     storyCarouselRawGameData={};
     games.forEach(function(g){storyCarouselRawGameData[g.gamePk]=g;});
     var pendingFinalItems={};
@@ -1421,6 +1437,11 @@ function getEffectiveDate(){
   return demoMode&&demoDate?demoDate:new Date();
 }
 
+function toggleDemoMode() {
+  if(demoMode) exitDemo();
+  else initDemo();
+}
+
 async function initDemo() {
   if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
   if (storyRotateTimer) { clearInterval(storyRotateTimer); storyRotateTimer = null; }
@@ -1548,6 +1569,8 @@ async function initDemo() {
   if(storyRotateTimer) clearInterval(storyRotateTimer);
   storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
   demoStartTime=Date.now();
+  var demoBtnSettings=document.getElementById('demoBtnSettings');
+  if(demoBtnSettings) demoBtnSettings.textContent='⏹ Exit Demo';
   pollDemoFeeds();
 }
 
@@ -1739,32 +1762,81 @@ function exitDemo() {
   var overlay=document.querySelector('.demo-end-screen');
   if(overlay) overlay.remove();
   document.body.classList.remove('demo-active');
+
+  // Clear demo state completely
+  demoMode=false;
   gameStates={};
   feedItems=[];
   enabledGames=new Set();
   storyPool=[];
   demoPlayQueue=[];
   demoPlayIdx=0;
+  storyShownId=null;
+  demoCurrentTime=0;
+
+  // Aggressive DOM cleanup - wipe feed and ticker directly
+  var feed=document.getElementById('feed');
+  if(feed) feed.innerHTML='';
+  var ticker=document.getElementById('gameTicker');
+  if(ticker) ticker.innerHTML='';
+
+  // Hide mock bar controls
   var mockBar=document.getElementById('mockBar');
   if(mockBar){
     mockBar.style.display='none';
-    document.getElementById('btnNormal').style.display='';
-    document.getElementById('btnFast').style.display='';
-    document.getElementById('btnSkip').style.display='';
-    document.getElementById('demoSpeed1x').style.display='none';
-    document.getElementById('demoSpeed10x').style.display='none';
-    document.getElementById('demoSpeed25x').style.display='none';
-    document.getElementById('demoSpeed200x').style.display='none';
-    document.getElementById('demoPauseBtn').style.display='none';
-    document.getElementById('demoForwardBtn').style.display='none';
+    var btnNormal=document.getElementById('btnNormal');
+    if(btnNormal) btnNormal.style.display='';
+    var btnFast=document.getElementById('btnFast');
+    if(btnFast) btnFast.style.display='';
+    var btnSkip=document.getElementById('btnSkip');
+    if(btnSkip) btnSkip.style.display='';
+    var demoSpeed1x=document.getElementById('demoSpeed1x');
+    if(demoSpeed1x) demoSpeed1x.style.display='none';
+    var demoSpeed10x=document.getElementById('demoSpeed10x');
+    if(demoSpeed10x) demoSpeed10x.style.display='none';
+    var demoSpeed25x=document.getElementById('demoSpeed25x');
+    if(demoSpeed25x) demoSpeed25x.style.display='none';
+    var demoSpeed200x=document.getElementById('demoSpeed200x');
+    if(demoSpeed200x) demoSpeed200x.style.display='none';
+    var demoPauseBtn=document.getElementById('demoPauseBtn');
+    if(demoPauseBtn) demoPauseBtn.style.display='none';
+    var demoForwardBtn=document.getElementById('demoForwardBtn');
+    if(demoForwardBtn) demoForwardBtn.style.display='none';
     var badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='⚡ Mock';
   }
-  var main=document.getElementById('main');
-  if(main) main.style.display='block';
+
+  // Restore real Pulse mode
   var feedWrap=document.getElementById('feedWrap');
-  if(feedWrap) feedWrap.style.display='none';
+  if(feedWrap) feedWrap.style.display='block';
+
+  // Explicitly clear and rebuild feed from empty feedItems
+  renderFeed();
+
+  // Reset poll state so next poll fetches fresh data
+  isFirstPoll=true;
+  // Fetch games from yesterday + today in case games span past midnight
+  var endDate=new Date();
+  var startDate=new Date();
+  startDate.setDate(startDate.getDate()-1);
+  pollDateStr=null;  // Will be set by pollLeaguePulse()
+
+  // Update UI
+  var demoBtnSettings=document.getElementById('demoBtnSettings');
+  if(demoBtnSettings) demoBtnSettings.textContent='▶ Try Demo';
+
+  // Render empty state for both feed and ticker immediately
   updateFeedEmpty();
+  renderTicker();
+
+  // Re-initialize real polling and story rotation
+  if(pulseTimer) clearInterval(pulseTimer);
+  pulseTimer=setInterval(pollLeaguePulse,15000);
+  if(storyRotateTimer) clearInterval(storyRotateTimer);
+  storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+
+  // Fetch real data - pollLeaguePulse() will update with actual games/plays
+  pollLeaguePulse();
 }
 
 function renderTicker() {
@@ -2728,7 +2800,7 @@ function renderEmptyState() {
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><button class="demo-cta" onclick="initDemo()">▶ Try Demo</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    +'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
@@ -2814,8 +2886,13 @@ function buildFeedEl(item) {
 }
 
 function renderFeed() {
-  var feed=document.getElementById('feed'); feed.innerHTML='';
-  feedItems.forEach(function(item){var el=buildFeedEl(item);el.dataset.ts=item.ts.getTime();if(!enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);});
+  var feed=document.getElementById('feed');
+  if(!feed) return;
+  feed.innerHTML='';
+  feedItems.forEach(function(item){
+    if(demoMode&&item.ts.getTime()>demoCurrentTime) return;
+    var el=buildFeedEl(item);el.dataset.ts=item.ts.getTime();if(!enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);
+  });
   updateFeedEmpty();
 }
 
