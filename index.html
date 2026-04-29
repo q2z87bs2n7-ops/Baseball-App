@@ -699,6 +699,138 @@
   display:none;
 }
 .pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; background:var(--card); }
+
+/* ─────────────────────────────────────────────── */
+/* V1 — STYLIZED GRAPHIC */
+/* ─────────────────────────────────────────────── */
+#playerCard.pc-v1 {
+  background:var(--primary);
+}
+#playerCard.pc-v1::before {
+  display:none;
+}
+#playerCard.pc-v1 .pc-photo-bg {
+  background:linear-gradient(135deg, var(--secondary) 0%, transparent 70%);
+  bottom:90px;
+  clip-path:polygon(0 0, 100% 0, 100% 38%, 0 78%);
+  filter:saturate(1.2);
+}
+#playerCard.pc-v1 .pc-photo-bg::after {
+  display:none;
+}
+#playerCard.pc-v1 .pc-header {
+  bottom:90px;
+  background:transparent;
+  border:none;
+  min-height:auto;
+  padding:8px 14px;
+  height:auto;
+}
+#playerCard.pc-v1 .pc-event-badge {
+  position:absolute;
+  top:16px;
+  left:14px;
+  right:14px;
+  width:auto;
+  background:transparent;
+  border:none;
+  border-bottom:2px solid rgba(255,255,255,.5);
+  color:#fff;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.25em;
+  padding:0 0 8px 0;
+  margin:0;
+  animation:none;
+  box-shadow:none;
+  text-transform:uppercase;
+  z-index:4;
+}
+#playerCard.pc-v1 .pc-identity {
+  position:absolute;
+  top:50px;
+  left:14px;
+  width:auto;
+  align-items:flex-start;
+  flex-direction:column;
+}
+#playerCard.pc-v1 .pc-name {
+  font-size:48px;
+  font-weight:900;
+  letter-spacing:-.04em;
+  line-height:.9;
+  text-transform:uppercase;
+  color:#fff;
+  text-shadow:none;
+  text-align:left;
+  width:100%;
+}
+#playerCard.pc-v1 .pc-team-pos {
+  position:absolute;
+  top:110px;
+  left:14px;
+  background:#fff;
+  color:var(--primary);
+  font-weight:900;
+  font-size:11px;
+  letter-spacing:.15em;
+  padding:4px 10px;
+  text-transform:uppercase;
+  margin:0;
+}
+#playerCard.pc-v1 .pc-jersey {
+  position:absolute;
+  top:145px;
+  left:16px;
+  display:block;
+  font-size:130px;
+  font-weight:900;
+  letter-spacing:-.05em;
+  color:rgba(255,255,255,.92);
+  line-height:.8;
+  text-shadow:4px 4px 0 var(--primary);
+  z-index:2;
+}
+#playerCard.pc-v1 .pc-photo-wrap {
+  position:absolute;
+  top:140px;
+  right:18px;
+  width:165px;
+  height:165px;
+  border-radius:50%;
+  display:block;
+  background:var(--secondary);
+  border:4px solid #fff;
+  box-shadow:0 8px 20px rgba(0,0,0,.3);
+  z-index:3;
+  overflow:hidden;
+}
+#playerCard.pc-v1 .pc-photo-wrap img {
+  display:none;
+}
+#playerCard.pc-v1 .pc-stats {
+  background:#000;
+  height:86px;
+  gap:0;
+  border:none;
+  grid-template-columns:repeat(4,1fr);
+}
+#playerCard.pc-v1 .pc-stat {
+  border-right:1px solid rgba(255,255,255,.2);
+  border-top:none;
+}
+#playerCard.pc-v1 .pc-stat:nth-child(4n) {
+  border-right:none;
+}
+#playerCard.pc-v1 .pc-stat-val {
+  font-size:26px;
+  color:#fff;
+}
+#playerCard.pc-v1 .pc-stat.pc-hr-highlight .pc-stat-val {
+  color:var(--secondary);
+  background:rgba(0,0,0,.4);
+}
+
 @media (max-width:480px) {
   #playerCard { width:calc(100vw - 32px); aspect-ratio:2.5/4.3; }
   .pc-name { font-size:1rem; }
