@@ -4082,6 +4082,10 @@ document.addEventListener('visibilitychange',function(){
   }
 });
 
+document.addEventListener('keydown',function(e){
+  if(e.shiftKey && e.key === 'H') { window.PulseCard.demo(); }
+});
+
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
 </script>
 
