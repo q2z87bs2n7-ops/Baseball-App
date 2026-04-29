@@ -1784,15 +1784,24 @@ function exitDemo() {
   var mockBar=document.getElementById('mockBar');
   if(mockBar){
     mockBar.style.display='none';
-    document.getElementById('btnNormal').style.display='';
-    document.getElementById('btnFast').style.display='';
-    document.getElementById('btnSkip').style.display='';
-    document.getElementById('demoSpeed1x').style.display='none';
-    document.getElementById('demoSpeed10x').style.display='none';
-    document.getElementById('demoSpeed25x').style.display='none';
-    document.getElementById('demoSpeed200x').style.display='none';
-    document.getElementById('demoPauseBtn').style.display='none';
-    document.getElementById('demoForwardBtn').style.display='none';
+    var btnNormal=document.getElementById('btnNormal');
+    if(btnNormal) btnNormal.style.display='';
+    var btnFast=document.getElementById('btnFast');
+    if(btnFast) btnFast.style.display='';
+    var btnSkip=document.getElementById('btnSkip');
+    if(btnSkip) btnSkip.style.display='';
+    var demoSpeed1x=document.getElementById('demoSpeed1x');
+    if(demoSpeed1x) demoSpeed1x.style.display='none';
+    var demoSpeed10x=document.getElementById('demoSpeed10x');
+    if(demoSpeed10x) demoSpeed10x.style.display='none';
+    var demoSpeed25x=document.getElementById('demoSpeed25x');
+    if(demoSpeed25x) demoSpeed25x.style.display='none';
+    var demoSpeed200x=document.getElementById('demoSpeed200x');
+    if(demoSpeed200x) demoSpeed200x.style.display='none';
+    var demoPauseBtn=document.getElementById('demoPauseBtn');
+    if(demoPauseBtn) demoPauseBtn.style.display='none';
+    var demoForwardBtn=document.getElementById('demoForwardBtn');
+    if(demoForwardBtn) demoForwardBtn.style.display='none';
     var badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='⚡ Mock';
   }
