@@ -2930,7 +2930,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
-  var position = rEntry && rEntry.position ? rEntry.position.abbreviation : '—';
+  var position = (rEntry && rEntry.position && rEntry.position.abbreviation) || '—';
   var hrCount = stat ? (stat.homeRuns != null ? stat.homeRuns : '—') : '—';
   if (descHint) { var _m=descHint.match(/\((\d+)\)/); if(_m){var _n=parseInt(_m[1],10);if(typeof hrCount!=='number'||hrCount<_n)hrCount=_n;} }
   var hrPrev  = (typeof hrCount === 'number' && hrCount >= 1) ? hrCount - 1 : hrCount;
@@ -3074,7 +3074,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
-  var position = rEntry && rEntry.position ? rEntry.position.abbreviation : '—';
+  var position = (rEntry && rEntry.position && rEntry.position.abbreviation) || '—';
   var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">' + jerseyNumber + '</div>' : '';
   card.innerHTML = window.PulseCard.render({
     batterId: batterId,
