@@ -2971,7 +2971,8 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   card.innerHTML = '<div class="pc-loading">Loading player card…</div>';
   overlay.classList.remove('closing');
   overlay.classList.add('open');
-  card.className = 'pc-' + variant;
+  card.classList.remove('pc-v1', 'pc-v2', 'pc-v3', 'pc-v4');
+  card.classList.add('pc-' + variant);
   var stat = null, jerseyNumber = null;
   if (overrideStats) {
     stat = overrideStats;
