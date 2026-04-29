@@ -2986,13 +2986,16 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
   var position = (rEntry && rEntry.position && rEntry.position.abbreviation) || null;
 
-  // If position not found in roster (opposing player), fetch from boxscore
-  if (!position && gamePk) {
+  // If position or jersey not found in roster (opposing player), fetch from boxscore
+  if ((!position || !jerseyNumber) && gamePk) {
     try {
       var bs = await fetch(MLB_BASE + '/game/' + gamePk + '/boxscore').then(function(r) { return r.json(); });
       var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
       var playerData = allPlayers.find(function(p) { return p.person && p.person.id === batterId; });
-      if (playerData && playerData.position) position = playerData.position.code;
+      if (playerData) {
+        if (!position && playerData.position) position = playerData.position.code;
+        if (!jerseyNumber && playerData.jerseyNumber) jerseyNumber = playerData.jerseyNumber;
+      }
     } catch(e) {}
   }
   position = position || '—';
