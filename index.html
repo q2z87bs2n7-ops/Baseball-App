@@ -55,7 +55,7 @@
   .badge-final{background:#444;color:#ccc}
   .badge-upcoming{background:rgba(0,0,0,.4);color:#fff}
   .badge-w{background:rgba(34,197,94,.15);color:#7dd89e;border:1px solid rgba(34,197,94,.55)}
-  .badge-l{background:rgba(239,68,68,.12);color:#f08c8c;border:1px solid rgba(239,68,68,.5)}
+  .badge-l{background:rgba(239,68,68,.12);color:#4ade80;border:1px solid rgba(34,197,94,.5)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
   .game-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);font-size:.88rem}
   .game-row:last-child{border-bottom:none}
@@ -110,7 +110,7 @@
   .cal-ha{color:var(--muted);font-size:.68rem}
   .cal-result{display:inline-block;padding:1px 6px;border-radius:10px;font-size:.68rem;font-weight:700;margin-top:2px;border:1px solid transparent}
   .cal-w{background:rgba(34,197,94,.15);color:#7dd89e;border-color:rgba(34,197,94,.5)}
-  .cal-l{background:rgba(239,68,68,.12);color:#f08c8c;border-color:rgba(239,68,68,.45)}
+  .cal-l{background:rgba(239,68,68,.12);color:#4ade80;border-color:rgba(34,197,94,.45)}
   .cal-upcoming{color:var(--muted);font-size:.68rem}
   .cal-dot{display:none;width:6px;height:6px;border-radius:50%;margin:2px auto 0}
   .cal-dot-w{background:#4ade80}
@@ -155,7 +155,7 @@
   .count-dot.out{width:16px;height:16px}
   .count-dot.ball.on{background:var(--accent);border-color:var(--accent)}
   .count-dot.strike.on{background:#ffb636;border-color:#ffb636}
-  .count-dot.out.on{background:#ff4444;border-color:#ff4444}
+  .count-dot.out.on{background:#22c55e;border-color:#22c55e}
   .diamond-wrap{display:flex;align-items:center;justify-content:center;padding:8px 0}
   .matchup-row{display:flex;flex-direction:column;gap:10px}
   .matchup-player{background:var(--card2);border-radius:8px;padding:10px}
@@ -3223,7 +3223,7 @@ function renderNextGame(g,label){
   var oppKicker=teamHome?'VS':'AT';
   var myKicker=teamHome?'HOME':'AWAY';
   var topBadge='';
-  if(status==='Live'){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'▼ ':'▲ ')+g.linescore.currentInning+' · ':'';topBadge='<span style="font-size:.72rem;font-weight:700;color:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:5px">'+inn+'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff4444;animation:pulse 1.5s infinite;flex-shrink:0"></span>LIVE</span>';}
+  if(status==='Live'){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'▼ ':'▲ ')+g.linescore.currentInning+' · ':'';topBadge='<span style="font-size:.72rem;font-weight:700;color:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:5px">'+inn+'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse 1.5s infinite;flex-shrink:0"></span>LIVE</span>';}
   else if(status==='Final'){var mW=my.isWinner;topBadge='<span class="badge badge-final">FINAL</span> <span class="badge '+(mW?'badge-w':'badge-l')+'">'+(mW?'W':'L')+'</span>';}
   var bottomRight='';
   if(status==='Live'){bottomRight='<button onclick="showLiveGame('+g.gamePk+')" style="background:var(--secondary);border:none;color:var(--accent-text);padding:8px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem">▶ Watch Live</button>';}
@@ -3331,7 +3331,7 @@ async function loadNextGame(){
       html+='<div style="flex:1;padding:10px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08);border-radius:6px;text-align:center">';
       html+='<div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.6);margin-bottom:2px">'+dayLabel+'</div>';
       if(status==='Final'){var w=myT.isWinner;html+='<span class="badge '+(w?'badge-w':'badge-l')+'" style="font-size:.62rem">'+(w?'W':'L')+' '+myT.score+'-'+oppT.score+'</span>';}
-      else if(status==='Live'){html+='<div style="font-size:.62rem;color:#f08c8c;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:#ff4444;display:inline-block"></span>LIVE</div><div style="font-size:13px;font-weight:700;margin-top:1px">'+myT.score+'-'+oppT.score+'</div>';}
+      else if(status==='Live'){html+='<div style="font-size:.62rem;color:#4ade80;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block"></span>LIVE</div><div style="font-size:13px;font-weight:700;margin-top:1px">'+myT.score+'-'+oppT.score+'</div>';}
       else{html+='<div style="font-size:15px;font-weight:700;margin-top:1px">'+gDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';}
       html+='</div>';
     });
@@ -3392,7 +3392,7 @@ function renderCalendar(){
           inner+=wrap+'<span class="cal-result '+(mW?'cal-w':'cal-l')+'"'+(isDH?' style="font-size:.6rem;padding:1px 5px"':'')+'>'+(mW?'W':'L')+' '+sc+'</span>'+wrapEnd;
           if(mW)dotW=true;else dotL=true;
         } else if(calLive){
-          inner+=wrap+'<span class="cal-result" style="background:rgba(239,68,68,.15);color:#f08c8c;border:1px solid rgba(239,68,68,.5)'+(isDH?';font-size:.6rem;padding:1px 5px':'')+'">LIVE</span>'+wrapEnd;
+          inner+=wrap+'<span class="cal-result" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.5)'+(isDH?';font-size:.6rem;padding:1px 5px':'')+'">LIVE</span>'+wrapEnd;
           dotLive=true;
         } else {
           var t=new Date(gm.gameDate),ts=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
@@ -3446,7 +3446,7 @@ async function selectCalGame(gamePk,evt){
     var badgeHtml='';
     if(isPostponed)badgeHtml='<span class="cal-result" style="background:rgba(150,150,150,.15);color:var(--muted);border:1px solid rgba(150,150,150,.4)">PPD</span>';
     else if(status==='Final'){var mW=myT.isWinner,sc=(myT.score!=null&&opp.score!=null)?myT.score+'-'+opp.score:'?-?';badgeHtml='<span class="cal-result '+(mW?'cal-w':'cal-l')+'">'+(mW?'W':'L')+' '+sc+'</span>';}
-    else if(status==='Live')badgeHtml='<span class="cal-result" style="background:rgba(239,68,68,.15);color:#f08c8c;border:1px solid rgba(239,68,68,.5)">● LIVE</span>';
+    else if(status==='Live')badgeHtml='<span class="cal-result" style="background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.5)">● LIVE</span>';
     else badgeHtml='<span style="font-size:.8rem;color:var(--accent)">'+gameDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</span>';
     var tt=document.getElementById('calTooltip');
     tt.innerHTML='<div class="cal-tt-opp">'+(teamHome?'vs ':'@ ')+opp.team.teamName+'</div><div class="cal-tt-date">'+dateStr+'</div>'+badgeHtml;
@@ -3489,7 +3489,7 @@ async function buildGameDetailPanel(g,gameNum){
     var aScore=away.score!=null?away.score:0,hScore=home.score!=null?home.score:0;
     var html=sep+'<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'</div>';
     html+='<div class="game-notes-grid"><div class="game-note-box"><div class="game-note-label">Score</div><div class="game-note-val">'+away.team.teamName+' '+aScore+', '+home.team.teamName+' '+hScore+'</div></div>';
-    html+='<div class="game-note-box"><div class="game-note-label">Status</div><div class="game-note-val"><span style="color:#f08c8c">● LIVE</span> · '+half+' '+inn+'</div></div></div>';
+    html+='<div class="game-note-box"><div class="game-note-label">Status</div><div class="game-note-val"><span style="color:#4ade80">● LIVE</span> · '+half+' '+inn+'</div></div></div>';
     html+='<button onclick="showLiveGame('+g.gamePk+')" style="margin-top:10px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-size:.85rem;font-weight:700">▶ Watch Live</button></div>';
     return html;
   }
@@ -3679,7 +3679,7 @@ async function fetchLiveGame(){
     var inningHalf=ls.isTopInning?'▲':'▼',inning=ls.currentInning||'—';
     var headerHtml=isFinal
       ?'<div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-bottom:8px">FINAL</div>'
-      :'<div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-bottom:8px">'+inningHalf+' '+inning+' &nbsp;·&nbsp; <span style="color:#ff4444;font-weight:700">● LIVE</span></div>';
+      :'<div style="font-size:.75rem;color:rgba(255,255,255,.7);margin-bottom:8px">'+inningHalf+' '+inning+' &nbsp;·&nbsp; <span style="color:#22c55e;font-weight:700">● LIVE</span></div>';
     headerHtml+='<div class="live-score"><div class="live-team"><div class="live-team-name">'+(awayTeam.abbreviation||awayTeam.name||'Away')+'</div><div class="live-team-score">'+(ls.teams&&ls.teams.away?ls.teams.away.runs:0)+'</div></div><div style="font-size:1.5rem;color:var(--muted)">—</div><div class="live-team"><div class="live-team-name">'+(homeTeam.abbreviation||homeTeam.name||'Home')+'</div><div class="live-team-score">'+(ls.teams&&ls.teams.home?ls.teams.home.runs:0)+'</div></div></div>';
     document.getElementById('liveHeader').innerHTML=headerHtml;
     var balls=ls.balls||0,strikes=ls.strikes||0,outs=ls.outs||0,bHtml='',sHtml='',oHtml='';
@@ -3787,7 +3787,7 @@ async function loadLeagueMatchups(){
       var actuallyLive=status==='Live'&&detailed!=='Warmup'&&detailed!=='Pre-Game';
       var clickable=(actuallyLive||status==='Final');
       var statusHtml='';
-      if(actuallyLive){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'Bot ':'Top ')+g.linescore.currentInning:'In Progress';statusHtml='<div style="font-size:.65rem;color:#ff4444;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:4px;justify-content:center"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff4444;flex-shrink:0"></span>LIVE · '+inn+'</div>';}
+      if(actuallyLive){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'Bot ':'Top ')+g.linescore.currentInning:'In Progress';statusHtml='<div style="font-size:.65rem;color:#22c55e;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:4px;justify-content:center"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0"></span>LIVE · '+inn+'</div>';}
       else if(status==='Final')statusHtml='<div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">FINAL</div>';
       else{var t=new Date(g.gameDate);statusHtml='<div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">'+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';}
       var scoreOrVs;if(actuallyLive){scoreOrVs='<span style="font-size:1.1rem;font-weight:900;color:#fff">'+(away.score!=null?away.score:0)+'</span><span style="color:var(--muted);margin:0 4px;font-size:.8rem">—</span><span style="font-size:1.1rem;font-weight:900;color:#fff">'+(home.score!=null?home.score:0)+'</span>';}else if(status==='Final'){var awayWon=away.score>home.score;scoreOrVs='<span style="font-size:1.1rem;font-weight:900;color:'+(awayWon?'#fff':'rgba(255,255,255,.42)')+'">'+(away.score!=null?away.score:0)+'</span><span style="color:var(--muted);margin:0 4px;font-size:.8rem">—</span><span style="font-size:1.1rem;font-weight:900;color:'+(awayWon?'rgba(255,255,255,.42)':'#fff')+'">'+(home.score!=null?home.score:0)+'</span>';}else{scoreOrVs='<span style="color:var(--muted);font-size:.8rem">vs</span>';}
