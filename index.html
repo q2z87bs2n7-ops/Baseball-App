@@ -2826,6 +2826,14 @@ function showAlert(opts) {
 }
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}
 
+function selectPlayerCardVariant(){
+  var variants=['v1','v2','v3','v4'];
+  var available=variants.filter(function(v){return v!==lastPlayerCardVariant;});
+  var chosen=available[Math.floor(Math.random()*available.length)];
+  lastPlayerCardVariant=chosen;
+  return chosen;
+}
+
 async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText) {
   var overlay = document.getElementById('playerCardOverlay');
   var card    = document.getElementById('playerCard');
