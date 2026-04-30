@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.60</title>
+<title>MLB Tracker v2.61</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -703,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.60</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61</div>
       </div>
     </div>
   </div>
@@ -869,6 +869,8 @@
     <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
+  <div id="focusMiniBar" style="display:none"></div>
+  <div id="focusAlertBanner" style="display:none"></div>
   <div id="storyCarousel" style="display:none">
     <div class="story-card-wrap">
       <button class="story-nav story-nav-prev" onclick="prevStory()">‹</button>
@@ -906,6 +908,7 @@
         <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text)">MLB Pulse</span>
       </div>
     </div>
+    <div id="focusCard" style="display:none;margin-bottom:16px"></div>
     <div id="sideRailNews">
       <div class="side-rail-title">MLB News</div>
       <div id="newsCarousel">
@@ -920,6 +923,10 @@
     </div>
   </div>
 </div>
+</div>
+
+<div id="focusOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1100;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px">
+  <div id="focusOverlayCard" style="width:100%;max-width:520px;max-height:90vh;overflow-y:auto"></div>
 </div>
 
 <div id="devToolsPanel">
@@ -1176,6 +1183,24 @@ const devTuningDefaults={
   basesloaded_enable:true,basesloaded_priority:88
 };
 
+// ── Focus Mode globals (v2.61) ────────────────────────────────────────────────
+let focusGamePk=null;
+let focusFastTimer=null;
+let focusLastTimestamp=null;
+let focusState={
+  balls:0,strikes:0,outs:0,inning:1,halfInning:'top',
+  currentBatterId:null,currentBatterName:'',
+  currentPitcherId:null,currentPitcherName:'',
+  onFirst:false,onSecond:false,onThird:false,
+  awayAbbr:'',homeAbbr:'',awayScore:0,homeScore:0,
+  awayPrimary:'#444',homePrimary:'#444',
+  tensionLabel:'NORMAL',tensionColor:'#9aa0a8',
+  lastPitch:null
+};
+let focusPitchSequence=[];
+let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
+let focusOverlayOpen=false;
+
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
 // ── Side Rail News globals ──────────────────────────────────────────────────────
@@ -1208,7 +1233,7 @@ function initReal() {
   document.addEventListener('visibilitychange',onStoryVisibilityChange);
   document.removeEventListener('visibilitychange',onNewsVisibilityChange);
   document.addEventListener('visibilitychange',onNewsVisibilityChange);
-  pollLeaguePulse();
+  pollLeaguePulse().then(function(){setFocusGame(focusGamePk);});
   pulseTimer=setInterval(pollLeaguePulse,15000);
 }
 
@@ -1316,6 +1341,7 @@ async function pollLeaguePulse() {
     renderTicker(); updateFeedEmpty();
     renderSideRailGames();
     await buildStoryPool();
+    selectFocusGame();
     refreshDebugPanel();
   } catch(e){console.error('poll error',e);}
 }
@@ -2891,6 +2917,215 @@ function refreshDebugPanel(){
   html+='</div>';
   panel.innerHTML=html;
 }
+
+// ── Focus Mode functions (v2.61) ──────────────────────────────────────────────
+
+function calcFocusScore(g) {
+  if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
+  var diff=Math.abs(g.awayScore-g.homeScore);
+  var closeness=diff===0?60:diff===1?45:diff===2?25:5;
+  var runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
+  var isRISP=g.onSecond||g.onThird;
+  var isBL=g.onFirst&&g.onSecond&&g.onThird;
+  var isWalkoff=g.halfInning==='bottom'&&g.inning>=9&&(g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
+  var isNoHit=g.inning>=6&&(g.awayHits===0||g.homeHits===0);
+  var situation=isBL?40:isRISP?25:runners>0?15:0;
+  if(isWalkoff) situation+=50;
+  if(isNoHit) situation+=30;
+  var countBonus=0;
+  if(g.gamePk===focusGamePk){
+    if(focusState.balls===3&&focusState.strikes===2) countBonus=20;
+    else if(focusState.strikes===2) countBonus=12;
+    if(focusState.outs===2) countBonus+=8;
+  }
+  var innMult=g.inning<=5?0.6:g.inning<=8?1.0:g.inning===9?1.5:2.0;
+  return (closeness+situation+countBonus)*innMult;
+}
+
+function getTensionInfo(score) {
+  if(score>=120) return {label:'CRITICAL',color:'#e03030'};
+  if(score>=70)  return {label:'HIGH',color:'#f59e0b'};
+  return {label:'NORMAL',color:'#9aa0a8'};
+}
+
+function selectFocusGame() {
+  var liveGames=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  if(!liveGames.length) return;
+  var scored=liveGames.map(function(g){return {g:g,score:calcFocusScore(g)};});
+  scored.sort(function(a,b){return b.score-a.score;});
+  var best=scored[0];
+  // Auto-select on first run or if current game is no longer live
+  if(!focusGamePk||!gameStates[focusGamePk]||gameStates[focusGamePk].status!=='Live') {
+    setFocusGame(best.g.gamePk); return;
+  }
+  // Soft alert if a different game scores ≥25 higher (with 90s cooldown)
+  if(best.g.gamePk!==focusGamePk&&best.score-calcFocusScore(gameStates[focusGamePk])>=25) {
+    var now=Date.now();
+    if(!focusAlertShown[best.g.gamePk]||(now-focusAlertShown[best.g.gamePk])>90000) {
+      focusAlertShown[best.g.gamePk]=now;
+      var tension=getTensionInfo(best.score);
+      showFocusAlert(best.g.gamePk,tension.label+' · '+best.g.awayAbbr+' @ '+best.g.homeAbbr);
+    }
+  }
+}
+
+function setFocusGame(pk) {
+  focusGamePk=pk;
+  focusPitchSequence=[];
+  focusLastTimestamp=null;
+  if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
+  pollFocusLinescore();
+  focusFastTimer=setInterval(pollFocusLinescore,5000);
+}
+
+async function pollFocusLinescore() {
+  if(!focusGamePk) return;
+  if(demoMode) { renderFocusCard(); renderFocusMiniBar(); return; }
+  try {
+    var r=await fetch(MLB_BASE+'/game/'+focusGamePk+'/linescore');
+    var ls=await r.json();
+    var g=gameStates[focusGamePk]||{};
+    var tension=getTensionInfo(calcFocusScore(g));
+    focusState={
+      balls:ls.balls||0, strikes:ls.strikes||0, outs:ls.outs||0,
+      inning:ls.currentInning||g.inning||1,
+      halfInning:ls.isTopInning===false?'bottom':'top',
+      currentBatterId:(ls.offense&&ls.offense.batter&&ls.offense.batter.id)||null,
+      currentBatterName:(ls.offense&&ls.offense.batter&&ls.offense.batter.fullName)||'',
+      currentPitcherId:(ls.defense&&ls.defense.pitcher&&ls.defense.pitcher.id)||null,
+      currentPitcherName:(ls.defense&&ls.defense.pitcher&&ls.defense.pitcher.fullName)||'',
+      onFirst:!!(ls.offense&&ls.offense.first),
+      onSecond:!!(ls.offense&&ls.offense.second),
+      onThird:!!(ls.offense&&ls.offense.third),
+      awayAbbr:g.awayAbbr||'', homeAbbr:g.homeAbbr||'',
+      awayScore:g.awayScore||0, homeScore:g.homeScore||0,
+      awayPrimary:g.awayPrimary||'#444', homePrimary:g.homePrimary||'#444',
+      tensionLabel:tension.label, tensionColor:tension.color,
+      lastPitch:focusPitchSequence.length?focusPitchSequence[focusPitchSequence.length-1]:null
+    };
+    renderFocusCard(); renderFocusMiniBar();
+  } catch(e) {}
+}
+
+function renderFocusCard() {
+  var el=document.getElementById('focusCard'); if(!el) return;
+  if(!focusGamePk||(!focusState.awayAbbr&&!demoMode)){el.style.display='none';return;}
+  var g=gameStates[focusGamePk]||{};
+  // Placeholder: plain readable card until focusCard.js arrives from Design
+  var half=focusState.halfInning==='bottom'?'▼':'▲';
+  var ballDots=[0,1,2].map(function(i){return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+(i<focusState.balls?'#22c55e':'rgba(255,255,255,.2)')+'"></span>';}).join(' ');
+  var strikeDots=[0,1].map(function(i){return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+(i<focusState.strikes?'#f59e0b':'rgba(255,255,255,.2)')+'"></span>';}).join(' ');
+  var outDots=[0,1,2].map(function(i){return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+(i<focusState.outs?'#e03030':'rgba(255,255,255,.2)')+'"></span>';}).join(' ');
+  var diamond=baseDiamondSvg(focusState.onFirst,focusState.onSecond,focusState.onThird);
+  el.style.display='';
+  el.innerHTML='<div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:'+focusState.tensionColor+'">'+focusState.tensionLabel+'</span>'
+    +'<span style="color:var(--muted);font-size:11px">'+half+focusState.inning+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<div style="font-weight:700;color:var(--text)"><span style="color:'+focusState.awayPrimary+'">'+focusState.awayAbbr+'</span> '+focusState.awayScore+' – '+focusState.homeScore+' <span style="color:'+focusState.homePrimary+'">'+focusState.homeAbbr+'</span></div>'
+    +diamond+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px;text-align:center">'
+    +'<div><div style="font-size:9px;color:var(--muted);margin-bottom:3px">BALLS</div>'+ballDots+'</div>'
+    +'<div><div style="font-size:9px;color:var(--muted);margin-bottom:3px">STRIKES</div>'+strikeDots+'</div>'
+    +'<div><div style="font-size:9px;color:var(--muted);margin-bottom:3px">OUTS</div>'+outDots+'</div>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+    +(focusState.currentBatterName?'<span style="color:var(--text)">'+focusState.currentBatterName+'</span> vs ':'')+focusState.currentPitcherName+'</div>'
+    +'<button onclick="openFocusOverlay()" style="margin-top:8px;width:100%;padding:5px;background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">Open Focus ↗</button>'
+    +'</div>';
+}
+
+function renderFocusMiniBar() {
+  var el=document.getElementById('focusMiniBar'); if(!el) return;
+  if(!focusGamePk||!focusState.awayAbbr){el.style.display='none';return;}
+  var half=focusState.halfInning==='bottom'?'▼':'▲';
+  el.style.display='';
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px">'
+    +'<span style="color:var(--muted)">'+focusState.awayAbbr+' <strong style="color:var(--text)">'+focusState.awayScore+'</strong> – <strong style="color:var(--text)">'+focusState.homeScore+'</strong> '+focusState.homeAbbr+' · '+half+focusState.inning+'</span>'
+    +'<span style="color:var(--muted)">'+focusState.balls+'-'+focusState.strikes+' · '+focusState.outs+' out</span>'
+    +'<button onclick="openFocusOverlay()" style="padding:3px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">Focus ↗</button>'
+    +'</div>';
+}
+
+function openFocusOverlay() {
+  var el=document.getElementById('focusOverlay'); if(!el||!focusGamePk) return;
+  focusOverlayOpen=true;
+  el.style.display='flex';
+  renderFocusOverlay();
+}
+
+function closeFocusOverlay() {
+  var el=document.getElementById('focusOverlay'); if(!el) return;
+  focusOverlayOpen=false;
+  el.style.display='none';
+}
+
+function renderFocusOverlay() {
+  var card=document.getElementById('focusOverlayCard'); if(!card) return;
+  var half=focusState.halfInning==='bottom'?'▼':'▲';
+  var diamond=baseDiamondSvg(focusState.onFirst,focusState.onSecond,focusState.onThird);
+  // Pitch sequence placeholder
+  var pitchHtml='';
+  if(focusPitchSequence.length){
+    pitchHtml='<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">THIS AT-BAT</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:4px">';
+    focusPitchSequence.forEach(function(p,i){
+      var col=p.resultCode==='B'?'#9aa0a8':p.resultCode==='S'?'#e03030':p.resultCode==='C'?'#f59e0b':p.resultCode==='F'?'#f97316':p.resultCode==='X'?'#22c55e':'#9aa0a8';
+      pitchHtml+='<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px">'
+        +'<span style="width:7px;height:7px;border-radius:50%;background:'+col+';display:inline-block"></span>'
+        +(p.typeCode||'?')+(p.speed?' <span style="color:var(--muted)">'+Math.round(p.speed)+'</span>':'')+'</span>';
+    });
+    pitchHtml+='</div></div>';
+  } else {
+    pitchHtml='<div style="margin-top:10px;font-size:11px;color:var(--muted)">Pitch data loading…</div>';
+  }
+  // Live game switcher
+  var switcherHtml='';
+  var liveGames=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  if(liveGames.length>1){
+    switcherHtml='<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px"><div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">OTHER GAMES</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    liveGames.forEach(function(g){
+      if(g.gamePk===focusGamePk) return;
+      switcherHtml+='<button onclick="setFocusGame('+g.gamePk+');renderFocusOverlay()" style="padding:4px 10px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:11px;cursor:pointer">'+g.awayAbbr+' '+g.awayScore+' – '+g.homeScore+' '+g.homeAbbr+'</button>';
+    });
+    switcherHtml+='</div></div>';
+  }
+  card.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative">'
+    +'<button onclick="closeFocusOverlay()" style="position:absolute;top:12px;right:12px;background:none;border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>'
+    +'<div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:'+focusState.tensionColor+';margin-bottom:8px">'+focusState.tensionLabel+'</div>'
+    +'<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px">'+focusState.awayAbbr+' '+focusState.awayScore+' – '+focusState.homeScore+' '+focusState.homeAbbr+'</div>'
+    +'<div style="font-size:13px;color:var(--muted);margin-bottom:16px">'+half+focusState.inning+' · '+focusState.outs+' out</div>'
+    +'<div style="display:flex;align-items:center;gap:20px;margin-bottom:16px">'
+    +diamond
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">'
+    +'<div><div style="font-size:28px;font-weight:800;color:#22c55e">'+focusState.balls+'</div><div style="font-size:10px;color:var(--muted)">BALLS</div></div>'
+    +'<div><div style="font-size:28px;font-weight:800;color:#f59e0b">'+focusState.strikes+'</div><div style="font-size:10px;color:var(--muted)">STRIKES</div></div>'
+    +'<div><div style="font-size:28px;font-weight:800;color:#e03030">'+focusState.outs+'</div><div style="font-size:10px;color:var(--muted)">OUTS</div></div>'
+    +'</div></div>'
+    +(focusState.currentBatterName?'<div style="font-size:13px;color:var(--text)"><strong>'+focusState.currentBatterName+'</strong><span style="color:var(--muted)"> vs '+focusState.currentPitcherName+'</span></div>':'')
+    +pitchHtml
+    +switcherHtml
+    +'</div>';
+}
+
+function showFocusAlert(pk, reason) {
+  var el=document.getElementById('focusAlertBanner'); if(!el) return;
+  el.style.display='';
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:6px;margin:6px 0;font-size:12px">'
+    +'<span>⚡ <strong style="color:var(--text)">'+reason+'</strong></span>'
+    +'<div style="display:flex;gap:6px;flex-shrink:0">'
+    +'<button onclick="setFocusGame('+pk+');dismissFocusAlert()" style="padding:3px 10px;background:#f59e0b;border:none;border-radius:4px;color:#000;font-weight:700;font-size:11px;cursor:pointer">Switch</button>'
+    +'<button onclick="dismissFocusAlert()" style="padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:11px;cursor:pointer">✕</button>'
+    +'</div></div>';
+}
+
+function dismissFocusAlert() {
+  var el=document.getElementById('focusAlertBanner'); if(el) el.style.display='none';
+}
+
+// ── End Focus Mode functions ──────────────────────────────────────────────────
 
 // DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+R)
 function replayHRCard(itemIndex) {
