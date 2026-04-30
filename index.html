@@ -565,7 +565,7 @@
 .sound-toggle input:checked + .sound-knob { background: color-mix(in srgb, var(--accent) 22%, var(--card)); border-color: var(--accent); }
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
 
-#devToolsPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 280px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 201; overflow: hidden; display: none; }
+#devToolsPanel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 380px; max-height: 90vh; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 201; overflow-y: auto; display: none; }
 .dev-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
 .dev-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
 .dev-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 2px 5px; border-radius: 4px; line-height: 1; font-family: inherit; }
@@ -990,6 +990,73 @@
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
     <details style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">📖 Carousel Story Rules</summary>
+      <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🏠 Home Run</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <div style="font-size:.6rem;color:var(--muted)">Priority</div>
+              <input type="number" id="tuneHRPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem" onchange="updateTuning('hr_priority',this.value)">
+            </div>
+            <div>
+              <div style="font-size:.6rem;color:var(--muted)">Cooldown (ms)</div>
+              <input type="number" id="tuneHRCooldown" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem" onchange="updateTuning('hr_cooldown',this.value)">
+            </div>
+          </div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🔥 Big Inning</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <div style="font-size:.6rem;color:var(--muted)">Priority</div>
+              <input type="number" id="tuneBigInningPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem" onchange="updateTuning('biginning_priority',this.value)">
+            </div>
+            <div>
+              <div style="font-size:.6rem;color:var(--muted)">Runs Threshold</div>
+              <input type="number" id="tuneBigInningThreshold" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem" onchange="updateTuning('biginning_threshold',this.value)">
+            </div>
+          </div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🔔 Walk-Off Threat</div>
+          <div style="display:grid;grid-template-columns:1fr;gap:6px">
+            <div>
+              <div style="font-size:.6rem;color:var(--muted)">Priority</div>
+              <input type="number" id="tuneWalkoffPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem" onchange="updateTuning('walkoff_priority',this.value)">
+            </div>
+          </div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🚫 No-Hitter Watch</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <div style="font-size:.6rem;color:var(--muted)">Inning Floor</div>
+              <input type="number" id="tuneNohitterFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem" onchange="updateTuning('nohitter_inning_floor',this.value)">
+            </div>
+            <div style="opacity:.6">
+              <div style="font-size:.6rem;color:var(--muted)">Priority (95)</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">💎 Bases Loaded</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <div style="font-size:.6rem;color:var(--muted);margin-bottom:4px">Enable</div>
+              <input type="checkbox" id="tuneBasesLoadedEnable" style="width:16px;height:16px;cursor:pointer" onchange="updateTuning('basesloaded_enable',this.checked.toString())">
+            </div>
+            <div>
+              <div style="font-size:.6rem;color:var(--muted)">Priority</div>
+              <input type="number" id="tuneBasesLoadedPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem" onchange="updateTuning('basesloaded_priority',this.value)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
       <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
       <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
@@ -1062,9 +1129,27 @@ let STORY_ROTATE_MS=4500;
 let devTuning={
   rotateMs: 4500,     // Carousel rotation interval
   rbiThreshold: 10,   // Minimum RBI card score
-  rbiCooldown: 90000  // Per-game cooldown (ms)
+  rbiCooldown: 90000, // Per-game cooldown (ms)
+  // ── Carousel Rules ──
+  hr_priority: 100,
+  hr_cooldown: 300000,    // 5 min
+  biginning_priority: 75,
+  biginning_threshold: 3, // scoring plays per inning half
+  walkoff_priority: 90,
+  walkoff_cooldown: 300000,
+  nohitter_inning_floor: 6,
+  nohitter_priority: 95,
+  basesloaded_enable: true,
+  basesloaded_priority: 88
 };
-const devTuningDefaults={rotateMs:4500,rbiThreshold:10,rbiCooldown:90000};
+const devTuningDefaults={
+  rotateMs:4500,rbiThreshold:10,rbiCooldown:90000,
+  hr_priority:100, hr_cooldown:300000,
+  biginning_priority:75, biginning_threshold:3,
+  walkoff_priority:90, walkoff_cooldown:300000,
+  nohitter_inning_floor:6, nohitter_priority:95,
+  basesloaded_enable:true, basesloaded_priority:88
+};
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -2135,16 +2220,16 @@ function genHRStories(){
       var hrNumMatch=(item.data.desc||'').match(/\((\d+)\)/);
       var hrTag=hrNumMatch?' (HR #'+hrNumMatch[1]+' this season)':'';
       headline=bname+' hit a '+distStr+'homer'+pitcherStr+innStr+hrTag;
-      priority=100;
+      priority=devTuning.hr_priority;
     } else {
       // Multi-homer — replace original story; boost priority
       id='hr_multi_'+bid+'_'+entries[0].item.gamePk+'_'+count;
       var ordWord=multiWords[count]||(count+'th');
       var innStr2=item.data.inning?' in the '+ordinal(item.data.inning)+' inning':'';
       headline=bname+' hits his '+ordWord+' homer of the game'+innStr2+'!';
-      priority=100+(count-1)*15;
+      priority=devTuning.hr_priority+(count-1)*15;
     }
-    out.push(makeStory(id,'realtime',1,priority,'💥',headline,sub,'highlight',item.gamePk,item.ts,5*60000,0.5));
+    out.push(makeStory(id,'realtime',1,priority,'💥',headline,sub,'highlight',item.gamePk,item.ts,devTuning.hr_cooldown,0.5));
   });
   return out;
 }
@@ -2153,7 +2238,7 @@ function genNoHitterWatch(){
   var out=[];
   Object.values(gameStates).forEach(function(g){
     if(g.status!=='Live'||g.detailedState!=='In Progress') return;
-    if(g.inning<6) return;
+    if(g.inning<devTuning.nohitter_inning_floor) return;
     var nohitAway=g.awayHits===0, nohitHome=g.homeHits===0;
     if(!nohitAway&&!nohitHome) return;
     var id='nohit_'+g.gamePk;
@@ -2161,7 +2246,7 @@ function genNoHitterWatch(){
     var hittingTeam=nohitAway?g.awayAbbr:g.homeAbbr;
     var headline=pitchingTeam+' working a no-hitter through the '+ordinal(g.inning);
     var sub=hittingTeam+' have 0 hits · '+g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore;
-    out.push(makeStory(id,'nohit',1,95,'🚫',headline,sub,'live',g.gamePk,new Date(),2*60000,0.2));
+    out.push(makeStory(id,'nohit',1,devTuning.nohitter_priority,'🚫',headline,sub,'live',g.gamePk,new Date(),2*60000,0.2));
   });
   return out;
 }
@@ -2176,12 +2261,13 @@ function genWalkOffThreat(){
     var id='walkoff_'+g.gamePk+'_'+g.inning;
     var headline='Walk-off situation — '+g.homeAbbr+' in the bottom '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+ordinal(g.inning)+' inning';
-    out.push(makeStory(id,'walkoff',1,90,'🔔',headline,sub,'live',g.gamePk,new Date(),5*60000,0.9));
+    out.push(makeStory(id,'walkoff',1,devTuning.walkoff_priority,'🔔',headline,sub,'live',g.gamePk,new Date(),devTuning.walkoff_cooldown,0.9));
   });
   return out;
 }
 
 function genBasesLoaded(){
+  if(!devTuning.basesloaded_enable) return [];
   var out=[];
   Object.values(gameStates).forEach(function(g){
     if(g.status!=='Live'||!g.onFirst||!g.onSecond||!g.onThird) return;
@@ -2190,7 +2276,7 @@ function genBasesLoaded(){
     var id='basesloaded_'+g.gamePk+'_'+g.inning+'_'+g.halfInning;
     var headline='Bases loaded — '+battingAbbr+' batting in the '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+half+' '+ordinal(g.inning);
-    out.push(makeStory(id,'realtime',1,88,'🔔',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
+    out.push(makeStory(id,'realtime',1,devTuning.basesloaded_priority,'🔔',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
   });
   return out;
 }
@@ -2220,13 +2306,13 @@ function genBigInning(){
     groups[key].lastItem=item;
   });
   Object.values(groups).forEach(function(grp){
-    if(grp.runs<3) return;
+    if(grp.runs<devTuning.biginning_threshold) return;
     var g=gameStates[grp.gamePk]; if(!g) return;
     var id='biginning_'+grp.gamePk+'_'+grp.inning+'_'+grp.half;
     var battingTeam=grp.half==='top'?g.awayAbbr:g.homeAbbr;
     var headline=battingTeam+' scored '+grp.runs+' runs in the '+ordinal(grp.inning);
     var sub=g.awayAbbr+' @ '+g.homeAbbr;
-    out.push(makeStory(id,'realtime',1,75,'🔥',headline,sub,'highlight',grp.gamePk,grp.lastItem.ts,10*60000,0.4));
+    out.push(makeStory(id,'realtime',1,devTuning.biginning_priority,'🔥',headline,sub,'highlight',grp.gamePk,grp.lastItem.ts,10*60000,0.4));
   });
   return out;
 }
@@ -3264,21 +3350,24 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display==='none';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display==='none';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;}}
 
 function updateTuning(param,val){
+  if(param==='basesloaded_enable'){
+    devTuning[param]=val==='true';
+    console.log('✓ Bases Loaded '+(devTuning[param]?'enabled':'disabled'));
+    return;
+  }
   var parsed=parseInt(val,10);
   if(isNaN(parsed)||parsed<1)return;
-  devTuning[param===('rotateMs')?'rotateMs':param===('rbiThreshold')?'rbiThreshold':'rbiCooldown']=parsed;
+  devTuning[param]=parsed;
   if(param==='rotateMs'){
     STORY_ROTATE_MS=parsed;
     if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
     if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
     console.log('✓ Carousel rotation updated to '+parsed+'ms');
-  }else if(param==='rbiThreshold'){
-    console.log('✓ RBI card threshold updated to '+parsed);
-  }else if(param==='rbiCooldown'){
-    console.log('✓ RBI card cooldown updated to '+parsed+'ms');
+  }else{
+    console.log('✓ '+param+' updated to '+parsed);
   }
 }
 
@@ -3288,6 +3377,14 @@ function resetTuning(){
   document.getElementById('tuneRotateMs').value=devTuningDefaults.rotateMs;
   document.getElementById('tuneRbiThreshold').value=devTuningDefaults.rbiThreshold;
   document.getElementById('tuneRbiCooldown').value=devTuningDefaults.rbiCooldown;
+  document.getElementById('tuneHRPriority').value=devTuningDefaults.hr_priority;
+  document.getElementById('tuneHRCooldown').value=devTuningDefaults.hr_cooldown;
+  document.getElementById('tuneBigInningPriority').value=devTuningDefaults.biginning_priority;
+  document.getElementById('tuneBigInningThreshold').value=devTuningDefaults.biginning_threshold;
+  document.getElementById('tuneWalkoffPriority').value=devTuningDefaults.walkoff_priority;
+  document.getElementById('tuneNohitterFloor').value=devTuningDefaults.nohitter_inning_floor;
+  document.getElementById('tuneBasesLoadedEnable').checked=devTuningDefaults.basesloaded_enable;
+  document.getElementById('tuneBasesLoadedPriority').value=devTuningDefaults.basesloaded_priority;
   if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
   if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
   console.log('✓ Dev tuning reset to defaults');
