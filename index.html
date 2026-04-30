@@ -570,7 +570,7 @@
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
 
 /* ── Debug Tools Overlay (v2.54) ────────────────────── */
-#debugToolsPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 280px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 150; overflow: hidden; display: none; }
+#debugToolsPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 280px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 150; overflow: hidden; }
 .debug-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
 .debug-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
 .debug-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 2px 5px; border-radius: 4px; line-height: 1; font-family: inherit; }
@@ -899,7 +899,7 @@
       <div class="sound-row"><div class="sound-label">⚠️ Error</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('error',this.checked)"><span class="sound-knob"></span></label></div>
     </div>
   </div>
-  <div id="debugToolsPanel">
+  <div id="debugToolsPanel" style="display:none">
     <div class="debug-panel-hd">
       <span class="debug-panel-title">🛠️ Debug Tools</span>
       <button class="debug-close" onclick="toggleDebugPanel()">✕</button>
