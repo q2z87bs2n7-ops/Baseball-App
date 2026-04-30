@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.61.2</title>
+<title>MLB Tracker v2.61.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -703,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.3</div>
       </div>
     </div>
   </div>
@@ -925,7 +925,7 @@
 </div>
 </div>
 
-<div id="focusOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1100;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px">
+<div id="focusOverlay" onclick="if(event.target===this)closeFocusOverlay()" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1100;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
   <div id="focusOverlayCard" style="width:100%;max-width:520px;max-height:90vh;overflow-y:auto"></div>
 </div>
 
@@ -2971,11 +2971,14 @@ function selectFocusGame() {
 }
 
 function setFocusGame(pk) {
+  if(!pk) return;
   focusGamePk=pk;
   focusPitchSequence=[];
   focusLastTimestamp=null;
   focusCurrentAbIdx=null;
+  dismissFocusAlert();
   if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
+  if(focusOverlayOpen) renderFocusOverlay();
   pollFocusLinescore();
   focusFastTimer=setInterval(pollFocusLinescore,5000);
 }
@@ -3006,6 +3009,7 @@ async function pollFocusLinescore() {
       lastPitch:focusPitchSequence.length?focusPitchSequence[focusPitchSequence.length-1]:null
     };
     renderFocusCard(); renderFocusMiniBar();
+    if(focusOverlayOpen) renderFocusOverlay();
     pollFocusRich();
   } catch(e) {}
 }
@@ -4538,6 +4542,7 @@ document.addEventListener('visibilitychange',function(){
 });
 
 document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&focusOverlayOpen) { closeFocusOverlay(); return; }
   if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
   if(e.shiftKey && e.key === 'E') { replayRBICard(); }
