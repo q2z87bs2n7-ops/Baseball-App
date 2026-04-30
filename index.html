@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.54</title>
+<title>MLB Tracker v2.55</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -718,7 +718,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.54</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.55</div>
       </div>
     </div>
   </div>
@@ -1138,7 +1138,17 @@ function initReal() {
 
 async function pollLeaguePulse() {
   var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live';});
-  if (!hasLive) pollDateStr=localDateStr(getEffectiveDate());
+  // If we have live games, use their date. If not, check today
+  if (hasLive) {
+    // Keep polling the date of any live game
+    var liveGame=Object.values(gameStates).find(function(g){return g.status==='Live';});
+    if (liveGame && liveGame.gameDateMs) {
+      var liveDate=new Date(liveGame.gameDateMs);
+      pollDateStr=localDateStr(liveDate);
+    }
+  } else {
+    pollDateStr=localDateStr(getEffectiveDate());
+  }
   var dateStr=pollDateStr;
   try {
     // Fetch from primary date
@@ -1146,8 +1156,22 @@ async function pollLeaguePulse() {
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
 
-    // If no games found on primary date and it's a fresh poll (no prior state), also try yesterday
-    if (!games.length && !hasLive && isFirstPoll) {
+    // If no games found on primary date, also try yesterday (handles midnight boundary for games in extra innings)
+    if (!games.length && isFirstPoll) {
+      var yesterday=new Date();
+      yesterday.setDate(yesterday.getDate()-1);
+      var yDateStr=localDateStr(yesterday);
+      var yr=await fetch(MLB_BASE+'/schedule?sportId=1&date='+yDateStr+'&hydrate=linescore,team,probablePitcher');
+      var yd=await yr.json();
+      var yGames=(yd.dates||[]).flatMap(function(dt){return dt.games||[]});
+      if (yGames.length) {
+        games=yGames;
+        dateStr=yDateStr;
+        pollDateStr=dateStr;
+      }
+    }
+    // If still no games on primary date after first poll, check yesterday (midnight boundary case with live games)
+    if (!games.length && !isFirstPoll && !hasLive) {
       var yesterday=new Date();
       yesterday.setDate(yesterday.getDate()-1);
       var yDateStr=localDateStr(yesterday);
