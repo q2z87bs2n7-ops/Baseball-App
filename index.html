@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.53</title>
+<title>MLB Tracker v2.54</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -569,6 +569,18 @@
 .sound-toggle input:checked + .sound-knob { background: color-mix(in srgb, var(--accent) 22%, var(--card)); border-color: var(--accent); }
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
 
+#debugToolsPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 280px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 201; overflow: hidden; display: none; }
+.debug-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
+.debug-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.debug-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 2px 5px; border-radius: 4px; line-height: 1; font-family: inherit; }
+.debug-close:hover { background: var(--card2); color: var(--text); }
+.debug-buttons { padding: 6px 0 4px; }
+.debug-btn { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 12px 15px; gap: 4px; border: none; background: none; cursor: pointer; width: 100%; text-align: left; border-bottom: 1px solid var(--border); }
+.debug-btn:hover { background: var(--card2); }
+.debug-btn:last-child { border-bottom: none; }
+.debug-btn-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.debug-btn-shortcut { font-size: 10px; color: var(--muted); }
+
 /* ── Player Card Flash (v2.7, v2.31 Topps redesign) ────────────────────── */
 @keyframes card-in {
   from { opacity:0; transform:scale(0.88); }
@@ -692,13 +704,17 @@
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:10px">🛠️ Debug Tools</div>
+          <button id="btnDebugTools" onclick="toggleDebugPanel()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">Open</button>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <details style="cursor:pointer">
             <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
             <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:500px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.53</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.54</div>
       </div>
     </div>
   </div>
@@ -877,6 +893,22 @@
       <div class="sound-row"><div class="sound-label">⚾ Game Start</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameStart',this.checked)"><span class="sound-knob"></span></label></div>
       <div class="sound-row"><div class="sound-label">🏁 Game End</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameEnd',this.checked)"><span class="sound-knob"></span></label></div>
       <div class="sound-row"><div class="sound-label">⚠️ Error</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('error',this.checked)"><span class="sound-knob"></span></label></div>
+    </div>
+  </div>
+  <div id="debugToolsPanel">
+    <div class="debug-panel-hd">
+      <span class="debug-panel-title">🛠️ Debug Tools</span>
+      <button class="debug-close" onclick="toggleDebugPanel()">✕</button>
+    </div>
+    <div class="debug-buttons">
+      <button class="debug-btn" onclick="initDemo();toggleDebugPanel()">
+        <div class="debug-btn-label">▶ Try Demo</div>
+        <div class="debug-btn-shortcut">Shift+H</div>
+      </button>
+      <button class="debug-btn" onclick="replayHRCard();toggleDebugPanel()">
+        <div class="debug-btn-label">🎬 Replay HR</div>
+        <div class="debug-btn-shortcut">Shift+R</div>
+      </button>
     </div>
   </div>
   <div id="alertStack"></div>
@@ -3190,6 +3222,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
+function toggleDebugPanel(){var p=document.getElementById('debugToolsPanel');p.style.display=p.style.display==='none'?'':'none';}
 function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);}
 function playSound(type){
   if (!soundSettings.master||!soundSettings[type]) return;
@@ -3329,6 +3362,8 @@ async function releaseScreenWakeLock(){
 function onSoundPanelClickOutside(e){
   var panel=document.getElementById('soundPanel'),btn=document.getElementById('btnSound');
   if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
+  var dbgPanel=document.getElementById('debugToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
+  if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
 }
 
 function showSection(id,btn){
@@ -4075,8 +4110,14 @@ document.addEventListener('visibilitychange',function(){
 });
 
 document.addEventListener('keydown',function(e){
-  if(e.shiftKey && e.key === 'H') { window.PulseCard.demo(); }
+  if(e.shiftKey && e.key === 'H') { initDemo(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'D') { toggleDebugPanel(); }
+});
+
+document.addEventListener('click',function(e){
+  var dbgPanel=document.getElementById('debugToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
+  if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
 });
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
