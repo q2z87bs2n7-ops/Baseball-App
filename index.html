@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.61.4</title>
+<title>MLB Tracker v2.61.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -703,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.5</div>
       </div>
     </div>
   </div>
@@ -3026,11 +3026,16 @@ async function pollFocusRich() {
     var data=await r.json();
     var cp=data&&data.liveData&&data.liveData.currentPlay;
     if(!cp) return;
-    // Reset sequence on new at-bat
-    if(focusCurrentAbIdx!==null&&focusCurrentAbIdx!==cp.atBatIndex) focusPitchSequence=[];
-    focusCurrentAbIdx=cp.atBatIndex;
-    // Parse pitch events only
-    focusPitchSequence=(cp.playEvents||[]).filter(function(e){return e.isPitch||e.type==='pitch';}).map(function(e){
+    // atBatIndex lives at cp.about.atBatIndex in GUMBO
+    var abIdx=cp.about&&cp.about.atBatIndex;
+    if(focusCurrentAbIdx!==null&&focusCurrentAbIdx!==abIdx) focusPitchSequence=[];
+    focusCurrentAbIdx=abIdx;
+    var pitchEvents=(cp.playEvents||[]).filter(function(e){return e.isPitch||e.type==='pitch';});
+    // DEBUG START
+    console.log('[FocusRich] playEvents:',cp.playEvents&&cp.playEvents.length,'pitches:',pitchEvents.length,'abIdx:',abIdx);
+    if(cp.playEvents&&cp.playEvents[0]) console.log('[FocusRich] sample event type:',cp.playEvents[0].type,'isPitch:',cp.playEvents[0].isPitch);
+    // DEBUG END
+    focusPitchSequence=pitchEvents.map(function(e){
       return {
         typeCode:(e.details&&e.details.type&&e.details.type.code)||'??',
         typeName:(e.details&&e.details.type&&e.details.type.description)||'',
