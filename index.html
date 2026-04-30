@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.58</title>
+<title>MLB Tracker v2.59</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -700,7 +700,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.58</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.59</div>
       </div>
     </div>
   </div>
@@ -1122,7 +1122,7 @@ const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
 let pulseInitialized=false;
 let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
-let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
+let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 let screenWakeLock=null;
 
@@ -1135,7 +1135,6 @@ let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 let boxscoreCache={};
 let inningRecapsFired=new Set(),lastInningState={},displayedStoryIds=new Set();
-let STORY_ROTATE_MS=4500;
 
 // ── Dev Tools tuning (real-time optimization) ──────────────────────────
 let devTuning={
@@ -1170,86 +1169,18 @@ const devTuningDefaults={
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
-const DEMO_BACKUP_GAMES=[];  // Hardcoded real games as fallback when API unavailable
-// TO POPULATE: Use exportPulseStateAsSnapshot() while Pulse is running with live games,
-// then extract games from the snapshot and paste here with structure:
-// {gamePk, gameDateTime, awayTeam:{id,name,shortName}, homeTeam:{id,name,shortName}, venue, gameDetails}
-
 // ── Side Rail News globals ──────────────────────────────────────────────────────
 let mlbNewsFeed=[],newsCardIndex=0,newsRotateTimer=null;
 const NEWS_ROTATE_MS=30000;
 
 function tcLookup(id){var t=TEAMS.find(function(t){return t.id===id;});return t?{primary:t.primary,abbr:t.short,name:t.name}:{primary:'#444',abbr:'???',name:'Unknown'};}
-
-const MOCK_DATA={
-  games:[
-    {gamePk:1001,awayId:121,homeId:144,status:'Live'},
-    {gamePk:1002,awayId:147,homeId:111,status:'Live'},
-    {gamePk:1003,awayId:119,homeId:137,status:'Live'},
-    {gamePk:1004,awayId:117,homeId:140,status:'Preview',gameTime:'7:05 PM',venueName:'Globe Life Field'},
-  ],
-  plays:{
-    1001:[
-      {event:'Strikeout',  desc:'Francisco Lindor strikes out swinging.',                                     scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
-      {event:'Single',     desc:'Pete Alonso singles on a sharp ground ball to left field.',                  scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
-      {event:'Flyout',     desc:'Mark Vientos flies out to center field. Alonso holds.',                      scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:2,risp:false},
-      {event:'Groundout',  desc:'Jeff McNeil grounds out to second base.',                                    scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:3,risp:false},
-      {event:'Walk',       desc:'Ronald Acuña Jr. draws a four-pitch walk.',                                  scoring:false,aScore:0,hScore:0,inn:1,half:'bottom',outs:0,risp:false},
-      {event:'Double',     desc:'Matt Olson doubles down the left-field line. Acuña scores easily!',          scoring:true, aScore:0,hScore:1,inn:1,half:'bottom',outs:0,risp:true},
-      {event:'Groundout',  desc:'Marcell Ozuna grounds out to third base.',                                   scoring:false,aScore:0,hScore:1,inn:1,half:'bottom',outs:1,risp:false},
-      {event:'Strikeout',  desc:'Austin Riley strikes out looking.',                                          scoring:false,aScore:0,hScore:1,inn:1,half:'bottom',outs:2,risp:false},
-      {event:'Single',     desc:'Michael Harris II singles to right field.',                                  scoring:false,aScore:0,hScore:1,inn:1,half:'bottom',outs:2,risp:false},
-      {event:'Groundout',  desc:'Orlando Arcia grounds out to second base to end the inning.',                scoring:false,aScore:0,hScore:1,inn:1,half:'bottom',outs:3,risp:false},
-      {event:'Home Run',   desc:'Francisco Lindor homers (7) on a line drive to right field!',               scoring:true, aScore:1,hScore:1,inn:2,half:'top',    outs:0,risp:false,batterId:596019,batterName:'Francisco Lindor',mockStats:{avg:'.289',homeRuns:7,rbi:23,ops:'.845'}},
-      {event:'Walk',       desc:'Pete Alonso works a walk on a full count.',                                  scoring:false,aScore:1,hScore:1,inn:2,half:'top',    outs:0,risp:false},
-      {event:'Single',     desc:'Mark Vientos singles to left field. Alonso advances to second.',             scoring:false,aScore:1,hScore:1,inn:2,half:'top',    outs:0,risp:true},
-      {event:'Single',     desc:'Jeff McNeil singles to center. Alonso scores! Vientos to third.',           scoring:true, aScore:2,hScore:1,inn:2,half:'top',    outs:0,risp:true},
-      {event:'Flyout',     desc:'Brandon Nimmo flies out to center field. Vientos tags and scores!',         scoring:true, aScore:3,hScore:1,inn:2,half:'top',    outs:1,risp:true},
-      {event:'Groundout',  desc:'Starling Marte grounds out to shortstop.',                                   scoring:false,aScore:3,hScore:1,inn:2,half:'top',    outs:2,risp:false},
-      {event:'Strikeout',  desc:'Francisco Alvarez strikes out swinging.',                                    scoring:false,aScore:3,hScore:1,inn:2,half:'top',    outs:3,risp:false},
-    ],
-    1002:[
-      {event:'Home Run',   desc:'Aaron Judge homers (14) on a fly ball to deep left field!',                 scoring:true, aScore:3,hScore:1,inn:6,half:'top',    outs:0,risp:false,batterId:592450,batterName:'Aaron Judge',mockStats:{avg:'.287',homeRuns:14,rbi:41,ops:'.982'}},
-      {event:'Strikeout',  desc:'Giancarlo Stanton strikes out swinging.',                                    scoring:false,aScore:3,hScore:1,inn:6,half:'top',    outs:1,risp:false},
-      {event:'Groundout',  desc:'DJ LeMahieu grounds out to the second baseman.',                             scoring:false,aScore:3,hScore:1,inn:6,half:'top',    outs:2,risp:false},
-      {event:'Flyout',     desc:'Anthony Volpe flies out to right field.',                                    scoring:false,aScore:3,hScore:1,inn:6,half:'top',    outs:3,risp:false},
-      {event:'Double',     desc:'Rafael Devers doubles off the left-field wall.',                             scoring:false,aScore:3,hScore:1,inn:6,half:'bottom',outs:0,risp:false},
-      {event:'Single',     desc:'Masataka Yoshida singles to right. Devers scores!',                         scoring:true, aScore:3,hScore:2,inn:6,half:'bottom',outs:0,risp:true},
-      {event:'Double Play',desc:'Justin Turner grounds into a 6-4-3 double play. Yoshida out.',              scoring:false,aScore:3,hScore:2,inn:6,half:'bottom',outs:2,risp:false},
-      {event:'Flyout',     desc:'Rob Refsnyder flies out to center to end the inning.',                      scoring:false,aScore:3,hScore:2,inn:6,half:'bottom',outs:3,risp:false},
-      {event:'Walk',       desc:'Gleyber Torres draws a walk to lead off the seventh.',                      scoring:false,aScore:3,hScore:2,inn:7,half:'top',    outs:0,risp:false},
-      {event:'Single',     desc:'Austin Wells singles to left. Torres moves to second.',                     scoring:false,aScore:3,hScore:2,inn:7,half:'top',    outs:0,risp:true},
-      {event:'Home Run',   desc:'Aaron Judge crushes a three-run homer (15) deep to right-center!',         scoring:true, aScore:6,hScore:2,inn:7,half:'top',    outs:0,risp:true,batterId:592450,batterName:'Aaron Judge',mockStats:{avg:'.287',homeRuns:15,rbi:44,ops:'.982'}},
-      {event:'Strikeout',  desc:'Giancarlo Stanton strikes out swinging.',                                    scoring:false,aScore:6,hScore:2,inn:7,half:'top',    outs:1,risp:false},
-      {event:'Groundout',  desc:'Jazz Chisholm Jr. grounds out to shortstop.',                               scoring:false,aScore:6,hScore:2,inn:7,half:'top',    outs:2,risp:false},
-    ],
-    1003:[
-      {event:'Groundout',  desc:'Mookie Betts grounds out to the second baseman.',                           scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
-      {event:'Single',     desc:'Freddie Freeman singles on a line drive to right field.',                   scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
-      {event:'Error',      desc:'Will Smith reaches on a fielding error by the shortstop. Freeman to second.',scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:true},
-      {event:'Walk',       desc:'Max Muncy walks. Bases loaded.',                                             scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:true},
-      {event:'Home Run',   desc:'Teoscar Hernández crushes a grand slam (8) to left-center! Dodgers lead 4-0!',scoring:true,aScore:4,hScore:0,inn:1,half:'top',    outs:1,risp:true,batterId:606192,batterName:'Teoscar Hernández',mockStats:{avg:'.251',homeRuns:8,rbi:28,ops:'.782'}},
-      {event:'Flyout',     desc:'Chris Taylor flies out to right field.',                                     scoring:false,aScore:4,hScore:0,inn:1,half:'top',    outs:2,risp:false},
-      {event:'Groundout',  desc:'Miguel Rojas grounds out to shortstop.',                                     scoring:false,aScore:4,hScore:0,inn:1,half:'top',    outs:3,risp:false},
-      {event:'Single',     desc:'LaMonte Wade Jr. singles to left to start the Giants half.',                scoring:false,aScore:4,hScore:0,inn:1,half:'bottom',outs:0,risp:false},
-      {event:'Groundout',  desc:"Wilmer Flores grounds into a fielder's choice. Wade out at second.",        scoring:false,aScore:4,hScore:0,inn:1,half:'bottom',outs:1,risp:false},
-      {event:'Flyout',     desc:'Patrick Bailey flies out to deep center field.',                             scoring:false,aScore:4,hScore:0,inn:1,half:'bottom',outs:2,risp:false},
-      {event:'Strikeout',  desc:'Marco Luciano strikes out looking to end the inning.',                      scoring:false,aScore:4,hScore:0,inn:1,half:'bottom',outs:3,risp:false},
-      {event:'Triple',     desc:'Mookie Betts triples to right-center! SF has no play.',                    scoring:false,aScore:4,hScore:0,inn:2,half:'top',    outs:0,risp:false},
-      {event:'Single',     desc:'Freddie Freeman singles to left. Betts scores standing up!',                scoring:true, aScore:5,hScore:0,inn:2,half:'top',    outs:0,risp:true},
-    ],
-    1004:[
-      {event:'__GAME_START__',desc:'',                                                                        scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:0,risp:false},
-      {event:'Lineout',    desc:'Jose Altuve lines out sharply to the shortstop.',                            scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
-      {event:'Single',     desc:'Alex Bregman singles on a ground ball through the left side.',               scoring:false,aScore:0,hScore:0,inn:1,half:'top',    outs:1,risp:false},
-      {event:'Home Run',   desc:'Yordan Alvarez launches a two-run homer (11) deep to left field!',          scoring:true, aScore:2,hScore:0,inn:1,half:'top',    outs:1,risp:false,batterId:670541,batterName:'Yordan Alvarez',mockStats:{avg:'.295',homeRuns:11,rbi:34,ops:'.965'}},
-      {event:'Groundout',  desc:'Kyle Tucker grounds out to first base.',                                     scoring:false,aScore:2,hScore:0,inn:1,half:'top',    outs:2,risp:false},
-      {event:'Strikeout',  desc:'Jeremy Peña strikes out looking.',                                           scoring:false,aScore:2,hScore:0,inn:1,half:'top',    outs:3,risp:false},
-      {event:'Single',     desc:'Marcus Semien singles to right field to start the Rangers half.',            scoring:false,aScore:2,hScore:0,inn:1,half:'bottom',outs:0,risp:false},
-      {event:'Home Run',   desc:'Corey Seager homers (9) to left-center! Rangers tie it at 2!',             scoring:true, aScore:2,hScore:2,inn:1,half:'bottom',outs:0,risp:false,batterId:608369,batterName:'Corey Seager',mockStats:{avg:'.278',homeRuns:9,rbi:30,ops:'.883'}},
-    ],
-  },
-};
+async function fetchBoxscore(gamePk){
+  if(!boxscoreCache[gamePk]){
+    try{boxscoreCache[gamePk]=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore').then(function(r){return r.json();});}
+    catch(e){return null;}
+  }
+  return boxscoreCache[gamePk];
+}
 
 // ── League Pulse functions ────────────────────────────────────────────────────
 function initLeaguePulse() {
@@ -1671,7 +1602,7 @@ async function initDemo() {
   updateFeedEmpty();
   showAlert({icon:'▶',event:'Demo Mode',desc:enabledGames.size+' games · '+feedItems.length+' plays',color:'#7dd89e',duration:3000});
   if(storyRotateTimer) clearInterval(storyRotateTimer);
-  storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+  storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
   demoStartTime=Date.now();
   updateDemoBtnLabel();
   pollDemoFeeds();
@@ -1958,7 +1889,7 @@ function exitDemo() {
     if(pulseTimer) clearInterval(pulseTimer);
     pulseTimer=setInterval(pollLeaguePulse,15000);
     if(storyRotateTimer) clearInterval(storyRotateTimer);
-    storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+    storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
     // Fetch real data - pollLeaguePulse() will update with actual games/plays
     pollLeaguePulse();
   }else{
@@ -2397,10 +2328,7 @@ async function genMultiHitDay(){
     var id='multihit_'+batterId+'_'+dateStr;
     var h=entry.hits, ab=entry.hits;
     if(!demoMode&&entry.gamePk){
-      if(!boxscoreCache[entry.gamePk]){
-        try{boxscoreCache[entry.gamePk]=await fetch(MLB_BASE+'/game/'+entry.gamePk+'/boxscore').then(r=>r.json());}catch(e){}
-      }
-      var bs=boxscoreCache[entry.gamePk];
+      var bs=await fetchBoxscore(entry.gamePk);
       if(bs){
         var team=bs.teams&&bs.teams.away;
         var found=false;
@@ -2652,7 +2580,7 @@ async function buildStoryPool(){
     if(carousel.style.display==='none'){
       carousel.style.display='';
       rotateStory();
-      if(!storyRotateTimer) storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+      if(!storyRotateTimer) storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
     }
   } else {
     carousel.style.display='none';
@@ -2663,7 +2591,7 @@ async function buildStoryPool(){
 function rotateStory(){
   if(!storyPool.length) return;
   var now=Date.now();
-  var maxCooldown=Math.max(storyPool.length*STORY_ROTATE_MS*1.5,2*60000);
+  var maxCooldown=Math.max(storyPool.length*devTuning.rotateMs*1.5,2*60000);
   var eligible=storyPool.filter(function(s){return !s.lastShown||(now-s.lastShown.getTime())>Math.min(s.cooldownMs,maxCooldown);});
   if(!eligible.length){eligible=storyPool.slice().sort(function(a,b){return (a.lastShown?a.lastShown.getTime():0)-(b.lastShown?b.lastShown.getTime():0);});}
   var scored=eligible.map(function(s){
@@ -2719,7 +2647,7 @@ function nextStory(){
 
 function onStoryVisibilityChange(){
   if(document.hidden){clearInterval(storyRotateTimer);storyRotateTimer=null;}
-  else if(pulseInitialized&&storyPool.length){rotateStory();storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);}
+  else if(pulseInitialized&&storyPool.length){rotateStory();storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);}
 }
 
 function onNewsVisibilityChange(){
@@ -2746,8 +2674,8 @@ async function loadOnThisDayCache(){
         var ws=Math.max(away.score||0,home.score||0), ls=Math.min(away.score||0,home.score||0);
         var playerHighlight='', sigPlay='';
         try{
-          var bs=await fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore').then(function(r){return r.json();});
-          var allPlayers=Object.assign({},bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs.teams&&bs.teams.away&&bs.teams.away.players||{});
+          var bs=await fetchBoxscore(g.gamePk);
+          var allPlayers=Object.assign({},bs&&bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs&&bs.teams&&bs.teams.away&&bs.teams.away.players||{});
           var topBatter=null, topBatterStats=null;
           var hrHitters={multi:[],single:[]};
           Object.values(allPlayers).forEach(function(p){
@@ -2828,8 +2756,8 @@ async function loadYesterdayCache(){
       var dur=linescore.gameDurationMinutes?' · '+Math.floor(linescore.gameDurationMinutes/60)+'h '+String(linescore.gameDurationMinutes%60).padStart(2,'0')+'m':'';
       var playerHighlight='', sigPlay='';
       try{
-        var bs=await fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore').then(function(r){return r.json();});
-        var allPlayers=Object.assign({},bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs.teams&&bs.teams.away&&bs.teams.away.players||{});
+        var bs=await fetchBoxscore(g.gamePk);
+        var allPlayers=Object.assign({},bs&&bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs&&bs.teams&&bs.teams.away&&bs.teams.away.players||{});
         var topBatter=null, topBatterStats=null;
         Object.values(allPlayers).forEach(function(p){
           if(!p.stats||!p.stats.batting) return;
@@ -2914,7 +2842,7 @@ function refreshDebugPanel(){
   var tier4=storyPool.filter(function(s){return s.tier===4;}).length;
 
   var nextPollIn=Math.round((1042-Date.now())%15000/1000); if(nextPollIn<0)nextPollIn+=15;
-  var nextRotateIn=storyRotateTimer?Math.round((STORY_ROTATE_MS-(now%(STORY_ROTATE_MS||20000)))/1000):'—';
+  var nextRotateIn=storyRotateTimer?Math.round((devTuning.rotateMs-(now%(devTuning.rotateMs||20000)))/1000):'—';
 
   var html='<div style="padding:0;line-height:1.6">';
   html+='<div style="font-weight:600;margin-bottom:6px;color:var(--accent)">📊 Service Health</div>';
@@ -3159,17 +3087,10 @@ function showAlert(opts) {
 }
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}
 
-async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText, gamePk) {
-  var overlay = document.getElementById('playerCardOverlay');
-  var card    = document.getElementById('playerCard');
-  if (!overlay || !card) return;
+async function resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk) {
   var battingTeamId = halfInning === 'top' ? awayTeamId : homeTeamId;
   var teamData = TEAMS.find(function(t) { return t.id === battingTeamId; }) || {};
-  var teamAbbr = teamData.short || '???';
-  card.innerHTML = '<div class="pc-loading">Loading player card…</div>';
-  overlay.classList.remove('closing');
-  overlay.classList.add('open');
-  var stat = null, jerseyNumber = null;
+  var stat = null, jerseyNumber = null, position = null;
   if (overrideStats) {
     stat = overrideStats;
   } else {
@@ -3187,12 +3108,10 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
-  var position = (rEntry && rEntry.position && rEntry.position.abbreviation) || null;
-
-  // If position or jersey not found in roster (opposing player), fetch from boxscore
+  position = (rEntry && rEntry.position && rEntry.position.abbreviation) || null;
   if ((!position || !jerseyNumber) && gamePk) {
     try {
-      var bs = await fetch(MLB_BASE + '/game/' + gamePk + '/boxscore').then(function(r) { return r.json(); });
+      var bs = await fetchBoxscore(gamePk);
       var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
       var playerData = allPlayers.find(function(p) { return p.person && p.person.id === batterId; });
       if (playerData) {
@@ -3205,45 +3124,45 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
       }
     } catch(e) {}
   }
-  position = position || '—';
-
   var hrCount = stat ? (stat.homeRuns != null ? stat.homeRuns : '—') : '—';
   if (descHint) { var _m=descHint.match(/\((\d+)\)/); if(_m){var _n=parseInt(_m[1],10);if(typeof hrCount!=='number'||hrCount<_n)hrCount=_n;} }
-  var hrPrev  = (typeof hrCount === 'number' && hrCount >= 1) ? hrCount - 1 : hrCount;
-  var avg     = stat ? fmtRate(stat.avg) : '—';
-  var ops     = stat ? fmtRate(stat.ops) : '—';
-  var rbi     = stat ? (stat.rbi != null ? stat.rbi : '—') : '—';
-  var photoUrl = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + batterId + '/headshot/67/current';
-  var contextHtml = '';
-  if (typeof hrCount === 'number' && hrCount > 0) {
-    if (hrCount % 5 === 0) {
-      contextHtml = '<div class="pc-context"><span class="pc-context-pill">💥 HR #' + hrCount + ' in ' + SEASON + ' — milestone!</span></div>';
-    } else {
-      var cache = statsCache.hitting || [];
-      if (cache.length >= 2) {
-        var sorted = cache.slice().sort(function(a,b){ return ((b.stat&&b.stat.homeRuns)||0)-((a.stat&&a.stat.homeRuns)||0); });
-        if (sorted[0] && sorted[0].player && sorted[0].player.id === batterId) {
-          contextHtml = '<div class="pc-context"><span class="pc-context-pill">🏆 HR leader on the team</span></div>';
-        }
-      }
-    }
-  }
-  var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">' + jerseyNumber + '</div>' : '';
-
-  card.innerHTML = window.PulseCard.render({
+  return {
     batterId: batterId,
-    name: batterName,
-    team: { short: teamAbbr, primary: teamData.primary, secondary: teamData.secondary },
-    position: position,
-    jersey: jerseyNumber,
+    batterName: batterName,
+    teamData: teamData,
+    teamAbbr: teamData.short || '???',
+    jerseyNumber: jerseyNumber,
+    position: position || '—',
+    hrCount: hrCount,
+    hrPrev: (typeof hrCount === 'number' && hrCount >= 1) ? hrCount - 1 : hrCount,
+    avg: stat ? fmtRate(stat.avg) : '—',
+    ops: stat ? fmtRate(stat.ops) : '—',
+    rbi: stat ? (stat.rbi != null ? stat.rbi : '—') : '—',
+  };
+}
+
+async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText, gamePk) {
+  var overlay = document.getElementById('playerCardOverlay');
+  var card    = document.getElementById('playerCard');
+  if (!overlay || !card) return;
+  card.innerHTML = '<div class="pc-loading">Loading player card…</div>';
+  overlay.classList.remove('closing');
+  overlay.classList.add('open');
+  var d = await resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk);
+  card.innerHTML = window.PulseCard.render({
+    batterId: d.batterId,
+    name: d.batterName,
+    team: { short: d.teamAbbr, primary: d.teamData.primary, secondary: d.teamData.secondary },
+    position: d.position,
+    jersey: d.jerseyNumber,
     badge: (badgeText || 'HOME RUN'),
-    stats: { avg: avg, ops: ops, hr: hrPrev, rbi: rbi },
+    stats: { avg: d.avg, ops: d.ops, hr: d.hrPrev, rbi: d.rbi },
     highlight: 'hr',
   });
-  if (typeof hrCount === 'number' && hrCount >= 1) {
+  if (typeof d.hrCount === 'number' && d.hrCount >= 1) {
     setTimeout(function() {
       var el = card.querySelector('.pc-hr-val');
-      if (el) { el.textContent = hrCount; el.classList.add('counting'); }
+      if (el) { el.textContent = d.hrCount; el.classList.add('counting'); }
     }, 500);
   }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
@@ -3351,7 +3270,6 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
   var position = (rEntry && rEntry.position && rEntry.position.abbreviation) || '—';
-  var jerseyHtml = jerseyNumber ? '<div class="pc-jersey">' + jerseyNumber + '</div>' : '';
   card.innerHTML = window.PulseCard.render({
     batterId: batterId,
     name: batterName,
@@ -3398,9 +3316,8 @@ function updateTuning(param,val){
   if(isNaN(parsed)||parsed<1)return;
   devTuning[param]=parsed;
   if(param==='rotateMs'){
-    STORY_ROTATE_MS=parsed;
     if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
-    if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+    if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
     console.log('✓ Carousel rotation updated to '+parsed+'ms');
   }else{
     console.log('✓ '+param+' updated to '+parsed);
@@ -3409,7 +3326,6 @@ function updateTuning(param,val){
 
 function resetTuning(){
   devTuning=Object.assign({},devTuningDefaults);
-  STORY_ROTATE_MS=devTuningDefaults.rotateMs;
   document.getElementById('tuneRotateMs').value=devTuningDefaults.rotateMs;
   document.getElementById('tuneRbiThreshold').value=devTuningDefaults.rbiThreshold;
   document.getElementById('tuneRbiCooldown').value=devTuningDefaults.rbiCooldown;
@@ -3422,7 +3338,7 @@ function resetTuning(){
   document.getElementById('tuneBasesLoadedEnable').checked=devTuningDefaults.basesloaded_enable;
   document.getElementById('tuneBasesLoadedPriority').value=devTuningDefaults.basesloaded_priority;
   if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
-  if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+  if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
   console.log('✓ Dev tuning reset to defaults');
 }
 
