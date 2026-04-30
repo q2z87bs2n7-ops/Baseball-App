@@ -157,7 +157,7 @@
         // body
         '<span style="display:inline-flex;flex-direction:column;justify-content:center;padding:0 10px 0 8px;gap:2px;">' +
           '<span style="font:700 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8eaf0;letter-spacing:0.04em;">' +
-            esc(pitch.typeCode || '??') +
+            esc(pitch.typeName || pitch.typeCode || '??') +
             '<span style="color:#9aa0a8;font-weight:500;margin-left:6px;">' +
               (pitch.speed ? esc(pitch.speed.toFixed(1)) + '<span style="font-size:9px;opacity:0.7;"> MPH</span>' : '') +
             '</span>' +
@@ -189,7 +189,7 @@
         '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #1e2d4a;background:#0a0f1e;">' +
           '<span style="width:6px;height:6px;border-radius:50%;background:' + rs.color + ';box-shadow:0 0 6px ' + rs.color + ';flex:0 0 auto;"></span>' +
           '<span style="font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8eaf0;letter-spacing:0.06em;">' +
-            esc(d.lastPitch.typeCode || '') +
+            esc(d.lastPitch.typeName || d.lastPitch.typeCode || '') +
             '<span style="color:#9aa0a8;font-weight:500;margin-left:6px;">' +
               (d.lastPitch.speed ? esc(d.lastPitch.speed.toFixed(1)) + ' mph' : '') +
             '</span>' +
@@ -472,7 +472,7 @@
             return '<div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid #1e2d4a;background:#0a0f1e;">' +
               '<span style="width:7px;height:7px;border-radius:50%;background:' + rs.color + ';box-shadow:0 0 7px ' + rs.color + ';flex:0 0 auto;"></span>' +
               '<span style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8eaf0;letter-spacing:0.04em;">' +
-                esc(lp.typeCode || '') +
+                esc(lp.typeName || lp.typeCode || '') +
                 '<span style="color:#9aa0a8;font-weight:500;margin-left:8px;">' + (lp.speed ? esc(lp.speed.toFixed(1)) + ' mph' : '') + '</span>' +
               '</span>' +
               '<span style="margin-left:auto;font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:' + rs.color + ';letter-spacing:0.14em;">' +
