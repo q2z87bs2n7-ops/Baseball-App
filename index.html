@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.52.5</title>
+<title>MLB Tracker v2.52.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -698,7 +698,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.52.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.52.6</div>
       </div>
     </div>
   </div>
@@ -2102,7 +2102,7 @@ function genWalkOffThreat(){
     var id='walkoff_'+g.gamePk+'_'+g.inning;
     var headline='Walk-off situation — '+g.homeAbbr+' in the bottom '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+ordinal(g.inning)+' inning';
-    out.push(makeStory(id,'walkoff',1,90,'🎯',headline,sub,'live',g.gamePk,new Date(),5*60000,0.9));
+    out.push(makeStory(id,'walkoff',1,90,'🔔',headline,sub,'live',g.gamePk,new Date(),5*60000,0.9));
   });
   return out;
 }
@@ -2116,7 +2116,7 @@ function genBasesLoaded(){
     var id='basesloaded_'+g.gamePk+'_'+g.inning+'_'+g.halfInning;
     var headline='Bases loaded — '+battingAbbr+' batting in the '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+half+' '+ordinal(g.inning);
-    out.push(makeStory(id,'realtime',1,88,'🔴',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
+    out.push(makeStory(id,'realtime',1,88,'🔔',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
   });
   return out;
 }
@@ -2129,7 +2129,7 @@ function genStolenBaseStories(){
     var halfInd=sb.halfInning==='top'?'▲':'▼';
     var sub=sb.awayAbbr+' @ '+sb.homeAbbr+' · '+halfInd+sb.inning;
     var sbId='sb_'+sb.key;
-    out.push(makeStory(sbId,'realtime',isHome?1:2,isHome?85:55,isHome?'🏃':'💨',
+    out.push(makeStory(sbId,'realtime',isHome?1:2,isHome?85:55,'🏃',
       sb.runnerName+' steals '+baseLabel,sub,liveOrHighlight(sbId,sb.ts),sb.gamePk,sb.ts,5*60000,0.7));
   });
   return out;
@@ -2229,7 +2229,7 @@ async function genMultiHitDay(){
     var headline=demoMode?(entry.name+' goes '+h+'-for-today'+hrStr):(entry.name+' goes '+h+' for '+ab+hrStr);
     var g=gameStates[entry.gamePk]||{};
     var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr:'';
-    out.push(makeStory(id,'daily_stat',3,55,'🎯',headline,sub,'today',entry.gamePk,new Date(),15*60000,0.1));
+    out.push(makeStory(id,'daily_stat',2,55,'🏏',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),15*60000,0.1));
   }
   return out;
 }
@@ -2270,7 +2270,7 @@ function genPitcherGem(){
     var id='kgem_'+key;
     var headline=entry.name+' has '+entry.ks+' strikeouts today';
     var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr+(g.status==='Live'?' · '+ordinal(g.inning):''):'';
-    out.push(makeStory(id,'daily_stat',3,58,'⚡',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),10*60000,0.2));
+    out.push(makeStory(id,'daily_stat',2,58,'⚡',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),10*60000,0.2));
   });
   return out;
 }
