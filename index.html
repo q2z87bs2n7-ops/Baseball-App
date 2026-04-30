@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.57.5</title>
+<title>MLB Tracker v2.57.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -693,7 +693,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.6</div>
       </div>
     </div>
   </div>
@@ -854,26 +854,6 @@
 
 <div id="pulse" class="section">
   <div id="pulseLeft">
-  <div id="soundPanel" style="display:none">
-    <div class="sound-panel-hd">
-      <span class="sound-panel-title">Sound Alerts</span>
-      <button class="sound-close" onclick="toggleSoundPanel()">✕</button>
-    </div>
-    <div class="sound-rows master-off" id="soundRows">
-      <div class="sound-row master-row">
-        <div><div class="sound-label">Master</div><div class="sound-sub">Enable all sound alerts</div></div>
-        <label class="sound-toggle"><input type="checkbox" onchange="setSoundPref('master',this.checked)"><span class="sound-knob"></span></label>
-      </div>
-      <div class="sound-row"><div class="sound-label">💥 Home Run</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('hr',this.checked)"><span class="sound-knob"></span></label></div>
-      <div class="sound-row"><div class="sound-label">🟢 Run Scores</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('run',this.checked)"><span class="sound-knob"></span></label></div>
-      <div class="sound-row"><div class="sound-label">⚡ RISP</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('risp',this.checked)"><span class="sound-knob"></span></label></div>
-      <div class="sound-row"><div class="sound-label">🔀 Double Play</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('dp',this.checked)"><span class="sound-knob"></span></label></div>
-      <div class="sound-row"><div class="sound-label">🔀 Triple Play</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('tp',this.checked)"><span class="sound-knob"></span></label></div>
-      <div class="sound-row"><div class="sound-label">⚾ Game Start</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameStart',this.checked)"><span class="sound-knob"></span></label></div>
-      <div class="sound-row"><div class="sound-label">🏁 Game End</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameEnd',this.checked)"><span class="sound-knob"></span></label></div>
-      <div class="sound-row"><div class="sound-label">⚠️ Error</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('error',this.checked)"><span class="sound-knob"></span></label></div>
-    </div>
-  </div>
   <div id="alertStack"></div>
   <div id="playerCardOverlay" onclick="dismissPlayerCard()">
     <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
@@ -1066,6 +1046,27 @@
   </div>
 </div>
 
+<div id="soundPanel" style="display:none">
+  <div class="sound-panel-hd">
+    <span class="sound-panel-title">Sound Alerts</span>
+    <button class="sound-close" onclick="toggleSoundPanel()">✕</button>
+  </div>
+  <div class="sound-rows master-off" id="soundRows">
+    <div class="sound-row master-row">
+      <div><div class="sound-label">Master</div><div class="sound-sub">Enable all sound alerts</div></div>
+      <label class="sound-toggle"><input type="checkbox" onchange="setSoundPref('master',this.checked)"><span class="sound-knob"></span></label>
+    </div>
+    <div class="sound-row"><div class="sound-label">💥 Home Run</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('hr',this.checked)"><span class="sound-knob"></span></label></div>
+    <div class="sound-row"><div class="sound-label">🟢 Run Scores</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('run',this.checked)"><span class="sound-knob"></span></label></div>
+    <div class="sound-row"><div class="sound-label">⚡ RISP</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('risp',this.checked)"><span class="sound-knob"></span></label></div>
+    <div class="sound-row"><div class="sound-label">🔀 Double Play</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('dp',this.checked)"><span class="sound-knob"></span></label></div>
+    <div class="sound-row"><div class="sound-label">🔀 Triple Play</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('tp',this.checked)"><span class="sound-knob"></span></label></div>
+    <div class="sound-row"><div class="sound-label">⚾ Game Start</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameStart',this.checked)"><span class="sound-knob"></span></label></div>
+    <div class="sound-row"><div class="sound-label">🏁 Game End</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameEnd',this.checked)"><span class="sound-knob"></span></label></div>
+    <div class="sound-row"><div class="sound-label">⚠️ Error</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('error',this.checked)"><span class="sound-knob"></span></label></div>
+  </div>
+</div>
+
 <script>
 const SEASON=2026,WC_SPOTS=3,MLB_BASE='https://statsapi.mlb.com/api/v1';
 const TEAMS=[
@@ -1114,7 +1115,6 @@ let gameStates={},feedItems=[],enabledGames=new Set();
 let countdownTimer=null,pulseTimer=null,alertId=0,isFirstPoll=true,pollDateStr=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 let screenWakeLock=null;
-let soundPanelClickListenerAttached=false;
 
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null;
@@ -3611,17 +3611,9 @@ function showSection(id,btn){
     savedThemeForPulse=themeOverride;
     applyPulseMLBTheme();
     requestScreenWakeLock();
-    if(!soundPanelClickListenerAttached){
-      document.addEventListener('click',onSoundPanelClickOutside);
-      soundPanelClickListenerAttached=true;
-    }
   }else{
     releaseScreenWakeLock();
     if(savedThemeForPulse!==undefined){applyTeamTheme(activeTeam);}
-    if(soundPanelClickListenerAttached){
-      document.removeEventListener('click',onSoundPanelClickOutside);
-      soundPanelClickListenerAttached=false;
-    }
   }
   if(id==='schedule'&&!scheduleLoaded)loadSchedule();
   if(id==='standings')loadStandings();
@@ -4352,10 +4344,7 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
 });
 
-document.addEventListener('click',function(e){
-  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDevTools');
-  if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
-});
+document.addEventListener('click',onSoundPanelClickOutside);
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
 </script>
