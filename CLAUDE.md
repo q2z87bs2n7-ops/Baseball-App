@@ -827,7 +827,7 @@ const devTuningDefaults = { rotateMs: 4500, rbiThreshold: 10, rbiCooldown: 90000
 
 | File | Role |
 |---|---|
-| `daily-events.json` | Static snapshot (8 games, 619 plays, all caches) — **dev branch only, do not push to main** |
+| `daily-events.json` | Static snapshot (8 games, 619 plays, all caches) — served via GitHub Pages; required for Demo Mode in production |
 | `index.html` | All demo code: loadDailyEventsJSON, initDemo, pollDemoFeeds, advanceDemoPlay, UI controls |
 | `sw.js` | Cache versioning for PWA update |
 
