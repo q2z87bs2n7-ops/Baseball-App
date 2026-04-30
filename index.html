@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.57.9</title>
+<title>MLB Tracker v2.57.10</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -677,7 +677,7 @@
             <div id="invertToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div id="pushRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div id="pushRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔔 Game Start Alerts</div>
             <div style="font-size:.68rem;color:var(--muted)" id="pushStatusText">Off</div>
@@ -699,7 +699,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.9</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.10</div>
       </div>
     </div>
   </div>
@@ -1162,7 +1162,7 @@ let devTuning={
   basesloaded_priority: 88
 };
 let devColorLocked=false;
-let devShowPushOnDesktop=localStorage.getItem('dev_push_desktop')==='true';
+let devShowPushOnDesktop=false;
 let devColorOverrides={
   app:{dark:'',card:'',card2:'',border:'',primary:'',secondary:'',accent:'',accentText:'',headerText:''},
   pulse:{dark:'',card:'',card2:'',border:'',primary:'',secondary:'',accent:'',accentText:'',headerText:''}
@@ -4238,8 +4238,8 @@ function loadMedia(){
 }
 var mediaEnabled=false;
 function isDesktop(){return window.matchMedia('(min-width:1025px)').matches&&!('ontouchstart' in window);}
-function updatePushRowVisibility(){var row=document.getElementById('pushRow');if(!row)return;row.style.display=(isDesktop()&&!devShowPushOnDesktop)?'none':'flex';}
-function togglePushOnDesktop(){devShowPushOnDesktop=!devShowPushOnDesktop;localStorage.setItem('dev_push_desktop',devShowPushOnDesktop);var toggle=document.getElementById('pushDesktopToggle'),knob=document.getElementById('pushDesktopToggleKnob');toggle.style.background=devShowPushOnDesktop?'var(--secondary)':'var(--border)';knob.style.left=devShowPushOnDesktop?'18px':'2px';updatePushRowVisibility();}
+function updatePushRowVisibility(){var row=document.getElementById('pushRow');if(!row)return;row.style.display=(!isDesktop()||devShowPushOnDesktop)?'flex':'none';}
+function togglePushOnDesktop(){devShowPushOnDesktop=!devShowPushOnDesktop;var toggle=document.getElementById('pushDesktopToggle'),knob=document.getElementById('pushDesktopToggleKnob');toggle.style.background=devShowPushOnDesktop?'var(--secondary)':'var(--border)';knob.style.left=devShowPushOnDesktop?'18px':'2px';updatePushRowVisibility();}
 function toggleMedia(){mediaEnabled=!mediaEnabled;localStorage.setItem('mlb_media',mediaEnabled);var btn=document.getElementById('mediaNavBtn'),toggle=document.getElementById('mediaToggle'),knob=document.getElementById('mediaToggleKnob');btn.style.display=mediaEnabled?'':'none';toggle.style.background=mediaEnabled?'var(--secondary)':'var(--border)';knob.style.left=mediaEnabled?'21px':'3px';if(!mediaEnabled){var ms=document.getElementById('media');if(ms&&ms.classList.contains('active'))showSection('home',document.querySelector('nav button'));}}
 var selectedVideoId=null,mediaVideos=[];
 async function loadMediaFeed(uc){
@@ -4362,7 +4362,6 @@ function togglePush(){
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='';mt.style.background='var(--secondary)';mk.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
-  if(devShowPushOnDesktop){var pdt=document.getElementById('pushDesktopToggle'),pdk=document.getElementById('pushDesktopToggleKnob');if(pdt){pdt.style.background='var(--secondary)';pdk.style.left='18px';}}
   updatePushRowVisibility();
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
   pulseInitialized=true;initLeaguePulse();
