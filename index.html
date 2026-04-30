@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.57.8</title>
+<title>MLB Tracker v2.57.9</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -699,7 +699,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.8</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.9</div>
       </div>
     </div>
   </div>
@@ -4237,7 +4237,7 @@ function loadMedia(){
   loadMediaFeed(uc);
 }
 var mediaEnabled=false;
-function isDesktop(){return window.matchMedia('(min-width:1025px)').matches&&!('ontouchstart' in window)&&!navigator.maxTouchPoints;}
+function isDesktop(){return window.matchMedia('(min-width:1025px)').matches&&!('ontouchstart' in window);}
 function updatePushRowVisibility(){var row=document.getElementById('pushRow');if(!row)return;row.style.display=(isDesktop()&&!devShowPushOnDesktop)?'none':'flex';}
 function togglePushOnDesktop(){devShowPushOnDesktop=!devShowPushOnDesktop;localStorage.setItem('dev_push_desktop',devShowPushOnDesktop);var toggle=document.getElementById('pushDesktopToggle'),knob=document.getElementById('pushDesktopToggleKnob');toggle.style.background=devShowPushOnDesktop?'var(--secondary)':'var(--border)';knob.style.left=devShowPushOnDesktop?'18px':'2px';updatePushRowVisibility();}
 function toggleMedia(){mediaEnabled=!mediaEnabled;localStorage.setItem('mlb_media',mediaEnabled);var btn=document.getElementById('mediaNavBtn'),toggle=document.getElementById('mediaToggle'),knob=document.getElementById('mediaToggleKnob');btn.style.display=mediaEnabled?'':'none';toggle.style.background=mediaEnabled?'var(--secondary)':'var(--border)';knob.style.left=mediaEnabled?'21px':'3px';if(!mediaEnabled){var ms=document.getElementById('media');if(ms&&ms.classList.contains('active'))showSection('home',document.querySelector('nav button'));}}
