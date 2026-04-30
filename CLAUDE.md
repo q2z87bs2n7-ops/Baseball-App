@@ -619,11 +619,6 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **⚡ Pulse: Mock Mode** — slide toggle (`id="pulseMockToggle"`); calls `togglePulseMockMode()`; persisted to `localStorage('mlb_pulse_mock')`; initialised in startup IIFE
 - **⚡ Pulse: Sound Alerts** — `🔊 Configure` button (`id="btnSound"`); calls `toggleSoundPanel()` to show/hide the floating `#soundPanel` overlay; `id` preserved so click-outside-to-dismiss handler still works
 - Panel closes on click outside
-- **🛠️ Debug Tools** — `Open` button; calls `toggleDebugPanel();toggleSettings()` to show/hide the floating `#debugToolsPanel` overlay. Fixed position overlay matching sound panel styling. Contains:
-  - **▶ Try Demo** — calls `initDemo()` (keyboard: `Shift+H`)
-  - **🎬 Replay HR** — calls `replayHRCard()` (keyboard: `Shift+R`)
-  - Shortcut labels on buttons for reference. Auto-closes panel after button action for streamlined workflow. Click-outside dismissal also supported.
-- Keyboard shortcut `Shift+D` toggles debug panel (desktop convenience)
 - All settings persist across page reloads via `localStorage` (team, theme, invert, media tab, pulse mock mode)
 - Version number at bottom
 
@@ -712,7 +707,6 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `setMockSpeed(ms, btn)` | Updates `mockSpeedMs`, restarts mock tick interval |
 | `resetMock()` | Clears all Pulse state and re-calls `initMock()` |
 | `toggleSoundPanel()` | Shows/hides `#soundPanel` overlay |
-| `toggleDebugPanel()` | Shows/hides `#debugToolsPanel` overlay (desktop: also triggered by `Shift+D` keyboard shortcut) |
 | `setSoundPref(key, val)` | Updates `soundSettings[key]`; master toggle also applies `.master-off` to `#soundRows` |
 | `playSound(type)` | Checks `soundSettings.master && soundSettings[type]`, calls appropriate `playXxxSound()` |
 | `_makeCtx()` / `_closeCtx()` / `_osc()` / `_ns()` | Web Audio primitives — shared by all Pulse sound functions |
@@ -797,7 +791,6 @@ if(demoMode&&item.ts.getTime()>demoCurrentTime) return;  // skip future items
 | `toggleDemoPause()` | Pause/resume playback, update button text |
 | `renderDemoEndScreen()` | Show "Demo Complete" overlay, auto-dismiss after 4s |
 | `exitDemo()` | Clear demo state, reset UI, return to live mode (if desired) |
-| `replayHRCard(itemIndex)` | Replay a home run card from the live feed without demo mode overhead. Scans `feedItems` for all HR plays, extracts batter/team/game context, calls `showPlayerCard()` with random template variant (V1–V4). Optional `itemIndex` parameter selects specific HR by recency (0 = most recent). |
 
 ### Demo Globals
 
