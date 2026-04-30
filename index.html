@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.57.6</title>
+<title>MLB Tracker v2.57.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -671,7 +671,7 @@
             <div id="invertToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div id="pushRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔔 Game Start Alerts</div>
             <div style="font-size:.68rem;color:var(--muted)" id="pushStatusText">Off</div>
@@ -693,7 +693,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.7</div>
       </div>
     </div>
   </div>
@@ -939,6 +939,15 @@
     </div>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Push Alerts</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:.68rem;color:var(--text)">Show on Desktop</div>
+      <div onclick="togglePushOnDesktop()" id="pushDesktopToggle" style="width:36px;height:20px;border-radius:10px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+        <div id="pushDesktopToggleKnob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:.2s"></div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
     <details style="cursor:pointer;open">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚡ Pulse Tuning</summary>
       <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
@@ -1144,6 +1153,7 @@ let devTuning={
   basesloaded_priority: 88
 };
 let devColorLocked=false;
+let devShowPushOnDesktop=localStorage.getItem('dev_push_desktop')==='true';
 let devColorOverrides={
   app:{dark:'',card:'',card2:'',border:'',primary:'',secondary:'',accent:'',accentText:'',headerText:''},
   pulse:{dark:'',card:'',card2:'',border:'',primary:'',secondary:'',accent:'',accentText:'',headerText:''}
@@ -3362,7 +3372,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('lockThemeToggle').checked=devColorLocked;var pdt=document.getElementById('pushDesktopToggle'),pdk=document.getElementById('pushDesktopToggleKnob');if(pdt){pdt.style.background=devShowPushOnDesktop?'var(--secondary)':'var(--border)';pdk.style.left=devShowPushOnDesktop?'18px':'2px';}}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
@@ -4205,6 +4215,9 @@ function loadMedia(){
   loadMediaFeed(uc);
 }
 var mediaEnabled=false;
+function isDesktop(){return window.matchMedia('(min-width:1025px)').matches&&!('ontouchstart' in window)&&!navigator.maxTouchPoints;}
+function updatePushRowVisibility(){var row=document.getElementById('pushRow');if(!row)return;row.style.display=(isDesktop()&&!devShowPushOnDesktop)?'none':'flex';}
+function togglePushOnDesktop(){devShowPushOnDesktop=!devShowPushOnDesktop;localStorage.setItem('dev_push_desktop',devShowPushOnDesktop);var toggle=document.getElementById('pushDesktopToggle'),knob=document.getElementById('pushDesktopToggleKnob');toggle.style.background=devShowPushOnDesktop?'var(--secondary)':'var(--border)';knob.style.left=devShowPushOnDesktop?'18px':'2px';updatePushRowVisibility();}
 function toggleMedia(){mediaEnabled=!mediaEnabled;localStorage.setItem('mlb_media',mediaEnabled);var btn=document.getElementById('mediaNavBtn'),toggle=document.getElementById('mediaToggle'),knob=document.getElementById('mediaToggleKnob');btn.style.display=mediaEnabled?'':'none';toggle.style.background=mediaEnabled?'var(--secondary)':'var(--border)';knob.style.left=mediaEnabled?'21px':'3px';if(!mediaEnabled){var ms=document.getElementById('media');if(ms&&ms.classList.contains('active'))showSection('home',document.querySelector('nav button'));}}
 var selectedVideoId=null,mediaVideos=[];
 async function loadMediaFeed(uc){
@@ -4327,6 +4340,8 @@ function togglePush(){
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='';mt.style.background='var(--secondary)';mk.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
+  if(devShowPushOnDesktop){var pdt=document.getElementById('pushDesktopToggle'),pdk=document.getElementById('pushDesktopToggleKnob');if(pdt){pdt.style.background='var(--secondary)';pdk.style.left='18px';}}
+  updatePushRowVisibility();
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
   pulseInitialized=true;initLeaguePulse();
 })();
