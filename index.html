@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.59</title>
+<title>MLB Tracker v2.60</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -511,7 +511,8 @@
 .mock-progress { margin-left: auto; font-size: 11px; color: var(--muted); flex-shrink: 0; }
 
 /* ── Story Carousel (v2.7.1) ─────────────────────────────────────────────── */
-#storyCarousel { max-width: 700px; margin: 0 auto; padding: 10px 12px 4px; }
+#storyCarousel { max-width: 700px; margin: 0 auto; padding: 10px 0 4px; }
+.story-card-wrap { position: relative; margin: 0 20px; }
 .story-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; animation: storyFadeIn 0.35s ease; }
 @keyframes storyFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 .story-card.tier1 { border-left: 3px solid rgba(0,195,175,0.85); background: rgba(0,195,175,0.13); }
@@ -542,9 +543,11 @@
 .story-headline { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.35; }
 .story-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .story-leaders .story-sub { font-size: 14px; color: var(--text); font-weight: 600; }
-.story-controls { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 5px 0 2px; }
-.story-nav { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 3px 10px; font-size: 16px; line-height: 1; cursor: pointer; font-family: inherit; transition: color 0.15s, border-color 0.15s; }
-.story-nav:hover { color: var(--accent); border-color: var(--accent); }
+.story-nav { position: absolute; top: 50%; transform: translateY(-50%); background: none; border: none; width: 32px; height: 32px; cursor: pointer; color: var(--muted); opacity: 0.45; font-size: 18px; font-weight: 400; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, color 0.2s; z-index: 10; padding: 0; font-family: inherit; }
+.story-nav:hover { opacity: 1; color: var(--text); }
+.story-nav-prev { left: -16px; }
+.story-nav-next { right: -16px; }
+.story-dots-row { display: flex; justify-content: center; padding: 7px 0 2px; }
 .story-dots { display: flex; gap: 5px; align-items: center; }
 .story-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
 .story-dot.active { background: var(--accent); }
@@ -700,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.59</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.60</div>
       </div>
     </div>
   </div>
@@ -867,11 +870,13 @@
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="storyCarousel" style="display:none">
-    <div id="storyCard"></div>
-    <div class="story-controls">
-      <button class="story-nav" onclick="prevStory()">‹</button>
+    <div class="story-card-wrap">
+      <button class="story-nav story-nav-prev" onclick="prevStory()">‹</button>
+      <div id="storyCard"></div>
+      <button class="story-nav story-nav-next" onclick="nextStory()">›</button>
+    </div>
+    <div class="story-dots-row">
       <div class="story-dots" id="storyDots"></div>
-      <button class="story-nav" onclick="nextStory()">›</button>
     </div>
   </div>
   <div id="mockBar" style="display:none">
@@ -930,6 +935,10 @@
     <button class="dev-btn" onclick="replayHRCard();toggleDevTools()">
       <div class="dev-btn-label">🎬 Replay HR</div>
       <div class="dev-btn-shortcut">Shift+R</div>
+    </button>
+    <button class="dev-btn" onclick="replayRBICard();toggleDevTools()">
+      <div class="dev-btn-label">💰 Replay RBI</div>
+      <div class="dev-btn-shortcut">Shift+E</div>
     </button>
     <button class="dev-btn" onclick="window.PulseCard.demo();toggleDevTools()">
       <div class="dev-btn-label">💫 Card Variants</div>
@@ -1134,7 +1143,7 @@ let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 let boxscoreCache={};
-let inningRecapsFired=new Set(),lastInningState={},displayedStoryIds=new Set();
+let inningRecapsFired=new Set(),inningRecapsPending={},lastInningState={},displayedStoryIds=new Set();
 
 // ── Dev Tools tuning (real-time optimization) ──────────────────────────
 let devTuning={
@@ -1372,6 +1381,7 @@ if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCo
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
         else if (hasRISP){playSound('risp');}
+        if(outs===3){var _rk=gamePk+'_'+inning+'_'+halfInning.toLowerCase();if(!inningRecapsFired.has(_rk))inningRecapsPending[_rk]={gamePk:gamePk,inning:inning,halfInning:halfInning.toLowerCase()};}
       }
     });
     // Patch Statcast distance and HR number into existing HR feed items once the data arrives
@@ -1519,6 +1529,7 @@ async function initDemo() {
   dailyPitcherKs={};
   storyCarouselRawGameData={};
   stolenBaseEvents=[];
+  inningRecapsFired=new Set();inningRecapsPending={};lastInningState={};
   var jsonData=await loadDailyEventsJSON();
   if(!jsonData||!jsonData.gameStates){
     showAlert({icon:'⚠️',event:'Demo Load Failed',desc:'Could not load daily-events.json',color:'#e85d4f',duration:3000});
@@ -1835,6 +1846,7 @@ function exitDemo() {
   demoPlayIdx=0;
   storyShownId=null;
   demoCurrentTime=0;
+  inningRecapsFired=new Set();inningRecapsPending={};lastInningState={};
 
   // Aggressive DOM cleanup - wipe feed and ticker directly
   var feed=document.getElementById('feed');
@@ -2495,28 +2507,13 @@ function updateInningStates(){
 
 function genInningRecapStories(){
   var out=[];
-  Object.values(gameStates).forEach(function(g){
-    if(g.status!=='Live') return;
-    var lastState=lastInningState[g.gamePk];
-    // On first encounter, initialize lastState to current
-    if(!lastState){
-      lastInningState[g.gamePk]={inning:g.inning,halfInning:g.halfInning};
-      return;
-    }
-    // Check for inning/half-inning transition
-    if(lastState.inning===g.inning&&lastState.halfInning===g.halfInning) return; // no change yet
-    // Transition detected - generate recap for the COMPLETED inning (lastState)
-    var recapKey=g.gamePk+'_'+lastState.inning+'_'+lastState.halfInning;
-    if(inningRecapsFired.has(recapKey)){
-      // Already fired for this inning, just update state and continue
-      lastInningState[g.gamePk]={inning:g.inning,halfInning:g.halfInning};
-      return;
-    }
+  // Shared generation logic — called from both primary (3rd-out) and fallback (linescore) paths
+  function genRecap(g,recapInning,recapHalf,recapKey){
+    if(inningRecapsFired.has(recapKey)) return;
     var inningPlays=feedItems.filter(function(item){
-      return item.gamePk===g.gamePk&&item.data&&item.data.inning===lastState.inning&&item.data.halfInning===lastState.halfInning&&item.data.type==='play';
+      return item.gamePk===g.gamePk&&item.data&&item.data.inning===recapInning&&item.data.halfInning===recapHalf&&item.data.type==='play';
     });
-    if(!inningPlays.length) return; // no plays recorded yet
-    // Extract metrics
+    if(!inningPlays.length) return;
     var runs=0,strikeouts=0,walks=0,hrs=0,dps=0,errors=0,playerHRs=[],pitcherNames=new Set(),hadRisp=false,dpBatter=null;
     var isClean123=inningPlays.length===3&&!inningPlays.some(function(p){return p.data.scoring;});
     var runnersLeftOn=false;
@@ -2525,38 +2522,55 @@ function genInningRecapStories(){
       if(play.data.risp) hadRisp=true;
       if(play.data.desc.indexOf('strikes out')!==-1) strikeouts++;
       if(play.data.desc.indexOf('walk')!==-1) walks++;
-      if(play.data.event==='Home Run') { hrs++; playerHRs.push(play.data.batterName); }
+      if(play.data.event==='Home Run'){hrs++;playerHRs.push(play.data.batterName);}
       if(play.data.desc.indexOf('double play')!==-1){dps++;if(!dpBatter)dpBatter=play.data.batterName;}
       if(play.data.desc.indexOf('error')!==-1) errors++;
       if(play.data.pitcherName) pitcherNames.add(play.data.pitcherName);
     });
     var lastPlay=inningPlays[inningPlays.length-1];
     runnersLeftOn=lastPlay.data.risp||lastPlay.data.onFirst||lastPlay.data.onSecond||lastPlay.data.onThird;
-    var pitcher=pitcherNames.size===1?Array.from(pitcherNames)[0]:(pitcherNames.size>1?null:null);
-    var battingTeam=lastState.halfInning==='top'?g.awayName:g.homeName;
-    var pittchingTeam=lastState.halfInning==='top'?g.homeName:g.awayName;
-    var halfLabel=lastState.halfInning==='top'?'top':'bottom';
-    var innStr=ordinal(lastState.inning);
-    // Priority scoring
-    var priority=0,type='',headline='',badge='LIVE';
-    if(hrs>0&&runs>0){priority=100;type='hr_inning';var hrStr=hrs===1?playerHRs[0]+' goes deep':'Back-to-back homers';headline=hrStr+' in the '+halfLabel+' of the '+innStr+', '+battingTeam+' score '+runs;}
-    else if(strikeouts===3&&inningPlays.length===3){priority=95;type='perfect_k';headline=pitcher?pitcher+' strikes out the side in the '+innStr:'Perfect strikeout inning in the '+innStr;}
-    else if(runs>=2&&hrs===0){priority=90;type='multi_run';headline=battingTeam+' score '+runs+' runs in the '+halfLabel+' of the '+innStr;}
-    else if(runs>0&&hadRisp){priority=85;type='comeback';headline=battingTeam+' claw back in the '+innStr;}
-    else if(runnersLeftOn&&runs===0&&inningPlays.length===3){priority=80;type='stranded';headline=battingTeam+' strand runners at the corners, '+runs+' runs in the '+halfLabel+' of the '+innStr;}
-    else if(strikeouts>=2&&runs===0&&isClean123){priority=75;type='clean_ks';headline=pitcher?pitcher+' keeps '+pittchingTeam+' off the board with '+strikeouts+' Ks in the '+innStr:'Clean '+strikeouts+'-strikeout inning in the '+innStr;}
-    else if(dps>0){priority=70;type='double_play';headline=dpBatter?dpBatter+' hits into a double play in the '+innStr:pittchingTeam+' turn a double play to escape the '+innStr;}
-    else if(walks>=3){priority=65;type='walk_heavy';headline=walks+' walks load the bases for '+battingTeam+' in the '+innStr;}
-    else if(errors>0&&runs>0){priority=55;type='error_inning';headline='Error plates a run — '+battingTeam+' capitalize in the '+innStr;}
-    else if(strikeouts>=2&&isClean123){priority=40;type='one23_ks';headline=pitcher?pitcher+' retires the side with '+strikeouts+' Ks in the '+innStr:battingTeam+' go 1-2-3 with '+strikeouts+' strikeouts in the '+innStr;}
-    else if(isClean123){priority=25;type='one23';headline=battingTeam+' go 1-2-3 in the '+halfLabel+' of the '+innStr;}
-    else if(runs>0){priority=45;type='one_run';headline=battingTeam+' score '+runs+' in the '+innStr;}
-    else {priority=0;type='fallback';headline=runs+' runs for '+battingTeam+' in the '+halfLabel+' of the '+innStr;}
+    var pitcher=pitcherNames.size===1?Array.from(pitcherNames)[0]:null;
+    var battingTeam=recapHalf==='top'?g.awayName:g.homeName;
+    var pittchingTeam=recapHalf==='top'?g.homeName:g.awayName;
+    var halfLabel=recapHalf==='top'?'top':'bottom';
+    var innStr=ordinal(recapInning);
+    var priority=0,headline='';
+    if(hrs>0&&runs>0){priority=100;var hrStr=hrs===1?playerHRs[0]+' goes deep':'Back-to-back homers';headline=hrStr+' in the '+halfLabel+' of the '+innStr+', '+battingTeam+' score '+runs;}
+    else if(strikeouts===3&&inningPlays.length===3){priority=95;headline=pitcher?pitcher+' strikes out the side in the '+innStr:'Perfect strikeout inning in the '+innStr;}
+    else if(runs>=2&&hrs===0){priority=90;headline=battingTeam+' score '+runs+' runs in the '+halfLabel+' of the '+innStr;}
+    else if(runs>0&&hadRisp){priority=85;headline=battingTeam+' claw back in the '+innStr;}
+    else if(runnersLeftOn&&runs===0&&inningPlays.length===3){priority=80;headline=battingTeam+' strand runners at the corners, '+runs+' runs in the '+halfLabel+' of the '+innStr;}
+    else if(strikeouts>=2&&runs===0&&isClean123){priority=75;headline=pitcher?pitcher+' keeps '+pittchingTeam+' off the board with '+strikeouts+' Ks in the '+innStr:'Clean '+strikeouts+'-strikeout inning in the '+innStr;}
+    else if(dps>0){priority=70;headline=dpBatter?dpBatter+' hits into a double play in the '+innStr:pittchingTeam+' turn a double play to escape the '+innStr;}
+    else if(walks>=3){priority=65;headline=walks+' walks load the bases for '+battingTeam+' in the '+innStr;}
+    else if(errors>0&&runs>0){priority=55;headline='Error plates a run — '+battingTeam+' capitalize in the '+innStr;}
+    else if(strikeouts>=2&&isClean123){priority=40;headline=pitcher?pitcher+' retires the side with '+strikeouts+' Ks in the '+innStr:battingTeam+' go 1-2-3 with '+strikeouts+' strikeouts in the '+innStr;}
+    else if(isClean123){priority=25;headline=battingTeam+' go 1-2-3 in the '+halfLabel+' of the '+innStr;}
+    else if(runs>0){priority=45;headline=battingTeam+' score '+runs+' in the '+innStr;}
+    else{priority=0;headline=runs+' runs for '+battingTeam+' in the '+halfLabel+' of the '+innStr;}
     if(!headline) return;
     inningRecapsFired.add(recapKey);
-    var sub=battingTeam+' · '+ordinal(lastState.inning)+' inning';
+    var sub=battingTeam+' · '+ordinal(recapInning)+' inning';
     out.push(makeStory('inning_recap_'+recapKey,'inning_recap',2,priority,'📊',headline,sub,'inning_recap',g.gamePk,new Date(),0,0));
-    // Update state after recap is generated
+  }
+  // Primary path: triggered at 3rd out in pollGamePlays — fires immediately when inning ends
+  Object.keys(inningRecapsPending).forEach(function(recapKey){
+    var p=inningRecapsPending[recapKey];
+    var g=gameStates[p.gamePk];
+    if(!g){delete inningRecapsPending[recapKey];return;}
+    genRecap(g,p.inning,p.halfInning,recapKey);
+    delete inningRecapsPending[recapKey];
+    lastInningState[p.gamePk]={inning:p.inning,halfInning:p.halfInning};
+  });
+  // Fallback path: linescore transition detection (catches edge cases, e.g. zero-play innings)
+  Object.values(gameStates).forEach(function(g){
+    if(g.status!=='Live') return;
+    var lastState=lastInningState[g.gamePk];
+    if(!lastState){lastInningState[g.gamePk]={inning:g.inning,halfInning:g.halfInning};return;}
+    if(lastState.inning===g.inning&&lastState.halfInning===g.halfInning) return;
+    var recapKey=g.gamePk+'_'+lastState.inning+'_'+lastState.halfInning;
+    if(inningRecapsFired.has(recapKey)){lastInningState[g.gamePk]={inning:g.inning,halfInning:g.halfInning};return;}
+    genRecap(g,lastState.inning,lastState.halfInning,recapKey);
     lastInningState[g.gamePk]={inning:g.inning,halfInning:g.halfInning};
   });
   return out;
@@ -2573,7 +2587,7 @@ async function buildStoryPool(){
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories()
   );
-  storyPool=fresh;
+  storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
   if(!carousel) return;
   if(storyPool.length){
@@ -2900,6 +2914,20 @@ function replayHRCard(itemIndex) {
 
   showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, null, null, badgeText, item.gamePk);
   console.log('Replaying HR:', batterName, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
+}
+
+// DEBUG: Replay most recent RBI card from live feed (press Shift+E)
+function replayRBICard(itemIndex) {
+  var rbis = feedItems.filter(function(item) { return item.data && item.data.scoring && item.data.event !== 'Home Run' && item.data.batterId; });
+  if (!rbis.length) { alert('No RBI plays in feed yet'); return; }
+  var idx = itemIndex !== undefined ? itemIndex : 0;
+  if (idx < 0 || idx >= rbis.length) { alert('Index out of range'); return; }
+  var item = rbis[idx];
+  var play = item.data;
+  var gs = gameStates[item.gamePk];
+  if (!gs) { alert('Game state not found'); return; }
+  showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning);
+  console.log('Replaying RBI:', play.batterName, play.event, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
 function baseDiamondSvg(on1,on2,on3) {
@@ -4283,6 +4311,7 @@ document.addEventListener('visibilitychange',function(){
 document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'E') { replayRBICard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
 });
