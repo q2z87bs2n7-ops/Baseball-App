@@ -569,17 +569,17 @@
 .sound-toggle input:checked + .sound-knob { background: color-mix(in srgb, var(--accent) 22%, var(--card)); border-color: var(--accent); }
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
 
-#debugToolsPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 280px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 201; overflow: hidden; display: none; }
-.debug-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
-.debug-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
-.debug-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 2px 5px; border-radius: 4px; line-height: 1; font-family: inherit; }
-.debug-close:hover { background: var(--card2); color: var(--text); }
-.debug-buttons { padding: 6px 0 4px; }
-.debug-btn { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 12px 15px; gap: 4px; border: none; background: none; cursor: pointer; width: 100%; text-align: left; border-bottom: 1px solid var(--border); }
-.debug-btn:hover { background: var(--card2); }
-.debug-btn:last-child { border-bottom: none; }
-.debug-btn-label { font-size: 12px; font-weight: 600; color: var(--text); }
-.debug-btn-shortcut { font-size: 10px; color: var(--muted); }
+#devToolsPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 280px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 201; overflow: hidden; display: none; }
+.dev-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
+.dev-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.dev-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 2px 5px; border-radius: 4px; line-height: 1; font-family: inherit; }
+.dev-close:hover { background: var(--card2); color: var(--text); }
+.dev-buttons { padding: 6px 0 4px; }
+.dev-btn { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 12px 15px; gap: 4px; border: none; background: none; cursor: pointer; width: 100%; text-align: left; border-bottom: 1px solid var(--border); }
+.dev-btn:hover { background: var(--card2); }
+.dev-btn:last-child { border-bottom: none; }
+.dev-btn-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.dev-btn-shortcut { font-size: 10px; color: var(--muted); }
 
 /* ── Player Card Flash (v2.7, v2.31 Topps redesign) ────────────────────── */
 @keyframes card-in {
@@ -691,8 +691,8 @@
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊 Configure</button>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:10px">🛠️ Debug Tools</div>
-          <button id="btnDebugTools" onclick="toggleDebugPanel()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">Open</button>
+          <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:10px">🛠️ Dev Tools</div>
+          <button id="btnDevTools" onclick="toggleDevTools()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">Open</button>
         </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.55.1</div>
       </div>
@@ -931,23 +931,23 @@
 </div>
 </div>
 
-<div id="debugToolsPanel">
-  <div class="debug-panel-hd">
-    <span class="debug-panel-title">🛠️ Debug Tools</span>
-    <button class="debug-close" onclick="toggleDebugPanel()">✕</button>
+<div id="devToolsPanel">
+  <div class="dev-panel-hd">
+    <span class="dev-panel-title">🛠️ Dev Tools</span>
+    <button class="debug-close" onclick="toggleDevTools()">✕</button>
   </div>
-  <div class="debug-buttons">
-    <button class="debug-btn" onclick="toggleDemoMode();toggleDebugPanel()">
-      <div class="debug-btn-label" id="demoBtnLabel">▶ Try Demo</div>
-      <div class="debug-btn-shortcut">Shift+H</div>
+  <div class="dev-buttons">
+    <button class="dev-btn" onclick="toggleDemoMode();toggleDevTools()">
+      <div class="dev-btn-label" id="demoBtnLabel">▶ Try Demo</div>
+      <div class="dev-btn-shortcut">Shift+H</div>
     </button>
-    <button class="debug-btn" onclick="replayHRCard();toggleDebugPanel()">
-      <div class="debug-btn-label">🎬 Replay HR</div>
-      <div class="debug-btn-shortcut">Shift+R</div>
+    <button class="dev-btn" onclick="replayHRCard();toggleDevTools()">
+      <div class="dev-btn-label">🎬 Replay HR</div>
+      <div class="dev-btn-shortcut">Shift+R</div>
     </button>
-    <button class="debug-btn" onclick="window.PulseCard.demo();toggleDebugPanel()">
-      <div class="debug-btn-label">💫 Card Variants</div>
-      <div class="debug-btn-shortcut">Shift+V</div>
+    <button class="dev-btn" onclick="window.PulseCard.demo();toggleDevTools()">
+      <div class="dev-btn-label">💫 Card Variants</div>
+      <div class="dev-btn-shortcut">Shift+V</div>
     </button>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
@@ -958,6 +958,37 @@
         <div id="mediaToggleKnob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:.2s"></div>
       </div>
     </div>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details style="cursor:pointer;open">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚡ Pulse Tuning</summary>
+      <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">Carousel Rotation (ms)</div>
+          <input type="number" id="tuneRotateMs" value="4500" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rotateMs',this.value)">
+          <div style="font-size:.6rem;margin-top:3px">How often the story carousel advances</div>
+        </div>
+        <div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Card Threshold</div>
+          <input type="number" id="tuneRbiThreshold" value="30" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rbiThreshold',this.value)">
+          <div style="font-size:.6rem;margin-top:3px">Minimum score (0–∞) to trigger RBI card</div>
+        </div>
+        <div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Cooldown (ms)</div>
+          <input type="number" id="tuneRbiCooldown" value="90000" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rbiCooldown',this.value)">
+          <div style="font-size:.6rem;margin-top:3px">Per-game cooldown between RBI cards (90000 = 90s)</div>
+        </div>
+        <button onclick="resetTuning()" style="margin-top:4px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:6px;border-radius:4px;cursor:pointer;font-weight:600">Reset to Defaults</button>
+        <div id="rbiFormulaDisplay" style="background:var(--card);border:1px solid var(--border);border-radius:4px;padding:6px;font-size:.6rem;line-height:1.4;display:none">
+          <div style="color:var(--accent);font-weight:600">RBI Scoring Formula:</div>
+          <div>score = (baseRBI × hitMult + context) × inningMult</div>
+          <div style="margin-top:4px;color:var(--muted)"><strong>Base RBI:</strong> 1→10, 2→25, 3→40, 4→55</div>
+          <div style="color:var(--muted)"><strong>Hit Mult:</strong> SF/W/GIDP→.7, 1B→1.0, 2B→1.5, 3B→2.0</div>
+          <div style="color:var(--muted)"><strong>Context:</strong> go-ahead +30, tie +25, comeback +20, blowout −15</div>
+          <div style="color:var(--muted)"><strong>Inning:</strong> 1-3→.4, 4-6→.75, 7-8→1.0, 9→1.4, 10+→1.6</div>
+        </div>
+      </div>
+    </details>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
     <details style="cursor:pointer">
@@ -1027,7 +1058,15 @@ let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 let boxscoreCache={};
 let inningRecapsFired=new Set(),lastInningState={},displayedStoryIds=new Set();
-const STORY_ROTATE_MS=4500;
+let STORY_ROTATE_MS=4500;
+
+// ── Dev Tools tuning (real-time optimization) ──────────────────────────
+let devTuning={
+  rotateMs: 4500,     // Carousel rotation interval
+  rbiThreshold: 30,   // Minimum RBI card score
+  rbiCooldown: 90000  // Per-game cooldown (ms)
+};
+const devTuningDefaults={rotateMs:4500,rbiThreshold:30,rbiCooldown:90000};
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -1295,9 +1334,9 @@ async function pollGamePlays(gamePk) {
         if (isScoringP) console.log('SCORING PLAY INCOMING:',{event:event,rbi:(play.result&&play.result.rbi!=null)?play.result.rbi:0,away:aScore,home:hScore,inning:inning,half:halfInning});
         // DEBUG END
         if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}}
-        else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=90000;// DEBUG START
-console.log('RBI CARD DEBUG:',{event:event,rbi:_rbi,score:_rs,gameVisible:gameVisible,batterId:batterId,cooldownOk:_rbiOk,passes:_rbi>0&&_rs>=30&&gameVisible&&batterId&&_rbiOk});// DEBUG END
-if(_rbi>0&&_rs>=30&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
+        else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=devTuning.rbiCooldown;// DEBUG START
+console.log('RBI CARD DEBUG:',{event:event,rbi:_rbi,score:_rs,threshold:devTuning.rbiThreshold,gameVisible:gameVisible,batterId:batterId,cooldownOk:_rbiOk,passes:_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk});// DEBUG END
+if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
@@ -3227,7 +3266,35 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDebugPanel(){var p=document.getElementById('debugToolsPanel');p.style.display=p.style.display==='none'?'block':'none';}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');p.style.display=p.style.display==='none'?'block':'none';}
+
+function updateTuning(param,val){
+  var parsed=parseInt(val,10);
+  if(isNaN(parsed)||parsed<1)return;
+  devTuning[param===('rotateMs')?'rotateMs':param===('rbiThreshold')?'rbiThreshold':'rbiCooldown']=parsed;
+  if(param==='rotateMs'){
+    STORY_ROTATE_MS=parsed;
+    if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
+    if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+    console.log('✓ Carousel rotation updated to '+parsed+'ms');
+  }else if(param==='rbiThreshold'){
+    console.log('✓ RBI card threshold updated to '+parsed);
+  }else if(param==='rbiCooldown'){
+    console.log('✓ RBI card cooldown updated to '+parsed+'ms');
+  }
+}
+
+function resetTuning(){
+  devTuning=Object.assign({},devTuningDefaults);
+  STORY_ROTATE_MS=devTuningDefaults.rotateMs;
+  document.getElementById('tuneRotateMs').value=devTuningDefaults.rotateMs;
+  document.getElementById('tuneRbiThreshold').value=devTuningDefaults.rbiThreshold;
+  document.getElementById('tuneRbiCooldown').value=devTuningDefaults.rbiCooldown;
+  if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
+  if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
+  console.log('✓ Dev tuning reset to defaults');
+}
+
 function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);}
 function playSound(type){
   if (!soundSettings.master||!soundSettings[type]) return;
@@ -3367,7 +3434,7 @@ async function releaseScreenWakeLock(){
 function onSoundPanelClickOutside(e){
   var panel=document.getElementById('soundPanel'),btn=document.getElementById('btnSound');
   if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
-  var dbgPanel=document.getElementById('debugToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
+  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
   if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
 }
 
@@ -4118,11 +4185,11 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
-  if(e.shiftKey && e.key === 'D') { toggleDebugPanel(); }
+  if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
 });
 
 document.addEventListener('click',function(e){
-  var dbgPanel=document.getElementById('debugToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
+  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
   if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
 });
 
