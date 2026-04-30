@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.61.8</title>
+<title>MLB Tracker v2.61.9</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -703,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.8</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.9</div>
       </div>
     </div>
   </div>
@@ -1195,9 +1195,11 @@ let focusState={
   awayAbbr:'',homeAbbr:'',awayScore:0,homeScore:0,
   awayPrimary:'#444',homePrimary:'#444',
   tensionLabel:'NORMAL',tensionColor:'#9aa0a8',
-  lastPitch:null
+  lastPitch:null,
+  batterStats:null,pitcherStats:null
 };
 let focusPitchSequence=[];
+let focusStatsCache={};
 let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
 let focusOverlayOpen=false;
 
@@ -2974,6 +2976,8 @@ function setFocusGame(pk) {
   focusGamePk=pk;
   focusPitchSequence=[];
   focusCurrentAbIdx=null;
+  focusState.batterStats=null;
+  focusState.pitcherStats=null;
   dismissFocusAlert();
   if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
   if(focusOverlayOpen) renderFocusOverlay();
@@ -3004,12 +3008,42 @@ async function pollFocusLinescore() {
       awayScore:g.awayScore||0, homeScore:g.homeScore||0,
       awayPrimary:g.awayPrimary||'#444', homePrimary:g.homePrimary||'#444',
       tensionLabel:tension.label, tensionColor:tension.color,
-      lastPitch:focusPitchSequence.length?focusPitchSequence[focusPitchSequence.length-1]:null
+      lastPitch:focusPitchSequence.length?focusPitchSequence[focusPitchSequence.length-1]:null,
+      batterStats:focusStatsCache[(ls.offense&&ls.offense.batter&&ls.offense.batter.id)]||null,
+      pitcherStats:focusStatsCache[(ls.defense&&ls.defense.pitcher&&ls.defense.pitcher.id)]||null
     };
+    fetchFocusPlayerStats(focusState.currentBatterId, focusState.currentPitcherId);
     renderFocusCard(); renderFocusMiniBar();
     if(focusOverlayOpen) renderFocusOverlay();
     pollFocusRich();
   } catch(e) {}
+}
+
+async function fetchFocusPlayerStats(batterId, pitcherId) {
+  if(demoMode) return;
+  var changed=false;
+  if(batterId&&!focusStatsCache[batterId]) {
+    try {
+      var r=await fetch(MLB_BASE+'/people/'+batterId+'/stats?stats=season&group=hitting&season='+SEASON);
+      var d=await r.json();
+      var s=(d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat)||{};
+      focusStatsCache[batterId]={avg:s.avg||'—',obp:s.obp||'—',ops:s.ops||'—',hr:s.homeRuns!=null?s.homeRuns:'—',rbi:s.rbi!=null?s.rbi:'—'};
+      changed=true;
+    } catch(e){}
+  }
+  if(pitcherId&&!focusStatsCache[pitcherId]) {
+    try {
+      var r2=await fetch(MLB_BASE+'/people/'+pitcherId+'/stats?stats=season&group=pitching&season='+SEASON);
+      var d2=await r2.json();
+      var s2=(d2.stats&&d2.stats[0]&&d2.stats[0].splits&&d2.stats[0].splits[0]&&d2.stats[0].splits[0].stat)||{};
+      focusStatsCache[pitcherId]={era:s2.era||'—',whip:s2.whip||'—',wins:s2.wins!=null?s2.wins:'—',losses:s2.losses!=null?s2.losses:'—'};
+      changed=true;
+    } catch(e){}
+  }
+  if(!changed) return;
+  if(batterId&&focusStatsCache[batterId]) focusState.batterStats=focusStatsCache[batterId];
+  if(pitcherId&&focusStatsCache[pitcherId]) focusState.pitcherStats=focusStatsCache[pitcherId];
+  if(focusOverlayOpen) renderFocusOverlay();
 }
 
 async function pollFocusRich() {
