@@ -464,6 +464,25 @@
           '</div>' +
         '</div>' +
 
+        // Last pitch / at-bat status strip
+        (function() {
+          var lp = d.lastPitch;
+          if (lp) {
+            var rs = resultStyle(lp.resultCode);
+            return '<div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid #1e2d4a;background:#0a0f1e;">' +
+              '<span style="width:7px;height:7px;border-radius:50%;background:' + rs.color + ';box-shadow:0 0 7px ' + rs.color + ';flex:0 0 auto;"></span>' +
+              '<span style="font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8eaf0;letter-spacing:0.04em;">' +
+                esc(lp.typeCode || '') +
+                '<span style="color:#9aa0a8;font-weight:500;margin-left:8px;">' + (lp.speed ? esc(lp.speed.toFixed(1)) + ' mph' : '') + '</span>' +
+              '</span>' +
+              '<span style="margin-left:auto;font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:' + rs.color + ';letter-spacing:0.14em;">' +
+                esc((lp.resultDesc || rs.label).toUpperCase()) +
+              '</span>' +
+            '</div>';
+          }
+          return '<div style="padding:10px 18px;border-top:1px solid #1e2d4a;background:#0a0f1e;font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#9aa0a8;letter-spacing:0.14em;">AT-BAT START — 0 PITCHES</div>';
+        })() +
+
         // Pitch sequence
         '<div style="padding:14px 18px 18px 18px;border-top:1px solid #1e2d4a;background:#0a0f1e;">' +
           '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
