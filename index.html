@@ -4084,6 +4084,7 @@ async function loadLeagueMatchups(){
   try{
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team');var d=await r.json(),games=[];
     (d.dates||[]).forEach(function(dt){games=games.concat(dt.games||[]);});
+    games.sort(function(a,b){return new Date(a.gameDate).getTime()-new Date(b.gameDate).getTime();});
     if(!games.length){el.innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">No games scheduled '+dayLabel.replace("'s","")+'</div>';requestAnimationFrame(function(){el.style.opacity='1';});return;}
     var html='<div class="matchup-grid">';
     games.forEach(function(g){
