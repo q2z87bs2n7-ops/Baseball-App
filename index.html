@@ -937,8 +937,8 @@
     <button class="debug-close" onclick="toggleDebugPanel()">✕</button>
   </div>
   <div class="debug-buttons">
-    <button class="debug-btn" onclick="initDemo();toggleDebugPanel()">
-      <div class="debug-btn-label">▶ Try Demo</div>
+    <button class="debug-btn" onclick="toggleDemoMode();toggleDebugPanel()">
+      <div class="debug-btn-label" id="demoBtnLabel">▶ Try Demo</div>
       <div class="debug-btn-shortcut">Shift+H</div>
     </button>
     <button class="debug-btn" onclick="replayHRCard();toggleDebugPanel()">
@@ -1393,9 +1393,15 @@ function getEffectiveDate(){
   return demoMode&&demoDate?demoDate:new Date();
 }
 
+function updateDemoBtnLabel(){
+  var lbl=document.getElementById('demoBtnLabel');
+  if(lbl) lbl.textContent=demoMode?'⏹ Exit Demo':'▶ Try Demo';
+}
+
 function toggleDemoMode() {
   if(demoMode) exitDemo();
   else initDemo();
+  updateDemoBtnLabel();
 }
 
 async function initDemo() {
@@ -1528,8 +1534,7 @@ async function initDemo() {
   if(storyRotateTimer) clearInterval(storyRotateTimer);
   storyRotateTimer=setInterval(rotateStory,STORY_ROTATE_MS);
   demoStartTime=Date.now();
-  var demoBtnSettings=document.getElementById('demoBtnSettings');
-  if(demoBtnSettings) demoBtnSettings.textContent='⏹ Exit Demo';
+  updateDemoBtnLabel();
   pollDemoFeeds();
 }
 
@@ -1790,8 +1795,7 @@ function exitDemo() {
   }
 
   // Update UI
-  var demoBtnSettings=document.getElementById('demoBtnSettings');
-  if(demoBtnSettings) demoBtnSettings.textContent='▶ Try Demo';
+  updateDemoBtnLabel();
 
   // Reset poll state so next poll fetches fresh data
   isFirstPoll=true;
@@ -4111,7 +4115,7 @@ document.addEventListener('visibilitychange',function(){
 });
 
 document.addEventListener('keydown',function(e){
-  if(e.shiftKey && e.key === 'H') { initDemo(); }
+  if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDebugPanel(); }
