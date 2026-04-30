@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.52</title>
+<title>MLB Tracker v2.53</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -524,13 +524,16 @@
 .story-card.tier4 { border-left: 3px solid var(--border); }
 .story-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 7px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; }
 .story-badge.live { background: rgba(255,60,60,0.2); color: #ff6b6b; }
+.story-badge.inning_recap { background: rgba(120,140,200,0.20); color: #a8b8e8; }
+.story-badge.hot { background: rgba(255,120,40,0.22); color: #ff9659; }
+.story-badge.cold { background: rgba(80,180,220,0.22); color: #6cc1de; }
 /* Neutral chrome for all non-live story badges. The label text carries the meaning. */
 .story-badge.today,
 .story-badge.final,
 .story-badge.yesterday,
 .story-badge.onthisday,
 .story-badge.upcoming,
-.story-badge.season,
+.story-badge.leaders,
 .story-badge.probables,
 .story-badge.highlight {
   background: rgba(255,255,255,0.06);
@@ -695,7 +698,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.52</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.53</div>
       </div>
     </div>
   </div>
@@ -990,7 +993,7 @@ let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 let boxscoreCache={};
-let inningRecapsFired=new Set(),lastInningState={};
+let inningRecapsFired=new Set(),lastInningState={},displayedStoryIds=new Set();
 const STORY_ROTATE_MS=4500;
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
@@ -1242,7 +1245,7 @@ async function pollGamePlays(gamePk) {
         }
         return; // carousel only — skip feed item
       }
-      var hasRISP=runners.some(function(r){return r.movement&&!r.movement.isOut&&(r.movement.end==='2B'||r.movement.end==='3B');});
+      var hasRISP=outs<3&&runners.some(function(r){return r.movement&&!r.movement.isOut&&(r.movement.end==='2B'||r.movement.end==='3B');});
       var playClass=event==='Home Run'?'homerun':isScoringP?'scoring':hasRISP?'risp':'normal';
       var playTime=null; if (play.about&&play.about.startTime){try{playTime=new Date(play.about.startTime);}catch(e){}}
       var pitcherId=(play.matchup&&play.matchup.pitcher&&play.matchup.pitcher.id)||null;
@@ -1796,7 +1799,6 @@ function renderTicker() {
       +'<div style="text-align:center">'
       +'<div style="font-size:24px;margin-bottom:6px">⚾</div>'
       +'<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">No Live Games</div>'
-      +'<div style="font-size:11px;color:var(--muted)">Upcoming games will appear in the side panel</div>'
       +'</div>'
       +'</div>';
     return;
@@ -2016,6 +2018,10 @@ function rotateNewsCard() {
 
 // ── Story Carousel (v2.7.1) ───────────────────────────────────────────────────
 
+function liveOrHighlight(id,eventTs){
+  var recent=eventTs&&(Date.now()-eventTs.getTime())<=60000;
+  return (recent&&!displayedStoryIds.has(id))?'live':'highlight';
+}
 function makeStory(id,type,tier,priority,icon,headline,sub,badge,gamePk,ts,cooldownMs,decayRate){
   var existing=storyPool.find(function(s){return s.id===id;});
   return {id:id,type:type,tier:tier,priority:priority,icon:icon,headline:headline,sub:sub,badge:badge,gamePk:gamePk||null,ts:ts||new Date(),lastShown:existing?existing.lastShown:null,cooldownMs:cooldownMs,decayRate:decayRate};
@@ -2096,7 +2102,7 @@ function genWalkOffThreat(){
     var id='walkoff_'+g.gamePk+'_'+g.inning;
     var headline='Walk-off situation — '+g.homeAbbr+' in the bottom '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+ordinal(g.inning)+' inning';
-    out.push(makeStory(id,'walkoff',1,90,'🎯',headline,sub,'live',g.gamePk,new Date(),5*60000,0.9));
+    out.push(makeStory(id,'walkoff',1,90,'🔔',headline,sub,'live',g.gamePk,new Date(),5*60000,0.9));
   });
   return out;
 }
@@ -2110,7 +2116,7 @@ function genBasesLoaded(){
     var id='basesloaded_'+g.gamePk+'_'+g.inning+'_'+g.halfInning;
     var headline='Bases loaded — '+battingAbbr+' batting in the '+ordinal(g.inning);
     var sub=g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore+' · '+half+' '+ordinal(g.inning);
-    out.push(makeStory(id,'realtime',1,88,'🔴',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
+    out.push(makeStory(id,'realtime',1,88,'🔔',headline,sub,'live',g.gamePk,new Date(),3*60000,0.8));
   });
   return out;
 }
@@ -2122,8 +2128,9 @@ function genStolenBaseStories(){
     var baseLabel=isHome?'home plate':sb.base;
     var halfInd=sb.halfInning==='top'?'▲':'▼';
     var sub=sb.awayAbbr+' @ '+sb.homeAbbr+' · '+halfInd+sb.inning;
-    out.push(makeStory('sb_'+sb.key,'realtime',isHome?1:2,isHome?85:55,isHome?'🏃':'💨',
-      sb.runnerName+' steals '+baseLabel,sub,'live',sb.gamePk,sb.ts,5*60000,0.7));
+    var sbId='sb_'+sb.key;
+    out.push(makeStory(sbId,'realtime',isHome?1:2,isHome?85:55,'🏃',
+      sb.runnerName+' steals '+baseLabel,sub,liveOrHighlight(sbId,sb.ts),sb.gamePk,sb.ts,5*60000,0.7));
   });
   return out;
 }
@@ -2192,7 +2199,7 @@ function genStreakStories(){
     if(streak<3) return;
     var id='streak_'+team.id+'_'+streak+'_'+(isWin?'W':'L');
     var headline=team.name+(isWin?' on a '+streak+'-game winning streak':' on a '+streak+'-game losing streak');
-    out.push(makeStory(id,'streak',2,60,isWin?'🔥':'❄️',headline,'','today',null,new Date(),20*60000,0.1));
+    out.push(makeStory(id,'streak',2,60,isWin?'🔥':'❄️',headline,'',isWin?'hot':'cold',null,new Date(),20*60000,0.1));
   });
   return out;
 }
@@ -2222,7 +2229,7 @@ async function genMultiHitDay(){
     var headline=demoMode?(entry.name+' goes '+h+'-for-today'+hrStr):(entry.name+' goes '+h+' for '+ab+hrStr);
     var g=gameStates[entry.gamePk]||{};
     var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr:'';
-    out.push(makeStory(id,'daily_stat',3,55,'🎯',headline,sub,'today',entry.gamePk,new Date(),15*60000,0.1));
+    out.push(makeStory(id,'daily_stat',2,55,'🏏',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),15*60000,0.1));
   }
   return out;
 }
@@ -2231,12 +2238,12 @@ function genDailyLeaders(){
   var out=[];
   if(!dailyLeadersCache) return out;
   var cats=[
-    {key:'homeRuns',       label:'Home Run Leaders',      icon:'💥', fmtVal:null},
+    {key:'homeRuns',       label:'Home Run Leaders',      icon:'🏏', fmtVal:null},
     {key:'battingAverage', label:'Batting Avg Leaders',   icon:'🎯', fmtVal:function(v){return (v+'').replace(/^0\./,'.');}},
-    {key:'rbi',            label:'RBI Leaders',            icon:'🏃', fmtVal:null},
-    {key:'stolenBases',    label:'Stolen Base Leaders',   icon:'💨', fmtVal:null},
-    {key:'wins',           label:'Pitching Wins Leaders', icon:'🏆', fmtVal:null},
-    {key:'saves',          label:'Pitching Saves Leaders',icon:'🛡️', fmtVal:null},
+    {key:'rbi',            label:'RBI Leaders',            icon:'🏏', fmtVal:null},
+    {key:'stolenBases',    label:'Stolen Base Leaders',   icon:'🏃', fmtVal:null},
+    {key:'wins',           label:'Pitching Wins Leaders', icon:'⚾', fmtVal:null},
+    {key:'saves',          label:'Pitching Saves Leaders',icon:'⚾', fmtVal:null},
   ];
   var today=localDateStr(getEffectiveDate());
   cats.forEach(function(cat){
@@ -2249,7 +2256,7 @@ function genDailyLeaders(){
       return (i+1)+'. '+lastName+' '+val;
     }).filter(Boolean).join(' · ');
     var id='leader_'+cat.key+'_'+today;
-    out.push(makeStory(id,'daily_stat',3,65,cat.icon,'MLB '+cat.label,sub,'season',null,new Date(),30*60000,0.05));
+    out.push(makeStory(id,'daily_stat',3,65,cat.icon,'MLB '+cat.label,sub,'leaders',null,new Date(),30*60000,0.05));
   });
   return out;
 }
@@ -2263,7 +2270,7 @@ function genPitcherGem(){
     var id='kgem_'+key;
     var headline=entry.name+' has '+entry.ks+' strikeouts today';
     var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr+(g.status==='Live'?' · '+ordinal(g.inning):''):'';
-    out.push(makeStory(id,'daily_stat',3,58,'⚡',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),10*60000,0.2));
+    out.push(makeStory(id,'daily_stat',2,58,'⚡',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),10*60000,0.2));
   });
   return out;
 }
@@ -2399,7 +2406,7 @@ function genInningRecapStories(){
     });
     if(!inningPlays.length) return; // no plays recorded yet
     // Extract metrics
-    var runs=0,strikeouts=0,walks=0,hrs=0,dps=0,errors=0,playerHRs=[],pitcherNames=new Set(),hadRisp=false;
+    var runs=0,strikeouts=0,walks=0,hrs=0,dps=0,errors=0,playerHRs=[],pitcherNames=new Set(),hadRisp=false,dpBatter=null;
     var isClean123=inningPlays.length===3&&!inningPlays.some(function(p){return p.data.scoring;});
     var runnersLeftOn=false;
     inningPlays.forEach(function(play){
@@ -2408,7 +2415,7 @@ function genInningRecapStories(){
       if(play.data.desc.indexOf('strikes out')!==-1) strikeouts++;
       if(play.data.desc.indexOf('walk')!==-1) walks++;
       if(play.data.event==='Home Run') { hrs++; playerHRs.push(play.data.batterName); }
-      if(play.data.desc.indexOf('double play')!==-1) dps++;
+      if(play.data.desc.indexOf('double play')!==-1){dps++;if(!dpBatter)dpBatter=play.data.batterName;}
       if(play.data.desc.indexOf('error')!==-1) errors++;
       if(play.data.pitcherName) pitcherNames.add(play.data.pitcherName);
     });
@@ -2427,7 +2434,7 @@ function genInningRecapStories(){
     else if(runs>0&&hadRisp){priority=85;type='comeback';headline=battingTeam+' claw back in the '+innStr;}
     else if(runnersLeftOn&&runs===0&&inningPlays.length===3){priority=80;type='stranded';headline=battingTeam+' strand runners at the corners, '+runs+' runs in the '+halfLabel+' of the '+innStr;}
     else if(strikeouts>=2&&runs===0&&isClean123){priority=75;type='clean_ks';headline=pitcher?pitcher+' keeps '+pittchingTeam+' off the board with '+strikeouts+' Ks in the '+innStr:'Clean '+strikeouts+'-strikeout inning in the '+innStr;}
-    else if(dps>0){priority=70;type='double_play';headline=battingTeam+' turn a double play to escape the '+innStr;}
+    else if(dps>0){priority=70;type='double_play';headline=dpBatter?dpBatter+' hits into a double play in the '+innStr:pittchingTeam+' turn a double play to escape the '+innStr;}
     else if(walks>=3){priority=65;type='walk_heavy';headline=walks+' walks load the bases for '+battingTeam+' in the '+innStr;}
     else if(errors>0&&runs>0){priority=55;type='error_inning';headline='Error plates a run — '+battingTeam+' capitalize in the '+innStr;}
     else if(strikeouts>=2&&isClean123){priority=40;type='one23_ks';headline=pitcher?pitcher+' retires the side with '+strikeouts+' Ks in the '+innStr:battingTeam+' go 1-2-3 with '+strikeouts+' strikeouts in the '+innStr;}
@@ -2437,7 +2444,7 @@ function genInningRecapStories(){
     if(!headline) return;
     inningRecapsFired.add(recapKey);
     var sub=battingTeam+' · '+ordinal(lastState.inning)+' inning';
-    out.push(makeStory('inning_recap_'+recapKey,'inning_recap',2,priority,'📊',headline,sub,'LIVE',g.gamePk,new Date(),0,0));
+    out.push(makeStory('inning_recap_'+recapKey,'inning_recap',2,priority,'📊',headline,sub,'inning_recap',g.gamePk,new Date(),0,0));
     // Update state after recap is generated
     lastInningState[g.gamePk]={inning:g.inning,halfInning:g.halfInning};
   });
@@ -2487,14 +2494,15 @@ function rotateStory(){
 
 function showStoryCard(story){
   story.lastShown=new Date(); storyShownId=story.id;
+  displayedStoryIds.add(story.id);
   renderStoryCard(story); updateStoryDots();
   refreshDebugPanel();
 }
 
 function renderStoryCard(story){
   var el=document.getElementById('storyCard'); if(!el) return;
-  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',season:'season',probables:'probables',highlight:'highlight'};
-  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',season:'SEASON LEADER',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT'};
+  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',leaders:'leaders',probables:'probables',highlight:'highlight',inning_recap:'inning_recap',hot:'hot',cold:'cold'};
+  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',leaders:'LEADERS',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT',inning_recap:'INNING RECAP',hot:'HOT',cold:'COLD'};
   var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
   el.className='story-card tier'+story.tier+(story.id.indexOf('biginning')===0?' story-biginning':'')+(story.id.indexOf('leader_')===0?' story-leaders':'');
   el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
