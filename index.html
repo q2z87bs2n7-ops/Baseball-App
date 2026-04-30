@@ -961,17 +961,17 @@
       <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
         <div>
           <div style="font-weight:600;color:var(--text);margin-bottom:4px">Carousel Rotation (ms)</div>
-          <input type="number" id="tuneRotateMs" value="4500" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rotateMs',this.value)">
+          <input type="number" id="tuneRotateMs" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rotateMs',this.value)">
           <div style="font-size:.6rem;margin-top:3px">How often the story carousel advances</div>
         </div>
         <div>
           <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Card Threshold</div>
-          <input type="number" id="tuneRbiThreshold" value="10" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rbiThreshold',this.value)">
+          <input type="number" id="tuneRbiThreshold" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rbiThreshold',this.value)">
           <div style="font-size:.6rem;margin-top:3px">Minimum score (0–∞) to trigger RBI card</div>
         </div>
         <div>
           <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Cooldown (ms)</div>
-          <input type="number" id="tuneRbiCooldown" value="90000" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rbiCooldown',this.value)">
+          <input type="number" id="tuneRbiCooldown" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px" onchange="updateTuning('rbiCooldown',this.value)">
           <div style="font-size:.6rem;margin-top:3px">Per-game cooldown between RBI cards (90000 = 90s)</div>
         </div>
         <button onclick="resetTuning()" style="margin-top:4px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:6px;border-radius:4px;cursor:pointer;font-weight:600">Reset to Defaults</button>
@@ -3262,7 +3262,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');p.style.display=p.style.display==='none'?'block':'none';}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display==='none';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;}}
 
 function updateTuning(param,val){
   var parsed=parseInt(val,10);
