@@ -3222,7 +3222,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDebugPanel(){var p=document.getElementById('debugToolsPanel');p.style.display=p.style.display==='none'?'':'none';}
+function toggleDebugPanel(){var p=document.getElementById('debugToolsPanel');p.style.display=p.style.display==='none'?'block':'none';}
 function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);}
 function playSound(type){
   if (!soundSettings.master||!soundSettings[type]) return;
