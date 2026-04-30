@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.61</title>
+<title>MLB Tracker v2.61.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -703,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.1</div>
       </div>
     </div>
   </div>
@@ -3010,30 +3010,8 @@ async function pollFocusLinescore() {
 function renderFocusCard() {
   var el=document.getElementById('focusCard'); if(!el) return;
   if(!focusGamePk||(!focusState.awayAbbr&&!demoMode)){el.style.display='none';return;}
-  var g=gameStates[focusGamePk]||{};
-  // Placeholder: plain readable card until focusCard.js arrives from Design
-  var half=focusState.halfInning==='bottom'?'▼':'▲';
-  var ballDots=[0,1,2].map(function(i){return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+(i<focusState.balls?'#22c55e':'rgba(255,255,255,.2)')+'"></span>';}).join(' ');
-  var strikeDots=[0,1].map(function(i){return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+(i<focusState.strikes?'#f59e0b':'rgba(255,255,255,.2)')+'"></span>';}).join(' ');
-  var outDots=[0,1,2].map(function(i){return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+(i<focusState.outs?'#e03030':'rgba(255,255,255,.2)')+'"></span>';}).join(' ');
-  var diamond=baseDiamondSvg(focusState.onFirst,focusState.onSecond,focusState.onThird);
   el.style.display='';
-  el.innerHTML='<div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-    +'<span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:'+focusState.tensionColor+'">'+focusState.tensionLabel+'</span>'
-    +'<span style="color:var(--muted);font-size:11px">'+half+focusState.inning+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-    +'<div style="font-weight:700;color:var(--text)"><span style="color:'+focusState.awayPrimary+'">'+focusState.awayAbbr+'</span> '+focusState.awayScore+' – '+focusState.homeScore+' <span style="color:'+focusState.homePrimary+'">'+focusState.homeAbbr+'</span></div>'
-    +diamond+'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px;text-align:center">'
-    +'<div><div style="font-size:9px;color:var(--muted);margin-bottom:3px">BALLS</div>'+ballDots+'</div>'
-    +'<div><div style="font-size:9px;color:var(--muted);margin-bottom:3px">STRIKES</div>'+strikeDots+'</div>'
-    +'<div><div style="font-size:9px;color:var(--muted);margin-bottom:3px">OUTS</div>'+outDots+'</div>'
-    +'</div>'
-    +'<div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
-    +(focusState.currentBatterName?'<span style="color:var(--text)">'+focusState.currentBatterName+'</span> vs ':'')+focusState.currentPitcherName+'</div>'
-    +'<button onclick="openFocusOverlay()" style="margin-top:8px;width:100%;padding:5px;background:var(--card);border:1px solid var(--border);border-radius:5px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">Open Focus ↗</button>'
-    +'</div>';
+  el.innerHTML=window.FocusCard.renderCard(focusState);
 }
 
 function renderFocusMiniBar() {
@@ -3041,10 +3019,10 @@ function renderFocusMiniBar() {
   if(!focusGamePk||!focusState.awayAbbr){el.style.display='none';return;}
   var half=focusState.halfInning==='bottom'?'▼':'▲';
   el.style.display='';
-  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px">'
-    +'<span style="color:var(--muted)">'+focusState.awayAbbr+' <strong style="color:var(--text)">'+focusState.awayScore+'</strong> – <strong style="color:var(--text)">'+focusState.homeScore+'</strong> '+focusState.homeAbbr+' · '+half+focusState.inning+'</span>'
-    +'<span style="color:var(--muted)">'+focusState.balls+'-'+focusState.strikes+' · '+focusState.outs+' out</span>'
-    +'<button onclick="openFocusOverlay()" style="padding:3px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer">Focus ↗</button>'
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#0c1426;border-bottom:1px solid #1e2d4a;font-size:12px">'
+    +'<span style="font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8eaf0;letter-spacing:.06em">'+focusState.awayAbbr+' <strong>'+focusState.awayScore+'</strong> – <strong>'+focusState.homeScore+'</strong> '+focusState.homeAbbr+'</span>'
+    +'<span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#9aa0a8">'+half+focusState.inning+' · '+focusState.balls+'-'+focusState.strikes+' · '+focusState.outs+' out</span>'
+    +'<button onclick="openFocusOverlay()" style="padding:3px 8px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:4px;color:#e8eaf0;font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;cursor:pointer">FOCUS →</button>'
     +'</div>';
 }
 
@@ -3063,51 +3041,16 @@ function closeFocusOverlay() {
 
 function renderFocusOverlay() {
   var card=document.getElementById('focusOverlayCard'); if(!card) return;
-  var half=focusState.halfInning==='bottom'?'▼':'▲';
-  var diamond=baseDiamondSvg(focusState.onFirst,focusState.onSecond,focusState.onThird);
-  // Pitch sequence placeholder
-  var pitchHtml='';
-  if(focusPitchSequence.length){
-    pitchHtml='<div style="margin-top:12px"><div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">THIS AT-BAT</div>'
-      +'<div style="display:flex;flex-wrap:wrap;gap:4px">';
-    focusPitchSequence.forEach(function(p,i){
-      var col=p.resultCode==='B'?'#9aa0a8':p.resultCode==='S'?'#e03030':p.resultCode==='C'?'#f59e0b':p.resultCode==='F'?'#f97316':p.resultCode==='X'?'#22c55e':'#9aa0a8';
-      pitchHtml+='<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 7px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:11px">'
-        +'<span style="width:7px;height:7px;border-radius:50%;background:'+col+';display:inline-block"></span>'
-        +(p.typeCode||'?')+(p.speed?' <span style="color:var(--muted)">'+Math.round(p.speed)+'</span>':'')+'</span>';
-    });
-    pitchHtml+='</div></div>';
-  } else {
-    pitchHtml='<div style="margin-top:10px;font-size:11px;color:var(--muted)">Pitch data loading…</div>';
-  }
-  // Live game switcher
-  var switcherHtml='';
   var liveGames=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
-  if(liveGames.length>1){
-    switcherHtml='<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px"><div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">OTHER GAMES</div>'
-      +'<div style="display:flex;flex-wrap:wrap;gap:6px">';
-    liveGames.forEach(function(g){
-      if(g.gamePk===focusGamePk) return;
-      switcherHtml+='<button onclick="setFocusGame('+g.gamePk+');renderFocusOverlay()" style="padding:4px 10px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:11px;cursor:pointer">'+g.awayAbbr+' '+g.awayScore+' – '+g.homeScore+' '+g.homeAbbr+'</button>';
-    });
-    switcherHtml+='</div></div>';
-  }
-  card.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative">'
-    +'<button onclick="closeFocusOverlay()" style="position:absolute;top:12px;right:12px;background:none;border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px">✕</button>'
-    +'<div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:'+focusState.tensionColor+';margin-bottom:8px">'+focusState.tensionLabel+'</div>'
-    +'<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px">'+focusState.awayAbbr+' '+focusState.awayScore+' – '+focusState.homeScore+' '+focusState.homeAbbr+'</div>'
-    +'<div style="font-size:13px;color:var(--muted);margin-bottom:16px">'+half+focusState.inning+' · '+focusState.outs+' out</div>'
-    +'<div style="display:flex;align-items:center;gap:20px;margin-bottom:16px">'
-    +diamond
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">'
-    +'<div><div style="font-size:28px;font-weight:800;color:#22c55e">'+focusState.balls+'</div><div style="font-size:10px;color:var(--muted)">BALLS</div></div>'
-    +'<div><div style="font-size:28px;font-weight:800;color:#f59e0b">'+focusState.strikes+'</div><div style="font-size:10px;color:var(--muted)">STRIKES</div></div>'
-    +'<div><div style="font-size:28px;font-weight:800;color:#e03030">'+focusState.outs+'</div><div style="font-size:10px;color:var(--muted)">OUTS</div></div>'
-    +'</div></div>'
-    +(focusState.currentBatterName?'<div style="font-size:13px;color:var(--text)"><strong>'+focusState.currentBatterName+'</strong><span style="color:var(--muted)"> vs '+focusState.currentPitcherName+'</span></div>':'')
-    +pitchHtml
-    +switcherHtml
-    +'</div>';
+  var data=Object.assign({},focusState,{
+    pitchSequence: focusPitchSequence,
+    allLiveGames: liveGames.map(function(g){
+      return {gamePk:g.gamePk,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,
+              awayScore:g.awayScore,homeScore:g.homeScore,inning:g.inning,
+              halfInning:g.halfInning,isFocused:g.gamePk===focusGamePk};
+    })
+  });
+  card.innerHTML=window.FocusCard.renderOverlay(data);
 }
 
 function showFocusAlert(pk, reason) {
@@ -4565,6 +4508,7 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'E') { replayRBICard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
+  if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
 });
 
 document.addEventListener('click',onSoundPanelClickOutside);
@@ -4573,6 +4517,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
 </script>
 
 <script src="pulse-card-templates.js"></script>
+<script src="focusCard.js"></script>
 
 <div class="live-view" id="liveView">
   <div style="max-width:1360px;margin:0 auto;padding:20px">
