@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.58.3</title>
+<title>MLB Tracker v2.58.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -703,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.58.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.58.4</div>
       </div>
     </div>
   </div>
@@ -935,6 +935,10 @@
     <button class="dev-btn" onclick="replayHRCard();toggleDevTools()">
       <div class="dev-btn-label">🎬 Replay HR</div>
       <div class="dev-btn-shortcut">Shift+R</div>
+    </button>
+    <button class="dev-btn" onclick="replayRBICard();toggleDevTools()">
+      <div class="dev-btn-label">💰 Replay RBI</div>
+      <div class="dev-btn-shortcut">Shift+E</div>
     </button>
     <button class="dev-btn" onclick="window.PulseCard.demo();toggleDevTools()">
       <div class="dev-btn-label">💫 Card Variants</div>
@@ -2984,6 +2988,20 @@ function replayHRCard(itemIndex) {
   console.log('Replaying HR:', batterName, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
+// DEBUG: Replay most recent RBI card from live feed (press Shift+E)
+function replayRBICard(itemIndex) {
+  var rbis = feedItems.filter(function(item) { return item.data && item.data.scoring && item.data.event !== 'Home Run' && item.data.batterId; });
+  if (!rbis.length) { alert('No RBI plays in feed yet'); return; }
+  var idx = itemIndex !== undefined ? itemIndex : 0;
+  if (idx < 0 || idx >= rbis.length) { alert('Index out of range'); return; }
+  var item = rbis[idx];
+  var play = item.data;
+  var gs = gameStates[item.gamePk];
+  if (!gs) { alert('Game state not found'); return; }
+  showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning);
+  console.log('Replaying RBI:', play.batterName, play.event, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
+}
+
 function baseDiamondSvg(on1,on2,on3) {
   var dim='rgba(255,255,255,0.18)',lit='#ffd000',glow='filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
   var s1=on1?' style="'+glow+'"':'', s2=on2?' style="'+glow+'"':'', s3=on3?' style="'+glow+'"':'';
@@ -4377,6 +4395,7 @@ document.addEventListener('visibilitychange',function(){
 document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'E') { replayRBICard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
 });
