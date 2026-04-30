@@ -895,22 +895,6 @@
       <div class="sound-row"><div class="sound-label">⚠️ Error</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('error',this.checked)"><span class="sound-knob"></span></label></div>
     </div>
   </div>
-  <div id="debugToolsPanel">
-    <div class="debug-panel-hd">
-      <span class="debug-panel-title">🛠️ Debug Tools</span>
-      <button class="debug-close" onclick="toggleDebugPanel()">✕</button>
-    </div>
-    <div class="debug-buttons">
-      <button class="debug-btn" onclick="initDemo();toggleDebugPanel()">
-        <div class="debug-btn-label">▶ Try Demo</div>
-        <div class="debug-btn-shortcut">Shift+H</div>
-      </button>
-      <button class="debug-btn" onclick="replayHRCard();toggleDebugPanel()">
-        <div class="debug-btn-label">🎬 Replay HR</div>
-        <div class="debug-btn-shortcut">Shift+R</div>
-      </button>
-    </div>
-  </div>
   <div id="alertStack"></div>
   <div id="playerCardOverlay" onclick="dismissPlayerCard()">
     <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
@@ -965,6 +949,23 @@
     </div>
   </div>
 </div>
+</div>
+
+<div id="debugToolsPanel">
+  <div class="debug-panel-hd">
+    <span class="debug-panel-title">🛠️ Debug Tools</span>
+    <button class="debug-close" onclick="toggleDebugPanel()">✕</button>
+  </div>
+  <div class="debug-buttons">
+    <button class="debug-btn" onclick="initDemo();toggleDebugPanel()">
+      <div class="debug-btn-label">▶ Try Demo</div>
+      <div class="debug-btn-shortcut">Shift+H</div>
+    </button>
+    <button class="debug-btn" onclick="replayHRCard();toggleDebugPanel()">
+      <div class="debug-btn-label">🎬 Replay HR</div>
+      <div class="debug-btn-shortcut">Shift+R</div>
+    </button>
+  </div>
 </div>
 
 <script>
