@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.50</title>
+<title>MLB Tracker v2.50.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -713,7 +713,7 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.50</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.50.1</div>
       </div>
     </div>
   </div>
@@ -3910,7 +3910,7 @@ function openArticleModal(url){
     document.getElementById('article-content').innerHTML=bodyHtml||'<p>No content found</p>';
     var meta='';if(d.publishDate)meta+=d.publishDate;if(d.author)meta+=' · '+d.author;
     document.getElementById('article-meta').textContent=meta;
-    document.getElementById('article-scroll').scrollTop=0;
+    var scrollEl=document.getElementById('article-scroll');if(scrollEl)scrollEl.scrollTop=0;
   }).catch(function(e){
     console.error('Article load error:',e);
     document.getElementById('article-content').innerHTML='<div class="article-error">Error loading article.<br><br><a href="'+url+'" target="_blank">Open in browser ↗</a></div>';
