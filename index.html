@@ -635,6 +635,9 @@
 .article-scroll { flex:1; overflow-y:auto; padding:20px; }
 .article-content { max-width:70ch; margin:0 auto; color:var(--text); line-height:1.7; font-size:1rem }
 .article-content img { max-width:100%; height:auto; margin:16px 0; border-radius:8px; display:block }
+.article-content p { margin:12px 0 }
+.article-content div { margin:12px 0 }
+.article-content br { display:block; margin:6px 0 }
 .article-meta { color:var(--muted); font-size:.85rem; margin-top:20px; padding-top:12px; border-top:1px solid var(--border) }
 .article-error { padding:20px; text-align:center; color:#ff6b6b }
 .article-error a { color:var(--accent); text-decoration:none }
@@ -3901,12 +3904,7 @@ function openArticleModal(url){
       return;
     }
     document.getElementById('article-title').textContent=d.title||'Article';
-    var bodyHtml='';if(d.body){bodyHtml='<div style="margin-bottom:20px;">'+d.body.replace(/\n/g,'<br>')+'</div>';}
-    if(d.images&&d.images.length>0){
-      d.images.slice(0,3).forEach(function(img){
-        bodyHtml+='<img src="'+img+'" alt="Article image" style="max-width:100%;height:auto;margin:16px 0;border-radius:8px;">';
-      });
-    }
+    var bodyHtml='';if(d.body){bodyHtml='<div style="line-height:1.7;word-break:break-word;">'+d.body+'</div>';}
     document.getElementById('article-content').innerHTML=bodyHtml||'<p>No content found</p>';
     var meta='';if(d.publishDate)meta+=d.publishDate;if(d.author)meta+=' · '+d.author;
     document.getElementById('article-meta').textContent=meta;

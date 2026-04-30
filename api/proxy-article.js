@@ -75,32 +75,27 @@ export default async function handler(req, res) {
       }
     }
 
-    // Sanitize HTML: remove script, style, and potentially dangerous elements
+    // Sanitize HTML: remove only dangerous elements and attributes
+    // Keep structure: paragraphs, divs, images, breaks, etc.
     body = body
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
       .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
       .replace(/<form[^>]*>[\s\S]*?<\/form>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, ''); // Remove event handlers
+      .replace(/on\w+="[^"]*"/gi, '')  // Remove event handlers
+      .replace(/on\w+='[^']*'/gi, '')   // Remove single-quoted event handlers
+      .trim();
 
-    // Extract images
+    // Extract images that will be displayed inline
     const images = [];
     const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
     let imgMatch;
     while ((imgMatch = imgRegex.exec(body)) !== null) {
       const src = imgMatch[1];
-      // Only include absolute URLs or espn CDN images
       if (src.startsWith('http') || src.startsWith('//')) {
         images.push(src.startsWith('//') ? 'https:' + src : src);
       }
     }
-
-    // Clean up excessive whitespace and HTML
-    body = body
-      .replace(/<[^>]+>/g, ' ') // Strip remaining HTML tags
-      .replace(/\s+/g, ' ') // Collapse whitespace
-      .trim()
-      .substring(0, 3000); // Cap body length to prevent huge responses
 
     return res.status(200).json({
       success: true,
