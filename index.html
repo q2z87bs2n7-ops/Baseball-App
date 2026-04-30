@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.61.9</title>
+<title>MLB Tracker v2.61.10</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -615,6 +615,11 @@
   70%  { transform:translateY(0) scale(1); }
   100% { opacity:1; transform:translateY(0) scale(1); }
 }
+#focusOverlayCard::-webkit-scrollbar { width:4px; }
+#focusOverlayCard::-webkit-scrollbar-track { background:transparent; }
+#focusOverlayCard::-webkit-scrollbar-thumb { background:#1e2d4a; border-radius:4px; }
+#focusOverlayCard::-webkit-scrollbar-thumb:hover { background:#3a4d75; }
+#focusOverlayCard { scrollbar-width:thin; scrollbar-color:#1e2d4a transparent; }
 #playerCardOverlay {
   display:none; position:fixed; inset:0; z-index:400;
   background:rgba(0,0,0,0.72); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
@@ -703,7 +708,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.9</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.10</div>
       </div>
     </div>
   </div>
@@ -902,12 +907,6 @@
   </div>
   </div>
   <div id="sideRail">
-    <div id="pulseFeedHeader" style="margin-bottom:24px;padding:8px 0">
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
-        <span style="font-size:23px">⚡</span>
-        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text)">MLB Pulse</span>
-      </div>
-    </div>
     <div id="focusCard" style="display:none;margin-bottom:16px"></div>
     <div id="sideRailNews">
       <div class="side-rail-title">MLB News</div>
@@ -3221,7 +3220,7 @@ function updateFeedEmpty() {
   if (!hasVisible) renderEmptyState();
   document.getElementById('feedEmpty').style.display=hasVisible?'none':'';
   // Hide UI elements when no visible feed items (storyCarousel stays visible for Probable Pitchers)
-  var hideWhenEmpty=['gameTicker','pulseFeedHeader','sideRailNews','sideRailGames'];
+  var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames'];
   // Apply pulse-empty layout when there are NO games at all OR no visible feed items
   // This centers hype content whether in zero-game state or just pre-game/all-upcoming state
   var hasAnyGames = Object.keys(gameStates).length > 0;

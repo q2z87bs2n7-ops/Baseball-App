@@ -207,7 +207,7 @@
 
     return (
       '<div class="fc-card" style="' +
-          'width:100%;max-width:280px;background:var(--card,#111827);' +
+          'width:100%;background:var(--card,#111827);' +
           'border:1px solid var(--border,#1e2d4a);border-radius:var(--radius,10px);' +
           'overflow:hidden;color:var(--text,#e8eaf0);' +
           'font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;' +
