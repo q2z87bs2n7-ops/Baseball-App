@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.55.1</title>
+<title>MLB Tracker v2.55.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -694,7 +694,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:10px">🛠️ Dev Tools</div>
           <button id="btnDevTools" onclick="toggleDevTools()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">Open</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.55.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.55.2</div>
       </div>
     </div>
   </div>
@@ -1063,10 +1063,10 @@ let STORY_ROTATE_MS=4500;
 // ── Dev Tools tuning (real-time optimization) ──────────────────────────
 let devTuning={
   rotateMs: 4500,     // Carousel rotation interval
-  rbiThreshold: 30,   // Minimum RBI card score
+  rbiThreshold: 10,   // Minimum RBI card score
   rbiCooldown: 90000  // Per-game cooldown (ms)
 };
-const devTuningDefaults={rotateMs:4500,rbiThreshold:30,rbiCooldown:90000};
+const devTuningDefaults={rotateMs:4500,rbiThreshold:10,rbiCooldown:90000};
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
