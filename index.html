@@ -1057,6 +1057,53 @@
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
     <details style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🎨 Theme Tuning</summary>
+      <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--card2);border-radius:4px">
+          <input type="checkbox" id="lockThemeToggle" style="width:16px;height:16px;cursor:pointer" onchange="toggleColorLock(this.checked)">
+          <label style="cursor:pointer;flex:1;font-weight:600;color:var(--text)">Lock Theme (disable auto-switch)</label>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:10px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px">📱 App Theme (Rest of App)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Primary</label>
+              <input type="color" id="colorAppPrimary" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','primary',this.value)">
+              <button onclick="captureCurrentTheme('app')" style="width:100%;margin-top:3px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px;border-radius:2px;cursor:pointer">Copy</button>
+            </div>
+            <div>
+              <label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Secondary</label>
+              <input type="color" id="colorAppSecondary" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','secondary',this.value)">
+            </div>
+            <div>
+              <label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Dark BG</label>
+              <input type="color" id="colorAppDark" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','dark',this.value)">
+            </div>
+            <div>
+              <label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Card BG</label>
+              <input type="color" id="colorAppCard" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','card',this.value)">
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:10px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px">⚡ Pulse Theme (Pulse Section)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div>
+              <label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Dark BG</label>
+              <input type="color" id="colorPulseDark" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('pulse','dark',this.value)">
+              <button onclick="captureCurrentTheme('pulse')" style="width:100%;margin-top:3px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px;border-radius:2px;cursor:pointer">Copy</button>
+            </div>
+            <div>
+              <label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Card BG</label>
+              <input type="color" id="colorPulseCard" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('pulse','card',this.value)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
       <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
       <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
@@ -1141,6 +1188,11 @@ let devTuning={
   nohitter_priority: 95,
   basesloaded_enable: true,
   basesloaded_priority: 88
+};
+let devColorLocked=false;
+let devColorOverrides={
+  app:{dark:'',card:'',card2:'',border:'',primary:'',secondary:'',accent:'',accentText:'',headerText:''},
+  pulse:{dark:'',card:'',card2:'',border:'',primary:'',secondary:'',accent:'',accentText:'',headerText:''}
 };
 const devTuningDefaults={
   rotateMs:4500,rbiThreshold:10,rbiCooldown:90000,
@@ -3350,7 +3402,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display==='none';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display==='none';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('lockThemeToggle').checked=devColorLocked;['colorAppPrimary','colorAppSecondary','colorAppDark','colorAppCard','colorPulseDark','colorPulseCard'].forEach(function(id){var el=document.getElementById(id);if(el&&el.id.includes('App')){var varName=id.replace('colorApp','').toLowerCase();el.value=devColorOverrides.app[varName]||'#000000';}else if(el){var varName=id.replace('colorPulse','').toLowerCase();el.value=devColorOverrides.pulse[varName]||'#000000';}});}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
@@ -3390,6 +3442,43 @@ function resetTuning(){
   console.log('✓ Dev tuning reset to defaults');
 }
 
+function updateColorOverride(context,colorVar,value){
+  devColorOverrides[context][colorVar]=value;
+  if(devColorLocked){
+    if(context==='app') applyTeamTheme(activeTeam);
+    else applyPulseMLBTheme();
+  }
+  console.log('✓ '+context+' theme.'+colorVar+' → '+value);
+}
+
+function captureCurrentTheme(context){
+  var vars=['dark','card','card2','border','primary','secondary','accent','accentText','headerText'];
+  var cssVarMap={dark:'--dark',card:'--card',card2:'--card2',border:'--border',primary:'--primary',secondary:'--secondary',accent:'--accent',accentText:'--accent-text',headerText:'--header-text'};
+  var root=document.documentElement;
+  vars.forEach(function(v){
+    var cssVal=getComputedStyle(root).getPropertyValue(cssVarMap[v]).trim();
+    devColorOverrides[context][v]=cssVal;
+    var el=document.getElementById('color'+context.charAt(0).toUpperCase()+context.slice(1)+v.charAt(0).toUpperCase()+v.slice(1));
+    if(el) el.value=cssVal;
+  });
+  console.log('✓ Captured current '+context+' theme colors');
+}
+
+function toggleColorLock(enable){
+  devColorLocked=enable;
+  if(enable){
+    if(!devColorOverrides.app.primary) captureCurrentTheme('app');
+    if(!devColorOverrides.pulse.primary) captureCurrentTheme('pulse');
+    applyTeamTheme(activeTeam);
+    console.log('✓ Theme lock enabled — auto-switching disabled');
+  }else{
+    applyTeamTheme(activeTeam);
+    applyPulseMLBTheme();
+    console.log('✓ Theme lock disabled — auto-switching restored');
+  }
+  document.getElementById('lockThemeToggle').checked=devColorLocked;
+}
+
 function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);}
 function playSound(type){
   if (!soundSettings.master||!soundSettings[type]) return;
@@ -3423,6 +3512,18 @@ function hslLighten(hex,targetL){hex=hex.replace('#','');var n=parseInt(hex,16),
 function pickAccent(secondaryHex,cardHex){var sLum=relLuminance(secondaryHex),cCon=contrastRatio(secondaryHex,cardHex);if(sLum>=0.18&&cCon>=3.0)return secondaryHex;var lifted=hslLighten(secondaryHex,0.65);if(contrastRatio(lifted,cardHex)>=3.0)return lifted;return'#FFB273';}
 function pickHeaderText(primaryHex){return relLuminance(primaryHex)>0.5?'#0a0f1e':'#ffffff';}
 function applyTeamTheme(team){
+  if(devColorLocked&&devColorOverrides.app.primary){
+    document.documentElement.style.setProperty('--dark',devColorOverrides.app.dark);
+    document.documentElement.style.setProperty('--card',devColorOverrides.app.card);
+    document.documentElement.style.setProperty('--card2',devColorOverrides.app.card2);
+    document.documentElement.style.setProperty('--border',devColorOverrides.app.border);
+    document.documentElement.style.setProperty('--primary',devColorOverrides.app.primary);
+    document.documentElement.style.setProperty('--secondary',devColorOverrides.app.secondary);
+    document.documentElement.style.setProperty('--accent',devColorOverrides.app.accent);
+    document.documentElement.style.setProperty('--accent-text',devColorOverrides.app.accentText);
+    document.documentElement.style.setProperty('--header-text',devColorOverrides.app.headerText);
+    return;
+  }
   var ct=themeOverride||team;
   var cp=themeInvert?ct.secondary:ct.primary,cs=themeInvert?ct.primary:ct.secondary;
   var l1=relLuminance(cp),l2=relLuminance(cs),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?cs:'#ffffff',accentLum=relLuminance(accent);
@@ -3448,6 +3549,13 @@ function applyTeamTheme(team){
 }
 
 function applyPulseMLBTheme(){
+  if(devColorLocked&&devColorOverrides.pulse.primary){
+    document.documentElement.style.setProperty('--dark',devColorOverrides.pulse.dark);
+    document.documentElement.style.setProperty('--card',devColorOverrides.pulse.card);
+    document.documentElement.style.setProperty('--card2',devColorOverrides.pulse.card2);
+    document.documentElement.style.setProperty('--border',devColorOverrides.pulse.border);
+    return;
+  }
   document.documentElement.style.setProperty('--dark','#0F1B2E');
   document.documentElement.style.setProperty('--card','#172B4D');
   document.documentElement.style.setProperty('--card2','#1E3A5F');
