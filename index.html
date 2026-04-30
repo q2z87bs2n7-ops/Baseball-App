@@ -2946,7 +2946,7 @@ function renderEmptyState() {
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    +'<div class="empty-hype-block"><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
