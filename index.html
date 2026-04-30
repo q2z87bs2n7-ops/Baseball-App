@@ -676,25 +676,12 @@
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">📺 Media Tab</div>
-            <div style="font-size:.68rem;color:var(--muted)">Show In Navigation</div>
-          </div>
-          <div onclick="toggleMedia()" id="mediaToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
-            <div id="mediaToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
-          </div>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔔 Game Start Alerts</div>
             <div style="font-size:.68rem;color:var(--muted)" id="pushStatusText">Off</div>
           </div>
           <div onclick="togglePush()" id="pushToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <button id="demoBtnSettings" onclick="toggleDemoMode();toggleSettings()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">▶ Try Demo</button>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:center">Load snapshot &amp; replay from April 27</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
@@ -706,13 +693,6 @@
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:10px">🛠️ Debug Tools</div>
           <button id="btnDebugTools" onclick="toggleDebugPanel()" style="width:100%;background:var(--accent);color:var(--accent-text);border:none;padding:10px;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;letter-spacing:.05em;text-transform:uppercase">Open</button>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <details style="cursor:pointer">
-            <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
-            <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:500px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
-            <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
-          </details>
         </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.55</div>
       </div>
@@ -969,6 +949,22 @@
       <div class="debug-btn-label">💫 Card Variants</div>
       <div class="debug-btn-shortcut">Shift+V</div>
     </button>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Media Tab</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:.68rem;color:var(--text)">Show in Navigation</div>
+      <div onclick="toggleMedia()" id="mediaToggle" style="width:36px;height:20px;border-radius:10px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+        <div id="mediaToggleKnob" style="width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:.2s"></div>
+      </div>
+    </div>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
+      <div id="debugPanel" style="margin-top:10px;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
+      <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
+    </details>
   </div>
 </div>
 
