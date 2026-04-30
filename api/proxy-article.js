@@ -1,3 +1,5 @@
+import { load } from 'cheerio';
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -27,83 +29,69 @@ export default async function handler(req, res) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const html = await response.text();
+    const $ = load(html);
 
     // Extract title (try og:title first, then h1)
-    let title = '';
-    const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
-    if (ogTitleMatch) {
-      title = ogTitleMatch[1];
-    } else {
-      const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
-      if (h1Match) title = h1Match[1];
-    }
+    let title = $('meta[property="og:title"]').attr('content') || $('h1').first().text();
 
-    // Extract publish date (look for script tag with JSON-LD)
+    // Extract publish date (JSON-LD datePublished)
     let publishDate = '';
-    const dateMatch = html.match(/"datePublished":"([^"]+)"/);
-    if (dateMatch) {
+    const scriptTag = $('script[type="application/ld+json"]').html();
+    if (scriptTag) {
       try {
-        publishDate = new Date(dateMatch[1]).toLocaleDateString('en-US', {
-          month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
-        });
+        const jsonData = JSON.parse(scriptTag);
+        if (jsonData.datePublished) {
+          publishDate = new Date(jsonData.datePublished).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+          });
+        }
       } catch (e) {}
     }
 
     // Extract author (byline)
-    let author = '';
-    const authorMatch = html.match(/<span[^>]*class="[^"]*byline[^"]*"[^>]*>([^<]+)<\/span>/);
-    if (authorMatch) {
-      author = authorMatch[1].trim();
+    let author = $('[class*="byline"]').first().text().trim();
+
+    // Extract article body — try multiple selectors
+    let $body = $('article').first();
+    if (!$body.html()) {
+      $body = $('[class*="article-body"], [class*="article-content"], [class*="story-body"], main').first();
+    }
+    if (!$body.html()) {
+      $body = $('div[class*="content"]').first();
     }
 
-    // Extract article body (look for article or main content div)
-    let body = '';
-    const bodyMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/);
-    if (bodyMatch) {
-      body = bodyMatch[1];
-    } else {
-      // Fallback: look for div with article class
-      const divMatch = html.match(/<div[^>]*class="[^"]*article[^"]*"[^>]*>([\s\S]*?)<\/div>/);
-      if (divMatch) {
-        body = divMatch[1];
-      } else {
-        // Last resort: get main content area
-        const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/);
-        if (mainMatch) {
-          body = mainMatch[1];
-        }
-      }
-    }
+    // Remove unwanted elements from the article body
+    $body.find('script, style, iframe, form, nav, aside, [class*="ad"], [class*="advertisement"]').remove();
+    $body.find('[class*="social"], [class*="share"], [class*="related"], [class*="more-stories"]').remove();
 
-    // Sanitize HTML: remove only dangerous elements and attributes
-    // Keep structure: paragraphs, divs, images, breaks, etc.
-    body = body
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
-      .replace(/<form[^>]*>[\s\S]*?<\/form>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '')  // Remove event handlers
-      .replace(/on\w+='[^']*'/gi, '')   // Remove single-quoted event handlers
-      .trim();
+    // Strip hyperlinks but keep text content
+    $body.find('a').each((i, el) => {
+      $(el).replaceWith($(el).text());
+    });
 
-    // Extract images that will be displayed inline
+    // Size images to fit mobile
+    $body.find('img').each((i, el) => {
+      $(el).attr('style', 'max-width: 100%; height: auto; margin: 12px 0;');
+    });
+
+    // Extract images that will be displayed
     const images = [];
-    const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
-    let imgMatch;
-    while ((imgMatch = imgRegex.exec(body)) !== null) {
-      const src = imgMatch[1];
-      if (src.startsWith('http') || src.startsWith('//')) {
+    $body.find('img').each((i, el) => {
+      const src = $(el).attr('src');
+      if (src && (src.startsWith('http') || src.startsWith('//'))) {
         images.push(src.startsWith('//') ? 'https:' + src : src);
       }
-    }
+    });
+
+    const body = $body.html() || 'No content found';
 
     return res.status(200).json({
       success: true,
       title: title || 'Article',
       author: author || '',
       publishDate: publishDate || '',
-      body: body || 'No content found',
-      images: images.slice(0, 10), // Limit to first 10 images
+      body: body,
+      images: images.slice(0, 10),
       url: url
     });
 
