@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.61.14</title>
+<title>MLB Tracker v2.61.15</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -709,7 +709,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.14</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61.15</div>
       </div>
     </div>
   </div>
@@ -1035,6 +1035,29 @@
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
     <details style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🎯 Focus Mode Tuning</summary>
+      <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:6px">Badge Thresholds</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:.6rem;color:var(--muted)">CRITICAL score ≥</div><input type="number" id="tuneFocusCritical" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">HIGH score ≥</div><input type="number" id="tuneFocusHigh" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          </div>
+          <div style="font-size:.58rem;margin-top:4px;color:var(--muted)">Scores below HIGH threshold show NORMAL</div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:6px">Auto-Switch Alert</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:.6rem;color:var(--muted)">Switch margin (pts)</div><input type="number" id="tuneFocusSwitchMargin" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">Alert cooldown (ms)</div><input type="number" id="tuneFocusAlertCooldown" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          </div>
+          <div style="font-size:.58rem;margin-top:4px;color:var(--muted)">Rival game must score this many pts higher to trigger a switch suggestion</div>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🎨 Theme Tuning</summary>
       <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
         <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--card2);border-radius:4px">
@@ -1166,7 +1189,11 @@ let devTuning={
   nohitter_inning_floor: 6,
   nohitter_priority: 95,
   basesloaded_enable: true,
-  basesloaded_priority: 88
+  basesloaded_priority: 88,
+  focus_critical: 120,       // score threshold for CRITICAL badge
+  focus_high: 70,            // score threshold for HIGH badge
+  focus_switch_margin: 25,   // rival game must score this much higher to trigger soft alert
+  focus_alert_cooldown: 90000 // ms between soft alerts for same game
 };
 let devColorLocked=false;
 let devShowPushOnDesktop=false;
@@ -1180,7 +1207,8 @@ const devTuningDefaults={
   biginning_priority:75,biginning_threshold:3,
   walkoff_priority:90,walkoff_cooldown:300000,
   nohitter_inning_floor:6,nohitter_priority:95,
-  basesloaded_enable:true,basesloaded_priority:88
+  basesloaded_enable:true,basesloaded_priority:88,
+  focus_critical:120,focus_high:70,focus_switch_margin:25,focus_alert_cooldown:90000
 };
 
 // ── Focus Mode globals (v2.61) ────────────────────────────────────────────────
@@ -2945,8 +2973,8 @@ function calcFocusScore(g) {
 }
 
 function getTensionInfo(score) {
-  if(score>=120) return {label:'CRITICAL',color:'#e03030'};
-  if(score>=70)  return {label:'HIGH',color:'#f59e0b'};
+  if(score>=devTuning.focus_critical) return {label:'CRITICAL',color:'#e03030'};
+  if(score>=devTuning.focus_high)     return {label:'HIGH',color:'#f59e0b'};
   return {label:'NORMAL',color:'#9aa0a8'};
 }
 
@@ -2961,9 +2989,9 @@ function selectFocusGame() {
     setFocusGame(best.g.gamePk); return;
   }
   // Soft alert if a different game scores ≥25 higher (with 90s cooldown)
-  if(best.g.gamePk!==focusGamePk&&best.score-calcFocusScore(gameStates[focusGamePk])>=25) {
+  if(best.g.gamePk!==focusGamePk&&best.score-calcFocusScore(gameStates[focusGamePk])>=devTuning.focus_switch_margin) {
     var now=Date.now();
-    if(!focusAlertShown[best.g.gamePk]||(now-focusAlertShown[best.g.gamePk])>90000) {
+    if(!focusAlertShown[best.g.gamePk]||(now-focusAlertShown[best.g.gamePk])>devTuning.focus_alert_cooldown) {
       focusAlertShown[best.g.gamePk]=now;
       var tension=getTensionInfo(best.score);
       showFocusAlert(best.g.gamePk,tension.label+' · '+best.g.awayAbbr+' @ '+best.g.homeAbbr);
@@ -3584,7 +3612,9 @@ function confirmDevToolsChanges(){
     ['hr_priority','tuneHRPriority'],['hr_cooldown','tuneHRCooldown'],
     ['biginning_priority','tuneBigInningPriority'],['biginning_threshold','tuneBigInningThreshold'],
     ['walkoff_priority','tuneWalkoffPriority'],['nohitter_inning_floor','tuneNohitterFloor'],
-    ['basesloaded_priority','tuneBasesLoadedPriority']
+    ['basesloaded_priority','tuneBasesLoadedPriority'],
+    ['focus_critical','tuneFocusCritical'],['focus_high','tuneFocusHigh'],
+    ['focus_switch_margin','tuneFocusSwitchMargin'],['focus_alert_cooldown','tuneFocusAlertCooldown']
   ];
   fields.forEach(function(f){var el=document.getElementById(f[1]);if(el&&el.value!=='')updateTuning(f[0],el.value);});
   var btn=document.getElementById('devConfirmBtn');
@@ -3592,7 +3622,7 @@ function confirmDevToolsChanges(){
   setTimeout(function(){btn.textContent='Confirm Changes';btn.classList.remove('applied');},1500);
 }
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
@@ -3625,6 +3655,10 @@ function resetTuning(){
   document.getElementById('tuneNohitterFloor').value=devTuningDefaults.nohitter_inning_floor;
   document.getElementById('tuneBasesLoadedEnable').checked=devTuningDefaults.basesloaded_enable;
   document.getElementById('tuneBasesLoadedPriority').value=devTuningDefaults.basesloaded_priority;
+  document.getElementById('tuneFocusCritical').value=devTuningDefaults.focus_critical;
+  document.getElementById('tuneFocusHigh').value=devTuningDefaults.focus_high;
+  document.getElementById('tuneFocusSwitchMargin').value=devTuningDefaults.focus_switch_margin;
+  document.getElementById('tuneFocusAlertCooldown').value=devTuningDefaults.focus_alert_cooldown;
   if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
   if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
   console.log('✓ Dev tuning reset to defaults');
