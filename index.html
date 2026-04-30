@@ -965,6 +965,10 @@
       <div class="debug-btn-label">🎬 Replay HR</div>
       <div class="debug-btn-shortcut">Shift+R</div>
     </button>
+    <button class="debug-btn" onclick="window.PulseCard.demo();toggleDebugPanel()">
+      <div class="debug-btn-label">💫 Card Variants</div>
+      <div class="debug-btn-shortcut">Shift+V</div>
+    </button>
   </div>
 </div>
 
@@ -4113,6 +4117,7 @@ document.addEventListener('visibilitychange',function(){
 document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'H') { initDemo(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDebugPanel(); }
 });
 
