@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.57.3</title>
+<title>MLB Tracker v2.57.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -693,7 +693,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.57.4</div>
       </div>
     </div>
   </div>
@@ -3362,7 +3362,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
 }
 
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display==='none';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
@@ -3597,7 +3597,7 @@ async function releaseScreenWakeLock(){
 function onSoundPanelClickOutside(e){
   var panel=document.getElementById('soundPanel'),btn=document.getElementById('btnSound');
   if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
-  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
+  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDevTools');
   if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
 }
 
@@ -4353,7 +4353,7 @@ document.addEventListener('keydown',function(e){
 });
 
 document.addEventListener('click',function(e){
-  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDebugTools');
+  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDevTools');
   if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
 });
 
