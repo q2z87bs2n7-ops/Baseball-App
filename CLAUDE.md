@@ -634,7 +634,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **Select Team** — dropdown of all 30 MLB teams grouped by division; switching reloads all data, reapplies theme, resets all caches
 - **Color Theme** — dropdown of all 30 teams + "Default (Follow Team)"; overrides colours independently of the active team; persists across team switches
 - **Invert Colours** — slide toggle; swaps primary and secondary colours; works with theme override
-- **🔔 Game Start Alerts** — slide toggle; subscribes/unsubscribes to push notifications for game starts. **Hidden on desktop** (`isDesktop()` = viewport ≥1025px + no `ontouchstart`) — push is unreliable on desktop browsers. Overridable via Dev Tools "Push Alerts → Show on Desktop" toggle.
+- **🔔 Game Start Alerts** — slide toggle; subscribes/unsubscribes to push notifications for game starts. **Hidden on desktop via CSS** (`@media(min-width:1025px){ #pushRow { display:none !important } }`) — push is unreliable on desktop browsers. Visible on mobile and tablet (≤1024px) unchanged. The JS functions `isDesktop()`, `updatePushRowVisibility()`, `togglePushOnDesktop()`, and the `devShowPushOnDesktop` variable remain in the codebase but are not called — retained in case a UI toggle is added back later.
 - **⚡ Pulse: Sound Alerts** — `🔊` icon-only button (`id="btnSound"`); calls `toggleSoundPanel()` to show/hide the floating `#soundPanel` overlay. Panel is **top-level in the DOM** (not inside `#pulse`) so it opens from any section. Click-outside listener is always-on globally.
 - **🛠️ Dev Tools** — "Open" button (`id="btnDevTools"`); calls `toggleDevTools()` to show/hide the floating `#devToolsPanel` overlay
 - Panel closes on click outside
@@ -646,7 +646,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **🎬 Replay HR** (`Shift+R`) — calls `replayHRCard()` to replay most recent HR card from live feed
 - **💫 Card Variants** (`Shift+V`) — calls `window.PulseCard.demo()` to cycle through all four HR card template variants
 - **Media Tab → Show in Navigation** — slide toggle; calls `toggleMedia()`; shows/hides the Media nav button and section
-- **Push Alerts → Show on Desktop** — slide toggle; calls `togglePushOnDesktop()`; overrides the desktop-hide of 🔔 Game Start Alerts in Settings; persisted to `localStorage('dev_push_desktop')`
+- ~~Push Alerts → Show on Desktop~~ — removed; desktop hide is now CSS-only (`#pushRow { display:none }` at ≥1025px)
 - **⚡ Pulse Tuning** (`<details>` collapsible) — numeric inputs for `devTuning` (do **not** apply on keystroke — require Confirm Changes):
   - *Carousel Rotation (ms)* — `devTuning.rotateMs`; default 4500
   - *RBI Card Threshold* — `devTuning.rbiThreshold`; default 10
