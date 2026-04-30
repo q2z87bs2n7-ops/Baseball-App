@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.60</title>
+<title>MLB Tracker v2.60.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -703,7 +703,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.60</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.60.1</div>
       </div>
     </div>
   </div>
@@ -1376,7 +1376,7 @@ async function pollGamePlays(gamePk) {
         if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}}
         else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=devTuning.rbiCooldown;// DEBUG START
 console.log('RBI CARD DEBUG:',{event:event,rbi:_rbi,score:_rs,threshold:devTuning.rbiThreshold,gameVisible:gameVisible,batterId:batterId,cooldownOk:_rbiOk,passes:_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk});// DEBUG END
-if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
+if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning,gamePk);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
@@ -2926,7 +2926,7 @@ function replayRBICard(itemIndex) {
   var play = item.data;
   var gs = gameStates[item.gamePk];
   if (!gs) { alert('Game state not found'); return; }
-  showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning);
+  showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning, item.gamePk);
   console.log('Replaying RBI:', play.batterName, play.event, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
@@ -3258,7 +3258,7 @@ function getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter)
   return 'RBI!';
 }
 
-async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInning, rbi, event, aScore, hScore, inning) {
+async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInning, rbi, event, aScore, hScore, inning, gamePk) {
   var overlay = document.getElementById('playerCardOverlay');
   var card    = document.getElementById('playerCard');
   if (!overlay || !card) return;
@@ -3297,7 +3297,23 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   var rEntry = (rosterData.hitting || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
-  var position = (rEntry && rEntry.position && rEntry.position.abbreviation) || '—';
+  var position = (rEntry && rEntry.position && rEntry.position.abbreviation) || null;
+  if ((!position || !jerseyNumber) && gamePk) {
+    try {
+      var bs = await fetchBoxscore(gamePk);
+      var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
+      var playerData = allPlayers.find(function(p) { return p.person && p.person.id === batterId; });
+      if (playerData) {
+        if (!jerseyNumber && playerData.jerseyNumber) jerseyNumber = playerData.jerseyNumber;
+        if (!position && playerData.position && playerData.position.code) {
+          var posCode = playerData.position.code;
+          var posMap = {'1':'P','2':'C','3':'1B','4':'2B','5':'3B','6':'SS','7':'LF','8':'CF','9':'RF','10':'DH'};
+          position = posMap[posCode] || playerData.position.code;
+        }
+      }
+    } catch(e) {}
+  }
+  position = position || '—';
   card.innerHTML = window.PulseCard.render({
     batterId: batterId,
     name: batterName,
