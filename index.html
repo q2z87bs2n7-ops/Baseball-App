@@ -991,6 +991,10 @@
       <div class="dev-btn-label">🎴 Test Card</div>
       <div class="dev-btn-shortcut">Shift+G</div>
     </button>
+    <button class="dev-btn" onclick="resetCollection()" style="border-color:var(--hr-border)">
+      <div class="dev-btn-label">🗑️ Reset Collection</div>
+      <div class="dev-btn-shortcut">clears all</div>
+    </button>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
     <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Media Tab</div>
@@ -3593,6 +3597,23 @@ function generateTestCard() {
     awayScore:     scores[Math.floor(Math.random()*scores.length)],
     homeScore:     scores[Math.floor(Math.random()*scores.length)],
   }, true);  // force=true bypasses demoMode guard
+}
+
+function resetCollection() {
+  if (!mlbSessionToken) { alert('Not signed in'); return; }
+  if (!confirm('Reset collection? This cannot be undone.')) return;
+  fetch((window.API_BASE||'')+'/api/collection/reset',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken}
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) {
+      localStorage.removeItem('mlb_card_collection');
+      updateCollectionUI();
+      alert('Collection reset');
+    } else {
+      alert('Error: '+(d.error||'Unknown'));
+    }
+  }).catch(e=>{alert('Network error: '+e.message);});
 }
 
 function baseDiamondSvg(on1,on2,on3) {
