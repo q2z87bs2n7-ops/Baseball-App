@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.8.4</title>
+<title>MLB Tracker v3.8.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -723,7 +723,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.8.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.8.5</div>
       </div>
     </div>
   </div>
@@ -3560,9 +3560,50 @@ function flashCollectionRailMessage() {
 }
 
 function generateTestCard() {
-  var pool = (rosterData.hitting||[]).concat(rosterData.pitching||[]);
-  if (!pool.length) { showCollectedToast('new', 'No roster', '', 'common'); return; }
-  var p = pool[Math.floor(Math.random() * pool.length)];
+  // Hitting-only entries from active team roster (with known position)
+  var rosterEntries = (rosterData.hitting || []).map(function(p) {
+    return {
+      personId:   p.person.id,
+      personName: p.person.fullName,
+      teamData:   activeTeam,
+      position:   (p.position && p.position.abbreviation) || 'OF'
+    };
+  });
+
+  // League leaders pool — hitting categories from leagueLeadersCache and dailyLeadersCache
+  var seenIds = {};
+  rosterEntries.forEach(function(e) { seenIds[e.personId] = true; });
+  var leaderEntries = [];
+  function addLeadersFromMap(map) {
+    Object.keys(map).forEach(function(cat) {
+      (map[cat] || []).forEach(function(l) {
+        if (!l.person || !l.person.id || seenIds[l.person.id]) return;
+        var td = (l.team && l.team.id) ? TEAMS.find(function(t){return t.id===l.team.id;}) : null;
+        if (!td) return;
+        seenIds[l.person.id] = true;
+        leaderEntries.push({
+          personId:   l.person.id,
+          personName: l.person.fullName,
+          teamData:   td,
+          position:   'OF'
+        });
+      });
+    });
+  }
+  // Around the League hitting leaders (populated when League tab visited)
+  if (leagueLeadersCache && leagueLeadersCache.hitting) addLeadersFromMap(leagueLeadersCache.hitting);
+  // Pulse daily leaders — hitting only (HR/AVG/RBI/SB, not Wins/Saves)
+  if (dailyLeadersCache) {
+    var hitCats = { homeRuns:1, battingAverage:1, runsBattedIn:1, stolenBases:1 };
+    var hitOnly = {};
+    Object.keys(dailyLeadersCache).forEach(function(k){ if(hitCats[k]) hitOnly[k]=dailyLeadersCache[k]; });
+    addLeadersFromMap(hitOnly);
+  }
+
+  var fullPool = rosterEntries.concat(leaderEntries);
+  if (!fullPool.length) { showCollectedToast('new', 'No roster loaded', '', 'common'); return; }
+
+  var p = fullPool[Math.floor(Math.random() * fullPool.length)];
   var eventType = Math.random() > 0.5 ? 'HR' : 'RBI';
   var tiers = ['common','common','rare','epic','legendary'];
   var tier = tiers[Math.floor(Math.random() * tiers.length)];
@@ -3575,19 +3616,19 @@ function generateTestCard() {
   var halves  = ['top','bottom'];
   var scores  = [0,1,2,3,4,5];
   collectCard({
-    playerId:      p.person.id,
-    playerName:    p.person.fullName,
-    teamAbbr:      activeTeam.short,
-    teamPrimary:   activeTeam.primary,
-    teamSecondary: activeTeam.secondary,
-    position:      (p.position && p.position.abbreviation) || 'OF',
+    playerId:      p.personId,
+    playerName:    p.personName,
+    teamAbbr:      p.teamData.short,
+    teamPrimary:   p.teamData.primary,
+    teamSecondary: p.teamData.secondary,
+    position:      p.position,
     eventType:     eventType,
     badge:         badgeMap[eventType][tier],
     rbi:           rbiByTier[tier],
     inning:        innings[Math.floor(Math.random()*innings.length)],
     halfInning:    halves[Math.floor(Math.random()*halves.length)],
     awayAbbr:      'NYM',
-    homeAbbr:      activeTeam.short,
+    homeAbbr:      p.teamData.short,
     awayScore:     scores[Math.floor(Math.random()*scores.length)],
     homeScore:     scores[Math.floor(Math.random()*scores.length)],
   }, true);  // force=true bypasses demoMode guard
