@@ -4,6 +4,9 @@ on:
   push:
     branches: ['claude/**']
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
