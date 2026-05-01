@@ -3412,7 +3412,7 @@ function updateCollectionUI() {
 
 function renderCollectionRailModule() {
   var el = document.getElementById('collectionRailModule');
-  if (!el) return;
+  if (!el || !window.CollectionCard) return;
   var col = loadCollection();
   var count = Object.keys(col).length;
   el.innerHTML = window.CollectionCard.renderRailModule(count);
@@ -4898,6 +4898,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
 <script src="pulse-card-templates.js"></script>
 <script src="focusCard.js"></script>
 <script src="collectionCard.js"></script>
+<script>updateCollectionUI();</script>
 
 <div class="live-view" id="liveView">
   <div style="max-width:1360px;margin:0 auto;padding:20px">
