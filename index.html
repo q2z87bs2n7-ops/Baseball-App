@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.2</title>
+<title>MLB Tracker v3.9.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -558,31 +558,46 @@
 
 /* ── Pulse CSS Visual Refresh ─────────────────────────────────────────────── */
 /* === PULSE: Scoped Variables ============================================ */
+/* Override team-driven surfaces *inside Pulse only*. The rest of the app
+   keeps its team palette; Pulse switches to a neutral broadcast slate. */
 #pulse {
-  --pulse-surface-1: #0e1320;
-  --pulse-surface-2: #161c2c;
-  --pulse-surface-3: #1d2438;
+  /* Neutral chrome (broadcast slate, slightly cooler than team default) */
+  --pulse-surface-1: #0e1320;          /* base panel — was var(--card) */
+  --pulse-surface-2: #161c2c;          /* raised — was var(--card2) */
+  --pulse-surface-3: #1d2438;          /* hover/active */
   --pulse-border:    rgba(255,255,255,0.07);
   --pulse-border-strong: rgba(255,255,255,0.14);
   --pulse-text:      #eef1f6;
   --pulse-muted:     #8b93a4;
   --pulse-muted-2:   #aab2c2;
+
+  /* Accent stays neutral — already overridden in existing block, kept here
+     for clarity and so semantic tints below resolve correctly. */
   --accent:        #d6dae3;
   --accent-soft:   rgba(255,255,255,0.07);
   --accent-strong: #ffffff;
+
+  /* Semantic tints — same hue families, slightly tightened for cohesion. */
   --pulse-run-bg:      rgba(46,184,110,0.11);
   --pulse-run-border:  rgba(46,184,110,0.34);
   --pulse-run-ink:     #4fd28a;
+
   --pulse-hr-bg:       rgba(168,108,255,0.12);
   --pulse-hr-border:   rgba(168,108,255,0.46);
   --pulse-hr-bar:      rgba(168,108,255,0.92);
+
   --pulse-status-bg:     rgba(96,150,255,0.09);
   --pulse-status-border: rgba(96,150,255,0.26);
   --pulse-status-ink:    #8db4ff;
+
   --pulse-risp-ink:    #ffd24a;
   --pulse-risp-soft:   rgba(255,210,74,0.14);
 }
+
+
 /* === PULSE: Typography ================================================== */
+/* Inter Tight for body chrome; JetBrains Mono for scores/innings/badges
+   (broadcast-data feel, real tabular figures). Falls back cleanly. */
 #pulse,
 #gameTicker,
 #feedWrap,
@@ -593,6 +608,8 @@
   font-family: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-feature-settings: "ss01", "cv11";
 }
+
+/* Numeric / data elements — tabular mono so columns line up */
 #gameTicker .ticker-score,
 #gameTicker .ticker-score strong,
 #gameTicker .ticker-inning,
@@ -607,6 +624,8 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
+
+/* Label/badge typography — broadcast caps, slight track */
 #pulse .pulse-feed-label,
 #feedWrap .play-tag,
 #feedWrap .risp-tag,
@@ -621,7 +640,11 @@
   font-weight: 600;
   letter-spacing: 0.10em;
 }
+
+/* Pull the feed-label kicker back a hair so the mono cap height looks right */
 #pulse .pulse-feed-label { font-size: 10px; letter-spacing: 0.20em; }
+
+
 /* === PULSE: Game Ticker ================================================= */
 #gameTicker {
   background: #0a0e1a;
@@ -629,6 +652,7 @@
 }
 #gameTicker::-webkit-scrollbar-thumb { background: var(--pulse-border-strong); }
 #gameTicker::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
 #gameTicker .ticker-game {
   background: var(--pulse-surface-1);
   border: 1px solid var(--pulse-border);
@@ -638,12 +662,17 @@
 #gameTicker .ticker-game.status-live { border-color: rgba(46,184,110,0.42); }
 #gameTicker .ticker-game.feed-enabled { box-shadow: inset 0 -2px 0 var(--pulse-text); }
 #gameTicker .ticker-game.status-live.feed-disabled { border-color: var(--pulse-border); }
+
 #gameTicker .ticker-score { color: var(--pulse-text); font-weight: 500; }
 #gameTicker .ticker-score strong { color: #ffffff; font-weight: 700; }
 #gameTicker .ticker-divider { color: rgba(255,255,255,0.18); }
 #gameTicker .ticker-inning { color: var(--pulse-muted); font-weight: 600; }
+
+/* Live dot — slightly tighter green (matches new run hue) */
 #gameTicker .ticker-live-dot { background: #2eb86e; }
 #gameTicker .ticker-live-dot.warmup-state { background: #ff9d2b; }
+
+
 /* === PULSE: Feed Items ================================================== */
 #feedWrap {
   background: rgba(8,11,20,0.55);
@@ -667,6 +696,7 @@
   background: var(--pulse-status-bg);
   border-color: var(--pulse-status-border);
 }
+
 #feedWrap .feed-meta { color: var(--pulse-muted); }
 #feedWrap .feed-game-tag { color: var(--pulse-text); letter-spacing: 0.02em; }
 #feedWrap .feed-sep { color: rgba(255,255,255,0.18); }
@@ -675,30 +705,64 @@
 #feedWrap .feed-item.homerun .feed-play { font-weight: 600; letter-spacing: -0.005em; }
 #feedWrap .status-label { color: var(--pulse-text); letter-spacing: 0.02em; }
 #feedWrap .status-sub { color: var(--pulse-muted); }
-/* === PULSE: Badges ====================================================== */
-#feedWrap .play-tag { border-radius: 3px; border: 1px solid transparent; }
+
+
+/* === PULSE: Badges (play-tags, RISP, score) ============================= */
+#feedWrap .play-tag {
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
 #feedWrap .play-tag.hit-tag  { background: rgba(46,184,110,0.13);  color: #5cd896; border-color: rgba(46,184,110,0.28); }
 #feedWrap .play-tag.walk-tag { background: rgba(96,150,255,0.13);  color: #8db4ff; border-color: rgba(96,150,255,0.28); }
 #feedWrap .play-tag.k-tag    { background: rgba(160,168,184,0.12); color: #b0b8c8; border-color: rgba(160,168,184,0.24); }
 #feedWrap .play-tag.err-tag  { background: rgba(255,184,0,0.13);   color: #ffc94a; border-color: rgba(255,184,0,0.28); }
 #feedWrap .play-tag.dp-tag   { background: rgba(224,108,64,0.14);  color: #f08c5e; border-color: rgba(224,108,64,0.30); }
 #feedWrap .play-tag.tp-tag   { background: rgba(224,60,60,0.18);   color: #ff6b6b; border-color: rgba(224,60,60,0.36); }
-#feedWrap .risp-tag { background: var(--pulse-risp-soft); color: var(--pulse-risp-ink); border-radius: 3px; }
-#feedWrap .feed-score-badge { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10); border-radius: 3px; color: rgba(255,255,255,0.62); font-weight: 700; }
+
+#feedWrap .risp-tag {
+  background: var(--pulse-risp-soft);
+  color: var(--pulse-risp-ink);
+  border-radius: 3px;
+}
+
+#feedWrap .feed-score-badge {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 3px;
+  color: rgba(255,255,255,0.62);
+  font-weight: 700;
+}
 #feedWrap .feed-score-scorer { color: #ffffff; font-weight: 800; }
 #feedWrap .feed-score-sep { color: rgba(255,255,255,0.22); }
+
+
 /* === PULSE: Story Carousel ============================================== */
-#storyCarousel .story-card { background: var(--pulse-surface-1); border: 1px solid var(--pulse-border); border-radius: 8px; }
-#storyCarousel .story-card.tier1 { background: rgba(0,195,175,0.10); border-color: rgba(0,195,175,0.32); border-left: 3px solid rgba(0,195,175,0.85); }
-#storyCarousel .story-card.story-biginning { background: rgba(220,80,80,0.11); border-color: rgba(220,80,80,0.32); border-left-color: rgba(220,80,80,0.78); }
+#storyCarousel .story-card {
+  background: var(--pulse-surface-1);
+  border: 1px solid var(--pulse-border);
+  border-radius: 8px;
+}
+#storyCarousel .story-card.tier1 {
+  background: rgba(0,195,175,0.10);
+  border-color: rgba(0,195,175,0.32);
+  border-left: 3px solid rgba(0,195,175,0.85);
+}
+#storyCarousel .story-card.story-biginning {
+  background: rgba(220,80,80,0.11);
+  border-color: rgba(220,80,80,0.32);
+  border-left-color: rgba(220,80,80,0.78);
+}
 #storyCarousel .story-card.tier2 { border-left: 3px solid rgba(170,178,194,0.45); }
 #storyCarousel .story-card.tier3 { border-left: 3px solid rgba(170,178,194,0.22); }
 #storyCarousel .story-card.tier4 { border-left: 3px solid var(--pulse-border); }
+
 #storyCarousel .story-headline { color: var(--pulse-text); letter-spacing: -0.005em; }
 #storyCarousel .story-sub      { color: var(--pulse-muted-2); }
 #storyCarousel .story-leaders .story-sub { color: var(--pulse-text); }
+
+/* Badge palette — neutral chrome stays calm; semantic ones keep their hue */
 #storyCarousel .story-badge { border-radius: 3px; }
-#storyCarousel .story-badge.live         { background: rgba(255,72,72,0.18);   color: #ff7d7d; }
+#storyCarousel .story-badge.live         { background: rgba(255,72,72,0.18);  color: #ff7d7d; }
 #storyCarousel .story-badge.inning_recap { background: rgba(120,140,200,0.18); color: #a8b8e8; }
 #storyCarousel .story-badge.hot          { background: rgba(255,128,40,0.20);  color: #ff9c5e; }
 #storyCarousel .story-badge.cold         { background: rgba(80,180,220,0.20);  color: #6fc6e0; }
@@ -709,48 +773,142 @@
 #storyCarousel .story-badge.upcoming,
 #storyCarousel .story-badge.leaders,
 #storyCarousel .story-badge.probables,
-#storyCarousel .story-badge.highlight { background: rgba(255,255,255,0.05); color: var(--accent); border: 1px solid rgba(255,255,255,0.09); }
-#storyCarousel .story-nav       { color: var(--pulse-muted); opacity: 0.40; }
+#storyCarousel .story-badge.highlight {
+  background: rgba(255,255,255,0.05);
+  color: var(--accent);
+  border: 1px solid rgba(255,255,255,0.09);
+}
+
+#storyCarousel .story-nav      { color: var(--pulse-muted); opacity: 0.40; }
 #storyCarousel .story-nav:hover { color: var(--pulse-text); opacity: 1; }
-#storyCarousel .story-dot        { background: var(--pulse-border-strong); }
-#storyCarousel .story-dot.active { background: var(--pulse-text); }
+#storyCarousel .story-dot         { background: var(--pulse-border-strong); }
+#storyCarousel .story-dot.active  { background: var(--pulse-text); }
+
+
 /* === PULSE: Side Rail =================================================== */
-#sideRail .side-rail-section-header { background: var(--pulse-surface-1); border-color: var(--pulse-border); border-radius: 8px 8px 0 0; }
-#sideRail .side-rail-section-title  { color: var(--pulse-muted); }
+#sideRail .side-rail-section-header {
+  background: var(--pulse-surface-1);
+  border-color: var(--pulse-border);
+  border-radius: 8px 8px 0 0;
+}
+#sideRail .side-rail-section-title { color: var(--pulse-muted); }
 #sideRail .game-count               { color: var(--accent); font-weight: 700; }
-#sideRail .side-rail-games-container { background: var(--pulse-surface-1); border-color: var(--pulse-border); border-radius: 0 0 8px 8px; }
+
+#sideRail .side-rail-games-container {
+  background: var(--pulse-surface-1);
+  border-color: var(--pulse-border);
+  border-radius: 0 0 8px 8px;
+}
 #sideRail .side-rail-game            { border-bottom-color: rgba(255,255,255,0.035); }
 #sideRail .side-rail-game:hover      { background: var(--pulse-surface-2); }
 #sideRail .side-rail-game-time-badge { color: var(--pulse-muted-2); }
 #sideRail .side-rail-game-score-badge{ color: var(--pulse-text); }
 #sideRail .side-rail-game-abbr       { color: var(--pulse-text); }
 #sideRail .side-rail-game-vs         { color: var(--pulse-muted); }
+
 #sideRail .side-rail-title           { color: var(--pulse-muted); }
-#sideRail .news-nav { background: rgba(0,0,0,0.45); border-color: var(--pulse-border-strong); border-radius: 4px; color: var(--pulse-text); }
-#sideRail .news-nav:hover { background: rgba(0,0,0,0.75); border-color: rgba(255,255,255,0.28); }
+#sideRail .news-nav {
+  background: rgba(0,0,0,0.45);
+  border-color: var(--pulse-border-strong);
+  border-radius: 4px;
+  color: var(--pulse-text);
+}
+#sideRail .news-nav:hover {
+  background: rgba(0,0,0,0.75);
+  border-color: rgba(255,255,255,0.28);
+}
 #sideRail .news-card-image { background: var(--pulse-surface-2); border-radius: 4px; }
 #sideRail .news-card-title { color: var(--pulse-text); }
 #sideRail .news-card-link  { color: var(--accent); }
-/* === PULSE: Focus Card ================================================== */
-#focusCard { background: var(--pulse-surface-1); border-color: var(--pulse-border); border-radius: 8px; color: var(--pulse-text); }
-/* === PULSE: Demo Bar ==================================================== */
-#mockBar { background: #0a0e1a; border-top-color: var(--pulse-border); }
+
+
+/* === PULSE: Focus Card (at-bat tracker) ================================
+   focusCard.js renders inline styles using var(--card) and var(--border)
+   for the outer .fc-card / .fc-overlay-card wrappers — those vars are
+   team-themed at :root, which is why a red team (e.g. DBacks) bleeds
+   through. We can't change the JS, but the inline `background:var(--card,
+   #111827)` is overridable by class-targeted rules with higher specificity.
+   ===================================================================== */
+#focusCard,
+#focusCard .fc-card,
+#sideRail .fc-card,
+#pulse .fc-card,
+#pulse .fc-overlay-card {
+  background: var(--pulse-surface-1) !important;
+  border-color: var(--pulse-border) !important;
+  border-radius: 8px;
+  color: var(--pulse-text);
+}
+
+/* Neutralise the 2px / 3px team-color seam at top of fc-card / fc-overlay-card.
+   It's the first child div with inline `height:2px` or `height:3px` and a
+   linear-gradient using awayPrimary/homePrimary. We can't touch JS, but we
+   can repaint it via attribute-substring on the inline style. */
+#pulse .fc-card        > div[style*="height:2px"][style*="linear-gradient"],
+#pulse .fc-overlay-card > div[style*="height:3px"][style*="linear-gradient"] {
+  background: linear-gradient(90deg,
+    var(--pulse-border-strong) 0%,
+    var(--pulse-border-strong) 50%,
+    var(--pulse-text) 50%,
+    var(--pulse-text) 100%) !important;
+  opacity: 0.55;
+}
+
+/* Team-tinted score chips (.fc-card team boxes) carry an inline
+   `box-shadow:inset 0 -2px 0 <teamColor>`. Override the painted shadow
+   on those chips so they read neutral inside Pulse. */
+#pulse .fc-overlay-card span[style*="box-shadow:inset 0 -3px 0"] {
+  box-shadow: inset 0 -3px 0 var(--pulse-text) !important;
+  opacity: 0.92;
+}
+
+
+/* === PULSE: Mock / Demo Bar ============================================ */
+#mockBar {
+  background: #0a0e1a;
+  border-top-color: var(--pulse-border);
+}
 #mockBar .mock-bar-label { color: var(--pulse-muted); }
-#mockBar .mock-btn { background: var(--pulse-surface-2); border-color: var(--pulse-border); color: var(--pulse-text); border-radius: 5px; }
+#mockBar .mock-btn {
+  background: var(--pulse-surface-2);
+  border-color: var(--pulse-border);
+  color: var(--pulse-text);
+  border-radius: 5px;
+}
 #mockBar .mock-btn:hover { background: var(--pulse-surface-3); border-color: var(--pulse-border-strong); }
-#mockBar .mock-btn.active { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.25); color: #ffffff; }
+#mockBar .mock-btn.active {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.25);
+  color: #ffffff;
+}
 #mockBar .mock-progress { color: var(--pulse-muted); }
-/* === PULSE: Empty State ================================================= */
+
+
+/* === PULSE: Empty State (hero + grid) =================================== */
 #feedWrap #feedEmpty .empty-icon  { opacity: 0.5; }
 #feedWrap #feedEmpty .empty-title { color: var(--pulse-text); }
 #feedWrap #feedEmpty              { color: var(--pulse-muted); }
+
 #feedWrap .empty-upcoming-label { color: var(--pulse-muted); }
 #feedWrap .empty-hype-headline  { color: var(--pulse-text); }
 #feedWrap .empty-hype-sub       { color: var(--pulse-muted-2); }
-#feedWrap .hype-pill { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.10); color: var(--accent); border-radius: 14px; }
-#feedWrap .upcoming-hero { border-radius: 8px; }
-#feedWrap .demo-cta       { color: var(--pulse-muted); }
-#feedWrap .demo-cta:hover { color: var(--pulse-text); }
+#feedWrap .hype-pill {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.10);
+  color: var(--accent);
+  border-radius: 14px;
+}
+#feedWrap .upcoming-hero       { border-radius: 8px; }
+#feedWrap .demo-cta            { color: var(--pulse-muted); }
+#feedWrap .demo-cta:hover      { color: var(--pulse-text); }
+
+
+/* === PULSE: Notes (advisory — would require JS pass) ====================
+   The brief flagged emoji-in-JS as out of scope for a CSS-only pass.
+   Confirmed: every Pulse emoji (🌧 ⚾ 🏁 💥 🔥 🔔 💨 🏃 🏅 📈 🏏 🎯 📅 ✅
+   🔮 📋) is rendered as a JS template-literal text node, not a CSS
+   pseudo-element. This stylesheet leaves all emoji untouched.
+   ====================================================================== */
 
 #soundPanel { position: fixed; top: calc(var(--header-h) + 6px); right: 12px; width: 270px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 150; overflow: hidden; }
 .sound-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
@@ -922,7 +1080,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.3</div>
       </div>
     </div>
   </div>
