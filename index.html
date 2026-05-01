@@ -1477,7 +1477,7 @@ function exportPulseStateAsSnapshot(){
     +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px">📸 Pulse State Exported</div>'
     +'<textarea id="exportJson" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:12px;border-radius:8px;font-family:monospace;font-size:11px;resize:none;margin-bottom:12px">'+json+'</textarea>'
     +'<div style="display:flex;gap:10px">'
-    +'<button onclick="var el=document.getElementById(\'exportJson\');el.select();document.execCommand(\'copy\');alert(\'Copied!\');this.parentElement.parentElement.parentElement.remove()" style="flex:1;background:var(--secondary);color:var(--accent-text);border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>'
+    +'<button onclick="var el=document.getElementById(\'exportJson\');navigator.clipboard.writeText(el.value).catch(function(){el.select();document.execCommand(\'copy\');}).then(function(){alert(\'Copied!\');});this.parentElement.parentElement.parentElement.remove();" style="flex:1;background:var(--secondary);color:var(--accent-text);border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>'
     +'<button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);padding:10px;border-radius:6px;cursor:pointer;font-weight:600">Close</button>'
     +'</div>'
     +'</div>';
