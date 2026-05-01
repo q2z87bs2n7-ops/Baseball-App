@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.0</title>
+<title>MLB Tracker v3.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -621,8 +621,17 @@
 #focusOverlayCard::-webkit-scrollbar-thumb { background:#1e2d4a; border-radius:4px; }
 #focusOverlayCard::-webkit-scrollbar-thumb:hover { background:#3a4d75; }
 #focusOverlayCard { scrollbar-width:thin; scrollbar-color:#1e2d4a transparent; }
+#collectionBook::-webkit-scrollbar { width:4px; }
+#collectionBook::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+@keyframes toastPop {
+  0%   { opacity:0; transform:translateX(-50%) translateY(8px); }
+  15%  { opacity:1; transform:translateX(-50%) translateY(0); }
+  75%  { opacity:1; }
+  100% { opacity:0; transform:translateX(-50%) translateY(-4px); }
+}
+#cardCollectedToast.show { animation:toastPop 2s ease forwards; }
 #playerCardOverlay {
-  display:none; position:fixed; inset:0; z-index:400;
+  display:none; position:fixed; inset:0; z-index:600;
   background:rgba(0,0,0,0.72); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
   align-items:center; justify-content:center; padding:16px;
 }
@@ -709,7 +718,14 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.0</div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">📚 Card Collection</div>
+            <div style="font-size:.68rem;color:var(--muted)" id="collectionCountLabel">0 cards</div>
+          </div>
+          <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.6</div>
       </div>
     </div>
   </div>
@@ -871,9 +887,6 @@
 <div id="pulse" class="section">
   <div id="pulseLeft">
   <div id="alertStack"></div>
-  <div id="playerCardOverlay" onclick="dismissPlayerCard()">
-    <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
-  </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="focusMiniBar" style="display:none"></div>
   <div id="focusAlertBanner" style="display:none"></div>
@@ -908,6 +921,7 @@
   </div>
   </div>
   <div id="sideRail">
+    <div id="collectionRailModule" style="margin-bottom:12px"></div>
     <div id="focusCard" style="display:none;margin-bottom:16px"></div>
     <div id="sideRailNews">
       <div class="side-rail-title">MLB News</div>
@@ -925,9 +939,16 @@
 </div>
 </div>
 
+<div id="playerCardOverlay" onclick="dismissPlayerCard()">
+  <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
+</div>
 <div id="focusOverlay" onclick="if(event.target===this)closeFocusOverlay()" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1100;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
   <div id="focusOverlayCard" style="width:100%;max-width:520px;max-height:90vh;overflow-y:auto"></div>
 </div>
+<div id="collectionOverlay" onclick="if(event.target===this)closeCollection()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
+  <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
+</div>
+<div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--text);white-space:nowrap"></div>
 
 <div id="devToolsPanel">
   <div class="dev-panel-hd">
@@ -950,6 +971,10 @@
     <button class="dev-btn" onclick="window.PulseCard.demo();toggleDevTools()">
       <div class="dev-btn-label">💫 Card Variants</div>
       <div class="dev-btn-shortcut">Shift+V</div>
+    </button>
+    <button class="dev-btn" onclick="generateTestCard();toggleDevTools()">
+      <div class="dev-btn-label">🎴 Test Card</div>
+      <div class="dev-btn-shortcut">Shift+G</div>
     </button>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
@@ -1232,6 +1257,12 @@ let focusPitchSequence=[];
 let focusStatsCache={};
 let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
 let focusOverlayOpen=false;
+let collectionFilter='all';         // 'all' | 'HR' | 'RBI'
+let collectionSort='newest';        // 'newest' | 'rarity' | 'team'
+let collectionPage=0;               // 0-indexed page for binder display
+let collectionCareerStatsCache={};  // playerId → career stat object (session-only)
+let lastCollectionResult=null;      // {type,playerName,eventType,tier} — set by collectCard, read by flashCollectionRailMessage
+let collectionSlotsDisplay=[];      // sorted slot array set by renderCollectionBook; openCardFromCollection indexes into this
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -3210,6 +3241,337 @@ function replayRBICard(itemIndex) {
   if(DEBUG) console.log('Replaying RBI:', play.batterName, play.event, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
+// ── 📚 Card Collection ────────────────────────────────────────────────────────
+function tierRank(t) { return {legendary:4,epic:3,rare:2,common:1}[t]||0; }
+
+function getCardTier(badge, eventType, rbi) {
+  if (eventType === 'HR') {
+    if (badge.includes('WALK-OFF GRAND SLAM')) return 'legendary';
+    if (badge.includes('WALK-OFF') || badge.includes('GRAND SLAM')) return 'epic';
+    if (badge.includes('GO-AHEAD')) return 'rare';
+    return 'common';
+  } else {
+    if (badge.includes('WALK-OFF') && (rbi||0) >= 2) return 'legendary';
+    if (badge.includes('WALK-OFF') || (rbi||0) >= 3) return 'epic';
+    if (badge.includes('GO-AHEAD') || badge.includes('TIES IT')) return 'rare';
+    return 'common';
+  }
+}
+
+function loadCollection() {
+  try { return JSON.parse(localStorage.getItem('mlb_card_collection')||'{}'); } catch(e) { return {}; }
+}
+
+function saveCollection(obj) {
+  try { localStorage.setItem('mlb_card_collection', JSON.stringify(obj)); } catch(e) {}
+}
+
+function showCollectedToast(type, playerName, eventType, tier) {
+  var el = document.getElementById('cardCollectedToast');
+  if (!el) return;
+  var tierLabel = tier === 'legendary' ? '🔴 Legendary' : tier === 'epic' ? '🟠 Epic' : tier === 'rare' ? '🔵 Rare' : '⚪ Common';
+  var msg = type === 'new'       ? '🎴 New card — ' + playerName + ' ' + eventType + ' · ' + tierLabel
+          : type === 'upgrade'   ? '⬆ Upgraded — ' + playerName + ' ' + eventType + ' → ' + tierLabel
+          : '✓ Already have ' + playerName + '\'s ' + eventType + ' card';
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.classList.remove('show');
+  void el.offsetWidth; // force reflow to restart animation
+  el.classList.add('show');
+  setTimeout(function() { el.style.display = 'none'; el.classList.remove('show'); }, 2100);
+}
+
+function collectCard(data, force) {
+  var playerId = data.playerId, playerName = data.playerName, teamAbbr = data.teamAbbr;
+  var teamPrimary = data.teamPrimary, teamSecondary = data.teamSecondary, position = data.position || '';
+  var eventType = data.eventType, badge = data.badge || '', rbi = data.rbi || 0;
+  var key = playerId + '_' + eventType;
+  var tier = getCardTier(badge, eventType, rbi);
+
+  if (demoMode && !force) {
+    // Simulate the collection outcome so the rail flash message works during demo playback
+    var demoCol = loadCollection();
+    var demoEx = demoCol[key];
+    if (!demoEx) {
+      lastCollectionResult = { type:'new', playerName:playerName, eventType:eventType, tier:tier };
+    } else {
+      var dRank = tierRank(tier), dExRank = tierRank(demoEx.tier);
+      lastCollectionResult = {
+        type: dRank > dExRank ? 'upgrade' : 'dup',
+        playerName: playerName, eventType: eventType, tier: tier
+      };
+    }
+    return;
+  }
+
+  var col = loadCollection();
+  var eventCtx = {
+    badge: badge,
+    date: new Date().toLocaleDateString('en-CA'),
+    inning: data.inning || 0,
+    halfInning: data.halfInning || 'top',
+    awayAbbr: data.awayAbbr || '',
+    homeAbbr: data.homeAbbr || '',
+    awayScore: data.awayScore || 0,
+    homeScore: data.homeScore || 0,
+  };
+  if (!col[key]) {
+    col[key] = { playerId: playerId, playerName: playerName, teamAbbr: teamAbbr,
+                 teamPrimary: teamPrimary, teamSecondary: teamSecondary, position: position,
+                 eventType: eventType, tier: tier, collectedAt: Date.now(), events: [eventCtx] };
+    lastCollectionResult = { type:'new', playerName:playerName, eventType:eventType, tier:tier };
+    showCollectedToast('new', playerName, eventType, tier);
+  } else {
+    var existing = col[key];
+    var newRank = tierRank(tier), existRank = tierRank(existing.tier);
+    if (newRank > existRank) {
+      existing.tier = tier;
+      existing.events = [eventCtx];
+      existing.collectedAt = Date.now();
+      existing.teamPrimary = teamPrimary;
+      existing.teamSecondary = teamSecondary;
+      existing.position = position || existing.position;
+      lastCollectionResult = { type:'upgrade', playerName:playerName, eventType:eventType, tier:tier };
+      showCollectedToast('upgrade', playerName, eventType, tier);
+    } else if (newRank === existRank) {
+      if (existing.events.length < 10) existing.events.push(eventCtx);
+      lastCollectionResult = { type:'dup', playerName:playerName, eventType:eventType, tier:tier };
+      showCollectedToast('dup', playerName, eventType, tier);
+    }
+    // lower tier → silent no-op
+  }
+  saveCollection(col);
+  updateCollectionUI();
+}
+
+async function fetchCareerStats(playerId, position) {
+  if (collectionCareerStatsCache[playerId]) return collectionCareerStatsCache[playerId];
+  var isPitcher = ['SP','RP','CP','P'].indexOf((position||'').toUpperCase()) !== -1;
+  var group = isPitcher ? 'pitching' : 'hitting';
+  try {
+    var r = await fetch(MLB_BASE + '/people/' + playerId + '/stats?stats=career&group=' + group);
+    var d = await r.json();
+    var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+    if (!stat) return null;
+    var result = isPitcher
+      ? { careerERA: fmt(stat.era,2), careerWHIP: fmt(stat.whip,2), careerW: stat.wins||0, careerK: stat.strikeOuts||0 }
+      : { careerHR: stat.homeRuns||0, careerAVG: fmtRate(stat.avg), careerRBI: stat.rbi||0, careerOPS: fmtRate(stat.ops) };
+    collectionCareerStatsCache[playerId] = result;
+    return result;
+  } catch(e) { return null; }
+}
+
+function openCollection() {
+  var el = document.getElementById('collectionOverlay');
+  if (!el) return;
+  collectionPage = 0;
+  el.style.display = 'flex';
+  renderCollectionBook();
+}
+
+function closeCollection() {
+  var el = document.getElementById('collectionOverlay');
+  if (el) el.style.display = 'none';
+}
+
+function filterCollection(f) { collectionFilter = f; collectionPage = 0; renderCollectionBook(); }
+function sortCollection(s)   { collectionSort = s;   collectionPage = 0; renderCollectionBook(); }
+function goCollectionPage(dir) {
+  var col = loadCollection();
+  var slots = Object.values(col);
+  if (collectionFilter !== 'all') slots = slots.filter(function(s) { return s.eventType === collectionFilter; });
+  if (collectionSort === 'team') {
+    var abbrs = [];
+    slots.forEach(function(s) { if (abbrs.indexOf(s.teamAbbr) === -1) abbrs.push(s.teamAbbr); });
+    abbrs.sort();
+    collectionPage = Math.max(0, Math.min(abbrs.length - 1, collectionPage + dir));
+  } else {
+    var totalPages = Math.max(1, Math.ceil(slots.length / 9));
+    collectionPage = Math.max(0, Math.min(totalPages - 1, collectionPage + dir));
+  }
+  renderCollectionBook();
+}
+
+async function renderCollectionBook() {
+  var book = document.getElementById('collectionBook');
+  if (!book) return;
+  var col = loadCollection();
+  var slots = Object.values(col);
+  if (collectionFilter !== 'all') slots = slots.filter(function(s) { return s.eventType === collectionFilter; });
+  var teamContext = null;
+  if (collectionSort === 'rarity') {
+    slots.sort(function(a,b) { return tierRank(b.tier) - tierRank(a.tier) || b.collectedAt - a.collectedAt; });
+  } else if (collectionSort === 'team') {
+    // Build sorted unique team list, then isolate the current team as a single page
+    var teamAbbrs = [];
+    slots.forEach(function(s) { if (teamAbbrs.indexOf(s.teamAbbr) === -1) teamAbbrs.push(s.teamAbbr); });
+    teamAbbrs.sort();
+    var teamCount = teamAbbrs.length;
+    collectionPage = Math.max(0, Math.min(Math.max(0, teamCount - 1), collectionPage));
+    var currentAbbr = teamAbbrs[collectionPage] || '';
+    slots = slots.filter(function(s) { return s.teamAbbr === currentAbbr; });
+    slots.sort(function(a,b) { return tierRank(b.tier) - tierRank(a.tier); });
+    var td = TEAMS.find(function(t) { return t.short === currentAbbr; });
+    teamContext = {
+      abbr: currentAbbr,
+      primary:   (td && td.primary)   || '#444444',
+      secondary: (td && td.secondary) || '#888888',
+      teamId:    td ? td.id : null,
+      teamIdx:   collectionPage,
+      teamCount: teamCount,
+    };
+  } else {
+    slots.sort(function(a,b) { return b.collectedAt - a.collectedAt; });
+  }
+
+  if (collectionSort !== 'team') {
+    var totalPages = Math.max(1, Math.ceil(slots.length / 9));
+    collectionPage = Math.min(collectionPage, totalPages - 1);
+  }
+
+  // Fetch career stats for visible slots (all slots in team view; current page for others)
+  var pageSlots = (collectionSort === 'team')
+    ? slots
+    : slots.slice(collectionPage * 9, (collectionPage + 1) * 9);
+  var careerStatsMap = Object.assign({}, collectionCareerStatsCache);
+  await Promise.all(pageSlots.map(async function(slot) {
+    if (!careerStatsMap[slot.playerId]) {
+      var cs = await fetchCareerStats(slot.playerId, slot.position);
+      if (cs) careerStatsMap[slot.playerId] = cs;
+    }
+  }));
+
+  collectionSlotsDisplay = slots.slice(); // snapshot for openCardFromCollection index lookup
+  book.innerHTML = window.CollectionCard.renderBook({
+    slots: slots,
+    filter: collectionFilter,
+    sort: collectionSort,
+    page: collectionPage,
+    careerStatsMap: careerStatsMap,
+    teamContext: teamContext,
+  });
+}
+
+function openCardFromCollection(idx) {
+  var slot = collectionSlotsDisplay[idx];
+  if (!slot || !slot.events || !slot.events.length) return;
+
+  // Pick a random event from this slot's stored events (all at current tier)
+  var ev = slot.events[Math.floor(Math.random() * slot.events.length)];
+
+  // Resolve team IDs from stored abbreviations
+  var awayTeam = TEAMS.find(function(t) { return t.short === ev.awayAbbr; });
+  var homeTeam = TEAMS.find(function(t) { return t.short === ev.homeAbbr; });
+  var awayTeamId = awayTeam ? awayTeam.id : 0;
+  var homeTeamId = homeTeam ? homeTeam.id : 0;
+
+  // Leave collection open — playerCardOverlay (z-index 600) renders above it (z-index 500)
+  if (slot.eventType === 'HR') {
+    // Build overrideStats in MLB API field-name format so resolvePlayerCardData can use it
+    var careerStats = collectionCareerStatsCache[slot.playerId];
+    var overrideStats = null;
+    if (careerStats && careerStats.careerHR !== undefined) {
+      overrideStats = {
+        avg:       careerStats.careerAVG,
+        ops:       careerStats.careerOPS,
+        homeRuns:  careerStats.careerHR,
+        rbi:       careerStats.careerRBI,
+        _position: slot.position,  // fallback for rosterData miss
+      };
+    } else if (slot.position) {
+      overrideStats = { _position: slot.position };
+    }
+    showPlayerCard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, overrideStats, null, ev.badge, null);
+
+  } else {
+    // RBI — extract event type label from stored badge for getRBIBadge recompute
+    var badgeUp = (ev.badge || '').toUpperCase();
+    var eventType = '';
+    if      (badgeUp.indexOf('SINGLE')  !== -1) eventType = 'Single';
+    else if (badgeUp.indexOf('DOUBLE')  !== -1) eventType = 'Double';
+    else if (badgeUp.indexOf('TRIPLE')  !== -1) eventType = 'Triple';
+    else if (badgeUp.indexOf('SAC FLY') !== -1) eventType = 'Sac Fly';
+    else if (badgeUp.indexOf('WALK')    !== -1) eventType = 'Walk';
+    else if (badgeUp.indexOf('HBP')     !== -1) eventType = 'HBP';
+    // Extract stored RBI count from badge ("2-RUN …" → 2, else 1)
+    var rbiMatch = badgeUp.match(/^(\d+)-RUN/);
+    var rbi = rbiMatch ? parseInt(rbiMatch[1]) : 1;
+    showRBICard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, rbi, eventType, ev.awayScore, ev.homeScore, ev.inning, null);
+  }
+}
+
+function updateCollectionUI() {
+  var col = loadCollection();
+  var count = Object.keys(col).length;
+  var countEl = document.getElementById('collectionCountLabel');
+  if (countEl) countEl.textContent = count + (count === 1 ? ' card' : ' cards');
+  renderCollectionRailModule();
+}
+
+function renderCollectionRailModule() {
+  var el = document.getElementById('collectionRailModule');
+  if (!el || !window.CollectionCard) return;
+  var col = loadCollection();
+  var count = Object.keys(col).length;
+  el.innerHTML = window.CollectionCard.renderRailModule(count);
+}
+
+function flashCollectionRailMessage() {
+  if (!lastCollectionResult) return;
+  var el = document.getElementById('collectionRailModule');
+  if (!el) return;
+  var r = lastCollectionResult;
+  lastCollectionResult = null;
+  var tierColor = { legendary:'#e03030', epic:'#f59e0b', rare:'#3b82f6', common:'#9aa0a8' }[r.tier] || '#9aa0a8';
+  var label = r.type === 'new' ? 'New card' : r.type === 'upgrade' ? '⬆ Upgraded' : '✓ Already have';
+  var name = r.playerName.split(' ').pop(); // last name for brevity
+  el.innerHTML =
+    '<div onclick="openCollection()" style="' +
+      'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;' +
+      'border-radius:8px;border:1px solid ' + tierColor + '44;' +
+      'background:linear-gradient(90deg,' + tierColor + '18,transparent);' +
+      'font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;">' +
+      '<span style="width:8px;height:8px;border-radius:50%;background:' + tierColor + ';flex-shrink:0;"></span>' +
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;">' + label + ' — ' + name + ' ' + r.eventType + '</span>' +
+      '<span style="color:var(--muted);font-size:11px;flex-shrink:0;">Open →</span>' +
+    '</div>';
+  setTimeout(function() { renderCollectionRailModule(); }, 4000);
+}
+
+function generateTestCard() {
+  var pool = (rosterData.hitting||[]).concat(rosterData.pitching||[]);
+  if (!pool.length) { showCollectedToast('new', 'No roster', '', 'common'); return; }
+  var p = pool[Math.floor(Math.random() * pool.length)];
+  var eventType = Math.random() > 0.5 ? 'HR' : 'RBI';
+  var tiers = ['common','common','rare','epic','legendary'];
+  var tier = tiers[Math.floor(Math.random() * tiers.length)];
+  var badgeMap = {
+    HR:  { legendary:'WALK-OFF GRAND SLAM!', epic:'GRAND SLAM!', rare:'GO-AHEAD HOME RUN!', common:'💥 HOME RUN!' },
+    RBI: { legendary:'WALK-OFF DOUBLE!', epic:'WALK-OFF SINGLE!', rare:'GO-AHEAD SINGLE!', common:'RBI SINGLE!' }
+  };
+  var rbiByTier = { legendary:2, epic:1, rare:1, common:1 };
+  var innings = [1,2,3,4,5,6,7,8,9];
+  var halves  = ['top','bottom'];
+  var scores  = [0,1,2,3,4,5];
+  collectCard({
+    playerId:      p.person.id,
+    playerName:    p.person.fullName,
+    teamAbbr:      activeTeam.short,
+    teamPrimary:   activeTeam.primary,
+    teamSecondary: activeTeam.secondary,
+    position:      (p.position && p.position.abbreviation) || 'OF',
+    eventType:     eventType,
+    badge:         badgeMap[eventType][tier],
+    rbi:           rbiByTier[tier],
+    inning:        innings[Math.floor(Math.random()*innings.length)],
+    halfInning:    halves[Math.floor(Math.random()*halves.length)],
+    awayAbbr:      'NYM',
+    homeAbbr:      activeTeam.short,
+    awayScore:     scores[Math.floor(Math.random()*scores.length)],
+    homeScore:     scores[Math.floor(Math.random()*scores.length)],
+  }, true);  // force=true bypasses demoMode guard
+}
+
 function baseDiamondSvg(on1,on2,on3) {
   var dim='rgba(255,255,255,0.18)',lit='#ffd000',glow='filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
   var s1=on1?' style="'+glow+'"':'', s2=on2?' style="'+glow+'"':'', s3=on3?' style="'+glow+'"':'';
@@ -3417,6 +3779,9 @@ async function resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamI
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
   position = (rEntry && rEntry.position && rEntry.position.abbreviation) || null;
+  // Caller-supplied hints (e.g. from collection slot) fill gaps when rosterData doesn't have this player
+  if (!position && overrideStats && overrideStats._position) position = overrideStats._position;
+  if (!jerseyNumber && overrideStats && overrideStats._jersey) jerseyNumber = overrideStats._jersey;
   if ((!position || !jerseyNumber) && gamePk) {
     try {
       var bs = await fetchBoxscore(gamePk);
@@ -3475,11 +3840,25 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
   window._playerCardTimer = setTimeout(dismissPlayerCard, 5500);
+  // COLLECTION HOOK — HR
+  if (!demoMode) {
+    var gs = gameStates[gamePk] || {};
+    collectCard({
+      playerId: d.batterId, playerName: d.batterName,
+      teamAbbr: d.teamAbbr, teamPrimary: d.teamData.primary, teamSecondary: d.teamData.secondary,
+      position: d.position || '',
+      eventType: 'HR', badge: badgeText || '💥 HOME RUN!',
+      inning: gs.inning || 0, halfInning: halfInning,
+      awayAbbr: gs.awayAbbr || '', homeAbbr: gs.homeAbbr || '',
+      awayScore: gs.awayScore || 0, homeScore: gs.homeScore || 0,
+    });
+  }
 }
 
 function dismissPlayerCard() {
   var overlay = document.getElementById('playerCardOverlay');
   if (!overlay || !overlay.classList.contains('open')) return;
+  flashCollectionRailMessage();
   if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
   overlay.classList.add('closing');
   setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, 280);
@@ -3609,6 +3988,18 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
   window._playerCardTimer = setTimeout(dismissPlayerCard, 5500);
+  // COLLECTION HOOK — RBI
+  if (!demoMode) {
+    collectCard({
+      playerId: batterId, playerName: batterName,
+      teamAbbr: teamAbbr, teamPrimary: teamData.primary, teamSecondary: teamData.secondary,
+      position: position || '',
+      eventType: 'RBI', badge: badge, rbi: rbi,
+      inning: inning, halfInning: halfInning,
+      awayAbbr: awayAbbr, homeAbbr: homeAbbr,
+      awayScore: aScore, homeScore: hScore,
+    });
+  }
 }
 
 function confirmDevToolsChanges(){
@@ -4601,6 +4992,7 @@ function togglePush(){
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='';mt.style.background='var(--secondary)';mk.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
+  updateCollectionUI();
   pulseInitialized=true;initLeaguePulse();
 })();
 
@@ -4618,6 +5010,8 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
   if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
+  if(e.shiftKey && e.key === 'G') { generateTestCard(); }
+  if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
 });
 
 document.addEventListener('click',onSoundPanelClickOutside);
@@ -4627,6 +5021,8 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
 
 <script src="pulse-card-templates.js"></script>
 <script src="focusCard.js"></script>
+<script src="collectionCard.js"></script>
+<script>updateCollectionUI();</script>
 
 <div class="live-view" id="liveView">
   <div style="max-width:1360px;margin:0 auto;padding:20px">
