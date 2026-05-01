@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.1</title>
+<title>MLB Tracker v3.9.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(160,100,255,0.10);--hr-border:rgba(160,100,255,0.40);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
-  body{background:var(--dark);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
+  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--app-bg:#0a0e1a;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(160,100,255,0.10);--hr-border:rgba(160,100,255,0.40);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
+  body{background:var(--app-bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
   header{background:linear-gradient(135deg,var(--primary) 0%,#001a4a 100%);border-bottom:1px solid rgba(255,255,255,.08);padding:0 20px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100}
   .logo{display:flex;align-items:center;gap:10px;font-size:1.2rem;font-weight:700;color:var(--header-text)}
   .logo span{color:var(--accent)}
@@ -30,7 +30,7 @@
   .team-chip{display:none;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1);padding:6px 12px;border-radius:20px;color:var(--header-text);font-size:12px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
   .settings-wrap{position:relative;margin-left:4px}
   .settings-btn{background:none;border:1px solid rgba(255,255,255,.2);color:color-mix(in srgb,var(--header-text) 80%,transparent);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:1rem}
-  .settings-panel{display:none;position:absolute;top:44px;right:0;background:#0a0f1e;border:1px solid var(--border);border-radius:0 0 12px 12px;padding:16px;width:260px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+  .settings-panel{display:none;position:absolute;top:44px;right:0;background:var(--app-bg);border:1px solid var(--border);border-radius:0 0 12px 12px;padding:16px;width:260px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
   .settings-panel.open{display:block}
   .main{padding:20px;max-width:1360px;margin:0 auto}
   .section{display:none}.section.active{display:block}
@@ -337,7 +337,7 @@
   top: var(--header-h);
   z-index: 90;
   min-height: var(--ticker-h);
-  background: var(--dark);
+  background: var(--app-bg);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -501,7 +501,7 @@
 
 #mockBar {
   height: var(--mockbar-h);
-  background: var(--dark);
+  background: var(--app-bg);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -922,7 +922,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.2</div>
       </div>
     </div>
   </div>
@@ -4405,7 +4405,7 @@ function updateColorOverride(context,colorVar,value){
 }
 
 function captureCurrentTheme(context){
-  var cssVarMap={dark:'--dark',card:'--card',card2:'--card2',border:'--border',primary:'--primary',secondary:'--secondary',accent:'--accent',accentText:'--accent-text',headerText:'--header-text'};
+  var cssVarMap={card:'--card',card2:'--card2',border:'--border',primary:'--primary',secondary:'--secondary',accent:'--accent',accentText:'--accent-text',headerText:'--header-text'};
   var root=document.documentElement;
   Object.keys(cssVarMap).forEach(function(v){
     var cssVal=getComputedStyle(root).getPropertyValue(cssVarMap[v]).trim();
@@ -4466,7 +4466,6 @@ function pickAccent(secondaryHex,cardHex){var sLum=relLuminance(secondaryHex),cC
 function pickHeaderText(primaryHex){return relLuminance(primaryHex)>0.5?'#0a0f1e':'#ffffff';}
 function applyTeamTheme(team){
   if(devColorLocked&&devColorOverrides.app.primary){
-    document.documentElement.style.setProperty('--dark',devColorOverrides.app.dark);
     document.documentElement.style.setProperty('--card',devColorOverrides.app.card);
     document.documentElement.style.setProperty('--card2',devColorOverrides.app.card2);
     document.documentElement.style.setProperty('--border',devColorOverrides.app.border);
@@ -4484,7 +4483,6 @@ function applyTeamTheme(team){
   var accentText=accentLum>0.4?'#111827':'#ffffff';
   var hueOf=function(hex){hex=hex.replace('#','');var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
   var h=hueOf(cp),cardHex=hslHex(h,45,22);
-  document.documentElement.style.setProperty('--dark',hslHex(h,50,18));
   document.documentElement.style.setProperty('--card',cardHex);
   document.documentElement.style.setProperty('--card2',hslHex(h,40,26));
   document.documentElement.style.setProperty('--border',hslHex(h,35,30));
@@ -4494,7 +4492,7 @@ function applyTeamTheme(team){
   var safeAccent=pickAccent(accent,cardHex),headerText=pickHeaderText(cp);
   document.documentElement.style.setProperty('--accent',safeAccent);
   document.documentElement.style.setProperty('--header-text',headerText);
-  try{localStorage.setItem('mlb_theme_vars',JSON.stringify({'--dark':hslHex(h,50,18),'--card':cardHex,'--card2':hslHex(h,40,26),'--border':hslHex(h,35,30),'--primary':cp,'--secondary':accent,'--accent-text':accentText,'--accent':safeAccent,'--header-text':headerText}));}catch(e){}
+  try{localStorage.setItem('mlb_theme_vars',JSON.stringify({'--card':cardHex,'--card2':hslHex(h,40,26),'--border':hslHex(h,35,30),'--primary':cp,'--secondary':accent,'--accent-text':accentText,'--accent':safeAccent,'--header-text':headerText}));}catch(e){}
   document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
   document.title=team.short+' Tracker';
   var tcm=document.getElementById('themeColorMeta');if(tcm)tcm.setAttribute('content',cp);
@@ -4503,13 +4501,11 @@ function applyTeamTheme(team){
 
 function applyPulseMLBTheme(){
   if(devColorLocked&&devColorOverrides.pulse.primary){
-    document.documentElement.style.setProperty('--dark',devColorOverrides.pulse.dark);
     document.documentElement.style.setProperty('--card',devColorOverrides.pulse.card);
     document.documentElement.style.setProperty('--card2',devColorOverrides.pulse.card2);
     document.documentElement.style.setProperty('--border',devColorOverrides.pulse.border);
     return;
   }
-  document.documentElement.style.setProperty('--dark','#0F1B2E');
   document.documentElement.style.setProperty('--card','#172B4D');
   document.documentElement.style.setProperty('--card2','#1E3A5F');
   document.documentElement.style.setProperty('--border','#2C4A7F');
