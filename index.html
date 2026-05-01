@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.6</title>
+<title>MLB Tracker v3.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -725,7 +725,7 @@
           </div>
           <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.7</div>
       </div>
     </div>
   </div>
@@ -1193,7 +1193,7 @@ let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameS
 let screenWakeLock=null;
 
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
-let storyPool=[],storyShownId=null,storyRotateTimer=null;
+let storyPool=[],storyShownId=null,storyRotateTimer=null,storyPoolTimer=null;
 let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersLastFetch=0;
 let dailyHitsTracker={},dailyPitcherKs={},stolenBaseEvents=[];
 let storyCarouselRawGameData={};
@@ -1255,6 +1255,7 @@ let focusState={
 };
 let focusPitchSequence=[];
 let focusStatsCache={};
+let focusLastTimecode=null;
 let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
 let focusOverlayOpen=false;
 let collectionFilter='all';         // 'all' | 'HR' | 'RBI'
@@ -1298,6 +1299,9 @@ function initReal() {
   document.addEventListener('visibilitychange',onNewsVisibilityChange);
   pollLeaguePulse().then(function(){setFocusGame(focusGamePk);});
   pulseTimer=setInterval(pollLeaguePulse,15000);
+  buildStoryPool();
+  if(storyPoolTimer){clearInterval(storyPoolTimer);storyPoolTimer=null;}
+  storyPoolTimer=setInterval(buildStoryPool,30000);
 }
 
 async function pollLeaguePulse() {
@@ -1406,7 +1410,6 @@ async function pollLeaguePulse() {
     updateInningStates();
     renderTicker(); updateFeedEmpty();
     renderSideRailGames();
-    await buildStoryPool();
     selectFocusGame();
     refreshDebugPanel();
   } catch(e){if(e.name!=='AbortError')console.error('poll error',e);}
@@ -3039,6 +3042,7 @@ function setFocusGame(pk) {
   focusGamePk=pk;
   focusPitchSequence=[];
   focusCurrentAbIdx=null;
+  focusLastTimecode=null;
   focusState.batterStats=null;
   focusState.pitcherStats=null;
   dismissFocusAlert();
@@ -3116,8 +3120,25 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
 async function pollFocusRich(sig) {
   if(!focusGamePk||demoMode) return;
   try {
-    var r=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live',sig?{signal:sig}:{});
-    var data=await r.json();
+    var data;
+    if(!focusLastTimecode) {
+      // First call: full feed to seed state and get initial timecode
+      var r=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live',sig?{signal:sig}:{});
+      data=await r.json();
+      var tsList=data&&data.metaData&&data.metaData.timeStamp;
+      if(tsList) focusLastTimecode=tsList;
+    } else {
+      // Subsequent calls: delta only (~1-5KB vs ~500KB)
+      var tsResp=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live/timestamps',sig?{signal:sig}:{});
+      var tsArr=await tsResp.json();
+      var latest=Array.isArray(tsArr)&&tsArr.length?tsArr[tsArr.length-1]:null;
+      if(!latest||latest===focusLastTimecode) return; // nothing new
+      var dResp=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live/diffPatch?startTimecode='+encodeURIComponent(focusLastTimecode)+'&endTimecode='+encodeURIComponent(latest),sig?{signal:sig}:{});
+      var patch=await dResp.json();
+      focusLastTimecode=latest;
+      // diffPatch wraps currentPlay under liveData.plays.currentPlay same as full feed
+      data=patch;
+    }
     var cp=data&&data.liveData&&data.liveData.plays&&data.liveData.plays.currentPlay;
     if(!cp) return;
     var abIdx=cp.about&&cp.about.atBatIndex;
@@ -3683,6 +3704,7 @@ function addFeedItem(gamePk,data) {
   var item={gamePk:gamePk,data:data,ts:data.playTime||new Date()};
   var idx=feedItems.findIndex(function(fi){return fi.ts<=item.ts;});
   if(idx===-1) feedItems.push(item); else feedItems.splice(idx,0,item);
+  if(feedItems.length>600) feedItems.length=600;
   var el=buildFeedEl(item);
   el.dataset.ts=item.ts.getTime();
   if(!enabledGames.has(+gamePk)) el.classList.add('feed-hidden');
