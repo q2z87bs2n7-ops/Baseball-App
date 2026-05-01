@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.b</title>
+<title>MLB Tracker v3.9.c</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -732,7 +732,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.b</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.c</div>
       </div>
     </div>
   </div>
@@ -1286,6 +1286,9 @@ let focusStatsCache={};
 let focusLastTimecode=null;
 let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
 let focusOverlayOpen=false;
+let mlbAudioWindow=null;  // ref to popup window opened by openFocusAudio()
+let mlbAudioActive=false; // true once user has opted in this session
+const MLB_GAMEDAY_AUDIO_URL='https://www.mlb.com/gameday/{pk}/audio'; // adjust if URL pattern changes
 let collectionFilter='all';         // 'all' | 'HR' | 'RBI'
 let collectionSort='newest';        // 'newest' | 'rarity' | 'team'
 let collectionPage=0;               // 0-indexed page for binder display
@@ -3076,8 +3079,42 @@ function setFocusGame(pk) {
   if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
   if(focusAbortCtrl){focusAbortCtrl.abort();focusAbortCtrl=null;}
   if(focusOverlayOpen) renderFocusOverlay();
+  updateFocusAudioForGame(pk);
   pollFocusLinescore();
   focusFastTimer=setInterval(pollFocusLinescore,5000);
+}
+
+function focusAudioUrl(pk){return MLB_GAMEDAY_AUDIO_URL.replace('{pk}',pk);}
+function openFocusAudio(){
+  if(!focusGamePk) return;
+  var url=focusAudioUrl(focusGamePk);
+  var w=Math.min(420,window.screen.width-20),h=320;
+  var left=Math.max(0,window.screen.width-w-20),top=Math.max(0,window.screen.height-h-80);
+  mlbAudioWindow=window.open(url,'mlbAudio','width='+w+',height='+h+',left='+left+',top='+top);
+  if(!mlbAudioWindow){alert('Popup blocked — allow popups for this site to use Listen Live.');return;}
+  mlbAudioActive=true;
+  renderFocusCard();
+  if(focusOverlayOpen) renderFocusOverlay();
+}
+function closeFocusAudio(){
+  if(mlbAudioWindow&&!mlbAudioWindow.closed){try{mlbAudioWindow.close();}catch(e){}}
+  mlbAudioWindow=null;mlbAudioActive=false;
+  renderFocusCard();
+  if(focusOverlayOpen) renderFocusOverlay();
+}
+function updateFocusAudioForGame(pk){
+  if(!mlbAudioActive||!pk) return;
+  if(!mlbAudioWindow||mlbAudioWindow.closed){mlbAudioWindow=null;mlbAudioActive=false;return;}
+  try{mlbAudioWindow.location.href=focusAudioUrl(pk);}catch(e){console.warn('focus audio nav failed',e);}
+}
+function buildFocusAudioBtn(){
+  if(!focusGamePk) return '';
+  if(mlbAudioWindow&&mlbAudioWindow.closed){mlbAudioWindow=null;mlbAudioActive=false;}
+  var label=mlbAudioActive?'🔇 Stop Audio':'🎙️ Listen Live';
+  var fn=mlbAudioActive?'closeFocusAudio()':'openFocusAudio()';
+  var bg=mlbAudioActive?'#2a1414':'#0c1426';
+  var bd=mlbAudioActive?'#5a2020':'#1e2d4a';
+  return '<button onclick="'+fn+'" style="margin-top:8px;width:100%;padding:8px;background:'+bg+';border:1px solid '+bd+';color:#e8eaf0;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;letter-spacing:.04em">'+label+'</button>';
 }
 
 async function pollFocusLinescore() {
@@ -3192,7 +3229,7 @@ function renderFocusCard() {
   var el=document.getElementById('focusCard'); if(!el) return;
   if(!focusGamePk||(!focusState.awayAbbr&&!demoMode)){el.style.display='none';return;}
   el.style.display='';
-  el.innerHTML=window.FocusCard.renderCard(focusState);
+  el.innerHTML=window.FocusCard.renderCard(focusState)+buildFocusAudioBtn();
 }
 
 function renderFocusMiniBar() {
@@ -3231,7 +3268,7 @@ function renderFocusOverlay() {
               halfInning:g.halfInning,isFocused:g.gamePk===focusGamePk};
     })
   });
-  card.innerHTML=window.FocusCard.renderOverlay(data);
+  card.innerHTML=window.FocusCard.renderOverlay(data)+buildFocusAudioBtn();
 }
 
 function showFocusAlert(pk, reason) {
