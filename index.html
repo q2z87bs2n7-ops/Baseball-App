@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.61</title>
+<title>MLB Tracker v2.64</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -176,6 +176,7 @@
     #pulse { display: flex; gap: 12px; width: 100%; }
     #pulseLeft { flex: 1 1 700px; }
     #sideRail { flex: 0 0 320px; display: block !important; }
+    #focusMiniBar { display: none !important; }
     #pulse.pulse-empty #pulseLeft { flex: 1 1 auto; max-width: 900px; margin: 0 auto; }
     #pulse.pulse-empty #sideRail { display: none !important; }
     #sideRailGames { margin-top: 0; }
@@ -615,6 +616,11 @@
   70%  { transform:translateY(0) scale(1); }
   100% { opacity:1; transform:translateY(0) scale(1); }
 }
+#focusOverlayCard::-webkit-scrollbar { width:4px; }
+#focusOverlayCard::-webkit-scrollbar-track { background:transparent; }
+#focusOverlayCard::-webkit-scrollbar-thumb { background:#1e2d4a; border-radius:4px; }
+#focusOverlayCard::-webkit-scrollbar-thumb:hover { background:#3a4d75; }
+#focusOverlayCard { scrollbar-width:thin; scrollbar-color:#1e2d4a transparent; }
 #playerCardOverlay {
   display:none; position:fixed; inset:0; z-index:400;
   background:rgba(0,0,0,0.72); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
@@ -703,7 +709,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.61</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.64</div>
       </div>
     </div>
   </div>
@@ -869,6 +875,8 @@
     <div id="playerCard"><div class="pc-loading">Loading player card…</div></div>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
+  <div id="focusMiniBar" style="display:none"></div>
+  <div id="focusAlertBanner" style="display:none"></div>
   <div id="storyCarousel" style="display:none">
     <div class="story-card-wrap">
       <button class="story-nav story-nav-prev" onclick="prevStory()">‹</button>
@@ -900,12 +908,7 @@
   </div>
   </div>
   <div id="sideRail">
-    <div id="pulseFeedHeader" style="margin-bottom:24px;padding:8px 0">
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
-        <span style="font-size:23px">⚡</span>
-        <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text)">MLB Pulse</span>
-      </div>
-    </div>
+    <div id="focusCard" style="display:none;margin-bottom:16px"></div>
     <div id="sideRailNews">
       <div class="side-rail-title">MLB News</div>
       <div id="newsCarousel">
@@ -920,6 +923,10 @@
     </div>
   </div>
 </div>
+</div>
+
+<div id="focusOverlay" onclick="if(event.target===this)closeFocusOverlay()" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1100;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+  <div id="focusOverlayCard" style="width:100%;max-width:520px;max-height:90vh;overflow-y:auto"></div>
 </div>
 
 <div id="devToolsPanel">
@@ -1022,6 +1029,29 @@
             <div><div style="font-size:.6rem;color:var(--muted);margin-bottom:4px">Enable</div><input type="checkbox" id="tuneBasesLoadedEnable" style="width:16px;height:16px;cursor:pointer" onchange="updateTuning('basesloaded_enable',this.checked.toString())"></div>
             <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneBasesLoadedPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
           </div>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🎯 Focus Mode Tuning</summary>
+      <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:6px">Badge Thresholds</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:.6rem;color:var(--muted)">CRITICAL score ≥</div><input type="number" id="tuneFocusCritical" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">HIGH score ≥</div><input type="number" id="tuneFocusHigh" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          </div>
+          <div style="font-size:.58rem;margin-top:4px;color:var(--muted)">Scores below HIGH threshold show NORMAL</div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:6px">Auto-Switch Alert</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:.6rem;color:var(--muted)">Switch margin (pts)</div><input type="number" id="tuneFocusSwitchMargin" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">Alert cooldown (ms)</div><input type="number" id="tuneFocusAlertCooldown" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          </div>
+          <div style="font-size:.58rem;margin-top:4px;color:var(--muted)">Rival game must score this many pts higher to trigger a switch suggestion</div>
         </div>
       </div>
     </details>
@@ -1160,7 +1190,11 @@ let devTuning={
   nohitter_inning_floor: 6,
   nohitter_priority: 95,
   basesloaded_enable: true,
-  basesloaded_priority: 88
+  basesloaded_priority: 88,
+  focus_critical: 120,       // score threshold for CRITICAL badge
+  focus_high: 70,            // score threshold for HIGH badge
+  focus_switch_margin: 25,   // rival game must score this much higher to trigger soft alert
+  focus_alert_cooldown: 90000 // ms between soft alerts for same game
 };
 let devColorLocked=false;
 let devShowPushOnDesktop=false;
@@ -1174,8 +1208,29 @@ const devTuningDefaults={
   biginning_priority:75,biginning_threshold:3,
   walkoff_priority:90,walkoff_cooldown:300000,
   nohitter_inning_floor:6,nohitter_priority:95,
-  basesloaded_enable:true,basesloaded_priority:88
+  basesloaded_enable:true,basesloaded_priority:88,
+  focus_critical:120,focus_high:70,focus_switch_margin:25,focus_alert_cooldown:90000
 };
+
+// ── Focus Mode globals (v2.61) ────────────────────────────────────────────────
+let focusGamePk=null;
+let focusFastTimer=null;
+let focusCurrentAbIdx=null;
+let focusState={
+  balls:0,strikes:0,outs:0,inning:1,halfInning:'top',
+  currentBatterId:null,currentBatterName:'',
+  currentPitcherId:null,currentPitcherName:'',
+  onFirst:false,onSecond:false,onThird:false,
+  awayAbbr:'',homeAbbr:'',awayScore:0,homeScore:0,
+  awayPrimary:'#444',homePrimary:'#444',
+  tensionLabel:'NORMAL',tensionColor:'#9aa0a8',
+  lastPitch:null,
+  batterStats:null,pitcherStats:null
+};
+let focusPitchSequence=[];
+let focusStatsCache={};
+let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
+let focusOverlayOpen=false;
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -1209,7 +1264,7 @@ function initReal() {
   document.addEventListener('visibilitychange',onStoryVisibilityChange);
   document.removeEventListener('visibilitychange',onNewsVisibilityChange);
   document.addEventListener('visibilitychange',onNewsVisibilityChange);
-  pollLeaguePulse();
+  pollLeaguePulse().then(function(){setFocusGame(focusGamePk);});
   pulseTimer=setInterval(pollLeaguePulse,15000);
 }
 
@@ -1317,6 +1372,7 @@ async function pollLeaguePulse() {
     renderTicker(); updateFeedEmpty();
     renderSideRailGames();
     await buildStoryPool();
+    selectFocusGame();
     refreshDebugPanel();
   } catch(e){console.error('poll error',e);}
 }
@@ -2893,6 +2949,222 @@ function refreshDebugPanel(){
   panel.innerHTML=html;
 }
 
+// ── Focus Mode functions (v2.61) ──────────────────────────────────────────────
+
+function calcFocusScore(g) {
+  if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
+  var diff=Math.abs(g.awayScore-g.homeScore);
+  var closeness=diff===0?60:diff===1?45:diff===2?25:5;
+  var runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
+  var isRISP=g.onSecond||g.onThird;
+  var isBL=g.onFirst&&g.onSecond&&g.onThird;
+  var isWalkoff=g.halfInning==='bottom'&&g.inning>=9&&(g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
+  var isNoHit=g.inning>=6&&(g.awayHits===0||g.homeHits===0);
+  var situation=isBL?40:isRISP?25:runners>0?15:0;
+  if(isWalkoff) situation+=50;
+  if(isNoHit) situation+=30;
+  var countBonus=0;
+  if(g.gamePk===focusGamePk){
+    if(focusState.balls===3&&focusState.strikes===2) countBonus=20;
+    else if(focusState.strikes===2) countBonus=12;
+    if(focusState.outs===2) countBonus+=8;
+  }
+  var innMult=g.inning<=5?0.6:g.inning<=8?1.0:g.inning===9?1.5:2.0;
+  return (closeness+situation+countBonus)*innMult;
+}
+
+function getTensionInfo(score) {
+  if(score>=devTuning.focus_critical) return {label:'CRITICAL',color:'#e03030'};
+  if(score>=devTuning.focus_high)     return {label:'HIGH',color:'#f59e0b'};
+  return {label:'NORMAL',color:'#9aa0a8'};
+}
+
+function selectFocusGame() {
+  var liveGames=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  if(!liveGames.length) return;
+  var scored=liveGames.map(function(g){return {g:g,score:calcFocusScore(g)};});
+  scored.sort(function(a,b){return b.score-a.score;});
+  var best=scored[0];
+  // Auto-select on first run or if current game is no longer live
+  if(!focusGamePk||!gameStates[focusGamePk]||gameStates[focusGamePk].status!=='Live') {
+    setFocusGame(best.g.gamePk); return;
+  }
+  // Soft alert if a different game scores ≥25 higher (with 90s cooldown)
+  if(best.g.gamePk!==focusGamePk&&best.score-calcFocusScore(gameStates[focusGamePk])>=devTuning.focus_switch_margin) {
+    var now=Date.now();
+    if(!focusAlertShown[best.g.gamePk]||(now-focusAlertShown[best.g.gamePk])>devTuning.focus_alert_cooldown) {
+      focusAlertShown[best.g.gamePk]=now;
+      var tension=getTensionInfo(best.score);
+      showFocusAlert(best.g.gamePk,tension.label+' · '+best.g.awayAbbr+' @ '+best.g.homeAbbr);
+    }
+  }
+}
+
+function setFocusGame(pk) {
+  if(!pk) return;
+  focusGamePk=pk;
+  focusPitchSequence=[];
+  focusCurrentAbIdx=null;
+  focusState.batterStats=null;
+  focusState.pitcherStats=null;
+  dismissFocusAlert();
+  if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
+  if(focusOverlayOpen) renderFocusOverlay();
+  pollFocusLinescore();
+  focusFastTimer=setInterval(pollFocusLinescore,5000);
+}
+
+async function pollFocusLinescore() {
+  if(!focusGamePk) return;
+  if(demoMode) { renderFocusCard(); renderFocusMiniBar(); return; }
+  try {
+    var r=await fetch(MLB_BASE+'/game/'+focusGamePk+'/linescore');
+    var ls=await r.json();
+    var g=gameStates[focusGamePk]||{};
+    var tension=getTensionInfo(calcFocusScore(g));
+    focusState={
+      balls:ls.balls||0, strikes:ls.strikes||0, outs:ls.outs||0,
+      inning:ls.currentInning||g.inning||1,
+      halfInning:ls.isTopInning===false?'bottom':'top',
+      currentBatterId:(ls.offense&&ls.offense.batter&&ls.offense.batter.id)||null,
+      currentBatterName:(ls.offense&&ls.offense.batter&&ls.offense.batter.fullName)||'',
+      currentPitcherId:(ls.defense&&ls.defense.pitcher&&ls.defense.pitcher.id)||null,
+      currentPitcherName:(ls.defense&&ls.defense.pitcher&&ls.defense.pitcher.fullName)||'',
+      onFirst:!!(ls.offense&&ls.offense.first),
+      onSecond:!!(ls.offense&&ls.offense.second),
+      onThird:!!(ls.offense&&ls.offense.third),
+      awayAbbr:g.awayAbbr||'', homeAbbr:g.homeAbbr||'',
+      awayScore:g.awayScore||0, homeScore:g.homeScore||0,
+      awayPrimary:g.awayPrimary||'#444', homePrimary:g.homePrimary||'#444',
+      tensionLabel:tension.label, tensionColor:tension.color,
+      lastPitch:focusPitchSequence.length?focusPitchSequence[focusPitchSequence.length-1]:null,
+      batterStats:focusStatsCache[(ls.offense&&ls.offense.batter&&ls.offense.batter.id)]||null,
+      pitcherStats:focusStatsCache[(ls.defense&&ls.defense.pitcher&&ls.defense.pitcher.id)]||null
+    };
+    fetchFocusPlayerStats(focusState.currentBatterId, focusState.currentPitcherId);
+    renderFocusCard(); renderFocusMiniBar();
+    if(focusOverlayOpen) renderFocusOverlay();
+    pollFocusRich();
+  } catch(e) {}
+}
+
+async function fetchFocusPlayerStats(batterId, pitcherId) {
+  if(demoMode) return;
+  var changed=false;
+  if(batterId&&!focusStatsCache[batterId]) {
+    try {
+      var r=await fetch(MLB_BASE+'/people/'+batterId+'/stats?stats=season&group=hitting&season='+SEASON);
+      var d=await r.json();
+      var s=(d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat)||{};
+      focusStatsCache[batterId]={avg:s.avg||'—',obp:s.obp||'—',ops:s.ops||'—',hr:s.homeRuns!=null?s.homeRuns:'—',rbi:s.rbi!=null?s.rbi:'—'};
+      changed=true;
+    } catch(e){}
+  }
+  if(pitcherId&&!focusStatsCache[pitcherId]) {
+    try {
+      var r2=await fetch(MLB_BASE+'/people/'+pitcherId+'/stats?stats=season&group=pitching&season='+SEASON);
+      var d2=await r2.json();
+      var s2=(d2.stats&&d2.stats[0]&&d2.stats[0].splits&&d2.stats[0].splits[0]&&d2.stats[0].splits[0].stat)||{};
+      focusStatsCache[pitcherId]={era:s2.era||'—',whip:s2.whip||'—',wins:s2.wins!=null?s2.wins:'—',losses:s2.losses!=null?s2.losses:'—'};
+      changed=true;
+    } catch(e){}
+  }
+  if(!changed) return;
+  if(batterId&&focusStatsCache[batterId]) focusState.batterStats=focusStatsCache[batterId];
+  if(pitcherId&&focusStatsCache[pitcherId]) focusState.pitcherStats=focusStatsCache[pitcherId];
+  if(focusOverlayOpen) renderFocusOverlay();
+}
+
+async function pollFocusRich() {
+  if(!focusGamePk||demoMode) return;
+  try {
+    var r=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live');
+    var data=await r.json();
+    var cp=data&&data.liveData&&data.liveData.plays&&data.liveData.plays.currentPlay;
+    if(!cp) return;
+    var abIdx=cp.about&&cp.about.atBatIndex;
+    if(focusCurrentAbIdx!==null&&focusCurrentAbIdx!==abIdx) focusPitchSequence=[];
+    focusCurrentAbIdx=abIdx;
+    var pitchEvents=(cp.playEvents||[]).filter(function(e){return e.isPitch||e.type==='pitch';});
+    focusPitchSequence=pitchEvents.map(function(e){
+      return {
+        typeCode:(e.details&&e.details.type&&e.details.type.code)||'??',
+        typeName:(e.details&&e.details.type&&e.details.type.description)||'',
+        speed:(e.pitchData&&e.pitchData.startSpeed)||null,
+        resultCode:(e.details&&e.details.code)||'',
+        resultDesc:(e.details&&e.details.description)||'',
+        sequenceIndex:e.pitchNumber||0
+      };
+    });
+    if(focusPitchSequence.length) focusState.lastPitch=focusPitchSequence[focusPitchSequence.length-1];
+    renderFocusCard();
+    if(focusOverlayOpen) renderFocusOverlay();
+  } catch(e) { console.error('pollFocusRich error',e); }
+}
+
+function renderFocusCard() {
+  var el=document.getElementById('focusCard'); if(!el) return;
+  if(!focusGamePk||(!focusState.awayAbbr&&!demoMode)){el.style.display='none';return;}
+  el.style.display='';
+  el.innerHTML=window.FocusCard.renderCard(focusState);
+}
+
+function renderFocusMiniBar() {
+  var el=document.getElementById('focusMiniBar'); if(!el) return;
+  if(!focusGamePk||!focusState.awayAbbr){el.style.display='none';return;}
+  var half=focusState.halfInning==='bottom'?'▼':'▲';
+  el.style.display='';
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#0c1426;border-bottom:1px solid #1e2d4a;font-size:12px">'
+    +'<span style="font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8eaf0;letter-spacing:.06em">'+focusState.awayAbbr+' <strong>'+focusState.awayScore+'</strong> – <strong>'+focusState.homeScore+'</strong> '+focusState.homeAbbr+'</span>'
+    +'<span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#9aa0a8">'+half+focusState.inning+' · '+focusState.balls+'-'+focusState.strikes+' · '+focusState.outs+' out</span>'
+    +'<button onclick="openFocusOverlay()" style="padding:3px 8px;background:#0a0f1e;border:1px solid #1e2d4a;border-radius:4px;color:#e8eaf0;font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;cursor:pointer">FOCUS →</button>'
+    +'</div>';
+}
+
+function openFocusOverlay() {
+  var el=document.getElementById('focusOverlay'); if(!el||!focusGamePk) return;
+  focusOverlayOpen=true;
+  el.style.display='flex';
+  renderFocusOverlay();
+}
+
+function closeFocusOverlay() {
+  var el=document.getElementById('focusOverlay'); if(!el) return;
+  focusOverlayOpen=false;
+  el.style.display='none';
+}
+
+function renderFocusOverlay() {
+  var card=document.getElementById('focusOverlayCard'); if(!card) return;
+  var liveGames=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var data=Object.assign({},focusState,{
+    pitchSequence: focusPitchSequence,
+    allLiveGames: liveGames.map(function(g){
+      return {gamePk:g.gamePk,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,
+              awayScore:g.awayScore,homeScore:g.homeScore,inning:g.inning,
+              halfInning:g.halfInning,isFocused:g.gamePk===focusGamePk};
+    })
+  });
+  card.innerHTML=window.FocusCard.renderOverlay(data);
+}
+
+function showFocusAlert(pk, reason) {
+  var el=document.getElementById('focusAlertBanner'); if(!el) return;
+  el.style.display='';
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:6px;margin:6px 0;font-size:12px">'
+    +'<span>⚡ <strong style="color:var(--text)">'+reason+'</strong></span>'
+    +'<div style="display:flex;gap:6px;flex-shrink:0">'
+    +'<button onclick="setFocusGame('+pk+');dismissFocusAlert()" style="padding:3px 10px;background:#f59e0b;border:none;border-radius:4px;color:#000;font-weight:700;font-size:11px;cursor:pointer">Switch</button>'
+    +'<button onclick="dismissFocusAlert()" style="padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:11px;cursor:pointer">✕</button>'
+    +'</div></div>';
+}
+
+function dismissFocusAlert() {
+  var el=document.getElementById('focusAlertBanner'); if(el) el.style.display='none';
+}
+
+// ── End Focus Mode functions ──────────────────────────────────────────────────
+
 // DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+R)
 function replayHRCard(itemIndex) {
   var hrs = feedItems.filter(function(item) { return item.data && item.data.event === 'Home Run'; });
@@ -2978,7 +3250,7 @@ function updateFeedEmpty() {
   if (!hasVisible) renderEmptyState();
   document.getElementById('feedEmpty').style.display=hasVisible?'none':'';
   // Hide UI elements when no visible feed items (storyCarousel stays visible for Probable Pitchers)
-  var hideWhenEmpty=['gameTicker','pulseFeedHeader','sideRailNews','sideRailGames'];
+  var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames'];
   // Apply pulse-empty layout when there are NO games at all OR no visible feed items
   // This centers hype content whether in zero-game state or just pre-game/all-upcoming state
   var hasAnyGames = Object.keys(gameStates).length > 0;
@@ -3341,7 +3613,9 @@ function confirmDevToolsChanges(){
     ['hr_priority','tuneHRPriority'],['hr_cooldown','tuneHRCooldown'],
     ['biginning_priority','tuneBigInningPriority'],['biginning_threshold','tuneBigInningThreshold'],
     ['walkoff_priority','tuneWalkoffPriority'],['nohitter_inning_floor','tuneNohitterFloor'],
-    ['basesloaded_priority','tuneBasesLoadedPriority']
+    ['basesloaded_priority','tuneBasesLoadedPriority'],
+    ['focus_critical','tuneFocusCritical'],['focus_high','tuneFocusHigh'],
+    ['focus_switch_margin','tuneFocusSwitchMargin'],['focus_alert_cooldown','tuneFocusAlertCooldown']
   ];
   fields.forEach(function(f){var el=document.getElementById(f[1]);if(el&&el.value!=='')updateTuning(f[0],el.value);});
   var btn=document.getElementById('devConfirmBtn');
@@ -3349,7 +3623,7 @@ function confirmDevToolsChanges(){
   setTimeout(function(){btn.textContent='Confirm Changes';btn.classList.remove('applied');},1500);
 }
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
@@ -3382,6 +3656,10 @@ function resetTuning(){
   document.getElementById('tuneNohitterFloor').value=devTuningDefaults.nohitter_inning_floor;
   document.getElementById('tuneBasesLoadedEnable').checked=devTuningDefaults.basesloaded_enable;
   document.getElementById('tuneBasesLoadedPriority').value=devTuningDefaults.basesloaded_priority;
+  document.getElementById('tuneFocusCritical').value=devTuningDefaults.focus_critical;
+  document.getElementById('tuneFocusHigh').value=devTuningDefaults.focus_high;
+  document.getElementById('tuneFocusSwitchMargin').value=devTuningDefaults.focus_switch_margin;
+  document.getElementById('tuneFocusAlertCooldown').value=devTuningDefaults.focus_alert_cooldown;
   if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
   if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
   console.log('✓ Dev tuning reset to defaults');
@@ -4377,11 +4655,13 @@ document.addEventListener('visibilitychange',function(){
 });
 
 document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&focusOverlayOpen) { closeFocusOverlay(); return; }
   if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
   if(e.shiftKey && e.key === 'R') { replayHRCard(); }
   if(e.shiftKey && e.key === 'E') { replayRBICard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
+  if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
 });
 
 document.addEventListener('click',onSoundPanelClickOutside);
@@ -4390,6 +4670,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
 </script>
 
 <script src="pulse-card-templates.js"></script>
+<script src="focusCard.js"></script>
 
 <div class="live-view" id="liveView">
   <div style="max-width:1360px;margin:0 auto;padding:20px">
