@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.8.3</title>
+<title>MLB Tracker v3.8.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -680,17 +680,19 @@
   <div class="settings-wrap">
     <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
       <div class="settings-panel" id="settingsPanel">
+        <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:.75rem;font-weight:700;color:var(--text)">📚 Cards Collected: <span id="collectionCountLabel">0</span></div>
+          <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
+        </div>
         <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Select Team</div>
         <select id="teamSelect" onchange="switchTeam(this.value)" style="width:100%"></select>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Color Theme</div>
           <select id="themeSelect" onchange="switchTheme(this.value)" style="width:100%"></select>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Override Team Colours</div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔄 Invert Colours</div>
-            <div style="font-size:.68rem;color:var(--muted)">Swap Primary &amp; Secondary</div>
           </div>
           <div onclick="toggleInvert()" id="invertToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="invertToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
@@ -708,7 +710,6 @@
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">⚡ Pulse: Sound Alerts</div>
-            <div style="font-size:.68rem;color:var(--muted)">Configure In-Game Sound Notifications</div>
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊</button>
         </div>
@@ -718,18 +719,11 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">📚 Card Collection</div>
-            <div style="font-size:.68rem;color:var(--muted)" id="collectionCountLabel">0 cards</div>
-          </div>
-          <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
-        </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.8.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.8.4</div>
       </div>
     </div>
   </div>
@@ -3531,7 +3525,7 @@ function updateCollectionUI() {
   var col = loadCollection();
   var count = Object.keys(col).length;
   var countEl = document.getElementById('collectionCountLabel');
-  if (countEl) countEl.textContent = count + (count === 1 ? ' card' : ' cards');
+  if (countEl) countEl.textContent = count;
   renderCollectionRailModule();
 }
 
@@ -3600,20 +3594,16 @@ function generateTestCard() {
 }
 
 function resetCollection() {
-  if (!mlbSessionToken) { alert('Not signed in'); return; }
   if (!confirm('Reset collection? This cannot be undone.')) return;
-  fetch((window.API_BASE||'')+'/api/collection/reset',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken}
-  }).then(r=>r.json()).then(d=>{
-    if (d.ok) {
-      localStorage.removeItem('mlb_card_collection');
-      updateCollectionUI();
-      alert('Collection reset');
-    } else {
-      alert('Error: '+(d.error||'Unknown'));
-    }
-  }).catch(e=>{alert('Network error: '+e.message);});
+  localStorage.removeItem('mlb_card_collection');
+  updateCollectionUI();
+  if (mlbSessionToken) {
+    fetch((window.API_BASE||'')+'/api/collection/reset',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken}
+    }).catch(()=>{});
+  }
+  alert('Collection reset');
 }
 
 function baseDiamondSvg(on1,on2,on3) {
