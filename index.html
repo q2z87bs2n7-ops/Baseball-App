@@ -1426,12 +1426,8 @@ async function pollGamePlays(gamePk) {
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
-        // DEBUG START
-        if (isScoringP) console.log('SCORING PLAY INCOMING:',{event:event,rbi:(play.result&&play.result.rbi!=null)?play.result.rbi:0,away:aScore,home:hScore,inning:inning,half:halfInning});
-        // DEBUG END
         if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}}
-        else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=devTuning.rbiCooldown;// DEBUG START
-console.log('RBI CARD DEBUG:',{event:event,rbi:_rbi,score:_rs,threshold:devTuning.rbiThreshold,gameVisible:gameVisible,batterId:batterId,cooldownOk:_rbiOk,passes:_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk});// DEBUG END
+        else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=devTuning.rbiCooldown;
 if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning,gamePk);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
         else if (event.indexOf('Double Play')!==-1){playSound('dp');}
@@ -3511,9 +3507,6 @@ function calcRBICardScore(rbi, event, aScore, hScore, inning, halfInning) {
   if (marginAfter - rbi >= 5) ctx -= 15;                      // was already leading by 5+
   var innMult = inning <= 3 ? 0.4 : inning <= 6 ? 0.75 : inning <= 8 ? 1.0 : inning === 9 ? 1.4 : 1.6;
   var score = (base * hitMult + ctx) * innMult;
-  // DEBUG START
-  console.log('RBI SCORE CALC:',{rbi:rbi,event:event,base:base,hitMult:hitMult,context:ctx,innMult:innMult,battingBefore:battingBefore,battingAfter:battingAfter,deficitBefore:deficitBefore,marginAfter:marginAfter,finalScore:score});
-  // DEBUG END
   return score;
 }
 
