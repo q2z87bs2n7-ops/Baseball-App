@@ -4240,7 +4240,6 @@ function toggleInvert(){
 // ── Session & Sync Functions ──────────────────────────────────────────────────
 function signInWithGitHub(){
   var state=Math.random().toString(36).slice(2,15);
-  var redirectUri=encodeURIComponent(window.location.origin+window.location.pathname);
   var githubAuthUrl='https://github.com/login/oauth/authorize?'+
     'client_id=Ov23lilv8CB5JzyvevZE&'+
     'redirect_uri='+encodeURIComponent(window.location.origin+'/api/auth/github')+'&'+
