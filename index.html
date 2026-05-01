@@ -4120,7 +4120,7 @@ function toggleColorLock(enable){
   document.getElementById('lockThemeToggle').checked=devColorLocked;
 }
 
-function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);localStorage.setItem('mlb_sound_settings',JSON.stringify(soundSettings));if(mlbSessionToken)syncSettings();}
+function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);localStorage.setItem('mlb_sound_settings',JSON.stringify(soundSettings));}
 function playSound(type){
   if (!soundSettings.master||!soundSettings[type]) return;
   if(type==='hr')playHrSound();else if(type==='run')playRunSound();else if(type==='risp')playRispSound();
@@ -4223,7 +4223,6 @@ function switchTheme(val){
   else{themeOverride=TEAMS.find(t=>t.id===parseInt(val));}
   localStorage.setItem('mlb_theme',val);
   applyTeamTheme(activeTeam);
-  if(mlbSessionToken)syncSettings();
 }
 
 function toggleInvert(){
@@ -4235,7 +4234,6 @@ function toggleInvert(){
   applyTeamTheme(activeTeam);
   loadTodayGame();loadNextGame();
   if(mediaEnabled&&document.getElementById('media').classList.contains('active'))loadMedia();
-  if(mlbSessionToken)syncSettings();
 }
 
 // ── Session & Sync Functions ──────────────────────────────────────────────────
@@ -4278,14 +4276,6 @@ async function syncCollection(){
     }
   }catch(e){console.error('[Sync] Collection error',e);}
 }
-async function syncSettings(){
-  if(!mlbSessionToken)return;
-  try{
-    var data={sound:soundSettings,theme:localStorage.getItem('mlb_theme'),invert:localStorage.getItem('mlb_invert'),timestamp:Date.now()};
-    var r=await fetch((window.API_BASE||'')+'/api/settings/sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify(data)});
-    if(r.ok){console.log('[Sync] Settings synced');}
-  }catch(e){console.error('[Sync] Settings error',e);}
-}
 async function mergeCollectionOnSignIn(){
   if(!mlbSessionToken)return;
   try{
@@ -4325,7 +4315,7 @@ function mergeCollectionSlots(local,remote){
 function startSyncInterval(){
   if(mlbSyncInterval)return;
   mlbSyncInterval=setInterval(async()=>{
-    syncCollection();syncSettings();
+    syncCollection();
   },30000);
 }
 function showSignInCTA(){
