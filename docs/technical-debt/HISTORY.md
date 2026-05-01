@@ -8,6 +8,35 @@ None. To start one, say **"Start tech debt sprint"** in conversation with Claude
 
 ## Completed Sprints
 
+### Sprint: 2026-05-01-baseball-app
+**Status:** ✅ COMPLETE
+**Branch:** `claude/start-tech-debt-sprint-p9u8r`
+**Merged:** 2026-05-01
+
+**Issues fixed:**
+- HIGH: 2 (N1 DEBUG console.log blocks, H4 AbortController on polling loops)
+- MEDIUM: 3 (N2 Clipboard API, N3 DEBUG flag, N4 Focus null guard)
+- Deferred: 8 (H3, M1–M4, L1–L2)
+
+**Result:** 5 issues fixed, 0 regressions, 15/15 QA checks passed, UAT passed.
+
+**Code Changes:**
+- `index.html`: 5 fixes, version v2.62 → v2.62.1
+- `sw.js`: cache mlb-v300 → mlb-v301
+
+**Reports:**
+- [Full Audit](./audits/audit-2026-05-01-baseball-app.md)
+- [Remediation & Code Changes](./remediation/remediation-2026-05-01-baseball-app.md)
+- [QA Test Results](./qa/qa-2026-05-01-baseball-app.md)
+- [Sprint Summary](./sprints/sprint-2026-05-01-baseball-app.md)
+
+**Known issues from this sprint that remain open:**
+- H3: Fetch error handling (50+ calls) — Deferred to future sprint
+- M1–M4: Medium priority issues — Deferred to future sprint
+- L1–L2: Low priority issues — Deferred to future sprint
+
+---
+
 ### Sprint: 2026-04-29-baseball-app
 **Status:** ✅ COMPLETE  
 **Branch:** `claude/tech-debt-sprint-GdCbY`  
