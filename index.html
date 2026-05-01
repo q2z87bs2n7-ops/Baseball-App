@@ -528,6 +528,9 @@
 .story-badge.inning_recap { background: rgba(120,140,200,0.20); color: #a8b8e8; }
 .story-badge.hot { background: rgba(255,120,40,0.22); color: #ff9659; }
 .story-badge.cold { background: rgba(80,180,220,0.22); color: #6cc1de; }
+.story-badge.streak { background: rgba(220,170,50,0.22); color: #f0d060; }
+.story-badge.roster { background: rgba(160,100,255,0.20); color: #c8a0ff; }
+.story-badge.award { background: rgba(245,185,40,0.25); color: #ffd060; }
 /* Neutral chrome for all non-live story badges. The label text carries the meaning. */
 .story-badge.today,
 .story-badge.final,
@@ -1085,6 +1088,27 @@
             <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneBasesLoadedPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
           </div>
         </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">📈 Hitting Streak</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:.6rem;color:var(--muted)">Min Games</div><input type="number" id="tuneHitstreakFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneHitstreakPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          </div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🏥 Roster Move</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:.6rem;color:var(--muted)">IL/DFA Priority</div><input type="number" id="tuneRosterPriorityIL" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">Trade/Up Priority</div><input type="number" id="tuneRosterPriorityTrade" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          </div>
+        </div>
+        <div style="padding:8px;background:var(--card2);border-radius:4px">
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">📊 Win Probability</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div><div style="font-size:.6rem;color:var(--muted)">Leverage Floor</div><input type="number" id="tuneWPLeverageFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">Extreme WP %</div><input type="number" id="tuneWPExtremeFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          </div>
+        </div>
       </div>
     </details>
   </div>
@@ -1256,6 +1280,11 @@ let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 let boxscoreCache={};
 let inningRecapsFired=new Set(),inningRecapsPending={},lastInningState={},displayedStoryIds=new Set();
+let hittingStreaksCache=null,hittingStreaksLastFetch=0;
+let transactionsCache=[],transactionsLastFetch=0;
+let awardsCache=[],awardsLastFetch=0;
+let highLowCache=null,highLowLastFetch=0;
+let perfectGameTracker={};
 
 // ── Dev Tools tuning (real-time optimization) ──────────────────────────
 let devTuning={
@@ -1275,7 +1304,15 @@ let devTuning={
   focus_critical: 120,       // score threshold for CRITICAL badge
   focus_high: 70,            // score threshold for HIGH badge
   focus_switch_margin: 25,   // rival game must score this much higher to trigger soft alert
-  focus_alert_cooldown: 90000 // ms between soft alerts for same game
+  focus_alert_cooldown: 90000, // ms between soft alerts for same game
+  hitstreak_floor: 10,       // min streak length to show hitting streak story
+  hitstreak_priority: 65,    // base priority for hitting streak stories
+  roster_priority_il: 40,    // priority for IL/DFA stories
+  roster_priority_trade: 55, // priority for trade / call-up stories
+  wp_leverage_floor: 2,      // min leverageIndex to show WP story
+  wp_extreme_floor: 85,      // win probability % threshold for "extreme" story
+  award_priority: 55,        // priority for award winner stories
+  highlow_priority: 25       // priority for season high/low stories
 };
 let devColorLocked=false;
 let devShowPushOnDesktop=false;
@@ -1290,7 +1327,9 @@ const devTuningDefaults={
   walkoff_priority:90,walkoff_cooldown:300000,
   nohitter_inning_floor:6,nohitter_priority:95,
   basesloaded_enable:true,basesloaded_priority:88,
-  focus_critical:120,focus_high:70,focus_switch_margin:25,focus_alert_cooldown:90000
+  focus_critical:120,focus_high:70,focus_switch_margin:25,focus_alert_cooldown:90000,
+  hitstreak_floor:10,hitstreak_priority:65,roster_priority_il:40,roster_priority_trade:55,
+  wp_leverage_floor:2,wp_extreme_floor:85,award_priority:55,highlow_priority:25
 };
 
 // ── Focus Mode globals (v2.61) ────────────────────────────────────────────────
@@ -1346,6 +1385,7 @@ function initReal() {
   pollDateStr=localDateStr(getEffectiveDate());
   loadRoster();
   loadOnThisDayCache(); loadYesterdayCache();
+  loadTransactionsCache(); loadAwardsCache(); loadHighLowCache();
   if(newsRotateTimer){clearTimeout(newsRotateTimer);newsRotateTimer=null;}
   fetchMLBNewsFeed();
   document.removeEventListener('visibilitychange',onStoryVisibilityChange);
@@ -1439,6 +1479,7 @@ async function pollLeaguePulse() {
           var isGamePostponed=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
           if(isGamePostponed){addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:prev.awayAbbr+' @ '+prev.homeAbbr});}
           else{addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:prev.awayAbbr+' '+(away.score||0)+', '+prev.homeAbbr+' '+(home.score||0)});playSound('gameEnd');}
+          delete perfectGameTracker[pk];
         }
         if (detailed.toLowerCase().indexOf('delay')!==-1&&prev.detailedState.toLowerCase().indexOf('delay')===-1) {
           addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:prev.awayAbbr+' @ '+prev.homeAbbr+' · '+detailed});
@@ -1514,6 +1555,9 @@ async function pollGamePlays(gamePk) {
       var hrDistance=(event==='Home Run'&&play.hitData&&play.hitData.totalDistance>0)?Math.round(play.hitData.totalDistance):null;
       addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime,batterId:batterId,batterName:batterName,pitcherName:pitcherName,distance:hrDistance});
       var isHitEvt=['Single','Double','Triple','Home Run'].indexOf(event)!==-1;
+      if(perfectGameTracker[gamePk]===undefined) perfectGameTracker[gamePk]=true;
+      if(['Walk','Hit By Pitch','Intentional Walk','Error','Fielders Choice','Catcher Interference'].indexOf(event)!==-1) perfectGameTracker[gamePk]=false;
+      if(isHitEvt) perfectGameTracker[gamePk]=false;
       if (isHitEvt&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
       if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;dailyPitcherKs[kkey]=ke;}
       if (!isHistory) {
@@ -2358,9 +2402,17 @@ function genNoHitterWatch(){
     var id='nohit_'+g.gamePk;
     var pitchingTeam=nohitAway?g.homeAbbr:g.awayAbbr;
     var hittingTeam=nohitAway?g.awayAbbr:g.homeAbbr;
-    var headline=pitchingTeam+' working a no-hitter through the '+ordinal(g.inning);
+    var isPerfect=perfectGameTracker[g.gamePk]===true;
+    var priority,headline;
+    if(isPerfect){
+      priority=99;
+      headline=pitchingTeam+' working a perfect game through the '+ordinal(g.inning);
+    } else {
+      priority=devTuning.nohitter_priority;
+      headline=pitchingTeam+' working a no-hitter through the '+ordinal(g.inning);
+    }
     var sub=hittingTeam+' have 0 hits · '+g.awayAbbr+' '+g.awayScore+', '+g.homeAbbr+' '+g.homeScore;
-    out.push(makeStory(id,'nohit',1,devTuning.nohitter_priority,'🚫',headline,sub,'live',g.gamePk,new Date(),2*60000,0.2));
+    out.push(makeStory(id,'nohit',1,priority,'🚫',headline,sub,'live',g.gamePk,new Date(),2*60000,0.2));
   });
   return out;
 }
@@ -2724,16 +2776,214 @@ function genInningRecapStories(){
   return out;
 }
 
+async function loadHittingStreaksCache(){
+  try{
+    var r=await fetch(MLB_BASE+'/stats/streaks?streakType=hittingStreakOverall&season='+SEASON+'&sportId=1&limit=15&streakSpan=season&gameType=R');
+    var d=await r.json();
+    hittingStreaksCache=(d.streaks||[]).filter(function(s){return s.streakActive&&s.streakNumber>=(devTuning.hitstreak_floor||10);});
+    hittingStreaksLastFetch=Date.now();
+  }catch(e){hittingStreaksCache=hittingStreaksCache||[];}
+}
+
+async function loadTransactionsCache(){
+  try{
+    var today=new Date(),start=new Date(today);
+    start.setDate(start.getDate()-2);
+    var fmt=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+    var r=await fetch(MLB_BASE+'/transactions?sportId=1&startDate='+fmt(start)+'&endDate='+fmt(today));
+    var d=await r.json();
+    var notable=['Injured List','Designated for Assignment','Selected','Called Up','Trade','Activated From'];
+    transactionsCache=(d.transactions||[]).filter(function(t){return notable.some(function(kw){return (t.typeDesc||'').indexOf(kw)!==-1;});});
+    transactionsLastFetch=Date.now();
+  }catch(e){transactionsCache=transactionsCache||[];}
+}
+
+async function loadAwardsCache(){
+  try{
+    var r=await fetch(MLB_BASE+'/awards?sportId=1');
+    var d=await r.json();
+    var keywords=['Player of the Week','Pitcher of the Week','Player of the Month','Pitcher of the Month'];
+    var relevant=(d.awards||[]).filter(function(a){return keywords.some(function(kw){return (a.name||'').indexOf(kw)!==-1;});});
+    var allRecipients=[];
+    for(var i=0;i<relevant.length;i++){
+      try{
+        var rr=await fetch(MLB_BASE+'/awards/'+relevant[i].awardId+'/recipients?season='+SEASON);
+        var rd=await rr.json();
+        (rd.awards||[]).forEach(function(a){allRecipients.push(a);});
+      }catch(e){}
+    }
+    var cutoff=Date.now()-28*24*60*60*1000;
+    awardsCache=allRecipients.filter(function(a){return a.player&&a.date&&new Date(a.date).getTime()>=cutoff;});
+    awardsLastFetch=Date.now();
+  }catch(e){awardsCache=awardsCache||[];}
+}
+
+async function loadHighLowCache(){
+  try{
+    var stats=['homeRuns','strikeOuts','hits'];
+    var allResults={};
+    for(var i=0;i<stats.length;i++){
+      try{
+        var r=await fetch(MLB_BASE+'/highLow/player?sortStat='+stats[i]+'&season='+SEASON+'&sportId=1&gameType=R&limit=3');
+        var d=await r.json();
+        allResults[stats[i]]=d.results||[];
+      }catch(e){allResults[stats[i]]=[];}
+    }
+    highLowCache=allResults;
+    highLowLastFetch=Date.now();
+  }catch(e){highLowCache=highLowCache||{};}
+}
+
+function genHittingStreakStories(){
+  var out=[];
+  if(!hittingStreaksCache||!hittingStreaksCache.length) return out;
+  hittingStreaksCache.slice(0,5).forEach(function(s,i){
+    var lastName=s.person.fullName.split(' ').slice(1).join(' ')||s.person.fullName;
+    var id='hitstreak_'+s.person.id+'_'+s.streakNumber;
+    var headline=lastName+' has hit safely in '+s.streakNumber+' straight games';
+    var sub=s.team.abbreviation+' · Active hitting streak';
+    var priority=(devTuning.hitstreak_priority||65)-i*3;
+    out.push(makeStory(id,'daily_stat',2,priority,'📈',headline,sub,'streak',null,new Date(),30*60000,0.15));
+  });
+  return out;
+}
+
+function genRosterMoveStories(){
+  var out=[];
+  if(!transactionsCache||!transactionsCache.length) return out;
+  var cutoff=Date.now()-48*60*60*1000;
+  transactionsCache.forEach(function(t){
+    if(!t.person||!t.person.fullName) return;
+    var txDate=t.date?new Date(t.date).getTime():0;
+    if(txDate&&txDate<cutoff) return;
+    var lastName=t.person.fullName.split(' ').slice(1).join(' ')||t.person.fullName;
+    var desc=t.typeDesc||'';
+    var icon,priority,headline;
+    var toAbbr=(t.toTeam&&t.toTeam.abbreviation)||'MLB';
+    if(desc.indexOf('Injured List')!==-1){
+      icon='🏥';priority=devTuning.roster_priority_il||40;
+      var ilMatch=desc.match(/(\d+)-Day/);var ilDays=ilMatch?ilMatch[1]:'';
+      headline=lastName+' placed on the '+(ilDays?ilDays+'-Day ':'')+'IL';
+    }else if(desc.indexOf('Designated')!==-1){
+      icon='⬇️';priority=devTuning.roster_priority_il||40;
+      headline=lastName+' designated for assignment';
+    }else if(desc.indexOf('Selected')!==-1||desc.indexOf('Called Up')!==-1){
+      icon='⬆️';priority=devTuning.roster_priority_trade||55;
+      headline=lastName+' called up by '+toAbbr;
+    }else if(desc.indexOf('Trade')!==-1){
+      icon='🔄';priority=devTuning.roster_priority_trade||55;
+      var fromAbbr=(t.fromTeam&&t.fromTeam.abbreviation)||'';
+      headline=lastName+' traded '+(fromAbbr?'from '+fromAbbr+' ':'')+'to '+toAbbr;
+    }else if(desc.indexOf('Activated')!==-1){
+      icon='✅';priority=devTuning.roster_priority_il||40;
+      headline=lastName+' activated by '+toAbbr;
+    }else{
+      icon='📋';priority=35;
+      headline=lastName+' — '+desc;
+    }
+    var id='roster_'+t.typeCode+'_'+(t.person.id||0)+'_'+(t.date||'today');
+    var sub=toAbbr+(t.date?' · '+t.date:'');
+    out.push(makeStory(id,'roster_move',3,priority,icon,headline,sub,'roster',null,t.date?new Date(t.date):new Date(),120*60000,0.2));
+  });
+  return out;
+}
+
+async function genWinProbabilityStories(){
+  var out=[];
+  if(!focusGamePk) return out;
+  var g=gameStates[focusGamePk];
+  if(!g||g.status!=='Live'||g.detailedState!=='In Progress') return out;
+  try{
+    var r=await fetch(MLB_BASE+'/game/'+focusGamePk+'/contextMetrics');
+    var d=await r.json();
+    var homeWP=d.homeWinProbability||50;
+    var leverageIndex=d.leverageIndex||1;
+    var wpAdded=Math.abs(d.homeWinProbabilityAdded||0);
+    var isExtreme=homeWP>=(devTuning.wp_extreme_floor||85)||homeWP<=(100-(devTuning.wp_extreme_floor||85));
+    var isHighLev=leverageIndex>=(devTuning.wp_leverage_floor||2);
+    var isBigSwing=wpAdded>=20;
+    if(!isExtreme&&!isHighLev&&!isBigSwing) return out;
+    var favAbbr=homeWP>50?g.homeAbbr:g.awayAbbr;
+    var favWP=homeWP>50?homeWP:(100-homeWP);
+    var id='wp_'+focusGamePk+'_'+Math.round(homeWP/5)*5;
+    var icon,headline,badge,tier,priority;
+    if(leverageIndex>=3){
+      icon='⚡';tier=1;priority=72;badge='live';
+      headline='High leverage — '+g.awayAbbr+' @ '+g.homeAbbr;
+    }else if(isExtreme){
+      icon='📊';tier=2;priority=65;badge='live';
+      headline=favAbbr+' are '+Math.round(favWP)+'% favorites in the '+ordinal(g.inning);
+    }else{
+      icon='📊';tier=2;priority=60;badge='live';
+      headline='Win probability swings for '+favAbbr+' (+'+Math.round(wpAdded)+'%)';
+    }
+    var sub=g.awayAbbr+' @ '+g.homeAbbr+' · '+ordinal(g.inning)+' · '+Math.round(favWP)+'% WP';
+    storyPool=storyPool.filter(function(s){return s.id.indexOf('wp_'+focusGamePk+'_')!==0;});
+    out.push(makeStory(id,'realtime',tier,priority,icon,headline,sub,badge,focusGamePk,new Date(),3*60000,0.60));
+  }catch(e){}
+  return out;
+}
+
+function genAwardWinnerStories(){
+  var out=[];
+  if(!awardsCache||!awardsCache.length) return out;
+  awardsCache.forEach(function(a){
+    if(!a.player||!a.player.fullName) return;
+    var lastName=a.player.fullName.split(' ').slice(1).join(' ')||a.player.fullName;
+    var teamAbbr=(a.team&&a.team.abbreviation)||'';
+    var awardName=a.name||a.awardId||'Award';
+    var id='award_'+(a.awardId||'')+'_'+(a.player.id||0)+'_'+(a.date||SEASON);
+    var headline=lastName+' named '+awardName;
+    var sub=(teamAbbr?teamAbbr+' · ':'')+(a.notes||'')+(a.date?' · '+a.date:'');
+    out.push(makeStory(id,'award',3,devTuning.award_priority||55,'🏆',headline,sub,'award',null,a.date?new Date(a.date):new Date(),6*60*60000,0.1));
+  });
+  return out;
+}
+
+function genSeasonHighStories(){
+  var out=[];
+  if(!highLowCache) return out;
+  var SEASON_STR=String(SEASON);
+  var configs=[
+    {stat:'homeRuns',icon:'💥',label:'HR in a game',threshold:3},
+    {stat:'strikeOuts',icon:'🔥',label:'strikeouts in a game',threshold:13},
+    {stat:'hits',icon:'🏏',label:'hits in a game',threshold:4}
+  ];
+  configs.forEach(function(cfg){
+    var results=highLowCache[cfg.stat]||[];
+    if(!results.length) return;
+    var top=results[0];
+    if(!top||!top.person||!top.stat) return;
+    var val=top.stat[cfg.stat]||0;
+    if(val<cfg.threshold) return;
+    var lastName=top.person.fullName.split(' ').slice(1).join(' ')||top.person.fullName;
+    var teamAbbr=(top.team&&top.team.abbreviation)||'';
+    var oppAbbr=(top.opponent&&top.opponent.abbreviation)||'';
+    var dateStr=top.game&&top.game.gameDate?top.game.gameDate:'';
+    var id='highlow_'+cfg.stat+'_'+top.person.id+'_'+SEASON_STR;
+    var headline=SEASON_STR+' season high: '+lastName+' — '+val+' '+cfg.label;
+    var sub=teamAbbr+(oppAbbr?' vs '+oppAbbr:'')+(dateStr?' · '+dateStr:'');
+    out.push(makeStory(id,'contextual',4,devTuning.highlow_priority||25,'🎖️',headline,sub,'record',null,dateStr?new Date(dateStr):new Date(),24*60*60000,0.1));
+  });
+  return out;
+}
+
 async function buildStoryPool(){
   var now=Date.now();
   if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
+  if(now-hittingStreaksLastFetch>30*60000){loadHittingStreaksCache();}
+  if(now-transactionsLastFetch>120*60000){loadTransactionsCache();}
+  if(now-awardsLastFetch>6*60*60000){loadAwardsCache();}
+  if(now-highLowLastFetch>6*60*60000){loadHighLowCache();}
   loadProbablePitcherStats();
   fetchMissingHRBatterStats();
   var multiHitStories=await genMultiHitDay();
+  var wpStories=await genWinProbabilityStories();
   var fresh=[].concat(
     genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
-    genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories()
+    genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
+    wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories()
   );
   storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
@@ -2774,8 +3024,8 @@ function showStoryCard(story){
 
 function renderStoryCard(story){
   var el=document.getElementById('storyCard'); if(!el) return;
-  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',leaders:'leaders',probables:'probables',highlight:'highlight',inning_recap:'inning_recap',hot:'hot',cold:'cold'};
-  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',leaders:'LEADERS',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT',inning_recap:'INNING RECAP',hot:'HOT',cold:'COLD'};
+  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',leaders:'leaders',probables:'probables',highlight:'highlight',inning_recap:'inning_recap',hot:'hot',cold:'cold',streak:'streak',roster:'roster',award:'award',record:'award'};
+  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',leaders:'LEADERS',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT',inning_recap:'INNING RECAP',hot:'HOT',cold:'COLD',streak:'HITTING STREAK',roster:'ROSTER MOVE',award:'AWARD',record:'SEASON HIGH'};
   var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
   el.className='story-card tier'+story.tier+(story.id.indexOf('biginning')===0?' story-biginning':'')+(story.id.indexOf('leader_')===0?' story-leaders':'');
   el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
@@ -4181,6 +4431,9 @@ function confirmDevToolsChanges(){
     ['biginning_priority','tuneBigInningPriority'],['biginning_threshold','tuneBigInningThreshold'],
     ['walkoff_priority','tuneWalkoffPriority'],['nohitter_inning_floor','tuneNohitterFloor'],
     ['basesloaded_priority','tuneBasesLoadedPriority'],
+    ['hitstreak_floor','tuneHitstreakFloor'],['hitstreak_priority','tuneHitstreakPriority'],
+    ['roster_priority_il','tuneRosterPriorityIL'],['roster_priority_trade','tuneRosterPriorityTrade'],
+    ['wp_leverage_floor','tuneWPLeverageFloor'],['wp_extreme_floor','tuneWPExtremeFloor'],
     ['focus_critical','tuneFocusCritical'],['focus_high','tuneFocusHigh'],
     ['focus_switch_margin','tuneFocusSwitchMargin'],['focus_alert_cooldown','tuneFocusAlertCooldown']
   ];
@@ -4418,7 +4671,7 @@ function fallbackCopy(text){
   try{document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
 }
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
