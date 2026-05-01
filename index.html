@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.64.1</title>
+<title>MLB Tracker v2.64.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -709,7 +709,7 @@
             <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
           </div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.64.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.64.2</div>
       </div>
     </div>
   </div>
@@ -1437,7 +1437,7 @@ async function pollGamePlays(gamePk) {
 console.log('RBI CARD DEBUG:',{event:event,rbi:_rbi,score:_rs,threshold:devTuning.rbiThreshold,gameVisible:gameVisible,batterId:batterId,cooldownOk:_rbiOk,passes:_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk});// DEBUG END
 if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning,gamePk);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
-        else if (event.indexOf('Double Play')!==-1){playSound('dp');}
+        else if (event.indexOf('Double Play')!==-1||event==='Grounded Into DP'){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
         else if (hasRISP){playSound('risp');}
         if(outs===3){var _rk=gamePk+'_'+inning+'_'+halfInning.toLowerCase();if(!inningRecapsFired.has(_rk))inningRecapsPending[_rk]={gamePk:gamePk,inning:inning,halfInning:halfInning.toLowerCase()};}
@@ -1861,7 +1861,7 @@ async function advanceDemoPlay(play) {
       showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.awayScore+', '+g.homeAbbr+' '+play.homeScore,desc:play.desc,color:g.homePrimary,duration:4000});
       playSound('run');
     }else if(play.event&&play.event.indexOf('Triple Play')!==-1){playSound('tp');}
-    else if(play.event&&play.event.indexOf('Double Play')!==-1){playSound('dp');}
+    else if(play.event&&(play.event.indexOf('Double Play')!==-1||play.event==='Grounded Into DP')){playSound('dp');}
     else if(play.event&&play.event.indexOf('Stolen Base')!==-1){playSound('sb');}
     else if(play.event&&play.event.indexOf('Error')!==-1){playSound('error');}
     else if(play.risp){playSound('risp');}
@@ -3767,20 +3767,20 @@ function playSound(type){
   else if(type==='gameStart')_playGameStartSynth();else if(type==='gameEnd')_playGameEndSynth();
   else if(type==='error')_playErrorSynth();
 }
-// synthesis fallback implementations
-function _synCtx(){return new(window.AudioContext||window.webkitAudioContext)();}
-function _closeCtx(ctx,dur){setTimeout(function(){try{ctx.close();}catch(e){};},(dur+0.6)*1000);}
+// synthesis fallback implementations — all use the shared context so they
+// inherit its unlocked state from the master-toggle gesture
+function _synCtx(){return _getAudioCtx();}
 function _osc(ctx,freq,t0,dur,vol,wave,attack){var osc=ctx.createOscillator(),g=ctx.createGain();osc.connect(g);g.connect(ctx.destination);osc.type=wave||'sine';osc.frequency.value=freq;var at=ctx.currentTime+t0,att=attack||0.005;g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+att);g.gain.exponentialRampToValueAtTime(0.0001,at+dur);osc.start(at);osc.stop(at+dur+0.05);}
 function _ns(ctx,t0,dur,vol,attack,filterType,filterFreq,filterQ){var len=Math.ceil(ctx.sampleRate*(dur+0.1)),buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);for(var i=0;i<len;i++)d[i]=Math.random()*2-1;var src=ctx.createBufferSource();src.buffer=buf;var filt=ctx.createBiquadFilter();filt.type=filterType||'bandpass';filt.frequency.value=filterFreq||1000;filt.Q.value=filterQ!==undefined?filterQ:1;var g=ctx.createGain();src.connect(filt);filt.connect(g);g.connect(ctx.destination);var at=ctx.currentTime+t0,att=attack||0.003;g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+att);g.gain.exponentialRampToValueAtTime(0.0001,at+dur);src.start(at);src.stop(at+dur+0.05);}
-function _playHrSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.07,0.32,0.001,'highpass',2200,0.8);_ns(ctx,0,0.05,0.22,0.001,'bandpass',900,3.0);_osc(ctx,140,0,0.06,0.18,'sine',0.001);_ns(ctx,0.05,0.90,0.09,0.08,'lowpass',300,1.0);_closeCtx(ctx,1.2);}catch(e){}}
-function _playRunSynth(){try{var ctx=_synCtx();_osc(ctx,523,0,0.55,0.18,'sine');_osc(ctx,659,0.15,0.50,0.18,'sine');_osc(ctx,784,0.30,0.60,0.18,'sine');_closeCtx(ctx,1.0);}catch(e){}}
-function _playRispSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.10,0.20,0.003,'lowpass',180,2.0);_ns(ctx,0.13,0.14,0.16,0.004,'lowpass',220,1.5);_closeCtx(ctx,0.4);}catch(e){}}
-function _playSbSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.08,0.18,0.001,'highpass',1800,0.5);_osc(ctx,440,0,0.12,0.10,'sine');_osc(ctx,660,0.06,0.10,0.12,'sine');_closeCtx(ctx,0.4);}catch(e){}}
-function _playDpSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.06,0.28,0.001,'bandpass',750,5);_ns(ctx,0.10,0.06,0.28,0.001,'bandpass',750,5);_closeCtx(ctx,0.4);}catch(e){}}
-function _playTpSynth(){try{var ctx=_synCtx();_osc(ctx,392,0,0.12,0.17,'triangle');_osc(ctx,523,0.11,0.12,0.17,'triangle');_osc(ctx,659,0.22,0.12,0.17,'triangle');_osc(ctx,784,0.33,0.32,0.17,'triangle');_closeCtx(ctx,0.8);}catch(e){}}
-function _playGameStartSynth(){try{var ctx=_synCtx();_osc(ctx,523,0,0.14,0.16,'triangle');_osc(ctx,587,0.13,0.14,0.16,'triangle');_osc(ctx,659,0.26,0.14,0.16,'triangle');_osc(ctx,784,0.39,0.38,0.16,'triangle');_closeCtx(ctx,1.0);}catch(e){}}
-function _playGameEndSynth(){try{var ctx=_synCtx();_osc(ctx,784,0,0.65,0.15,'sine');_osc(ctx,659,0.38,0.65,0.15,'sine');_osc(ctx,523,0.76,0.80,0.15,'sine');_closeCtx(ctx,1.8);}catch(e){}}
-function _playErrorSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.18,0.22,0.003,'lowpass',160,1.5);_osc(ctx,130,0.02,0.16,0.10,'sine');_closeCtx(ctx,0.5);}catch(e){}}
+function _playHrSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.07,0.32,0.001,'highpass',2200,0.8);_ns(ctx,0,0.05,0.22,0.001,'bandpass',900,3.0);_osc(ctx,140,0,0.06,0.18,'sine',0.001);_ns(ctx,0.05,0.90,0.09,0.08,'lowpass',300,1.0);}catch(e){}}
+function _playRunSynth(){try{var ctx=_synCtx();_osc(ctx,523,0,0.55,0.18,'sine');_osc(ctx,659,0.15,0.50,0.18,'sine');_osc(ctx,784,0.30,0.60,0.18,'sine');}catch(e){}}
+function _playRispSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.10,0.20,0.015,'bandpass',600,2.0);_ns(ctx,0.13,0.14,0.14,0.015,'bandpass',700,2.0);}catch(e){}}
+function _playSbSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.08,0.18,0.001,'highpass',1800,0.5);_osc(ctx,440,0,0.12,0.10,'sine');_osc(ctx,660,0.06,0.10,0.12,'sine');}catch(e){}}
+function _playDpSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.06,0.28,0.001,'bandpass',750,5);_ns(ctx,0.10,0.06,0.28,0.001,'bandpass',750,5);}catch(e){}}
+function _playTpSynth(){try{var ctx=_synCtx();_osc(ctx,392,0,0.12,0.17,'triangle');_osc(ctx,523,0.11,0.12,0.17,'triangle');_osc(ctx,659,0.22,0.12,0.17,'triangle');_osc(ctx,784,0.33,0.32,0.17,'triangle');}catch(e){}}
+function _playGameStartSynth(){try{var ctx=_synCtx();_osc(ctx,523,0,0.14,0.16,'triangle');_osc(ctx,587,0.13,0.14,0.16,'triangle');_osc(ctx,659,0.26,0.14,0.16,'triangle');_osc(ctx,784,0.39,0.38,0.16,'triangle');}catch(e){}}
+function _playGameEndSynth(){try{var ctx=_synCtx();_osc(ctx,784,0,0.65,0.15,'sine');_osc(ctx,659,0.38,0.65,0.15,'sine');_osc(ctx,523,0.76,0.80,0.15,'sine');}catch(e){}}
+function _playErrorSynth(){try{var ctx=_synCtx();_ns(ctx,0,0.18,0.22,0.015,'bandpass',400,1.5);_osc(ctx,130,0.02,0.16,0.12,'sawtooth');}catch(e){}}
 
 function fmt(v,d){d=d===undefined?3:d;if(v==null||v==='')return'—';var n=parseFloat(v);if(isNaN(n))return v;return n.toFixed(d);}
 function fmtRate(v,d){d=d===undefined?3:d;if(v==null||v==='')return'—';var n=parseFloat(v);if(isNaN(n))return v;var s=n.toFixed(d);return(n>0&&n<1)?s.slice(1):s;}
