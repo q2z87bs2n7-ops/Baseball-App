@@ -74,18 +74,43 @@ export default async function handler(req, res) {
     const userData = await userRes.json();
     const githubId = userData.id;
     const githubLogin = userData.login;
+    const userEmail = userData.email;
 
     // Check if this GitHub account is already linked to a user
     const githubMapKey = `github_map:${githubId}`;
     let userId = await kv.get(githubMapKey);
 
     if (!userId) {
-      // Not linked yet — generate new user ID
-      userId = generateUserId();
-      // Store both the GitHub mapping and the user ID
+      // Check if this email is already linked (e.g., from a prior email sign-in)
+      let existingUserId = null;
+      if (userEmail) {
+        const emailMapKey = `email_map:${userEmail}`;
+        existingUserId = await kv.get(emailMapKey);
+      }
+
+      if (existingUserId) {
+        // Email already has a user account — reuse it and link GitHub
+        userId = existingUserId.toString();
+      } else {
+        // Completely new user — create new ID
+        userId = generateUserId();
+      }
+
+      // Store the GitHub mapping
       await kv.set(githubMapKey, userId);
+
+      // Also store the email mapping so future email sign-ins find this account
+      if (userEmail) {
+        const emailMapKey = `email_map:${userEmail}`;
+        await kv.set(emailMapKey, userId);
+      }
     } else {
       userId = userId.toString();
+      // Update email mapping in case email changed on GitHub
+      if (userEmail) {
+        const emailMapKey = `email_map:${userEmail}`;
+        await kv.set(emailMapKey, userId);
+      }
     }
 
     // Generate session token
