@@ -4272,12 +4272,12 @@ async function syncCollection(){
   if(!mlbSessionToken)return;
   try{
     var local=loadCollection();
-    var r=await fetch((window.API_BASE||'')+'/api/collection-sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({slot:'',card:{}})});
+    var r=await fetch((window.API_BASE||'')+'/api/collection-sync',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({localCollection:local})});
     if(r.ok){
       var data=await r.json();
       if(data.collection){
         saveCollection(data.collection);
-        console.log('[Sync] Collection synced');
+        console.log('[Sync] Collection synced',Object.keys(data.collection).length,'cards');
       }
     }
   }catch(e){console.error('[Sync] Collection error',e);}
