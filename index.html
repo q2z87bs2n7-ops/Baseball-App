@@ -4239,8 +4239,14 @@ function toggleInvert(){
 
 // ── Session & Sync Functions ──────────────────────────────────────────────────
 function signInWithGitHub(){
-  var redirectUrl=encodeURIComponent(window.location.origin+window.location.pathname);
-  window.location=(window.API_BASE||'')+'/api/auth/github?redirect='+redirectUrl;
+  var state=Math.random().toString(36).slice(2,15);
+  var redirectUri=encodeURIComponent(window.location.origin+window.location.pathname);
+  var githubAuthUrl='https://github.com/login/oauth/authorize?'+
+    'client_id=Ov23lilv8CB5JzyvevZE&'+
+    'redirect_uri='+encodeURIComponent(window.location.origin+'/api/auth/github')+'&'+
+    'state='+state+'&'+
+    'scope=user:email';
+  window.location=githubAuthUrl;
 }
 function signInWithEmail(){
   var email=prompt('Enter your email to receive a sign-in link:');
