@@ -1163,6 +1163,7 @@ let pulseInitialized=false;
 let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
 let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
+let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 let screenWakeLock=null;
 
@@ -1269,12 +1270,15 @@ function initReal() {
 }
 
 async function pollLeaguePulse() {
+  if(pulseAbortCtrl){pulseAbortCtrl.abort();}
+  pulseAbortCtrl=new AbortController();
+  var sig=pulseAbortCtrl.signal;
   var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live';});
   if (!hasLive) pollDateStr=localDateStr(getEffectiveDate());
   var dateStr=pollDateStr;
   try {
     // Fetch from primary date
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
+    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher',{signal:sig});
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
 
@@ -1283,7 +1287,7 @@ async function pollLeaguePulse() {
       var yesterday=new Date();
       yesterday.setDate(yesterday.getDate()-1);
       var yDateStr=localDateStr(yesterday);
-      var yr=await fetch(MLB_BASE+'/schedule?sportId=1&date='+yDateStr+'&hydrate=linescore,team,probablePitcher');
+      var yr=await fetch(MLB_BASE+'/schedule?sportId=1&date='+yDateStr+'&hydrate=linescore,team,probablePitcher',{signal:sig});
       var yd=await yr.json();
       var yGames=(yd.dates||[]).flatMap(function(dt){return dt.games||[]});
       if (yGames.length) {
@@ -1374,7 +1378,7 @@ async function pollLeaguePulse() {
     await buildStoryPool();
     selectFocusGame();
     refreshDebugPanel();
-  } catch(e){console.error('poll error',e);}
+  } catch(e){if(e.name!=='AbortError')console.error('poll error',e);}
 }
 
 async function pollGamePlays(gamePk) {
@@ -1539,6 +1543,7 @@ function toggleDemoMode() {
 
 async function initDemo() {
   if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+  if (pulseAbortCtrl) { pulseAbortCtrl.abort(); pulseAbortCtrl = null; }
   if (storyRotateTimer) { clearInterval(storyRotateTimer); storyRotateTimer = null; }
   demoMode=true;
   pulseMockMode=false;
@@ -1885,6 +1890,8 @@ function exitDemo() {
   demoPaused=false;
   clearTimeout(demoTimer);
   if(storyRotateTimer) clearInterval(storyRotateTimer);
+  if(pulseAbortCtrl){pulseAbortCtrl.abort();pulseAbortCtrl=null;}
+  if(focusAbortCtrl){focusAbortCtrl.abort();focusAbortCtrl=null;}
   var overlay=document.querySelector('.demo-end-screen');
   if(overlay) overlay.remove();
   document.body.classList.remove('demo-active');
@@ -3005,6 +3012,7 @@ function setFocusGame(pk) {
   focusState.pitcherStats=null;
   dismissFocusAlert();
   if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
+  if(focusAbortCtrl){focusAbortCtrl.abort();focusAbortCtrl=null;}
   if(focusOverlayOpen) renderFocusOverlay();
   pollFocusLinescore();
   focusFastTimer=setInterval(pollFocusLinescore,5000);
@@ -3013,8 +3021,11 @@ function setFocusGame(pk) {
 async function pollFocusLinescore() {
   if(!focusGamePk) return;
   if(demoMode) { renderFocusCard(); renderFocusMiniBar(); return; }
+  if(focusAbortCtrl){focusAbortCtrl.abort();}
+  focusAbortCtrl=new AbortController();
+  var focusSig=focusAbortCtrl.signal;
   try {
-    var r=await fetch(MLB_BASE+'/game/'+focusGamePk+'/linescore');
+    var r=await fetch(MLB_BASE+'/game/'+focusGamePk+'/linescore',{signal:focusSig});
     var ls=await r.json();
     var g=gameStates[focusGamePk]||{};
     var tension=getTensionInfo(calcFocusScore(g));
@@ -3040,8 +3051,8 @@ async function pollFocusLinescore() {
     fetchFocusPlayerStats(focusState.currentBatterId, focusState.currentPitcherId);
     renderFocusCard(); renderFocusMiniBar();
     if(focusOverlayOpen) renderFocusOverlay();
-    pollFocusRich();
-  } catch(e) {}
+    pollFocusRich(focusSig);
+  } catch(e) {if(e.name!=='AbortError')console.error('pollFocusLinescore error',e);}
 }
 
 async function fetchFocusPlayerStats(batterId, pitcherId) {
@@ -3071,10 +3082,10 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
   if(focusOverlayOpen) renderFocusOverlay();
 }
 
-async function pollFocusRich() {
+async function pollFocusRich(sig) {
   if(!focusGamePk||demoMode) return;
   try {
-    var r=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live');
+    var r=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live',sig?{signal:sig}:{});
     var data=await r.json();
     var cp=data&&data.liveData&&data.liveData.plays&&data.liveData.plays.currentPlay;
     if(!cp) return;
@@ -3095,7 +3106,7 @@ async function pollFocusRich() {
     if(focusPitchSequence.length) focusState.lastPitch=focusPitchSequence[focusPitchSequence.length-1];
     renderFocusCard();
     if(focusOverlayOpen) renderFocusOverlay();
-  } catch(e) { console.error('pollFocusRich error',e); }
+  } catch(e) { if(e.name!=='AbortError') console.error('pollFocusRich error',e); }
 }
 
 function renderFocusCard() {
@@ -4378,10 +4389,13 @@ function switchNewsFeed(mode,btn){newsFeedMode=mode;['newsMlbBtn','newsTeamBtn']
 
 var liveGamePk=null,liveInterval=null;
 function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,300000);}
-function closeLiveView(){clearInterval(liveInterval);liveInterval=null;liveGamePk=null;document.getElementById('liveView').classList.remove('active');document.querySelector('.main').style.display='block';}
+function closeLiveView(){clearInterval(liveInterval);liveInterval=null;if(liveAbortCtrl){liveAbortCtrl.abort();liveAbortCtrl=null;}liveGamePk=null;document.getElementById('liveView').classList.remove('active');document.querySelector('.main').style.display='block';}
 async function fetchLiveGame(){
+  if(liveAbortCtrl){liveAbortCtrl.abort();}
+  liveAbortCtrl=new AbortController();
+  var liveSig=liveAbortCtrl.signal;
   try{
-    var responses=await Promise.all([fetch(MLB_BASE+'/game/'+liveGamePk+'/linescore'),fetch(MLB_BASE+'/game/'+liveGamePk+'/boxscore'),fetch(MLB_BASE+'/schedule?gamePk='+liveGamePk)]);
+    var responses=await Promise.all([fetch(MLB_BASE+'/game/'+liveGamePk+'/linescore',{signal:liveSig}),fetch(MLB_BASE+'/game/'+liveGamePk+'/boxscore',{signal:liveSig}),fetch(MLB_BASE+'/schedule?gamePk='+liveGamePk,{signal:liveSig})]);
     var ls=await responses[0].json(),bs=await responses[1].json(),sd=await responses[2].json();
     var gameState=(sd.dates&&sd.dates[0]&&sd.dates[0].games&&sd.dates[0].games[0])?sd.dates[0].games[0].status.abstractGameState:'Live';
     var isFinal=gameState==='Final';
@@ -4420,7 +4434,7 @@ async function fetchLiveGame(){
     document.getElementById('liveGameInfo').innerHTML=giHtml;
     if(isFinal){if(liveInterval){clearInterval(liveInterval);liveInterval=null;}document.getElementById('liveRefreshTime').textContent='Game Final';}
     else document.getElementById('liveRefreshTime').textContent='Last updated: '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+' · Auto-refreshes every 5 min';
-  }catch(e){document.getElementById('liveHeader').innerHTML='<div class="error">Could not load live game data</div>';}
+  }catch(e){if(e.name!=='AbortError')document.getElementById('liveHeader').innerHTML='<div class="error">Could not load live game data</div>';}
   fetchPlayByPlay();
 }
 async function fetchPlayByPlay(){
