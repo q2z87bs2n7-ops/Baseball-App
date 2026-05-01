@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.3</title>
+<title>MLB Tracker v3.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -725,7 +725,7 @@
           </div>
           <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.4</div>
       </div>
     </div>
   </div>
@@ -1262,6 +1262,7 @@ let collectionSort='newest';        // 'newest' | 'rarity' | 'team'
 let collectionPage=0;               // 0-indexed page for binder display
 let collectionCareerStatsCache={};  // playerId → career stat object (session-only)
 let lastCollectionResult=null;      // {type,playerName,eventType,tier} — set by collectCard, read by flashCollectionRailMessage
+let collectionSlotsDisplay=[];      // sorted slot array set by renderCollectionBook; openCardFromCollection indexes into this
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -3405,6 +3406,7 @@ async function renderCollectionBook() {
     }
   }));
 
+  collectionSlotsDisplay = slots.slice(); // snapshot for openCardFromCollection index lookup
   book.innerHTML = window.CollectionCard.renderBook({
     slots: slots,
     filter: collectionFilter,
@@ -3415,8 +3417,53 @@ async function renderCollectionBook() {
 }
 
 function openCardFromCollection(idx) {
-  // Phase 3 — show enlarged PulseCard for this slot (TBD with collectionCard.js)
-  if(DEBUG) console.log('openCardFromCollection:', idx);
+  var slot = collectionSlotsDisplay[idx];
+  if (!slot || !slot.events || !slot.events.length) return;
+
+  // Pick a random event from this slot's stored events (all at current tier)
+  var ev = slot.events[Math.floor(Math.random() * slot.events.length)];
+
+  // Resolve team IDs from stored abbreviations
+  var awayTeam = TEAMS.find(function(t) { return t.short === ev.awayAbbr; });
+  var homeTeam = TEAMS.find(function(t) { return t.short === ev.homeAbbr; });
+  var awayTeamId = awayTeam ? awayTeam.id : 0;
+  var homeTeamId = homeTeam ? homeTeam.id : 0;
+
+  // Close binder so card overlay isn't layered on top of it
+  closeCollection();
+
+  if (slot.eventType === 'HR') {
+    // Build overrideStats in MLB API field-name format so resolvePlayerCardData can use it
+    var careerStats = collectionCareerStatsCache[slot.playerId];
+    var overrideStats = null;
+    if (careerStats && careerStats.careerHR !== undefined) {
+      overrideStats = {
+        avg:       careerStats.careerAVG,
+        ops:       careerStats.careerOPS,
+        homeRuns:  careerStats.careerHR,
+        rbi:       careerStats.careerRBI,
+        _position: slot.position,  // fallback for rosterData miss
+      };
+    } else if (slot.position) {
+      overrideStats = { _position: slot.position };
+    }
+    showPlayerCard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, overrideStats, null, ev.badge, null);
+
+  } else {
+    // RBI — extract event type label from stored badge for getRBIBadge recompute
+    var badgeUp = (ev.badge || '').toUpperCase();
+    var eventType = '';
+    if      (badgeUp.indexOf('SINGLE')  !== -1) eventType = 'Single';
+    else if (badgeUp.indexOf('DOUBLE')  !== -1) eventType = 'Double';
+    else if (badgeUp.indexOf('TRIPLE')  !== -1) eventType = 'Triple';
+    else if (badgeUp.indexOf('SAC FLY') !== -1) eventType = 'Sac Fly';
+    else if (badgeUp.indexOf('WALK')    !== -1) eventType = 'Walk';
+    else if (badgeUp.indexOf('HBP')     !== -1) eventType = 'HBP';
+    // Extract stored RBI count from badge ("2-RUN …" → 2, else 1)
+    var rbiMatch = badgeUp.match(/^(\d+)-RUN/);
+    var rbi = rbiMatch ? parseInt(rbiMatch[1]) : 1;
+    showRBICard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, rbi, eventType, ev.awayScore, ev.homeScore, ev.inning, null);
+  }
 }
 
 function updateCollectionUI() {
@@ -3698,6 +3745,9 @@ async function resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamI
   if (!rEntry) rEntry = (rosterData.pitching || []).find(function(p) { return p.person && p.person.id === batterId; });
   if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
   position = (rEntry && rEntry.position && rEntry.position.abbreviation) || null;
+  // Caller-supplied hints (e.g. from collection slot) fill gaps when rosterData doesn't have this player
+  if (!position && overrideStats && overrideStats._position) position = overrideStats._position;
+  if (!jerseyNumber && overrideStats && overrideStats._jersey) jerseyNumber = overrideStats._jersey;
   if ((!position || !jerseyNumber) && gamePk) {
     try {
       var bs = await fetchBoxscore(gamePk);
