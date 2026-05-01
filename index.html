@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.7.l</title>
+<title>MLB Tracker v3.8.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -729,7 +729,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.7.l</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.8.2</div>
       </div>
     </div>
   </div>
@@ -991,6 +991,10 @@
       <div class="dev-btn-label">🎴 Test Card</div>
       <div class="dev-btn-shortcut">Shift+G</div>
     </button>
+    <button class="dev-btn" onclick="resetCollection()" style="border-color:var(--hr-border)">
+      <div class="dev-btn-label">🗑️ Reset Collection</div>
+      <div class="dev-btn-shortcut">clears all</div>
+    </button>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
     <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Media Tab</div>
@@ -1130,27 +1134,8 @@
       <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
     </details>
   </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border)">
-    <button onclick="resetCollection()" style="width:100%;padding:10px;background:rgba(224,48,48,.2);border:1px solid rgba(224,48,48,.4);color:#ff6b6b;border-radius:8px;font-weight:600;font-size:.75rem;cursor:pointer;transition:.2s">🗑️ Reset Collection (Dev)</button>
-  </div>
   <div class="dev-confirm-footer">
     <button class="dev-confirm-btn" id="devConfirmBtn" onclick="confirmDevToolsChanges()">Confirm Changes</button>
-  </div>
-</div>
-
-<div id="resetModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeResetModal()">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)">
-    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:12px">
-      <span style="font-size:24px">🗑️</span>
-      <span>Reset Collection</span>
-    </div>
-    <div style="font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:24px">
-      Delete all collected cards from your account. This action <strong style="color:var(--text)">cannot be undone</strong>.
-    </div>
-    <div style="display:flex;gap:12px;justify-content:flex-end">
-      <button onclick="closeResetModal()" style="padding:10px 20px;background:var(--border);border:none;border-radius:8px;color:var(--text);font-weight:600;cursor:pointer;transition:.2s" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='var(--border)'">Cancel</button>
-      <button onclick="confirmReset()" style="padding:10px 20px;background:rgba(224,48,48,.3);border:1px solid rgba(224,48,48,.5);border-radius:8px;color:#ff6b6b;font-weight:600;cursor:pointer;transition:.2s" onmouseover="this.style.background='rgba(224,48,48,.5)'" onmouseout="this.style.background='rgba(224,48,48,.3)'">Delete All</button>
-    </div>
   </div>
 </div>
 
@@ -3614,6 +3599,23 @@ function generateTestCard() {
   }, true);  // force=true bypasses demoMode guard
 }
 
+function resetCollection() {
+  if (!mlbSessionToken) { alert('Not signed in'); return; }
+  if (!confirm('Reset collection? This cannot be undone.')) return;
+  fetch((window.API_BASE||'')+'/api/collection/reset',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken}
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) {
+      localStorage.removeItem('mlb_card_collection');
+      updateCollectionUI();
+      alert('Collection reset');
+    } else {
+      alert('Error: '+(d.error||'Unknown'));
+    }
+  }).catch(e=>{alert('Network error: '+e.message);});
+}
+
 function baseDiamondSvg(on1,on2,on3) {
   var dim='rgba(255,255,255,0.18)',lit='#ffd000',glow='filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
   var s1=on1?' style="'+glow+'"':'', s2=on2?' style="'+glow+'"':'', s3=on3?' style="'+glow+'"':'';
@@ -4257,8 +4259,13 @@ function toggleInvert(){
 
 // ── Session & Sync Functions ──────────────────────────────────────────────────
 function signInWithGitHub(){
-  var redirectUrl=encodeURIComponent(window.location.origin+window.location.pathname);
-  window.location=(window.API_BASE||'')+'/api/auth/github?redirect='+redirectUrl;
+  var state=Math.random().toString(36).slice(2,15);
+  var githubAuthUrl='https://github.com/login/oauth/authorize?'+
+    'client_id=Ov23lilv8CB5JzyvevZE&'+
+    'redirect_uri='+encodeURIComponent(window.location.origin+'/api/auth/github')+'&'+
+    'state='+state+'&'+
+    'scope=user:email';
+  window.location=githubAuthUrl;
 }
 function signInWithEmail(){
   var email=prompt('Enter your email to receive a sign-in link:');
@@ -4285,12 +4292,12 @@ async function syncCollection(){
   if(!mlbSessionToken)return;
   try{
     var local=loadCollection();
-    var r=await fetch((window.API_BASE||'')+'/api/collection/sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({slot:'',card:{}})});
+    var r=await fetch((window.API_BASE||'')+'/api/collection-sync',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({localCollection:local})});
     if(r.ok){
       var data=await r.json();
       if(data.collection){
         saveCollection(data.collection);
-        console.log('[Sync] Collection synced');
+        console.log('[Sync] Collection synced',Object.keys(data.collection).length,'cards');
       }
     }
   }catch(e){console.error('[Sync] Collection error',e);}
@@ -4331,33 +4338,6 @@ function mergeCollectionSlots(local,remote){
   });
   return merged;
 }
-
-function resetCollection() {
-  if (!mlbSessionToken) { alert('Not signed in'); return; }
-  document.getElementById('resetModal').style.display='flex';
-}
-
-function closeResetModal() {
-  document.getElementById('resetModal').style.display='none';
-}
-
-function confirmReset() {
-  if (!mlbSessionToken) { alert('Not signed in'); closeResetModal(); return; }
-  fetch((window.API_BASE||'')+'/api/collection/reset',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken}
-  }).then(r=>r.json()).then(d=>{
-    if (d.ok) {
-      localStorage.removeItem('mlb_card_collection');
-      updateCollectionUI();
-      closeResetModal();
-      showCollectedToast('new','Collection reset','','common');
-    } else {
-      alert('Error: '+(d.error||'Unknown'));
-    }
-  }).catch(e=>{alert('Network error: '+e.message);});
-}
-
 function startSyncInterval(){
   if(mlbSyncInterval)return;
   mlbSyncInterval=setInterval(async()=>{

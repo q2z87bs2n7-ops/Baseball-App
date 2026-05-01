@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid or expired magic link' });
     }
 
-    const tokenData = JSON.parse(tokenDataRaw.toString());
+    const tokenData = typeof tokenDataRaw === 'string' ? JSON.parse(tokenDataRaw) : tokenDataRaw;
 
     if (tokenData.expiresAt < Date.now()) {
       await kv.del(tokenKey);
@@ -75,8 +75,10 @@ export default async function handler(req, res) {
     await kv.set(sessionKey, JSON.stringify(sessionData), { ex: 90 * 24 * 60 * 60 });
 
     // Redirect back to app with token
-    const appUrl = redirect || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-    const redirectUrl = `${appUrl}/?auth_token=${sessionToken}&auth_method=email`;
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const appUrl = redirect || `${protocol}://${host}/`;
+    const redirectUrl = `${appUrl}?auth_token=${sessionToken}&auth_method=email`;
 
     res.status(302).setHeader('Location', redirectUrl).end();
   } catch (err) {

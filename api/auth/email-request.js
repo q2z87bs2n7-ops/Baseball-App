@@ -75,8 +75,10 @@ export default async function handler(req, res) {
     // Store token in Redis (15 min TTL)
     await kv.set(tokenKey, JSON.stringify(tokenData), { ex: 15 * 60 });
 
-    // Generate magic link
-    const appUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    // Generate magic link using request headers (like github.js)
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const appUrl = `${protocol}://${host}`;
     const magicLink = `${appUrl}/api/auth/email-verify?token=${token}`;
 
     // Send email
