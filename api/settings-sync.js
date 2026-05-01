@@ -6,7 +6,7 @@ async function verifySession(token) {
   const sessionKey = `session:${token}`;
   const sessionRaw = await kv.get(sessionKey);
   if (!sessionRaw) return null;
-  const session = JSON.parse(sessionRaw.toString());
+  const session = typeof sessionRaw === 'string' ? JSON.parse(sessionRaw) : sessionRaw;
   if (session.expiresAt < Date.now()) {
     await kv.del(sessionKey);
     return null;
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       // Fetch remote settings
       const remoteRaw = await kv.get(settingsKey);
-      const remote = remoteRaw ? JSON.parse(remoteRaw.toString()) : {};
+      const remote = remoteRaw ? typeof remoteRaw === 'string' ? JSON.parse(remoteRaw) : remoteRaw : {};
       return res.status(200).json({ settings: remote });
     }
 
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       }
 
       const remoteRaw = await kv.get(settingsKey);
-      const remote = remoteRaw ? JSON.parse(remoteRaw.toString()) : {};
+      const remote = remoteRaw ? typeof remoteRaw === 'string' ? JSON.parse(remoteRaw) : remoteRaw : {};
 
       // Only update if new data is newer
       if (!remote.timestamp || timestamp >= remote.timestamp) {

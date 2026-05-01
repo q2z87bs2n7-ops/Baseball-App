@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid or expired magic link' });
     }
 
-    const tokenData = JSON.parse(tokenDataRaw.toString());
+    const tokenData = typeof tokenDataRaw === 'string' ? JSON.parse(tokenDataRaw) : tokenDataRaw;
 
     if (tokenData.expiresAt < Date.now()) {
       await kv.del(tokenKey);
