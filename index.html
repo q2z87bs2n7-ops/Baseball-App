@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.7.i</title>
+<title>MLB Tracker v3.7.j</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -729,7 +729,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.7.i</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.7.j</div>
       </div>
     </div>
   </div>
@@ -4223,6 +4223,7 @@ function switchTheme(val){
   else{themeOverride=TEAMS.find(t=>t.id===parseInt(val));}
   localStorage.setItem('mlb_theme',val);
   applyTeamTheme(activeTeam);
+  if(mlbSessionToken)syncSettings();
 }
 
 function toggleInvert(){
@@ -4295,6 +4296,7 @@ async function mergeCollectionOnSignIn(){
         var local=loadCollection();
         var merged=mergeCollectionSlots(local,data.collection);
         saveCollection(merged);
+        updateCollectionUI();
         console.log('[Sync] Merged',Object.keys(merged).length,'cards from server');
       }
     }
