@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.1</title>
+<title>MLB Tracker v3.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -725,7 +725,7 @@
           </div>
           <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.2</div>
       </div>
     </div>
   </div>
@@ -3386,53 +3386,13 @@ async function renderCollectionBook() {
     careerStatsMap[slot.playerId] = cs;
   }));
 
-  // Placeholder rendering (Phase 1) — replaced by window.CollectionCard.renderBook() in Phase 3
-  var tierColor = { legendary:'#e03030', epic:'#f59e0b', rare:'#3b82f6', common:'var(--muted)' };
-  var filterBtns = ['all','HR','RBI'].map(function(f) {
-    return '<button onclick="filterCollection(\''+f+'\')" style="padding:4px 12px;border-radius:12px;border:1px solid var(--border);background:'+(collectionFilter===f?'var(--accent)':'var(--card2)')+';color:'+(collectionFilter===f?'#000':'var(--text)')+';font-size:.7rem;cursor:pointer">'+f.toUpperCase()+'</button>';
-  }).join('');
-  var sortBtns = '<button onclick="sortCollection(\'newest\')" style="padding:4px 12px;border-radius:12px;border:1px solid var(--border);background:'+(collectionSort==='newest'?'var(--accent)':'var(--card2)')+';color:'+(collectionSort==='newest'?'#000':'var(--text)')+';font-size:.7rem;cursor:pointer">Newest</button>'
-    +'<button onclick="sortCollection(\'rarity\')" style="padding:4px 12px;border-radius:12px;border:1px solid var(--border);background:'+(collectionSort==='rarity'?'var(--accent)':'var(--card2)')+';color:'+(collectionSort==='rarity'?'#000':'var(--text)')+';font-size:.7rem;cursor:pointer">Rarity</button>';
-
-  var cardsHtml = '';
-  if (!pageSlots.length) {
-    cardsHtml = '<div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--muted)">🔒 No cards yet — collect HR &amp; RBI events in Pulse!</div>';
-  } else {
-    pageSlots.forEach(function(slot, i) {
-      var ev = slot.events[Math.floor(Math.random() * slot.events.length)];
-      var cs = careerStatsMap[slot.playerId];
-      var isPitcher = ['SP','RP','CP','P'].indexOf((slot.position||'').toUpperCase()) !== -1;
-      var statsHtml = cs
-        ? (isPitcher
-          ? '<div style="font-size:.6rem;color:var(--muted)">ERA '+cs.careerERA+' · WHIP '+cs.careerWHIP+'<br>W '+cs.careerW+' · K '+cs.careerK+'</div>'
-          : '<div style="font-size:.6rem;color:var(--muted)">HR '+cs.careerHR+' · AVG '+cs.careerAVG+'<br>RBI '+cs.careerRBI+' · OPS '+cs.careerOPS+'</div>')
-        : '<div style="font-size:.6rem;color:var(--muted)">— · —<br>— · —</div>';
-      var glowStyle = slot.tier !== 'common' ? 'box-shadow:0 0 10px '+tierColor[slot.tier]+',0 0 2px '+tierColor[slot.tier]+';border-color:'+tierColor[slot.tier] : '';
-      cardsHtml += '<div onclick="openCardFromCollection('+i+')" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;text-align:center;'+glowStyle+'">'
-        +'<img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+slot.playerId+'/headshot/67/current" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:6px" onerror="this.style.opacity=0.3">'
-        +'<div style="font-size:.65rem;font-weight:700;color:var(--text);margin-bottom:2px">'+slot.playerName+'</div>'
-        +'<div style="font-size:.55rem;color:var(--muted);margin-bottom:4px">'+slot.teamAbbr+' · '+slot.eventType+'</div>'
-        +'<div style="font-size:.55rem;font-weight:700;color:'+tierColor[slot.tier]+';text-transform:uppercase;margin-bottom:4px">'+slot.tier+'</div>'
-        +statsHtml
-        +'<div style="font-size:.5rem;color:var(--muted);margin-top:4px">'+ev.date+'</div>'
-        +'</div>';
-    });
-  }
-
-  var pageLabel = 'Page ' + (collectionPage + 1) + ' / ' + totalPages;
-  book.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">'
-    +'<div style="font-size:.9rem;font-weight:700;color:var(--text)">📚 Card Collection</div>'
-    +'<button onclick="closeCollection()" style="background:none;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem">✕ Close</button>'
-    +'</div>'
-    +'<div style="padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)">'
-    +filterBtns+'<span style="flex:1"></span>'+sortBtns
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px">'+cardsHtml+'</div>'
-    +'<div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:center;gap:16px;align-items:center">'
-    +'<button onclick="goCollectionPage(-1)" style="padding:4px 12px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer">◀</button>'
-    +'<span style="font-size:.7rem;color:var(--muted)">'+pageLabel+'</span>'
-    +'<button onclick="goCollectionPage(1)" style="padding:4px 12px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer">▶</button>'
-    +'</div>';
+  book.innerHTML = window.CollectionCard.renderBook({
+    slots: slots,
+    filter: collectionFilter,
+    sort: collectionSort,
+    page: collectionPage,
+    careerStatsMap: careerStatsMap,
+  });
 }
 
 function openCardFromCollection(idx) {
@@ -3453,12 +3413,7 @@ function renderCollectionRailModule() {
   if (!el) return;
   var col = loadCollection();
   var count = Object.keys(col).length;
-  // Phase 1 placeholder — replaced by window.CollectionCard.renderRailModule(count) in Phase 3
-  el.innerHTML = count === 0 ? '' :
-    '<div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between">'
-    +'<span style="font-size:.72rem;color:var(--text)">🎴 <strong>'+count+'</strong> card'+(count===1?'':'s')+' collected</span>'
-    +'<button onclick="openCollection()" style="font-size:.65rem;padding:3px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--accent);cursor:pointer">Open →</button>'
-    +'</div>';
+  el.innerHTML = window.CollectionCard.renderRailModule(count);
 }
 
 function generateTestCard() {
@@ -4930,6 +4885,7 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
   if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
   if(e.shiftKey && e.key === 'G') { generateTestCard(); }
+  if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
 });
 
 document.addEventListener('click',onSoundPanelClickOutside);
@@ -4939,6 +4895,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
 
 <script src="pulse-card-templates.js"></script>
 <script src="focusCard.js"></script>
+<script src="collectionCard.js"></script>
 
 <div class="live-view" id="liveView">
   <div style="max-width:1360px;margin:0 auto;padding:20px">
