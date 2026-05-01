@@ -4273,7 +4273,7 @@ async function syncCollection(){
   if(!mlbSessionToken)return;
   try{
     var local=loadCollection();
-    var r=await fetch((window.API_BASE||'')+'/api/collection/sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({slot:'',card:{}})});
+    var r=await fetch((window.API_BASE||'')+'/api/collection-sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({slot:'',card:{}})});
     if(r.ok){
       var data=await r.json();
       if(data.collection){
@@ -4287,7 +4287,7 @@ async function syncSettings(){
   if(!mlbSessionToken)return;
   try{
     var data={sound:soundSettings,theme:localStorage.getItem('mlb_theme'),invert:localStorage.getItem('mlb_invert'),timestamp:Date.now()};
-    var r=await fetch((window.API_BASE||'')+'/api/settings/sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify(data)});
+    var r=await fetch((window.API_BASE||'')+'/api/settings-sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify(data)});
     if(r.ok){console.log('[Sync] Settings synced');}
   }catch(e){console.error('[Sync] Settings error',e);}
 }
