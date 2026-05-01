@@ -3,7 +3,7 @@
 ## What This Is
 A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The main app lives in `index.html`.
 
-**Current version:** v2.28.1 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines; v2.9.1 adds big-inning HIGHLIGHT badge + crimson card background, HR description patch on stale first-delivery, player card +1 fix via desc hint; v2.9.2 consolidates daily leader stories to one-per-stat with MLB top-5 ranked list and expands stats to HR/AVG/RBI/SB/Wins/Saves; v2.10 Pulse UI polish: distinct HR colors — teal for Story Carousel tier-1 cards, violet for feed play items; ⚡ Pulse section banner (no hairline rule); feedWrap contained-module border; v2.11 walk-off story fires on game state alone (bottom 9th+, tied/1-run, no runner requirement); per-inning ID + 5-min cooldown prevents repeated firing in same inning; v2.12 adds bases loaded story card (tier-1, priority 88, per half-inning), leader card player names match headline size/color; v2.12.1 tightens walk-off detection to winning-run-at-bat logic: fires when deficit ≤ runners-on-base + 1, correctly handles tied/down-1/down-2-with-runners scenarios; v2.12.2 big-inning card sub-line shows "AWAY @ HOME" only, score removed; v2.12.3 story carousel cooldowns dynamically capped to pool size × 1.5 × rotate interval so thin pre-game pools recycle cards in seconds not hours; v2.13 Pulse ticker chip redesign: chips stack teams vertically (away row / home row / inning+outs row) for compact width; out-dot indicators (3 circles, hollow outline → filled red per out) on both normal and RISP chips; live dot changed red → green (#22c55e) to avoid clash; home-row dot-spacer aligns team abbreviations on shared left edge; RISP bottom row now left-aligns diamond + inning + outs together; v2.14 adds stolen base carousel story: 💨 tier-2/priority-55 card for 2B/3B steals, 🏃 tier-1/priority-85 for steal of home; carousel only — stolen base plays intercepted before feed; isHistory guard fires live events only; v2.15 Pulse two-column layout redesign: desktop/iPad landscape only (≥1025px) with ~700px left column (ticker, story carousel, feed) + ~320px right column (side rail games + news carousel); ticker filtered to Live games only (no Preview/Final); side rail unified module with Upcoming/Completed games sections; MLB news carousel via backend proxy (primary) + ESPN JSON fallback; YouTube channel feed proxy added for reliable Media tab video loading; responsive: side rail hidden at ≤1024px, Pulse reverts to single-column centered; v2.16 merged QC fixes from main; v2.17 adds Pulse header redesign (moved "⚡ Pulse" to side rail with "MLB Pulse ⚡" logo branding) and dual-source news fetching with console debug logging; v2.18 fixes Pulse display bug (ID selector specificity override) and adds proxy-rss.js serverless function for MLB RSS feed parsing (supports general feed + all 30 team-specific feeds, bypasses CORS); v2.19 fixes MLB RSS proxy fallback (changed data.videos → data.articles for correct field mapping); v2.20 corrects news source priority for Pulse side rail (MLB RSS primary via /api/proxy-rss, ESPN JSON fallback); v2.21 redesigns Pulse side rail layout (doubles pulseFeedHeader height with centered 23px icon, swaps news/games module order, extends newsCarousel to 700px width, aligns news top with previous games position via margin-top:70px); v2.22 removes pulseFeedHeader background box (transparent/app-matched) and aligns news photo top with horizontal reference line via reduced margins (margin-top:16px, title margin-bottom:8px); v2.23 empty state refinement: hides ticker, mock bar, header, side rail news when no live games, showing only hype card + upcoming games preview; v2.23.1 keeps storyCarousel visible (displays Probable Pitchers); v2.23.2 hides sideRailGames (hype card is more elegant); v2.23.3 expands Pulse layout to full width when side rail hidden (CSS :has() selector); v2.24 merges CSS change to prod; v2.25 fixes Pulse layout empty state: switches to flexbox approach, adds .pulse-empty class toggle on updateFeedEmpty(), constrains #pulseLeft to max-width 900px with center margin on empty state to prevent full-width stretching while maintaining readable spacing; v2.26 fixes Pulse theming: header stays in user's selected team theme while Pulse content (dark, card, card2, border CSS vars) auto-applies MLB Neutral navy when entering Pulse section, restores to selected theme on exit via applyPulseMLBTheme() function; v2.27 adds Demo Mode: full-day static JSON snapshot (562K daily-events.json with 8 games, 619 plays) loads without API calls, temporal carousel filtering prevents future stories from appearing before replay reaches them, playback speeds 1x/10x/25x/200x, HR player cards and scoring alerts fire during playback, Try Demo button in both Pulse empty state and Settings; v2.28 adds key RBI card overlay for non-HR scoring plays in Pulse + dynamic HR card badges; v2.28.1 fixes Pulse empty state vertical padding on iPad portrait: adds max-width:700px + margin:0 auto to #pulseLeft in tablet band media query so content is centered instead of stretching full-width)
+**Current version:** v3.8.6 (v1.61 was the final v1 release — v2.x began with the League Pulse merge; v2.2 merged calendar/doubleheader/PPD fixes; v2.3 merged Pulse PPD + historical status items; v2.4 merged Pulse feed ordering fixes; v2.5 merged DH mobile calendar fix; v2.6 merged DH full detail panel + PPD dot; v2.6.1 added News Feed MLB/Team toggle; v2.7 merged Pulse player card flash + HR feed improvements; v2.7.1+ added Story Carousel event stream with 12 story generators, priority-weighted rotation, and pitcher stats display; v2.8 adds UI/UX improvements: nav reorder (League before Pulse), Standings redesign with other divisions Wild Card race, balanced home card heights; v2.9 merges Story Carousel polish: HR card redesign with past-tense headline/YTD stats/multi-homer collapse/HIGHLIGHT badge, probable pitcher W-L record, streak/leader card sub-line cleanup, auto-rotate 10s, DH game 2 excluded from NEXT UP hero card, lazy Statcast distance update for HR headlines; v2.9.1 adds big-inning HIGHLIGHT badge + crimson card background, HR description patch on stale first-delivery, player card +1 fix via desc hint; v2.9.2 consolidates daily leader stories to one-per-stat with MLB top-5 ranked list and expands stats to HR/AVG/RBI/SB/Wins/Saves; v2.10 Pulse UI polish: distinct HR colors — teal for Story Carousel tier-1 cards, violet for feed play items; ⚡ Pulse section banner (no hairline rule); feedWrap contained-module border; v2.11 walk-off story fires on game state alone (bottom 9th+, tied/1-run, no runner requirement); per-inning ID + 5-min cooldown prevents repeated firing in same inning; v2.12 adds bases loaded story card (tier-1, priority 88, per half-inning), leader card player names match headline size/color; v2.12.1 tightens walk-off detection to winning-run-at-bat logic: fires when deficit ≤ runners-on-base + 1, correctly handles tied/down-1/down-2-with-runners scenarios; v2.12.2 big-inning card sub-line shows "AWAY @ HOME" only, score removed; v2.12.3 story carousel cooldowns dynamically capped to pool size × 1.5 × rotate interval so thin pre-game pools recycle cards in seconds not hours; v2.13 Pulse ticker chip redesign: chips stack teams vertically (away row / home row / inning+outs row) for compact width; out-dot indicators (3 circles, hollow outline → filled red per out) on both normal and RISP chips; live dot changed red → green (#22c55e) to avoid clash; home-row dot-spacer aligns team abbreviations on shared left edge; RISP bottom row now left-aligns diamond + inning + outs together; v2.14 adds stolen base carousel story: 💨 tier-2/priority-55 card for 2B/3B steals, 🏃 tier-1/priority-85 for steal of home; carousel only — stolen base plays intercepted before feed; isHistory guard fires live events only; v2.15 Pulse two-column layout redesign: desktop/iPad landscape only (≥1025px) with ~700px left column (ticker, story carousel, feed) + ~320px right column (side rail games + news carousel); ticker filtered to Live games only (no Preview/Final); side rail unified module with Upcoming/Completed games sections; MLB news carousel via backend proxy (primary) + ESPN JSON fallback; YouTube channel feed proxy added for reliable Media tab video loading; responsive: side rail hidden at ≤1024px, Pulse reverts to single-column centered; v2.16 merged QC fixes from main; v2.17 adds Pulse header redesign (moved "⚡ Pulse" to side rail with "MLB Pulse ⚡" logo branding) and dual-source news fetching with console debug logging; v2.18 fixes Pulse display bug (ID selector specificity override) and adds proxy-rss.js serverless function for MLB RSS feed parsing (supports general feed + all 30 team-specific feeds, bypasses CORS); v2.19 fixes MLB RSS proxy fallback (changed data.videos → data.articles for correct field mapping); v2.20 corrects news source priority for Pulse side rail (MLB RSS primary via /api/proxy-rss, ESPN JSON fallback); v2.21 redesigns Pulse side rail layout (doubles pulseFeedHeader height with centered 23px icon, swaps news/games module order, extends newsCarousel to 700px width, aligns news top with previous games position via margin-top:70px); v2.22 removes pulseFeedHeader background box (transparent/app-matched) and aligns news photo top with horizontal reference line via reduced margins (margin-top:16px, title margin-bottom:8px); v2.23 empty state refinement: hides ticker, mock bar, header, side rail news when no live games, showing only hype card + upcoming games preview; v2.23.1 keeps storyCarousel visible (displays Probable Pitchers); v2.23.2 hides sideRailGames (hype card is more elegant); v2.23.3 expands Pulse layout to full width when side rail hidden (CSS :has() selector); v2.24 merges CSS change to prod; v2.25 fixes Pulse layout empty state: switches to flexbox approach, adds .pulse-empty class toggle on updateFeedEmpty(), constrains #pulseLeft to max-width 900px with center margin on empty state to prevent full-width stretching while maintaining readable spacing; v2.26 fixes Pulse theming: header stays in user's selected team theme while Pulse content (dark, card, card2, border CSS vars) auto-applies MLB Neutral navy when entering Pulse section, restores to selected theme on exit via applyPulseMLBTheme() function; v2.27 adds Demo Mode: full-day static JSON snapshot (562K daily-events.json with 8 games, 619 plays) loads without API calls, temporal carousel filtering prevents future stories from appearing before replay reaches them, playback speeds 1x/10x/25x/200x, HR player cards and scoring alerts fire during playback, Try Demo button in both Pulse empty state and Settings; v2.28 adds key RBI card overlay for non-HR scoring plays in Pulse + dynamic HR card badges; v2.28.1 fixes Pulse empty state vertical padding on iPad portrait: adds max-width:700px + margin:0 auto to #pulseLeft in tablet band media query so content is centered instead of stretching full-width; v2.29 iPad layout polish — equalize Next Game/Next Series card heights with height:100% + box-sizing, fix .grid2 50/50 split on iPad portrait with minmax(0,1fr) grid columns, add responsive typography with clamp() for text/icons to fit box width better at ≤1024px; v2.30 fixes run indicator color in live play-by-play (green instead of red); v2.30.1 fixes Next Series ghosted logo overflow on iPad tablet band (768–1024px) with responsive media query, logo sized 260px with -45px offset to prevent overflow on narrower screens; v2.31 redesigns HR/RBI player cards as Topps-inspired full-bleed trading cards: full-bleed photo background, nameplate overlay bar with team-color accent, large jersey number badge, position + team display, expanded stat grid layout (2×2: AVG/OPS/HR/RBI), flashy entrance/exit animations with shimmer effect, placeholder row for career stats (deferred to future branch); v2.32 fixes iPad player card stats spacing: increases stats grid height from 80px to 90px with nameplate repositioned to 90px from bottom for better readability on tablet viewports; v2.33 removes Mock Mode entirely (demo mode provides all replay/simulation features needed), simplifies Pulse initialization by deleting all mock-mode state vars and control functions, cleans up initLeaguePulse() and initReal(); v2.34 fixes demo bar visibility: removes 'mockBar' from updateFeedEmpty() hideWhenEmpty array so demo bar only appears when demo mode is active (root cause was feed empty state toggling display to empty string, allowing CSS display:flex to override); v2.35 fixes right rail news carousel layout: constrains newsCarousel width to 100% (fits 320px sidebar), removes hardcoded 700px width and margin-left hack, repositions nav buttons as position:absolute overlays on news card image (left/right edges, semi-transparent dark background) so users navigate articles without horizontal scrolling; v2.36 adds desktop-only zoom scaling to 80% via `@media(min-width:1025px) { html { zoom: 0.8; } }` — makes the app more spacious on large screens while leaving iPad and mobile unaffected; v2.37 fixes live button border color on Pulse ticker chips (restored green #22c55e from accidental revert), adds white circular backgrounds behind team logos on Next Game/Next Series home cards, reduces height of home cards on mobile (≤480px) by removing min-height constraint so cards are compact like Current Matchup box; v2.38 restores all LIVE indicator colors to green across home cards, calendar, matchups; sets calendar LIVE badges + game view header to correct colors; outs remain red in live view; v2.39 adds Screen Wake Lock API to keep iPad screen awake during Pulse — wake lock requested when entering Pulse, released on exit or visibility change, gracefully handles unsupported browsers; v2.40 fixes Pulse desktop layout responsiveness: #pulse-empty class now applies only when zero games exist (not when games are disabled/filtered), #pulseLeft changed from fixed 700px to flex: 1 1 700px so it expands to fill available space while sidebar stays 320px fixed on right, ticker given width: 100% for consistent sizing, eliminates right-side deadspace that grew as viewport expanded or games completed; v2.41 merges feature branch updates; v2.42 accelerates Story Carousel auto-rotation from 10s to 3s for faster event cycling through the card display; v2.43 changes carousel rotation to 4.5s, multi-hit message shows "goes N for M" format with hits and at-bats from session tracking (reverted in v2.44); v2.44 refactors multi-hit story generation to fetch actual boxscore stats instead of session-based counts, adds boxscoreCache for efficiency, makes genMultiHitDay async to resolve real H and AB from /game/{pk}/boxscore API, updates buildStoryPool and demo loops to properly await async story generation; v2.45 merges carousel updates to main; v2.45.a fixes demo mode compatibility by detecting demoMode and skipping boxscore API calls; v2.45.b reverts demo mode multi-hit headline to "goes N-for-today" format to avoid misleading "N for N" at-bat counts; v2.46 adds end-of-inning recap story generator: 19 recap templates covering HR innings, perfect strikeouts, multi-run frames, comebacks, stranded runners, shutouts, double plays, walks, errors, and 1-2-3 plays; recap fires once per half-inning with priority-weighted conflict logic (HR+runs=100 → perfect K=95 → multi-run=90 → comeback=85 → stranded=80, etc.); tracks inning/half-inning transitions per game via lastInningState and inningRecapsFired Set; tier-2 stories with full team names and pitcher names; includes console debugging helpers for manual inning advancement during testing; v2.47 fixes demo mode entry/exit regression: (1) exit demo now checks if staying in Pulse before restoring polling (fixes Pulse feed lingering on top of other sections), (2) entering demo clears real feed DOM directly (prevents duplicate status items), (3) re-entering demo after navigation no longer overlays demo/real data; v2.48 updates demo mode playback controls: replaces 25x/200x speeds with 100x (1x/10x/100x), adds 🔥 "Next HR" button that finds next home run in queue, FF to it, displays with player card, and pauses for viewing; v2.49 replaces HR/RBI player card styling with four new template variants: V1 Stylized Graphic (diagonal slash, stacked typography, circle photo), V2 Stadium Jumbotron (LED scoreboard, scanlines, amber glow), V3 Comic/Pop Art (halftones, yellow burst, tilted stamp), V4 Sports Broadcast (lower-third, skewed graphic, LIVE bug). App randomly selects one variant per popup via `window.PulseCard.render()` API. All styling inline (no CSS overrides). Count-up animations preserved via `.pc-hr-val` and `.pc-rbi-val` classes. Position and jersey data fetched from boxscore for opposing players. Debug function `replayHRCard()` available via `Shift+R` or console for testing variants with live feed data; v2.50 Pulse neutral chrome sweep (CSS-only): scopes `--accent` override to `#pulse` so team color no longer bleeds into Pulse chrome; collapses 8 story-badge colors into neutral chrome (LIVE keeps red); drops tier2/3/4 background tints (left rail encodes priority); unifies hype pills with dot accent (one chrome, colored dots); aligns Pulse feed header rhythm to side-rail kicker (11px / .18em / muted color); swaps Settings panel kicker labels to var(--muted). Pulse now visually identical across team switches; v2.52 expands Pulse ticker chip to show base diamond whenever any runner is on base (1B/2B/3B), not just RISP — `hasRisp` renamed to `hasRunners`, condition adds `g.onFirst`; `has-risp` CSS class retained for styling continuity; v2.53 carousel badge audit + recap polish: feed RISP badge gated on `outs<3` (no longer shows on inning-ending plays); empty ticker drops the "Upcoming games will appear in the side panel" sub-line; double-play inning recap names the batter ("X hits into a double play in the Nth"), with team-only fallback ("Y turn a double play to escape the Nth") crediting the fielding team; new INNING RECAP indigo badge replaces miscased LIVE; streak stories split into HOT (warm orange) for wins, COLD (cool cyan) for losses; daily leaders renamed `season`→`leaders` ("LEADERS" label) with retuned icons (HR/RBI 🏏, SB 🏃 matching in-game story, Wins/Saves ⚾); stolen base story badge becomes LIVE only on first display when event ≤60s old, else HIGHLIGHT — handled by new session-only `displayedStoryIds` Set + `liveOrHighlight()` helper, prevents stale steals from rendering as LIVE on late-load; pitcher gem and multi-hit promoted T3→T2; multi-hit badge flips LIVE/TODAY by game state matching pitcher gem; walk-off threat and bases loaded both use 🔔; SB story icons unified to 🏃; multi-hit icon 🎯→🏏; v2.54 adds Debug Tools overlay: consolidated single-panel access to demo mode and hotkey shortcuts via Settings, fixed-position floating overlay matching sound panel pattern, "Try Demo" button (Shift+H) and "Replay HR" button (Shift+R) with keyboard shortcut labels for touch device access, Shift+D keyboard shortcut toggles debug panel on desktop, click-outside dismissal, auto-closes on button action; v2.55 renames "Debug Tools" to "Dev Tools", moves Try Demo and Replay HR to dev tools panel, adds real-time Pulse tuning interface (carousel rotation ms, RBI card threshold, RBI cooldown) with input fields that populate from code values to prevent hardcoding drift, integrates tuning directly into dev tools panel with demoable live preview; v2.55.1 restores demo mode exit functionality, enables toggle between Enter/Exit Demo states; v2.55.2 lowers RBI card threshold from 30 to 10 based on user feedback that 30 was too restrictive (threshold=10 surfaces most 1+ RBI scoring plays vs. only high-impact moments), updates dev tuning defaults to match; v2.55.3 removes duplicate colored dots from hype card badges (emoji icons sufficient), polishes settings menu: Sound Alerts button to icon-only (🔊), Dev Tools button restyled to match settings panel guidelines (card2 background, smaller padding, inline layout with label); v2.55.4 fixes demo speed-change lag: `setDemoSpeed` now cancels the in-flight `setTimeout` and immediately sets a new one at the selected speed, so switching from 1x to 100x takes effect instantly instead of waiting out the old timer; also fixes stale `querySelector` referencing removed button IDs `demoSpeed25x`/`demoSpeed200x`; v2.57 adds warmup state indicator to Pulse ticker: orange dot (#ff9500) during Warmup/Pre-Game (30 min before first pitch), green dot (#22c55e) once game officially starts (detailedState === 'In Progress'); aligns Pulse visual cue with existing Warmup exclusion in Around the League section; v2.57.1 sorts Around the League matchup grid chronologically by gameDate start time (earliest games appear first) instead of API response order, matching user expectations and Pulse ticker behavior; v2.57.2 restores Dev Tools as centered modal (380px, max-height 90vh) + Carousel Story Rules tuning (HR/Big Inning/Walk-off/No-Hitter/Bases Loaded priority + cooldown knobs wired to devTuning) + Theme Tuning section (color pickers for App and Pulse themes, Lock Theme toggle via devColorLocked/devColorOverrides, applyTeamTheme/applyPulseMLBTheme respect lock); v2.57.3 restores pulse-card-templates.js accidentally deleted in file sweep (ea916f1) — file is a runtime dependency loaded via script src, not a dev artifact; documents all runtime file dependencies in CLAUDE.md; v2.57.4 fixes Dev Tools double-press bug — `toggleDevTools` checked `p.style.display==='none'` but panel display:none is CSS-only so inline style was '' on first call; fix: check `!=='block'`; also corrects `btnDebugTools`→`btnDevTools` in both click-outside handlers; v2.57.5 fixes settings panel appearing under Pulse ticker on iPad portrait — tablet band media query had `header{z-index:50}` which is below `#gameTicker{z-index:90}`; sticky header creates stacking context so settings panel (z-index:200 within it) lost to ticker; fix: restore header z-index to 100 in tablet band; v2.57.6 moves `#soundPanel` out of `#pulse` section to top-level DOM so it renders regardless of active section; converts Pulse-only click-outside listener to always-on global (same pattern as Dev Tools); removes `soundPanelClickListenerAttached` flag; v2.57.7 hides 🔔 Game Start Alerts row on desktop via `isDesktop()` + `#pushRow` id; Dev Tools gets "Push Alerts → Show on Desktop" toggle (`devShowPushOnDesktop`, persisted to `localStorage('dev_push_desktop')`); v2.57.8 adds `.debug-close` CSS (border, 14px h-padding, font-weight 700) for wider ✕ button; removes `onchange` from all numeric tuning inputs; adds sticky "Confirm Changes" footer button (`confirmDevToolsChanges()`) that reads all inputs and flashes green "✓ Applied!"; binary toggles remain immediate; v2.57.9 fixes `isDesktop()` — drops `navigator.maxTouchPoints` check (Chrome on Mac reports 1 via Apple trackpad, causing false negative); `!('ontouchstart' in window)` alone correctly distinguishes desktop from iPad/iPhone; v2.57.10 removes `devShowPushOnDesktop` localStorage persistence and `#pushRow` inline `display:flex` (stale localStorage 'true' and early-render inline style caused the row to remain visible before JS could hide it); v2.57.11 scraps JS desktop-detection for push row in favour of pure CSS — `@media(min-width:1025px){ #pushRow { display:none !important } }` is unconditionally reliable; JS functions `isDesktop()`, `updatePushRowVisibility()`, `togglePushOnDesktop()`, and var `devShowPushOnDesktop` retained as dead code in case a UI toggle is re-added later; **v2.58 merges branch `claude/fix-dev-tools-double-press-lMMlx` to main** — fixes: Dev Tools double-press, settings panel behind Pulse ticker on iPad portrait, Sound Alerts panel accessible from any section, push alerts hidden on desktop via CSS, Dev Tools ✕ wider + Confirm Changes button; **v2.59 merges branch `claude/review-inning-recap-logic-6hVq9` to main** — Story Carousel nav UX: edge-mounted ghost buttons (position:absolute, borderless, 45% opacity) replacing below-card row; storyPool sorted by priority descending so manual ‹ › and dots reflect editorial ranking; inning recap trigger fixed to fire at 3rd out via `inningRecapsPending{}` in `pollGamePlays()` instead of waiting for linescore transition (was up to 15s late); Dev Tools: 💰 Replay RBI button + `Shift+E` hotkey via `replayRBICard()` mirrors HR replayer for non-HR scoring plays; **v2.60 merges branch `claude/refactor-code-structure-1U18f` to main** — dead code removal (MOCK_DATA, DEMO_BACKUP_GAMES, alertId, contextHtml/jerseyHtml never passed to PulseCard.render); `STORY_ROTATE_MS` global eliminated — all rotation intervals now read `devTuning.rotateMs` directly (single source of truth); `fetchBoxscore(gamePk)` cache helper centralises boxscore fetching across genMultiHitDay/loadOnThisDayCache/loadYesterdayCache/showPlayerCard; `showPlayerCard` refactored into `resolvePlayerCardData()` (async data resolution) + render; `showRBICard` gains `gamePk` parameter + boxscore fallback so opposing-player jersey/position populate correctly (was always blank); **v2.61 merges branch `claude/explore-v3-feature-IMc84` to main** — At-Bat Focus Mode: live pitch-by-pitch tracker in Pulse side rail; auto-selects most exciting live game via `calcFocusScore()`; Tier 1 linescore poll every 5s for balls/strikes/outs/runners/matchup names; Tier 2 GUMBO fetch every 5s for full `focusPitchSequence` array; compact `#focusCard` card in right side rail (desktop/iPad landscape), `#focusMiniBar` slim strip below ticker (phone and iPad portrait, hidden on desktop), `#focusOverlay` full modal with scoreboard + count pips + diamond + matchup stats + pitch sequence + game switcher; soft-alert `#focusAlertStack` for critical game changes; `focusCard.js` provides `window.FocusCard.renderCard/renderOverlay/renderPitchPill/demo()`; `Shift+F` opens demo overlay; pitch types shown as full names (Sinker, Sweeper, Slider) not codes; **v2.62 merges branch `claude/explore-v3-feature-IMc84` to main** — Focus Mode Dev Tools tuning: 🎯 Focus Mode Tuning collapsible in Dev Tools with four live-editable parameters (CRITICAL threshold, HIGH threshold, switch margin, alert cooldown); `getTensionInfo()` and `selectFocusGame()` read from `devTuning` instead of hardcoded values; all four wired into `confirmDevToolsChanges`, `toggleDevTools`, and `resetTuning`; **v3.0 merges branch `claude/card-collection-system-FqTNO` to main** — Card Collection System Phase 1: `collectCard()` + localStorage slot model + tier logic; `window.CollectionCard` IIFE in `collectionCard.js` with binder-style 3×3 pocket grid, rarity glow borders, career stats from MLB API; rail module count chip + "Open →" CTA; `#collectionOverlay` full-screen binder modal; toast notifications for new/upgrade/duplicate; `Shift+G` dev shortcut + 🎴 Test Card button in Dev Tools; Settings panel "Card Collection" row with count + Open button; `collectionCard.js` added as runtime dependency + to `sw.js` SHELL cache; **v3.1** adds `openCardFromCollection(idx)` — tapping a binder card replays the HR or RBI PulseCard overlay (random V1–V4 template, random event from stored events[]); **v3.2** adds rail flash message after player card dismisses — shows new/upgrade/already-have result with tier color, player name, event type; message auto-reverts to rail module after 4s; **v3.3** adds team sort to binder — `collectionPage` acts as team index (one team per page), page shows all slots for that team in rarity order with team primary color tint + watermark logo at 5% opacity + team nav footer; `teamContext` object passed to `renderBook()`; **v3.4** fixes rail flash only showing once by computing `lastCollectionResult` before demo mode guard in `collectCard()` and simulating what would have happened without mutating localStorage; **v3.5** fixes `generateTestCard()` to work in demo mode by passing `force=true` to `collectCard()` bypassing the demo guard; **v3.6** fixes player card popup appearing behind binder — moved `#playerCardOverlay` from inside `#pulse` section to top-level DOM (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`); z-index raised to 600 (above binder's 500); **v3.8.4** settings panel cleanup: Card Collection row moved to top of settings panel with inline count ("📚 Cards Collected: N" — no separate grey label row); `resetCollection()` now clears localStorage regardless of sign-in state (no blocking popup), only calls remote API when a session token exists; grey subtitle rows removed from Color Theme ("Override Team Colours"), Invert Colours ("Swap Primary & Secondary"), and Sound Alerts ("Configure In-Game Sound Notifications"); **v3.8.5** `generateTestCard()` now uses `rosterData.hitting` only (pitchers excluded); player pool expanded to include hitting leaders from `leagueLeadersCache.hitting` (populated on League tab visit) and hitting categories from `dailyLeadersCache` (HR/AVG/RBI/SB, populated by Pulse polling), deduped by player ID; team colors for cross-team leaders resolved via `TEAMS.find(t.id)`; falls back to active team roster alone if no leader cache is warm; **v3.8.6** hypes up card collection messages with tier-aware copy — toast and rail flash now vary by tier: legendary (`🔴 LEGENDARY PULL!` / red glow border, 2.8s duration), epic (`🟠 EPIC CARD!` / amber glow), rare (`💎 Rare Find!` / blue accent), common (`🎴 Card Collected` / unchanged tone); upgrade and duplicate messages equally tiered; rail flash splits into bold tier-colored label + muted player/event sublabel; dot glows on legendary/epic; toast border + box-shadow dynamically match tier color
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
 
@@ -27,6 +27,11 @@ A single-file HTML sports tracker app for MLB, defaulting to the New York Mets. 
 ### Repo structure
 ```
 index.html              — main app (HTML + CSS + JS, all inline)
+focusCard.js            — runtime dependency: defines window.FocusCard.renderCard/renderOverlay/renderPitchPill/demo() for At-Bat Focus Mode
+pulse-card-templates.js — runtime dependency: defines window.PulseCard.render()/demo() for HR/RBI card overlays
+daily-events.json       — runtime dependency: static snapshot for client-facing Demo Mode
+collectionCard.js       — runtime dependency: defines window.CollectionCard.renderBook/renderMiniCard/renderRailModule/demo() for Card Collection binder visuals
+demo.html               — non-production design test harness for collectionCard.js; publicly accessible on GitHub Pages but not linked from the app; safe to delete before any merge
 sw.js                   — service worker (PWA caching + push event handling)
 manifest.json           — PWA manifest (install metadata, icons)
 icons/                  — app icons (icon-192.png, icon-512.png, icon-180.png, icon-maskable-512.png, favicon.svg, icon-mono.svg)
@@ -46,8 +51,214 @@ package.json            — web-push + @upstash/redis dependencies (for Vercel f
 - **Push API (`/api/*`)**: Vercel Hobby — `https://baseball-app-sigma.vercel.app`
 - **Cron trigger**: GitHub Actions (free) pings `/api/notify` every 5 minutes
 
+### Session Storage & Cross-Device Sync (v3.8+)
+
+Users can optionally sign in to enable card collection sync across devices and days. Sign-in is **100% optional** — the app remains fully functional unsigned-in with localStorage-only storage.
+
+#### Architecture
+
+**Three auth endpoints (Vercel serverless):**
+- `/api/auth/github` — GitHub OAuth callback (exchanges authorization code for access token, creates/links user account)
+- `/api/auth/email-request` — Email magic-link request (generates 15-min token, sends link via SendGrid/Mailgun)
+- `/api/auth/email-verify` — Magic-link verification (exchanges token for session token, redirects to app)
+
+**One sync endpoint:**
+- `/api/collection-sync` — GET (fetch remote cards), POST (push single card), PUT (full sync with merge)
+
+**Storage (Upstash Redis keyed by opaque user ID):**
+- `session:{token}` — session metadata (userId, auth_method, expiresAt) — 90-day TTL
+- `collection:{userId}` — card collection JSON
+- `github_map:{githubId}` → userId — links GitHub account to user
+- `email_map:{email}` → userId — links email address to user (enables account unification)
+- `email_token:{hash}` — one-time magic link (15-min TTL)
+
+#### GitHub OAuth Flow
+
+1. **User clicks "Sign in with GitHub"** in Settings panel
+2. `signInWithGitHub()` redirects to GitHub's OAuth authorization endpoint with:
+   - `client_id` — from `GITHUB_CLIENT_ID` env var
+   - `redirect_uri` — `/api/auth/github` callback
+   - `scope` — `user:email` (requests email permission)
+   - `state` — random nonce for CSRF protection
+3. **User authorizes on GitHub**
+4. **GitHub redirects to `/api/auth/github?code=...&state=...`**
+5. **Backend exchanges code for access token:**
+   - POST to `https://github.com/login/oauth/access_token` with client_id, client_secret, code
+   - Receives `access_token` in response
+6. **Fetch user info from GitHub API:**
+   - `GET https://api.github.com/user` with `Authorization: Bearer {access_token}`
+   - Receives `id` (GitHub user ID), `login`, `email`
+7. **Account unification logic:**
+   - Check if GitHub ID already linked: `github_map:{githubId}` lookup
+   - If not linked, check if email already has account: `email_map:{email}` lookup
+   - If email found: **reuse existing userId** (link GitHub to email account)
+   - If email not found: **generate new userId** (new account)
+   - Store `github_map:{githubId}` → userId
+   - Store `email_map:{email}` → userId
+8. **Generate session token and store in Redis:**
+   - Session token: 40-char random string
+   - Store in `session:{token}` with 90-day TTL
+9. **Redirect back to app with token:**
+   - `{appUrl}?auth_token={token}&auth_method=github&github_login={login}`
+   - App reads `auth_token` from URL, stores in `mlb_session_token` localStorage
+   - Session remains valid for 90 days
+
+**Redirect URL handling (v3.8 fix):**
+- Uses `x-forwarded-host` and `x-forwarded-proto` request headers instead of `VERCEL_URL`
+- Ensures correct app domain for all Vercel deployments (production + preview)
+
+#### Email Magic-Link Flow
+
+1. **User clicks "Sign in with Email"** in Settings panel
+2. Modal prompts for email address
+3. **Frontend POSTs to `/api/auth/email-request` with email**
+4. **Backend generates 32-byte random token:**
+   - Stores in Redis: `email_token:{token}` → `{email, createdAt, expiresAt}` with 15-min TTL
+   - Generates magic link: `{appUrl}/api/auth/email-verify?token={token}`
+5. **Sends email via SendGrid or Mailgun:**
+   - From address: `EMAIL_FROM_ADDRESS` (must be verified in SendGrid)
+   - Subject: "Sign in to Baseball App"
+   - Body: plain text with magic link + 15-min expiry notice
+6. **User receives email and clicks magic link**
+7. **Magic link redirects to `/api/auth/email-verify?token=...`**
+8. **Backend verifies token:**
+   - Looks up `email_token:{token}`
+   - Checks expiry: if past 15 minutes, returns 400 "Magic link has expired"
+   - Deletes token (one-time use only)
+9. **Account unification logic (same as GitHub):**
+   - Check if email already linked: `email_map:{email}` lookup
+   - If not linked: generate new userId
+   - Store `email_map:{email}` → userId
+10. **Generate session token and store in Redis:**
+    - Same as GitHub flow (40-char token, 90-day TTL)
+11. **Redirect back to app:**
+    - `{appUrl}?auth_token={token}&auth_method=email`
+
+#### Collection Sync
+
+**Data model (localStorage `mlb_card_collection`):**
+```javascript
+{
+  "{playerId}_{HR|RBI}": {
+    playerId: number,
+    playerName: string,
+    teamAbbr: string,
+    teamPrimary: string,   // hex
+    teamSecondary: string, // hex
+    position: string,      // "RF", "SP", etc.
+    eventType: 'HR' | 'RBI',
+    tier: 'common' | 'rare' | 'epic' | 'legendary',
+    collectedAt: number,   // ms of first collection at this tier
+    events: [              // all events at current tier, capped 10
+      { badge, date, inning, halfInning, awayAbbr, homeAbbr, awayScore, homeScore }
+    ]
+  }
+}
+```
+
+**Tier ranks (for merge comparison):**
+- `legendary` = 4
+- `epic` = 3
+- `rare` = 2
+- `common` = 1
+
+**Merge strategy (highest-tier-wins):**
+- Compare local vs. remote tier ranks
+- Higher tier always wins
+- Same tier: use whichever card is newer (by `collectedAt`), merge events (dedup by date:badge, cap 10, newest first)
+- Lower tier: silent no-op (remote card unchanged)
+
+**Sync endpoints:**
+- **GET `/api/collection-sync`** — Fetch remote collection from Redis
+- **PUT `/api/collection-sync`** — Full sync (POST local collection, merge on server, return merged result)
+- **POST `/api/collection-sync`** — Push single card (used by background sync)
+
+**Background sync:**
+- Fires every 30 seconds when signed in via `startSyncInterval()`
+- Calls `syncCollection()` which POSTs current local collection
+- Merges on server, updates remote state
+- Prevents cross-device drift
+
+**On sign-in:**
+1. `mergeCollectionOnSignIn()` fires
+2. Fetches remote collection via GET
+3. Merges with local via `mergeCollectionSlots()`
+4. Saves merged state to localStorage
+5. Updates UI (card count in settings panel)
+
+#### Vercel Environment Variables
+
+Required for auth flows:
+
+| Var | Source | Purpose |
+|---|---|---|
+| `GITHUB_CLIENT_ID` | GitHub OAuth App settings | OAuth app identifier |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App settings | OAuth app secret (keep private) |
+| `EMAIL_API_KEY` | SendGrid or Mailgun API key | Authenticate email sends |
+| `EMAIL_FROM_ADDRESS` | Any verified email in SendGrid | Sender address (must be verified) |
+| `KV_REST_API_URL` | Upstash/Vercel KV dashboard | Redis endpoint URL |
+| `KV_REST_API_TOKEN` | Upstash/Vercel KV dashboard | Redis auth token |
+
+**Setup steps:**
+
+1. **GitHub OAuth:**
+   - Go to GitHub → Settings → Developer settings → OAuth Apps → New
+   - App name: "Baseball App"
+   - Homepage URL: app domain
+   - Authorization callback URL: `https://{vercel-domain}/api/auth/github`
+   - Copy Client ID + Secret → Vercel env vars
+
+2. **Email (SendGrid):**
+   - Sign up at sendgrid.com (free tier: 100 emails/day)
+   - Create API key → copy to `EMAIL_API_KEY`
+   - Verify a sender email → use for `EMAIL_FROM_ADDRESS`
+   - Click verification link in email SendGrid sends you
+
+3. **Redis (Upstash):**
+   - Auto-created via Vercel KV integration (or manual via upstash.com)
+   - `KV_REST_API_URL` and `KV_REST_API_TOKEN` auto-populated by Vercel
+
+#### Frontend Functions
+
+| Function | Purpose |
+|---|---|
+| `signInWithGitHub()` | Redirect to GitHub OAuth authorization endpoint |
+| `signInWithEmail()` | Prompt for email, POST to `/api/auth/email-request` |
+| `handleAuthCallback()` | Called on page load, reads `auth_token` from URL, stores session token, merges collection |
+| `mergeCollectionOnSignIn()` | Fetch remote collection, merge with local, save merged state |
+| `syncCollection()` | POST current local collection to server (background sync) |
+| `startSyncInterval()` | Arm 30-second background sync interval when signed in |
+| `loadCollection()` | Read `mlb_card_collection` from localStorage, parse JSON |
+| `saveCollection(obj)` | Write collection to localStorage |
+
+#### Known Limitations
+
+- **Email requires verified sender:** SendGrid will not send from an unverifed email address. Users must click verification link SendGrid sends to complete setup.
+- **Apple private relay:** If user's GitHub uses Apple's email relay (e.g., `q2z87bs2n7@privaterelay.appleid.com`), email sign-in must use the same relay address for account unification. Solution: link both auth methods to a shared real email address.
+- **Session expiry:** Sessions expire after 90 days. User must re-sign-in. No data loss (collection persists in Redis indefinitely).
+- **Redis quota:** Free Vercel KV (100 commands/second) is sufficient for personal + light sharing. Monitor usage in Vercel dashboard.
+
+### Runtime dependencies — DO NOT DELETE
+Every file below is a production dependency loaded at runtime. Deleting any of them breaks the live app for users.
+
+| File | Loaded by | Purpose |
+|---|---|---|
+| `focusCard.js` | `index.html` `<script src>` | Defines `window.FocusCard.renderCard()`, `.renderOverlay()`, `.renderPitchPill()`, `.demo()` — required for At-Bat Focus Mode visuals |
+| `pulse-card-templates.js` | `index.html` `<script src>` | Defines `window.PulseCard.render()` + `.demo()` — required for all HR/RBI player card overlays |
+| `collectionCard.js` | `index.html` `<script src>` | Defines `window.CollectionCard.renderBook()`, `.renderMiniCard()`, `.renderRailModule()`, `.demo()` — required for Card Collection binder visuals |
+| `daily-events.json` | `index.html` `fetch('./daily-events.json')` | Static snapshot for Demo Mode — client-facing feature, not a dev artifact |
+| `manifest.json` | `index.html` `<link rel="manifest">` | PWA install metadata |
+| `icons/favicon.svg` | `index.html` `<link rel="icon">` | Browser tab icon |
+| `icons/icon-180.png` | `index.html` `<link rel="apple-touch-icon">` | iOS home screen icon |
+| `icons/icon-192.png` | `sw.js` SHELL cache + `manifest.json` | PWA icon (Android/install prompt) |
+| `icons/icon-512.png` | `sw.js` SHELL cache + `manifest.json` | PWA icon (splash screen) |
+| `icons/icon-maskable-512.png` | `manifest.json` | PWA maskable icon |
+| `icons/icon-mono.svg` | `manifest.json` | iOS 16.4+ monochrome icon |
+
+**Rule:** before deleting any file in the repo root or `icons/`, grep `index.html`, `sw.js`, and `manifest.json` for references first.
+
 ### Single file, all inline
-Everything — HTML, CSS, JavaScript — is in `index.html`. No imports, no modules, no external scripts for the app itself. Edit the file, push to branch, done.
+Everything — HTML, CSS, JavaScript — is in `index.html`. No imports, no modules, no external scripts for the app itself (except `focusCard.js`, `pulse-card-templates.js`, and `collectionCard.js` loaded via `<script src>`). Edit the file, push to branch, done.
 
 ### Key global state
 ```javascript
@@ -65,7 +276,6 @@ let selectedPlayer = null              // full roster object — includes person
 let newsFeedMode = 'mlb'               // 'mlb' (no team filter) | 'team' (activeTeam.espnId filter); home card always shows team news
 
 // ── ⚡ Pulse globals ──────────────────────────────────────────────────────────
-let pulseMockMode    = false           // persisted to localStorage('mlb_pulse_mock')
 let pulseInitialized = false           // lazy-init guard — set true on first Pulse nav
 let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayName, homeName, awayPrimary, homePrimary,
                                       //   awayId, homeId, awayScore, homeScore, awayHits, homeHits,
@@ -73,10 +283,8 @@ let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayNa
                                       //   gameTime, gameDateMs, venueName, onFirst, onSecond, onThird }
 let feedItems        = []             // all feed items newest-first (never pruned)
 let enabledGames     = new Set()      // gamePks whose plays are visible in the feed
-let mockPlayPtrs     = {}, mockGameQueue = [], mockTimerId = null
-let mockSpeedMs      = 6000, totalMockPlays = 0, playedMockPlays = 0
-let countdownTimer   = null, pulseTimer = null, alertId = 0, isFirstPoll = true, pollDateStr = null
-// pulseTimer — stores setInterval handle from initReal() so switchMode() can clear it
+let countdownTimer   = null, pulseTimer = null, isFirstPoll = true, pollDateStr = null
+// pulseTimer — stores setInterval handle from initReal()
 let soundSettings    = { master:false, hr:true, run:true, risp:true,
                          dp:true, tp:true, gameStart:true, gameEnd:true, error:true }
 let rbiCardCooldowns = {}              // gamePk → ms timestamp of last key RBI card shown (90s cooldown)
@@ -95,7 +303,44 @@ let stolenBaseEvents = []               // live stolen base plays for carousel s
 let storyCarouselRawGameData={}         // gamePk → raw schedule API game object (doubleHeader, gameNumber, status.startTimeTBD, probablePitcher)
 let probablePitcherStatsCache={}        // pitcherId → {wins, losses} — fetched by loadProbablePitcherStats()
 let hrBatterStatsCache={}               // batterId → hitting stat object — populated by showPlayerCard() and fetchMissingHRBatterStats()
-const STORY_ROTATE_MS=10000             // auto-advance every 10 seconds (was 20s pre-v2.9)
+let boxscoreCache={}                    // gamePk → boxscore data object — populated by genMultiHitDay() async fetch
+// carousel rotation interval — read from devTuning.rotateMs (default 4500ms; was STORY_ROTATE_MS constant pre-v2.60)
+
+// ── 📊 Inning Recap globals (v2.46+) ───────────────────────────────────────
+let inningRecapsFired=new Set()         // {gamePk}_{inning}_{halfInning} — deduplication, one recap per inning
+let inningRecapsPending={}              // recapKey → {gamePk, inning, halfInning} — queued by pollGamePlays on outs===3; processed by genInningRecapStories primary path
+let lastInningState={}                  // gamePk → {inning, halfInning} — fallback transition detection in genInningRecapStories
+
+// ── 🎯 At-Bat Focus Mode globals (v2.61) ─────────────────────────────────────
+let focusGamePk=null                    // gamePk of the currently focused game (null = none selected)
+let focusFastTimer=null                 // setInterval handle for 5s linescore + GUMBO polls
+let focusCurrentAbIdx=null             // atBatIndex of the current play — resets focusPitchSequence on change
+let focusState={                        // live state for the focused game — fed directly to window.FocusCard.renderCard/renderOverlay
+  balls:0,strikes:0,outs:0,inning:1,halfInning:'top',
+  currentBatterId:null,currentBatterName:'',
+  currentPitcherId:null,currentPitcherName:'',
+  onFirst:false,onSecond:false,onThird:false,
+  awayAbbr:'',homeAbbr:'',awayScore:0,homeScore:0,
+  awayPrimary:'#444',homePrimary:'#444',
+  tensionLabel:'NORMAL',tensionColor:'#9aa0a8',
+  lastPitch:null,batterStats:null,pitcherStats:null
+}
+let focusPitchSequence=[]              // array of pitch objects for current at-bat (oldest first); reset on new AB
+let focusStatsCache={}                 // playerId → stats object — session-scoped cache; batter → hitting stats, pitcher → pitching stats
+let focusAlertShown={}                 // gamePk → ms timestamp of last soft alert shown (90s cooldown)
+let focusOverlayOpen=false             // true when #focusOverlay is visible
+
+// ── 📖 Card Collection globals (v3.0) ────────────────────────────────────────
+let collectionFilter='all'             // 'all' | 'HR' | 'RBI' — current filter in binder
+let collectionSort='newest'            // 'newest' | 'rarity' | 'team' — current sort in binder
+let collectionPage=0                   // 0-indexed page (or team index when sort==='team')
+let collectionCareerStatsCache={}      // playerId → { careerHR, careerAVG, careerRBI, careerOPS }
+                                       //            or { careerERA, careerWHIP, careerW, careerK }
+                                       // session-only — not persisted to localStorage
+let lastCollectionResult=null          // { type:'new'|'upgrade'|'dup', playerName, eventType, tier }
+                                       // set by collectCard() at collect time; consumed by flashCollectionRailMessage()
+let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by renderCollectionBook() at render time
+                                       // openCardFromCollection(idx) indexes into this for stable idx mapping
 ```
 
 ### Navigation
@@ -128,7 +373,7 @@ const STORY_ROTATE_MS=10000             // auto-advance every 10 seconds (was 20
 
 **Responsive breakpoints** (single `@media` block at end of `<style>`):
 - `≤1024px` (iPad landscape + portrait): `.grid3` and `.live-grid` collapse to 1 column; `.matchup-grid` goes 3→2 cols; header wraps; `.main` padding reduced to 12px
-- `≤1024px and ≥481px` (tablet band only): header `flex-wrap:nowrap` (prevents wrapping bug); `.logo span` hidden (SVG stays); nav icon-only (`.nav-label` hidden); `.settings-wrap` flex-shrink:0 stays right-aligned; header position:sticky
+- `≤1024px and ≥481px` (tablet band only): header `flex-wrap:nowrap` (prevents wrapping bug); `.logo span` hidden (SVG stays); nav icon-only (`.nav-label` hidden); `.settings-wrap` flex-shrink:0 stays right-aligned; header `position:sticky; z-index:100` — **must stay 100**, not lower. A sticky header creates a stacking context; if its z-index drops below `#gameTicker` (z-index:90) the absolutely-positioned `.settings-panel` (z-index:200 within the header's context) will render underneath the ticker on iPad portrait.
 - `≤767px` (portrait / phone): `.grid2` also collapses to 1 column; `.card-cap` shrinks to 40px; `.series-ghost` shrinks to 220px
 - `≤480px` (iPhone): `html,body{overflow-x:hidden}` prevents page-level horizontal scroll (both required — iOS Safari has independent scroll contexts for `html` and `body`); nav becomes fixed bottom bar with short labels visible (`.nav-label` shown at 9.5px); nav bg is `color-mix(--primary 94%)` with backdrop-blur and soft 1px border-top; active state uses accent top-underline (`inset 0 2px 0 var(--accent)`); safe-area inset bottom padding; `.team-chip` hidden; header `position:static` scrolls away; `.game-big{padding:16px}` (down from 24px — gives content more room on narrow screens); `.live-view` side padding zeroed (`padding-left:0;padding-right:0`) — inner wrapper div already provides `padding:20px`, removing the duplicate outer padding that made the live score too tight; `.ng-grid{gap:8px}`, `.ng-name{font-size:18px}`, `.ng-score{font-size:26px}` — shrinks the 5-column Next Game card grid on narrow viewports (long team names like "Atlanta Braves" at 26px bold overflowed on 375–390px phones); `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.card` padding 12px; `.cal-day` min-height 44px, `.cal-game-info` hidden, `.cal-dot` shown; `.main` and `.live-view` get `padding-bottom:calc(72px + env(safe-area-inset-bottom))`; **Live game mobile fixes (v1.45.2–4):** `.live-score{gap:24px}` (down from 48px); `.live-team-score{font-size:2.2rem}` (down from 3rem); `.matchup-stats` and `.play-log-entry` get `word-break:break-word`; `.boxscore-wrap{padding:10px}`; **Matchup day controls (v1.60):** `.matchup-day-controls .refresh-label{display:none}` — hides "Refresh" text leaving only the ↻ icon; `.matchup-day-controls .refresh-btn{min-width:36px}` for adequate touch target without overflowing the row
 
@@ -323,10 +568,10 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 - Fetches YouTube channel feed server-side (bypasses CORS), returns `{videoId, title, thumb, date}` JSON
 - Usage: `fetch('/api/proxy-youtube?channel=UCxxxxxx')`
 - Eliminates dependency on allorigins.win (free proxy with no SLA)
-- Media tab currently hidden (Settings toggle); proxy ready when feature is revisited
+- Media tab currently hidden (Dev Tools toggle); proxy ready when feature is revisited
 
 **HTML structure (`#pulse` section):**
-- `#soundPanel` — `position:fixed` floating overlay, hidden by default; triggered by `🔊 Configure` in Settings
+- `#soundPanel` — `position:fixed` floating overlay, hidden by default; triggered by `🔊` button in Settings. **Top-level in the DOM** (sibling of `#devToolsPanel`, outside `#pulse`) — if it were inside `#pulse` it would be hidden with the section when navigating away. Click-outside handler (`onSoundPanelClickOutside`) is always-on via a single global `document.addEventListener('click',...)` — handles both `#soundPanel` and `#devToolsPanel` dismiss in one function.
 - `#alertStack` — `position:fixed` toast stack for run/triple-play alerts (HR events do NOT fire a toast — the player card replaces it)
 - `#playerCardOverlay` — `position:fixed` full-screen semi-transparent overlay; contains `#playerCard`; shown on HR events in both real and mock mode (v2.7)
 - `#gameTicker` — `position:sticky` below header; horizontal scrollable chip bar
@@ -337,13 +582,13 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 
 **Normal chip layout (v2.13):** Three stacked rows — (1) green live dot + away abbr + away score, (2) invisible dot-spacer + home abbr + home score [spacer aligns both abbreviations on the same left edge], (3) inning/time + out-dot indicators. Out dots: 3 small circles (red outline when empty, filled `#e03030` when recorded); only shown for live games. Live dot is green (`#22c55e`) with a matching green pulse-ring animation — changed from red to avoid clashing with the red out dots.
 
-**RISP chip layout (v2.13):** Fires when `g.onSecond || g.onThird`. Top row: green live dot + away abbr · score + divider + score · home abbr (horizontal, unchanged). Bottom row: 28×24px base diamond SVG (`baseDiamondSvg()`) + inning + out-dot indicators — all left-aligned with `gap: 6px` (no `justify-content: space-between`).
+**Expanded chip layout (v2.13, expanded v2.52):** Fires when **any base is occupied** (`g.onFirst || g.onSecond || g.onThird`) — was RISP-only (`onSecond || onThird`) prior to v2.52. Top row: green live dot + away abbr · score + divider + score · home abbr (horizontal, unchanged). Bottom row: 28×24px base diamond SVG (`baseDiamondSvg()`) + inning + out-dot indicators — all left-aligned with `gap: 6px` (no `justify-content: space-between`). Variable in `renderTicker()` named `hasRunners`; `.has-risp` CSS class retained for styling.
 
 **Feed:** Newest plays at top. Each item shows: coloured team dots + score (meta row), inning + outs, play description, play-type badge (1B/2B/3B/BB/K/E/DP/TP), ⚡ RISP badge, and score badge on scoring plays (scoring side full brightness). Play classification drives visual treatment: `homerun` (strong amber tint + 3px amber left border stripe — visually outranks scoring plays), `scoring` (green tint), `risp` (no border stripe — ⚡ badge and base diamond chip provide sufficient treatment), `status-change` (blue tint, centred — game start/end/delay). **Game Delayed status items (v2.7)** show team abbreviations: "🌧️ Game Delayed — SD @ AZ · Delayed Start".
 
 **Empty state:** When no visible plays exist, `renderEmptyState()` renders a hype block + hero upcoming-game card (3-stop gradient, team caps, countdown timer via `startCountdown()`) + 2-col grid for remaining games. Falls back to plain `⚾ League Pulse` placeholder off-season.
 
-**Mock mode:** Controlled by `pulseMockMode` (toggle in Settings, persisted to `localStorage('mlb_pulse_mock')`). `MOCK_DATA` contains 4 games (NYM@ATL, NYY@BOS, LAD@SF, HOU@TEX) with ~55 scripted plays. Round-robin engine (`mockTick()`) advances one play per tick across games. Mock bar (Normal/Fast/Skip/Reset controls) is inline below the ticker. Each mock HR play has an embedded `mockStats` object `{avg, homeRuns, rbi, ops}` — passed as `overrideStats` to `showPlayerCard` to bypass the live API fetch in mock mode.
+**Mock mode:** Removed in v2.33 — Demo Mode (see below) provides all replay/simulation features. No mock-mode control functions or data remain.
 
 **Player card overlay (v2.7):** When a home run fires (real or mock), `showPlayerCard` renders a baseball-card-style overlay: player headshot from `img.mlbstatic.com` (generic silhouette fallback), name, team abbreviation, dynamic badge (see below), and a stat grid (AVG · OPS · HR with count-up animation from N−1 → N · RBI). A context pill shows "HR #N in SEASON — milestone!" on multiples of 5, or "🏆 HR leader on the team" if `statsCache` confirms it — no extra API calls needed. Card auto-dismisses after 5.5s or on tap/click anywhere. `isHistory` guard prevents cards from firing on initial feed load. In real mode, `statsCache` is checked first; if the player isn't in cache (opponent player), `/people/{id}/stats` is fetched. In mock mode, `overrideStats` bypasses the fetch entirely.
 
@@ -390,7 +635,7 @@ These items are only ever added once (subsequent polls use the update path). `pe
 
 **Sound alerts:** Web Audio API synthesized tones — no external files. Master defaults off. Events: HR (bat crack), Run (bell chime), RISP (heartbeat), DP (glove pops), TP (bugle fanfare), Game Start (organ riff), Game End (descending chime), Error (dirt thud). `playSound(type)` is the single call point — checks `soundSettings.master && soundSettings[type]`.
 
-**Migration notes:** League Pulse was built as standalone `league-pulse.html` (~2370 lines) then merged into `index.html`. Key changes on merge: `mockMode`→`pulseMockMode`, `init()`→`initLeaguePulse()`, `poll()`→`pollLeaguePulse()`; `TC` object replaced by `tcLookup(id)` (wraps `TEAMS.find`, uses `t.short` for abbr); all 6 colour utilities and `applyLeaguePulseTheme()` dropped (index.html copies used); standalone header dropped; mock bar changed from `position:fixed;bottom:0` to inline; sound/mock controls moved into Settings panel.
+**Migration notes:** League Pulse was built as standalone `league-pulse.html` (~2370 lines) then merged into `index.html`. Key changes on merge: `mockMode`→`pulseMockMode`, `init()`→`initLeaguePulse()`, `poll()`→`pollLeaguePulse()`; `TC` object replaced by `tcLookup(id)` (wraps `TEAMS.find`, uses `t.short` for abbr); all 6 colour utilities and `applyLeaguePulseTheme()` dropped (index.html copies used); standalone header dropped; mock bar changed from `position:fixed;bottom:0` to inline; sound controls moved into Settings panel. Mock mode itself was removed entirely in v2.33.
 
 Source: `/schedule?sportId=1&date={date}&hydrate=linescore,team,probablePitcher` + `/game/{pk}/playByPlay` + `/api/v1.1/game/{pk}/feed/live/timestamps`
 
@@ -404,6 +649,10 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 - `#storyCarousel` — Container below `#gameTicker`, above `#mockBar`
 - `#storyCard` — Single story card with badge, icon, headline, sub
 - `.story-controls` — Manual prev/next buttons and progress dots
+
+**Pool sort order (v2.59):** `storyPool` is sorted by `priority` descending after each `buildStoryPool()` call. Manual ‹ › navigation and dots reflect this ranked order (highest priority = first dot). Auto-rotation still uses the `priority × decay` scoring algorithm independently.
+
+**Nav buttons (v2.59):** Edge-mounted `position:absolute` ghost buttons on `.story-card-wrap` — borderless, no background, 45% opacity muted chevrons that fade to full on hover. Half-in/half-out of the card border so they never overlap text.
 
 **Story object shape:**
 ```javascript
@@ -473,10 +722,33 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 14. **`genProbablePitchers()`** — Source: `scheduleData` (today only) OR `gameStates` fallback. Hydrate param: `probablePitcher`. Filters: `abstractGameState !== 'Final'` AND `localDate === today`. Extracts pitcher names from `g.teams.away/home.probablePitcher.fullName` or "TBD". ID: `probable_{gamePk}`. Headline: "Scherzer [NYM] vs Kershaw [LAD] · 7:05 PM". Priority: 40. Cooldown: 60 min.
 
+15. **`genInningRecapStories()`** — One-shot end-of-inning narrative summaries. Fires exactly once per half-inning when `inning` or `halfInning` changes in `gameStates`. Tracked via `lastInningState` (per-game) and `inningRecapsFired` Set (deduplication). Source: `feedItems` filtered to completed inning's plays. 19 recap templates with priority conflict resolution: HR+runs (100) > perfect K (95) > multi-run (90) > comeback (85) > stranded runners (80) > shutout+Ks (75) > DP escape (70) > walk-heavy (65) > error-led (55) > single run (45) > 1-2-3+Ks (40) > 1-2-3 (25) > fallback (0). Tier-2 stories, no cooldown/decay (one per inning, never repeats). Headlines use full team names and pitcher names where applicable. Sub-line: `"{Team Name} · {Inning number}"`. Metrics extracted: runs scored, strikeouts, walks, HRs, DPs, errors, RISP indicator, clean-inning flag. Console debugging helpers available for manual testing (see "Inning Recap Testing" below).
+
+**Inning Recap Testing (v2.46+):**
+View/manipulate inning recaps in browser console:
+```javascript
+// Check current state
+Object.entries(gameStates).filter(([pk,g])=>g.status==='Live').forEach(([pk,g])=>console.log(`${g.awayAbbr} @ ${g.homeAbbr} · ${ordinal(g.inning)} ${g.halfInning} (${g.outs} outs)`));
+console.log('lastInningState:', lastInningState);
+console.log('inningRecapsFired:', Array.from(inningRecapsFired));
+
+// Manually advance inning (first live game)
+var pk=Object.keys(gameStates).find(k=>gameStates[k].status==='Live');
+var g=gameStates[pk];
+g.halfInning==='top'?g.halfInning='bottom':({g.inning++, g.halfInning='top'}); g.outs=0;
+await buildStoryPool();
+
+// Check recaps in pool
+storyPool.filter(s=>s.type==='inning_recap').forEach(s=>console.log(`${s.priority}: ${s.headline}`));
+
+// Reset & retry
+inningRecapsFired.clear(); await buildStoryPool();
+```
+
 **Rotation engine:**
 
 ```javascript
-const STORY_ROTATE_MS = 10_000;  // auto-advance every 10 seconds
+// Rotation interval read from devTuning.rotateMs (default 4500ms)
 
 function rotateStory() {
   const now = Date.now();
@@ -484,7 +756,7 @@ function rotateStory() {
   // Cap effective cooldown relative to pool size so pre-game thin pools
   // don't lock cards out for their full nominal cooldown (e.g. 60 min for
   // probable pitchers when only 3 stories exist). Floor: 2 minutes.
-  const maxCooldown = Math.max(storyPool.length * STORY_ROTATE_MS * 1.5, 2 * 60_000);
+  const maxCooldown = Math.max(storyPool.length * devTuning.rotateMs * 1.5, 2 * 60_000);
 
   // Eligible = effective cooldown expired OR never shown
   let eligible = storyPool.filter(s =>
@@ -513,7 +785,7 @@ function rotateStory() {
 ```
 
 **Pool builder (`buildStoryPool()`):**
-Called at end of every `pollLeaguePulse()` (every 15s). Generates fresh stories from all 13 generators, merges with existing pool (preserving `lastShown` timestamps), drops stale ones (e.g., walk-offs that resolved). Result: `storyPool` is always up-to-date with current state, and stories never reappear within their cooldown window.
+Called at end of every `pollLeaguePulse()` (every 15s). Generates fresh stories from all 15 generators, merges with existing pool (preserving `lastShown` timestamps), drops stale ones (e.g., walk-offs that resolved). Result: `storyPool` is always up-to-date with current state, and stories never reappear within their cooldown window. Inning recaps are one-shot per inning and tracked separately via `inningRecapsFired` Set.
 
 **Data refresh schedule:**
 
@@ -536,7 +808,7 @@ document.addEventListener('visibilitychange', () => {
     storyRotateTimer = null;
   } else if (pulseInitialized) {
     rotateStory();  // Immediately refresh on tab return
-    storyRotateTimer = setInterval(rotateStory, STORY_ROTATE_MS);
+    storyRotateTimer = setInterval(rotateStory, devTuning.rotateMs);
   }
 });
 ```
@@ -553,7 +825,7 @@ No explicit "mode" needed — the priority + decay math handles adaptation autom
 ---
 
 ### 📺 Media
-Hidden by default — enabled via Settings toggle (session only, resets on reload).
+Hidden by default — enabled via the **Media Tab → Show in Navigation** toggle inside the Dev Tools panel. Does not persist across page reloads.
 - Team gradient header, two-panel layout: 25% video list / 75% player
 - Most recent video auto-selected on load
 - Teams without `youtubeUC` fall back to MLB main channel
@@ -590,12 +862,39 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **Select Team** — dropdown of all 30 MLB teams grouped by division; switching reloads all data, reapplies theme, resets all caches
 - **Color Theme** — dropdown of all 30 teams + "Default (Follow Team)"; overrides colours independently of the active team; persists across team switches
 - **Invert Colours** — slide toggle; swaps primary and secondary colours; works with theme override
-- **Media Tab** — slide toggle, defaults off; shows/hides Media section in nav
-- **⚡ Pulse: Mock Mode** — slide toggle (`id="pulseMockToggle"`); calls `togglePulseMockMode()`; persisted to `localStorage('mlb_pulse_mock')`; initialised in startup IIFE
-- **⚡ Pulse: Sound Alerts** — `🔊 Configure` button (`id="btnSound"`); calls `toggleSoundPanel()` to show/hide the floating `#soundPanel` overlay; `id` preserved so click-outside-to-dismiss handler still works
+- **🔔 Game Start Alerts** — slide toggle; subscribes/unsubscribes to push notifications for game starts. **Hidden on desktop via CSS** (`@media(min-width:1025px){ #pushRow { display:none !important } }`) — push is unreliable on desktop browsers. Visible on mobile and tablet (≤1024px) unchanged. The JS functions `isDesktop()`, `updatePushRowVisibility()`, `togglePushOnDesktop()`, and the `devShowPushOnDesktop` variable remain in the codebase but are not called — retained in case a UI toggle is added back later.
+- **⚡ Pulse: Sound Alerts** — `🔊` icon-only button (`id="btnSound"`); calls `toggleSoundPanel()` to show/hide the floating `#soundPanel` overlay. Panel is **top-level in the DOM** (not inside `#pulse`) so it opens from any section. Click-outside listener is always-on globally.
+- **🛠️ Dev Tools** — "Open" button (`id="btnDevTools"`); calls `toggleDevTools()` to show/hide the floating `#devToolsPanel` overlay
 - Panel closes on click outside
-- All settings persist across page reloads via `localStorage` (team, theme, invert, media tab, pulse mock mode)
-- Version number at bottom
+- All settings persist across page reloads via `localStorage` (team, theme, invert, push subscription)
+- Version number at bottom (`v2.57.9`)
+
+**Dev Tools panel (`#devToolsPanel`)** — centered modal (`top:50%; left:50%; transform:translate(-50%,-50%); width:380px; max-height:90vh; overflow-y:auto`). Contains:
+- **▶ Try Demo / ⏹ Exit Demo** (`Shift+H`) — toggles demo mode via `toggleDemoMode()`; label updates via `updateDemoBtnLabel()`
+- **🎬 Replay HR** (`Shift+R`) — calls `replayHRCard()` to replay most recent HR card from live feed
+- **💰 Replay RBI** (`Shift+E`) — calls `replayRBICard()` to replay most recent non-HR RBI card from live feed; bypasses cooldown
+- **💫 Card Variants** (`Shift+V`) — calls `window.PulseCard.demo()` to cycle through all four HR card template variants
+- **🎴 Test Card** (`Shift+G`) — calls `generateTestCard()` to inject one random player card into the collection; bypasses demo mode guard via `force=true`; pool is `rosterData.hitting` (no pitchers) + hitting leaders from `leagueLeadersCache.hitting` and `dailyLeadersCache` (deduplicated, cross-team colors resolved via TEAMS); falls back to active team roster if leader caches are empty
+- **Media Tab → Show in Navigation** — slide toggle; calls `toggleMedia()`; shows/hides the Media nav button and section
+- ~~Push Alerts → Show on Desktop~~ — removed; desktop hide is now CSS-only (`#pushRow { display:none }` at ≥1025px)
+- **⚡ Pulse Tuning** (`<details>` collapsible) — numeric inputs for `devTuning` (do **not** apply on keystroke — require Confirm Changes):
+  - *Carousel Rotation (ms)* — `devTuning.rotateMs`; default 4500
+  - *RBI Card Threshold* — `devTuning.rbiThreshold`; default 10
+  - *RBI Cooldown (ms)* — `devTuning.rbiCooldown`; default 90000
+  - Reset to Defaults button resets `devTuning` + repopulates inputs immediately
+- **📖 Carousel Story Rules** (`<details>` collapsible) — numeric inputs (require Confirm Changes):
+  - *Home Run* — Priority (`hr_priority`; default 100) + Cooldown ms (`hr_cooldown`; default 300000)
+  - *Big Inning* — Priority (`biginning_priority`; default 75) + Runs Threshold (`biginning_threshold`; default 3)
+  - *Walk-Off Threat* — Priority (`walkoff_priority`; default 90)
+  - *No-Hitter Watch* — Inning Floor (`nohitter_inning_floor`; default 6)
+  - *Bases Loaded* — Enable checkbox (`basesloaded_enable`; default true, **immediate**) + Priority (`basesloaded_priority`; default 88)
+- **🎯 Focus Mode Tuning** (`<details>` collapsible) — numeric inputs (require Confirm Changes):
+  - *Badge Thresholds* — CRITICAL score ≥ (`focus_critical`; default 120) + HIGH score ≥ (`focus_high`; default 70); scores below HIGH show NORMAL
+  - *Auto-Switch Alert* — Switch margin in points (`focus_switch_margin`; default 25; rival game must score this many pts higher to trigger a suggestion) + Alert cooldown ms (`focus_alert_cooldown`; default 90000)
+  - `getTensionInfo()` and `selectFocusGame()` both read these values — changes take effect on the next poll (within 5s)
+- **🎨 Theme Tuning** (`<details>` collapsible) — color pickers for App Theme (Primary, Secondary, Dark BG, Card BG) and Pulse Theme (Dark BG, Card BG); Copy button captures current live CSS vars into pickers; Lock Theme checkbox (`devColorLocked`) disables auto-switching when team changes. Color pickers apply **immediately** (live preview); Lock Theme checkbox is **immediate**.
+- **Confirm Changes** — sticky footer button; reads all numeric inputs from Pulse Tuning + Carousel Story Rules + Focus Mode Tuning and calls `updateTuning()` for each; flashes green "✓ Applied!" for 1.5s. Binary toggles (checkboxes, on/off knobs, color pickers) apply immediately without needing Confirm.
+- ✕ close button (`.debug-close` — styled with border + 14px h-padding for easy tap target); also closes on click outside
 
 ---
 
@@ -652,15 +951,20 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `unsubscribeFromPush()` | Unsubscribes PushManager, DELETEs from `/api/subscribe`, removes `mlb_push` from localStorage |
 | `urlBase64ToUint8Array(b64)` | Converts VAPID public key from URL-safe base64 to Uint8Array for PushManager |
 | `tcLookup(id)` | Returns `{ primary, abbr, name }` for a team ID by wrapping `TEAMS.find()`; replaces the standalone `TC` object from the League Pulse prototype. `abbr` maps to `t.short`. |
-| `initLeaguePulse()` | Pulse entry point — calls `initMock` or `initReal` based on `pulseMockMode` |
-| `switchMode(toReal)` | Tears down all Pulse state, resets DOM, calls `updatePulseMockToggleUI()`, then `initMock` or `initReal` |
-| `togglePulseMockMode()` | Flips `pulseMockMode`, persists to localStorage, updates Settings toggle UI, calls `switchMode` if already initialised |
-| `updatePulseMockToggleUI()` | Updates Settings panel toggle knob position and background for mock mode state |
-| `initMock()` | Shows mock bar, populates `gameStates` from `MOCK_DATA` via `tcLookup`, sets `enabledGames`, starts mock tick |
-| `initReal()` | Hides mock bar, calls `pollLeaguePulse()`, sets 15s poll interval |
+| `initLeaguePulse()` | Pulse entry point — calls `initReal()` directly (mock mode removed in v2.33) |
+| `initReal()` | Hides mock bar, loads roster + caches, calls `pollLeaguePulse()`, sets 15s poll interval |
+| `isDesktop()` | **Retained but uncalled (v2.57.11).** Was used to hide 🔔 push row on desktop; replaced by CSS `@media(min-width:1025px){ #pushRow{display:none!important} }`. Kept in case a UI toggle is re-added. |
+| `updatePushRowVisibility()` | **Retained but uncalled (v2.57.11).** Was called on page load and from `togglePushOnDesktop()` to show/hide `#pushRow`. Superseded by CSS media query. |
+| `togglePushOnDesktop()` | **Retained but uncalled (v2.57.11).** Was wired to a Dev Tools toggle; Dev Tools toggle was removed. Superseded by CSS media query. |
+| `confirmDevToolsChanges()` | Reads all numeric Dev Tools inputs (Pulse Tuning + Carousel Story Rules + Focus Mode Tuning) and calls `updateTuning()` for each; flashes "✓ Applied!" green on the button for 1.5s |
+| `toggleDevTools()` | Shows/hides `#devToolsPanel`; on open, populates all tuning inputs (Pulse Tuning + Carousel Story Rules + Focus Mode Tuning + Theme Tuning) from live `devTuning`/`devColorLocked` values. Uses `p.style.display !== 'block'` (not `=== 'none'`) to detect closed state — panel starts with CSS display:none (no inline style), so checking for 'none' would fail on first open. |
+| `updateTuning(param, val)` | Generic handler for all `devTuning` fields — handles `basesloaded_enable` as boolean, all others as int; restarts `storyRotateTimer` at new `devTuning.rotateMs` when `rotateMs` changes |
+| `updateColorOverride(context, colorVar, value)` | Stores a color picker change into `devColorOverrides[context][colorVar]`; if `devColorLocked`, immediately re-applies the relevant theme function |
+| `captureCurrentTheme(context)` | Reads all nine CSS vars from `document.documentElement` and writes them into `devColorOverrides[context]` + updates the color picker inputs |
+| `toggleColorLock(enable)` | Sets `devColorLocked`; on enable captures both app + pulse themes if not yet captured; calls `applyTeamTheme`/`applyPulseMLBTheme` to apply or release the lock |
 | `pollLeaguePulse()` | Fetches schedule, updates `gameStates` (incl. `detailedState`, base runners), fires game-start/delay/final/postponed events. On initial game creation synthesises historical status items (no sounds). Runs `Promise.all(pollGamePlays)` for live games **and** completed games with pending Final items; positions 🏁 item after last play. Sorts feed on first poll. |
 | `pollGamePlays(gamePk)` | Timestamps stale check → if changed, fetches `/playByPlay`, uses `isHistory` flag to suppress alerts/sounds for pre-existing plays |
-| `renderTicker()` | Sorts `gameStates` and rebuilds sticky ticker HTML; expanded RISP chip with base diamond SVG when `g.onSecond \|\| g.onThird` |
+| `renderTicker()` | Sorts `gameStates` and rebuilds sticky ticker HTML; expanded chip with base diamond SVG when any runner on (`g.onFirst \|\| g.onSecond \|\| g.onThird`) — variable `hasRunners` (v2.52) |
 | `updateHeader()` | No-op stub — call sites retained in mock/poll loops but body is empty (controls bar was removed) |
 | `baseDiamondSvg(on1,on2,on3)` | Returns 28×24px inline SVG diamond; occupied bases lit amber with glow |
 | `startCountdown(targetMs)` | 30s interval updating `#heroCountdown` with "First pitch in Xm" / "Starting now" |
@@ -669,23 +973,328 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `buildFeedEl(item)` | Builds DOM element for a feed item — status-change items (game start/end/delay) or play items (with play-type badge, RISP badge, score badge) |
 | `updateFeedEmpty()` | Checks for visible feed items; calls `renderEmptyState()` if none; shows/hides `#feedEmpty` |
 | `renderEmptyState()` | Renders hype block + hero upcoming-game card (gradient, caps, countdown) + 2-col grid, or plain placeholder if no upcoming games |
-| `showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText)` | Shows HR player card overlay. Resolves stats from `statsCache` → live API fetch → `overrideStats` (mock). Renders headshot, name, team abbr, dynamic badge (`badgeText` param or `💥 HOME RUN!` fallback), AVG/OPS/HR count-up/RBI, context pill. Auto-dismisses after 5.5s. |
+| `fetchBoxscore(gamePk)` | Async cache helper — returns `boxscoreCache[gamePk]` if populated, otherwise fetches `/game/{pk}/boxscore`, stores result, and returns it. Returns `null` on network error. Used by genMultiHitDay, loadOnThisDayCache, loadYesterdayCache, showPlayerCard, showRBICard. |
+| `resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk)` | Async — resolves all data needed to render an HR player card: stats (`statsCache` → live API fetch → `overrideStats`), jersey number and position (rosterData → boxscore fallback via `fetchBoxscore` for opposing players). Returns a plain data object; no DOM side effects. |
+| `showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText, gamePk)` | Shows HR player card overlay. Opens overlay with loading state, awaits `resolvePlayerCardData()`, then renders via `window.PulseCard.render()`. AVG/OPS/HR count-up animation. Auto-dismisses after 5.5s. |
 | `dismissPlayerCard()` | Adds `.closing` animation class, hides overlay after 280ms. Also bound to overlay click/tap. Shared by both HR and RBI cards. |
 | `getHRBadge(rbi, halfInning, inning, aScore, hScore)` | Returns dynamic badge label for HR card. Priority: WALK-OFF GRAND SLAM → WALK-OFF HOME RUN → GRAND SLAM → GO-AHEAD HOME RUN → 💥 HOME RUN (fallback). Computed at `pollGamePlays` call site and passed as `badgeText`. |
-| `calcRBICardScore(rbi, event, aScore, hScore, inning, halfInning)` | Returns weighted importance score (0–∞) for a non-HR scoring play. Score ≥ 30 triggers `showRBICard`. Components: base RBI score × hit-type multiplier + context bonus (go-ahead/equalizer/comeback/blowout-suppressor) × inning multiplier. |
+| `calcRBICardScore(rbi, event, aScore, hScore, inning, halfInning)` | Returns weighted importance score (0–∞) for a non-HR scoring play. Score ≥ `devTuning.rbiThreshold` (default 10) triggers `showRBICard`. Components: base RBI score × hit-type multiplier + context bonus (go-ahead/equalizer/comeback/blowout-suppressor) × inning multiplier. |
 | `getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter)` | Returns dynamic badge label for RBI card. Priority: WALK-OFF EVENT → GO-AHEAD EVENT → EVENT TIES IT → N-RUN EVENT → RBI EVENT → RBI (fallback). |
-| `showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInning, rbi, event, aScore, hScore, inning)` | Shows key RBI card overlay (reuses `#playerCardOverlay`). Fetches hitting stats, renders headshot + dynamic badge + AVG/OPS/H/RBI (RBI animates +N). Context pill shows live score + inning. Suppresses run toast when fired; 90s per-game cooldown via `rbiCardCooldowns{}`. |
+| `showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInning, rbi, event, aScore, hScore, inning, gamePk)` | Shows key RBI card overlay (reuses `#playerCardOverlay`). Fetches hitting stats, renders headshot + dynamic badge + AVG/OPS/H/RBI (RBI animates +N). Jersey/position resolved from rosterData; falls back to `fetchBoxscore(gamePk)` for opposing players. Context pill shows live score + inning. Suppresses run toast when fired; 90s per-game cooldown via `rbiCardCooldowns{}`. |
 | `showAlert(opts)` | Creates and stacks a `position:fixed` toast; auto-dismisses after `opts.duration` ms. Not fired for HR events — player card replaces it. |
 | `dismissAlert(el)` | Adds `.dismissing` class, removes element after 300ms transition |
-| `mockTick()` | Advances one play in round-robin order across `mockGameQueue`; marks remaining Live games Final when all plays exhausted |
-| `advanceMockGame(pk, play)` | Applies one mock play to `gameStates`, calls `addFeedItem`, fires alerts and sounds |
-| `setMockSpeed(ms, btn)` | Updates `mockSpeedMs`, restarts mock tick interval |
-| `resetMock()` | Clears all Pulse state and re-calls `initMock()` |
 | `toggleSoundPanel()` | Shows/hides `#soundPanel` overlay |
 | `setSoundPref(key, val)` | Updates `soundSettings[key]`; master toggle also applies `.master-off` to `#soundRows` |
 | `playSound(type)` | Checks `soundSettings.master && soundSettings[type]`, calls appropriate `playXxxSound()` |
 | `_makeCtx()` / `_closeCtx()` / `_osc()` / `_ns()` | Web Audio primitives — shared by all Pulse sound functions |
 | `genStolenBaseStories()` | Generates 💨/🏃 carousel story cards from `stolenBaseEvents[]`; tier-1 for steal of home (priority 85), tier-2 for 2B/3B steals (priority 55); one story per steal event (stable `sb_{gamePk}_{atBatIndex}` ID); never adds to feed |
+| `updateInningStates()` | Called post-poll; placeholder for inning transition detection (logic in `genInningRecapStories`) |
+| `genInningRecapStories()` | Generates one-shot end-of-inning recap cards. **Primary path (v2.59):** processes `inningRecapsPending{}` keys queued by `pollGamePlays()` at `outs===3` — fires immediately when the inning ends with feedItems fully populated. **Fallback path:** `lastInningState` linescore transition detection for edge cases (zero-play innings, isHistory catch-up). Inner `genRecap(g, recapInning, recapHalf, recapKey)` closure shared by both paths. `inningRecapsFired` Set deduplicates across paths. 19 templates with priorities 0–100. Tier-2, no cooldown/decay. |
+| `replayRBICard(itemIndex)` | Dev tool — scans `feedItems` for most recent non-HR scoring play, calls `showRBICard()` directly (bypasses cooldown). `itemIndex` optional (0 = most recent). Callable from console or `Shift+E`. |
+| `calcFocusScore(g)` | Returns a numeric tension score for a live game object from `gameStates`. Formula: closeness (0–60) + situation bonus (runners/RISP/bases-loaded/walk-off/no-hitter) + count bonus (full count +20, 2-strike +12, 2-out +8) × inning multiplier (0.6 early → 2.0 extras). Higher = more exciting. Used by `selectFocusGame()` to auto-pick the best game. |
+| `selectFocusGame()` | Evaluates all live games via `calcFocusScore()`. If a non-focused game scores ≥20pts higher, fires a soft alert via `showFocusAlert()`. On first call with no focused game, calls `setFocusGame()` with the top scorer. Hooked into end of `pollLeaguePulse()`. |
+| `setFocusGame(pk)` | Switches focus to `gamePk pk`. Resets `focusPitchSequence`, `focusCurrentAbIdx`, player stats, dismisses any open alert. If overlay is open, re-renders it. Starts `pollFocusLinescore()` immediately and schedules it every 5s via `focusFastTimer`. |
+| `pollFocusLinescore()` | Fetches `/game/{pk}/linescore` (Tier 1, ~5KB). Updates `focusState` with balls/strikes/outs/inning/halfInning/runners/score/matchup names/team colors. Computes `tensionLabel`/`tensionColor` via `calcFocusScore`. Seeds `batterStats`/`pitcherStats` from `focusStatsCache` immediately; calls `fetchFocusPlayerStats()` async for new players. Calls `pollFocusRich()` for pitch sequence, then `renderFocusCard()` and `renderFocusOverlay()`. |
+| `pollFocusRich()` | Fetches `/api/v1.1/game/{pk}/feed/live` (Tier 2 GUMBO, ~500KB) every 5s unconditionally (no timestamp stale check — timestamps only change per completed play, not per pitch). Reads `liveData.plays.currentPlay.playEvents`, filters to pitch events (`isPitch` or `type==='pitch'`), populates `focusPitchSequence[]`. Detects new at-bat via `cp.about.atBatIndex` change and resets sequence. Updates `focusState.lastPitch`. Skipped in `demoMode`. |
+| `fetchFocusPlayerStats(batterId, pitcherId)` | Session-cached stat fetcher. Checks `focusStatsCache` before fetching. Batter: `/people/{id}/stats?group=hitting` → `{avg,obp,ops,hr,rbi}`. Pitcher: `/people/{id}/stats?group=pitching` → `{era,whip,wins,losses}`. On new data, copies into `focusState.batterStats`/`.pitcherStats` and re-renders overlay. Skipped in `demoMode`. |
+| `renderFocusCard()` | Calls `window.FocusCard.renderCard(focusState)` and injects HTML into `#focusCard`. Shows `#focusCard` when `focusGamePk` is set, hides otherwise. |
+| `renderFocusOverlay()` | Calls `window.FocusCard.renderOverlay({...focusState, pitchSequence:focusPitchSequence, allLiveGames:[...]})` and injects into `#focusOverlayCard`. `allLiveGames` built from `gameStates` (Live only, current game flagged `isFocused:true`). |
+| `renderFocusMiniBar()` | Renders slim one-line strip into `#focusMiniBar` for phone/iPad portrait. Shows score + inning + count + "FOCUS →" tap target. Hidden on desktop and iPad landscape via CSS (`@media(min-width:1025px)`). |
+| `openFocusOverlay()` | Sets `focusOverlayOpen=true`, shows `#focusOverlay` (`display:flex`), calls `renderFocusOverlay()`. |
+| `closeFocusOverlay()` | Sets `focusOverlayOpen=false`, hides `#focusOverlay` (`display:none`). |
+| `showFocusAlert(pk, reason)` | Fires a dismissible soft-alert banner in `#focusAlertStack` suggesting a game switch. Checks `focusAlertShown[pk]` 90s cooldown. Auto-dismisses after 8s. |
+| `dismissFocusAlert()` | Clears the focus alert from `#focusAlertStack`. Called on manual dismiss, on `setFocusGame()`, and on overlay open. |
+| `loadCollection()` | Parses `mlb_card_collection` from localStorage, returns plain object keyed by `{playerId}_{HR\|RBI}`. Returns `{}` on parse error. |
+| `saveCollection(obj)` | JSON.stringify + localStorage.setItem for `mlb_card_collection`. |
+| `getCardTier(badge, eventType, rbi)` | Returns tier string (`'common'`\|`'rare'`\|`'epic'`\|`'legendary'`) from badge text, event type, and optional rbi count. HR: badge text drives tier (WALK-OFF GRAND SLAM → legendary, GRAND SLAM/WALK-OFF → epic, GO-AHEAD → rare, else common). RBI: WALK-OFF + rbi≥2 → legendary, WALK-OFF or rbi≥3 → epic, GO-AHEAD/TIES IT → rare, else common. |
+| `tierRank(t)` | Returns integer 1–4 for tier comparison: legendary=4, epic=3, rare=2, common=1. Returns 0 for unknown. |
+| `collectCard(data, force)` | Main collection entry point. Computes tier, checks existing slot in localStorage, applies upgrade/append/no-op rule. Sets `lastCollectionResult` before any guard. `force=true` bypasses `demoMode` guard (used by `generateTestCard()`). In demo mode without force: simulates what would happen, sets `lastCollectionResult`, then returns without persisting. Calls `showCollectedToast()` and `updateCollectionUI()` after each successful collect. |
+| `showCollectedToast(type, name, eventType, tier)` | 2s fixed pill at bottom: "🎴 New card — Judge HR" / "⬆ Upgraded — Judge HR → Epic" / "✓ Already have Judge". Animates via `toastPop` CSS keyframes. |
+| `updateCollectionUI()` | Updates `#collectionCountLabel` in settings row + re-renders `#collectionRailModule`. |
+| `openCollection()` | Sets `#collectionOverlay` to `display:flex`, calls `renderCollectionBook()`. |
+| `closeCollection()` | Sets `#collectionOverlay` to `display:none`. |
+| `renderCollectionBook()` | Builds sorted/filtered slots array, picks a random `displayEvent` per slot, fetches career stats for visible slots in parallel via `fetchCareerStats()`, sets `collectionSlotsDisplay[]` snapshot, injects `window.CollectionCard.renderBook()` HTML into `#collectionBook`. Sort modes: `newest` (by `collectedAt` desc), `rarity` (by `tierRank` desc then `collectedAt`), `team` (one team per page — `collectionPage` acts as team index through sorted unique `teamAbbr[]`; builds `teamContext` for visual layer). |
+| `renderCollectionRailModule()` | Calls `window.CollectionCard.renderRailModule(totalCount)` and injects into `#collectionRailModule`. |
+| `flashCollectionRailMessage()` | Called by `dismissPlayerCard()` to show collect outcome in rail. Reads `lastCollectionResult`, clears it, renders a tier-colored pill (new/upgrade/dup message with player last name + event type) into `#collectionRailModule`; auto-reverts to normal rail module after 4s via `setTimeout(renderCollectionRailModule, 4000)`. No-op if `lastCollectionResult` is null. |
+| `fetchCareerStats(playerId, position)` | Async — checks `collectionCareerStatsCache[playerId]` first. Fetches `/people/{id}/stats?stats=career&group=hitting` (or `pitching` for pitchers: SP/RP/CP). Hitters return `{ careerHR, careerAVG, careerRBI, careerOPS }`; pitchers return `{ careerERA, careerWHIP, careerW, careerK }`. Stores result in cache. Returns `null` on error. |
+| `openCardFromCollection(idx)` | Looks up `collectionSlotsDisplay[idx]`, picks a random event from `slot.events[]`, resolves team IDs from TEAMS, then calls `showPlayerCard()` for HR slots or `showRBICard()` for RBI slots. Leaves binder open — `#playerCardOverlay` (z-index 600) renders above binder (z-index 500). Maps `collectionCareerStatsCache` fields to MLB API field names (`careerHR→homeRuns`, `careerAVG→avg`, etc.) for `overrideStats`. Passes `_position` hint so `resolvePlayerCardData()` can use it for opposing players not in `rosterData`. |
+| `filterCollection(f)` | Sets `collectionFilter`, resets `collectionPage=0`, calls `renderCollectionBook()`. |
+| `sortCollection(s)` | Sets `collectionSort`, resets `collectionPage=0`, calls `renderCollectionBook()`. |
+| `goCollectionPage(dir)` | Increments/decrements `collectionPage`. In team sort: navigates through sorted unique `teamAbbr[]` (clamps 0 to teamCount−1). In other sorts: navigates through 9-card pages (clamps 0 to totalPages−1). Calls `renderCollectionBook()`. |
+| `generateTestCard()` | Dev tool — builds a hitters-only pool from `rosterData.hitting` + hitting leaders from `leagueLeadersCache.hitting` (League tab) and `dailyLeadersCache` (Pulse polling), deduplicated by player ID. Team colors for non-roster players resolved via `TEAMS.find(t.id)`. Picks random `eventType` (HR/RBI) and `tier` (weighted toward common), maps tier→badge text, calls `collectCard({...}, true)` with `force=true` to bypass demo guard. Toasts gracefully if no roster loaded. Bypasses all Pulse card/feed/sound/alert flows — only calls `collectCard()`. |
+
+---
+
+## 🎯 At-Bat Focus Mode (added v2.61)
+
+Live pitch-by-pitch tracker that fills the 1–10 min silence between completed plays. Auto-selects the most exciting game in progress and surfaces pitch type, speed, and result in real time.
+
+### HTML structure
+
+- `#focusCard` — compact card at top of `#sideRail` (desktop/iPad landscape only); `display:none` until a live game is selected
+- `#focusMiniBar` — slim one-line strip below `#gameTicker` inside `#pulseLeft`; visible on phone (≤480px) and iPad portrait (481–1024px); hidden on desktop/iPad landscape (`@media(min-width:1025px) { display:none !important }`)
+- `#focusOverlay` — `position:fixed` full-screen modal (`z-index:1100`); backdrop click on the `#focusOverlay` div (not `#focusOverlayCard`) closes it
+- `#focusOverlayCard` — inner scroll container (`max-width:520px; max-height:90vh; overflow-y:auto`); custom 4px dark navy scrollbar via webkit + Firefox `scrollbar-width:thin`
+- `#focusAlertStack` — `position:fixed` soft-alert banner area for game-switch suggestions
+
+### Data flow
+
+```
+pollLeaguePulse() (15s)
+  └─ selectFocusGame()           — scores all live games, may call setFocusGame() or showFocusAlert()
+
+setFocusGame(pk)
+  └─ pollFocusLinescore()        — fires immediately, then every 5s via focusFastTimer
+       ├─ /game/{pk}/linescore   — Tier 1 (~5KB): B/S/O, inning, runners, score, batter/pitcher IDs+names
+       ├─ fetchFocusPlayerStats()— async, session-cached; skipped if both players already in focusStatsCache
+       ├─ pollFocusRich()        — Tier 2 GUMBO (~500KB): pitch-by-pitch for current at-bat
+       │    └─ /api/v1.1/game/{pk}/feed/live
+       │         └─ liveData.plays.currentPlay.playEvents (filter isPitch)
+       ├─ renderFocusCard()      — window.FocusCard.renderCard(focusState) → #focusCard
+       ├─ renderFocusMiniBar()   — slim strip → #focusMiniBar
+       └─ renderFocusOverlay()   — window.FocusCard.renderOverlay({...focusState, pitchSequence, allLiveGames}) → #focusOverlayCard (only if overlay open)
+```
+
+**GUMBO fetch strategy:** No timestamp stale check — `/feed/live/timestamps` only updates on completed plays, not per pitch. GUMBO is fetched unconditionally every 5s. At ~500KB per call this is acceptable for a single focused game.
+
+**At-bat reset:** `focusCurrentAbIdx` tracks `cp.about.atBatIndex`. When it changes (new at-bat), `focusPitchSequence` is cleared and `focusState.lastPitch` is set to null.
+
+### Focus Score Formula (`calcFocusScore`)
+
+```javascript
+function calcFocusScore(g) {
+  var diff = Math.abs(g.awayScore - g.homeScore);
+  var closeness = diff===0?60:diff===1?45:diff===2?25:5;
+  var runners = (g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
+  var isRISP = g.onSecond||g.onThird;
+  var isBL = g.onFirst&&g.onSecond&&g.onThird;
+  var isWalkoff = g.halfInning==='bottom'&&g.inning>=9&&
+                  (g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
+  var isNoHit = g.inning>=6&&(g.awayHits===0||g.homeHits===0);
+  var situation = isBL?40:isRISP?25:runners>0?15:0;
+  if(isWalkoff) situation+=50;
+  if(isNoHit) situation+=30;
+  var countBonus=0;
+  if(g.gamePk===focusGamePk){
+    if(focusState.balls===3&&focusState.strikes===2) countBonus=20;
+    else if(focusState.strikes===2) countBonus=12;
+  }
+  if(g.outs===2) countBonus+=8;
+  var innMult = g.inning<=5?0.6:g.inning<=8?1.0:g.inning===9?1.5:2.0;
+  return (closeness+situation+countBonus)*innMult;
+}
+```
+
+### Tension labels
+
+| Score | Label | Color |
+|---|---|---|
+| ≥ 120 | CRITICAL | `#e03030` (red) |
+| 70–119 | HIGH | `#f59e0b` (amber) |
+| < 70 | NORMAL | `#9aa0a8` (muted) |
+
+### window.FocusCard API (`focusCard.js`)
+
+`focusCard.js` is a standalone IIFE (no imports, no build). It exports `window.FocusCard` with four methods. All rendering is pure HTML string generation — no DOM side effects.
+
+**`renderCard(data)`** — compact side-rail card. Inputs: full `focusState` object. Outputs: HTML string. Shows: team seam, LIVE badge + tension pill + inning, score row with batting indicator, B/S/O pip rows + base diamond, matchup names, last-pitch strip (pitch name + speed + result) or "AT-BAT START — 0 PITCHES", OPEN FOCUS button.
+
+**`renderOverlay(data)`** — full modal card. Same inputs plus `pitchSequence[]` and `allLiveGames[]`. Shows: team seam, topbar (LIVE/inning/tension/close ✕), scoreboard, hero count pips + diamond, matchup with batter stats (AVG/OPS/HR/RBI) and pitcher stats (ERA/WHIP/W/L), last-pitch strip, pitch sequence pills (wrapping row, oldest→newest), game switcher strip.
+
+**`renderPitchPill(pitch)`** — single pitch chip. Shows: sequence index, result color stripe, pitch full name (`typeName`) + speed, result label. `typeName` falls back to `typeCode` if absent.
+
+**`demo()`** — mounts full overlay with hardcoded sample data (NYM @ PHI, bottom 8th, full count, bases loaded). Bound to `Shift+F` via `window.__fcShiftFBound` guard. Close button + backdrop click both dismiss.
+
+### Pitch type codes (MLB Stats API)
+
+Full name lives in `details.type.description` in GUMBO → stored as `typeName` in `focusPitchSequence`. Always display `typeName`; `typeCode` is for deduplication only.
+
+| Code | Name | Code | Name |
+|---|---|---|---|
+| `FF` | Four-Seam Fastball | `SL` | Slider |
+| `SI` | Sinker | `ST` | Sweeper |
+| `FC` | Cutter | `CU` | Curveball |
+| `FS` | Splitter | `KC` | Knuckle Curve |
+| `FA` | Fastball (generic) | `CH` | Changeup |
+| `FO` | Forkball | `KN` | Knuckleball |
+| `SC` | Screwball | `EP` | Eephus |
+| `IN` | Intentional Ball | `PO` | Pitchout |
+
+### Pitch result codes
+
+| Code | Meaning | Color |
+|---|---|---|
+| `B` | Ball | `#7a8597` (gray) |
+| `C` | Called Strike | `#f59e0b` (amber) |
+| `S` | Swinging Strike | `#e03030` (red) |
+| `F` | Foul | `#f97316` (orange) |
+| `T` | Foul Tip | `#ef4444` (red-orange) |
+| `X` | In Play | `#22c55e` (green) |
+
+### Responsive behaviour
+
+| Viewport | Side rail | `#focusCard` | `#focusMiniBar` |
+|---|---|---|---|
+| ≥1025px (desktop / iPad landscape) | Visible | Visible (top of rail) | Hidden |
+| 481–1024px (iPad portrait) | Hidden | Hidden | **Visible** |
+| ≤480px (phone) | Hidden | Hidden | **Visible** |
+
+### Demo Mode compatibility
+
+Focus Mode globals (`focusGamePk`, `focusFastTimer`, `focusState`, `focusPitchSequence`, `focusStatsCache`) are not populated during Demo Mode — `pollFocusLinescore` and `pollFocusRich` both guard on `demoMode` and return early. `#focusCard` and `#focusMiniBar` remain hidden during demo playback.
+
+---
+
+## 📖 Card Collection System (added v3.0)
+
+Auto-collects a player card every time an HR or key RBI event fires in Pulse. Cards are stored per-player per-event-type (one HR slot + one RBI slot per player). Slots upgrade when a higher-tier event is captured; same-tier duplicates are stored and randomly shown for variety. Users browse their collection in a binder-style overlay.
+
+### Tier System
+
+**HR tiers** (derived from badge text at collection time):
+
+| Tier | Badge matches | Glow |
+|---|---|---|
+| `legendary` | "WALK-OFF GRAND SLAM" | `#e03030` red |
+| `epic` | "GRAND SLAM" OR "WALK-OFF" | `#f59e0b` amber |
+| `rare` | "GO-AHEAD" | `#3b82f6` blue |
+| `common` | everything else (solo HR) | `var(--muted)` subtle |
+
+**RBI tiers** (badge + explicit rbi count — count passed explicitly since badge doesn't embed it for walk-offs):
+
+| Tier | Condition | Glow |
+|---|---|---|
+| `legendary` | "WALK-OFF" in badge AND rbi ≥ 2 | `#e03030` red |
+| `epic` | "WALK-OFF" in badge (1 RBI) OR rbi ≥ 3 | `#f59e0b` amber |
+| `rare` | "GO-AHEAD" OR "TIES IT" in badge | `#3b82f6` blue |
+| `common` | everything else | `var(--muted)` subtle |
+
+**Why not 4 RBI for legendary RBI tier:** 4-RBI walk-off = walk-off grand slam = fired as an HR event, never as an RBI event. The RBI card fires for non-HR scoring plays only, so max achievable RBI on a single RBI-card event is 3 (bases loaded single/double/triple).
+
+**Tier rank for comparison:** legendary(4) > epic(3) > rare(2) > common(1)
+
+### Data Model
+
+**localStorage key:** `mlb_card_collection`  
+**Format:** plain object keyed by `{playerId}_{HR|RBI}`
+
+```javascript
+slot = {
+  playerId:      number,
+  playerName:    string,
+  teamAbbr:      string,
+  teamPrimary:   string,   // hex — for card background tint
+  teamSecondary: string,   // hex — for accent
+  position:      string,   // e.g. "RF", "SP", "RP" — determines hitting vs pitching career stats
+  eventType:     'HR' | 'RBI',
+  tier:          'common' | 'rare' | 'epic' | 'legendary',
+  collectedAt:   number,   // ms — of first collection at this tier (for sort)
+  events: [                // all collected events at current tier (1+, capped at 10)
+    {
+      badge:       string,  // "GRAND SLAM!", "GO-AHEAD HOME RUN!", etc.
+      date:        string,  // "2026-05-01" (en-CA format)
+      inning:      number,
+      halfInning:  string,
+      awayAbbr:    string,
+      homeAbbr:    string,
+      awayScore:   number,
+      homeScore:   number,
+    }
+  ]
+}
+```
+
+**Upgrade rule:** new tier rank > existing → replace slot tier + events[], update `collectedAt`. Same rank → append event to `events[]` (cap 10). Lower rank → silent no-op.
+
+**Player headshot URL** derived at render time from `playerId`:  
+`https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{playerId}/headshot/67/current`  
+Never stored (avoids stale URLs).
+
+**Career stats** fetched at render time from `/people/{id}/stats?stats=career&group=hitting` (or `pitching` for SP/RP/CP). Cached in `collectionCareerStatsCache` (session-only). Hitters: `{ careerHR, careerAVG, careerRBI, careerOPS }`. Pitchers: `{ careerERA, careerWHIP, careerW, careerK }`.
+
+**Team logo URL** for binder watermark: `https://www.mlbstatic.com/team-logos/{teamId}.svg` — derived at render time from `teamId` passed in `teamContext`, never stored.
+
+### Collection Lifecycle
+
+1. **HR fires** in `showPlayerCard()` → `collectCard({...eventType:'HR', badge:badgeText, ...})` called (not in demo mode)
+2. **RBI fires** in `showRBICard()` → `collectCard({...eventType:'RBI', badge, rbi, ...})` called (not in demo mode)
+3. `collectCard()` sets `lastCollectionResult` before any guard, runs tier + upgrade logic, calls `showCollectedToast()` + `updateCollectionUI()`
+4. **Player card dismisses** → `dismissPlayerCard()` calls `flashCollectionRailMessage()` → reads `lastCollectionResult`, renders tier-colored pill in `#collectionRailModule`, auto-reverts to normal rail module after 4s
+5. **Demo mode simulation:** `collectCard()` in demo mode (without `force=true`) reads current collection state, determines what would have happened (new/upgrade/dup), sets `lastCollectionResult` for rail flash, then returns without persisting — so rail flash works during demo playback
+
+### HTML Elements
+
+**`#collectionOverlay`** — full-screen modal (top-level sibling of `#focusOverlay`, z-index 500):
+```html
+<div id="collectionOverlay" style="display:none;position:fixed;inset:0;z-index:500;
+     background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto"
+     onclick="if(event.target===this)closeCollection()">
+  <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;
+       overflow-y:auto;border-radius:12px"></div>
+</div>
+```
+
+**`#cardCollectedToast`** — brief fixed pill (top-level, z-index 450):
+```html
+<div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;
+     transform:translateX(-50%);z-index:450;pointer-events:none;..."></div>
+```
+
+**`#collectionRailModule`** — inside `#sideRail`, above news carousel. Renders count chip + "Open →" CTA; replaced temporarily by `flashCollectionRailMessage()` after player card dismissal.
+
+**Settings panel row** — "📚 Cards Collected: N [Open]" — **first item** in the settings panel (above Select Team). Count is inline in the label via `<span id="collectionCountLabel">` updated by `updateCollectionUI()`. No separate grey subtitle row. "Open" button calls `openCollection();toggleSettings()`.
+
+### window.CollectionCard API (`collectionCard.js`)
+
+`collectionCard.js` is a standalone IIFE (no imports, no build). CSS injected once via `<style id="cc-styles">`. All classes prefixed `.cc-*`.
+
+**`renderBook({ slots, filter, sort, page, careerStatsMap, teamContext })`** — full binder interior. `slots` is the already-filtered/sorted array from index.html. `careerStatsMap` is `playerId → careerStats`. `teamContext` is `{ abbr, primary, secondary, teamId, teamIdx, teamCount }` or null for non-team sorts.
+- Standard 3×3 pocket grid (9 cards per page)
+- Team sort: page background tinted with team primary at ~5% opacity + 2px primary border-top; 200×200px team logo watermark at 5% opacity centered on page
+- Filter bar: "All | HR | RBI" pills + "Newest / Rarity / Team" sort toggle
+- Empty state: ghost pockets with 🔒 icon
+- Page nav: "◀ Page N / M ▶" or team nav footer with logo + ABBR + "(N of M)" in team sort
+
+**`renderMiniCard(slot, displayEvent, careerStats, idx)`** — single card inside a pocket sleeve (~140×200px). Shows: headshot, player name, team abbr, tier badge with rarity glow border, event type label, career stat grid (4 stats), date + badge as flavor text. `onclick="openCardFromCollection(N)"`.
+
+**`renderRailModule(totalCount)`** — compact Pulse side rail module: "🎴 N cards" count chip + "Open Collection →" button. Injected into `#collectionRailModule`.
+
+**`demo()`** — mounts binder overlay with 9 sample slots across all tiers. Not bound to a keyboard shortcut (use Settings or `openCollection()` in console).
+
+### Hook Points
+
+**HR hook** — inside `showPlayerCard()`, after `card.innerHTML = window.PulseCard.render(renderCtx)`:
+```javascript
+if (!demoMode) {
+  collectCard({
+    playerId: d.batterId, playerName: d.batterName, teamAbbr: d.teamAbbr,
+    teamPrimary: d.teamData.primary, teamSecondary: d.teamData.secondary,
+    position: d.position || '', eventType: 'HR',
+    badge: badgeText || '💥 HOME RUN!',
+    inning: (gameStates[gamePk]||{}).inning || 0,
+    halfInning, awayAbbr, homeAbbr, awayScore, homeScore,
+  });
+}
+```
+
+**RBI hook** — inside `showRBICard()`, after `window.PulseCard.render(renderCtx)`:
+```javascript
+if (!demoMode) {
+  collectCard({
+    playerId: batterId, playerName: batterName, teamAbbr, teamPrimary, teamSecondary,
+    position: position || '', eventType: 'RBI', badge, rbi,
+    inning, halfInning, awayAbbr, homeAbbr, awayScore: aScore, homeScore: hScore,
+  });
+}
+```
+
+### Critical DOM Placement Rule
+
+**`#playerCardOverlay` must remain at top-level DOM** (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`, `#soundPanel`) — never nested inside `#pulse` or any other section. Sections create stacking contexts and can be `display:none`, which either traps the overlay's z-index or hides it entirely when the collection is opened from non-Pulse sections. This is the same established pattern as `#soundPanel` (moved in v2.57.6). Current z-index: 600 (above binder's 500).
+
+### demo.html
+
+`demo.html` at repo root is a non-production design test harness for `collectionCard.js` visuals. It is publicly accessible on GitHub Pages but not linked from the app. It can be deleted before merging to main if desired — it is not referenced by `index.html`, `sw.js`, or `manifest.json`.
 
 ---
 
@@ -702,21 +1311,23 @@ Self-contained replay of a full MLB day (April 27-28, 2026) from static `daily-e
 - Format: `{gameStates, feedItems, ...caches}` — direct snapshot from live Pulse export
 
 **Starting Demo:**
-- Click **"▶ Try Demo"** button in Pulse empty state (top-right hype block) or Settings menu
+- Click **"▶ Try Demo"** button in Pulse empty state (top-right hype block) or Dev Tools panel (`Shift+H`)
+- `toggleDemoMode()` calls `initDemo()` and updates the Dev Tools button label
 - `initDemo()` loads `daily-events.json` via `fetch()`
 - Resets all games to `Preview` status for chronological replay
-- Sets `demoCurrentTime` to first play's timestamp (22:09:51, CLE vs TB game start)
+- Sets `demoCurrentTime` to first play's timestamp (22:09:51 UTC = 6:09 PM ET, CLE vs TB game start)
 - Populates `demoPlayQueue` from `feedItems`, sorted oldest-first
-- Alert shows "8 games · 619 plays queued"
-- **Playback begins immediately** at first play timestamp
+- Alert shows game count and play count
+- **Playback begins immediately** — no wall-clock waiting; `demoCurrentTime` is an internal counter that advances play-by-play, never compared to `Date.now()`
 
 ### Playback Mechanics
 
 **Speed Controls** (in mock bar when demo is active):
 - **1x** — 10 seconds per play (real-time simulation)
 - **10x** — 1 second per play
-- **25x** — 400ms per play
-- **200x** — 50ms per play (rapid skip-through)
+- **100x** — 100ms per play (rapid skip-through)
+
+Changing speed takes effect immediately — `setDemoSpeed` cancels the pending `setTimeout` and sets a new one at the new interval (v2.55.4 fix).
 
 **Pause/Resume:** ⏸ Pause button stops playback; ▶ Resume continues from current play
 
@@ -756,11 +1367,13 @@ if(demoMode&&item.ts.getTime()>demoCurrentTime) return;  // skip future items
 
 | Function | Purpose |
 |---|---|
+| `toggleDemoMode()` | Entry point for Try Demo / Exit Demo button — calls `initDemo()` or `exitDemo()`, then `updateDemoBtnLabel()` |
+| `updateDemoBtnLabel()` | Updates Dev Tools button label between "▶ Try Demo" and "⏹ Exit Demo" based on `demoMode` state |
 | `loadDailyEventsJSON()` | Async fetch + parse `./daily-events.json`, convert timestamp strings to Date objects |
 | `initDemo()` | Reset state, load JSON, build demoPlayQueue, render UI, start playback |
 | `pollDemoFeeds()` | Main playback loop — advance one play per `demoSpeedMs` interval |
 | `advanceDemoPlay(play)` | Apply play to gameState, fire alerts/sounds, update feed, rebuild carousel |
-| `setDemoSpeed(ms, btn)` | Update `demoSpeedMs`, highlight speed button |
+| `setDemoSpeed(ms, btn)` | Update `demoSpeedMs`, highlight speed button, cancel pending timer and restart at new speed immediately |
 | `toggleDemoPause()` | Pause/resume playback, update button text |
 | `renderDemoEndScreen()` | Show "Demo Complete" overlay, auto-dismiss after 4s |
 | `exitDemo()` | Clear demo state, reset UI, return to live mode (if desired) |
@@ -769,20 +1382,56 @@ if(demoMode&&item.ts.getTime()>demoCurrentTime) return;  // skip future items
 
 ```javascript
 let demoMode = false              // true when demo active
+let demoGamesCache = []           // game objects loaded from JSON (used for end screen count)
 let demoDate = null               // earliest game date from JSON
-let demoCurrentTime = 0           // current replay timestamp (milliseconds)
+let demoCurrentTime = 0           // current replay timestamp (ms) — internal counter, never compared to Date.now()
 let demoPlayQueue = []            // plays sorted by timestamp
 let demoPlayIdx = 0               // current play index in queue
 let demoTimer = null              // setTimeout handle for playback loop
+let demoStartTime = 0             // wall-clock ms when demo was started (for elapsed-time display)
 let demoSpeedMs = 10000           // milliseconds per play advance (1x = 10000ms)
 let demoPaused = false            // pause/resume state
+const devTuning = {               // live-tunable Pulse parameters (editable via Dev Tools panel)
+  rotateMs: 4500,                 //   carousel rotation interval (ms)
+  rbiThreshold: 10,               //   minimum RBI card score to trigger showRBICard
+  rbiCooldown: 90000,             //   per-game RBI card cooldown (ms)
+  hr_priority: 100,               //   HR story priority
+  hr_cooldown: 300000,            //   HR story cooldown (5 min)
+  biginning_priority: 75,         //   Big Inning story priority
+  biginning_threshold: 3,         //   scoring plays required per inning-half
+  walkoff_priority: 90,           //   Walk-off Threat story priority
+  walkoff_cooldown: 300000,       //   Walk-off Threat cooldown (5 min)
+  nohitter_inning_floor: 6,       //   earliest inning to fire No-Hitter Watch
+  nohitter_priority: 95,          //   No-Hitter Watch story priority
+  basesloaded_enable: true,       //   enable/disable Bases Loaded story
+  basesloaded_priority: 88,       //   Bases Loaded story priority
+  focus_critical: 120,            //   Focus badge CRITICAL threshold
+  focus_high: 70,                 //   Focus badge HIGH threshold
+  focus_switch_margin: 25,        //   pts rival game must exceed current to trigger soft alert
+  focus_alert_cooldown: 90000     //   ms between soft alerts per game
+}
+let devColorLocked = false        // when true, applyTeamTheme/applyPulseMLBTheme use devColorOverrides instead of computed values
+let devShowPushOnDesktop = false  // **retained but uncalled (v2.57.11)** — push row hidden via CSS media query instead; variable kept in case UI toggle is re-added
+let devColorOverrides = {         // custom color values set via Theme Tuning pickers
+  app:   { dark:'', card:'', card2:'', border:'', primary:'', secondary:'', accent:'', accentText:'', headerText:'' },
+  pulse: { dark:'', card:'', card2:'', border:'', primary:'', secondary:'', accent:'', accentText:'', headerText:'' }
+}
+const devTuningDefaults = {
+  rotateMs:4500, rbiThreshold:10, rbiCooldown:90000,
+  hr_priority:100, hr_cooldown:300000,
+  biginning_priority:75, biginning_threshold:3,
+  walkoff_priority:90, walkoff_cooldown:300000,
+  nohitter_inning_floor:6, nohitter_priority:95,
+  basesloaded_enable:true, basesloaded_priority:88,
+  focus_critical:120, focus_high:70, focus_switch_margin:25, focus_alert_cooldown:90000
+}
 ```
 
 ### Files Involved
 
 | File | Role |
 |---|---|
-| `daily-events.json` | Static snapshot (8 games, 619 plays, all caches) — **dev branch only, do not push to main** |
+| `daily-events.json` | Static snapshot (8 games, 619 plays, all caches) — served via GitHub Pages; required for Demo Mode in production |
 | `index.html` | All demo code: loadDailyEventsJSON, initDemo, pollDemoFeeds, advanceDemoPlay, UI controls |
 | `sw.js` | Cache versioning for PWA update |
 
@@ -816,6 +1465,61 @@ On every commit that changes app content, bump **three** things:
 1. `<title>` version string in `index.html`
 2. Settings panel version string in `index.html`
 3. `CACHE` constant in `sw.js` (e.g. `mlb-v4` → `mlb-v5`) — forces cache refresh for installed PWA users
+
+---
+
+## Dev Tools
+
+### Keyboard Shortcuts (global)
+
+| Shortcut | Command | Purpose |
+|---|---|---|
+| `Shift+H` | `toggleDemoMode()` | Toggle demo mode on/off (enter or exit) |
+| `Shift+R` | `replayHRCard()` | Replay most recent HR card from live feed |
+| `Shift+E` | `replayRBICard()` | Replay most recent RBI card from live feed |
+| `Shift+V` | `window.PulseCard.demo()` | Cycle through all four HR card template variants |
+| `Shift+D` | `toggleDevTools()` | Toggle Dev Tools panel open/closed |
+| `Shift+F` | `window.FocusCard.demo()` | Open Focus Mode demo overlay with sample data |
+| `Shift+G` | `generateTestCard()` | Inject one random card into the collection (bypasses demo mode guard) |
+
+### Demo Mode (Shift+H)
+
+Replays a full day of games (April 27-28, 2026) from `daily-events.json` snapshot without API calls. Shows all four HR card variants during playback. Includes speed controls (1x/10x/100x), pause/resume, and "Next HR" button to fast-forward to next home run.
+
+### HR Card Replay (Shift+R) — v2.49+
+
+Replays a home run card from the live feed without demo mode overhead. Useful for QC'ing the four card variants (V1–V4) with real game data and team colors.
+
+**Console Function:** `replayHRCard(itemIndex)`
+
+**Usage:**
+- **Most recent HR:** Press `Shift+R` (shows the last/most recent HR that occurred)
+- **Specific HR by index:** Call `replayHRCard(0)` for most recent, `replayHRCard(1)` for second-most-recent, etc.
+
+**What it does:**
+- Scans `feedItems` array for all plays with `event === 'Home Run'`
+- Extracts batter, team, and game context from boxscore (including position and jersey number)
+- Calls `showPlayerCard()` with the HR data
+- Displays a random template variant
+- Logs action to console: `"Replaying HR: {name} at {away} @ {home}"`
+
+### Card Variants (Shift+V) — v2.49+
+
+Calls `window.PulseCard.demo()` to immediately display a randomly selected HR card template variant without needing a live HR event. Useful for visual QC of all four templates (V1 Stylized Graphic, V2 Stadium Jumbotron, V3 Comic/Pop Art, V4 Sports Broadcast).
+
+**Keyboard Listener:**
+Located in `index.html` near the end, after the `visibilitychange` event listener:
+```javascript
+document.addEventListener('keydown', function(e) {
+  if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
+  if(e.shiftKey && e.key === 'R') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'E') { replayRBICard(); }
+  if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
+  if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
+  if(e.shiftKey && e.key === 'F') { window.FocusCard.demo(); }
+  if(e.shiftKey && e.key === 'G') { generateTestCard(); }
+});
+```
 
 ---
 
@@ -859,6 +1563,18 @@ On every commit that changes app content, bump **three** things:
 
 ## Feature Backlog
 
+- [x] 🎯 Focus Mode — `calcFocusScore()` auto-selects most exciting live game; `selectFocusGame()` hooked into `pollLeaguePulse()` (v2.61)
+- [x] 🎯 Focus Mode — Tier 1 linescore poll every 5s: balls/strikes/outs/runners/matchup names/score/team colors (v2.61)
+- [x] 🎯 Focus Mode — Tier 2 GUMBO fetch every 5s: full `focusPitchSequence` for current at-bat; new-AB detection resets sequence (v2.61)
+- [x] 🎯 Focus Mode — `#focusCard` compact card in right side rail (desktop/iPad landscape); full-width within 320px rail (v2.61)
+- [x] 🎯 Focus Mode — `#focusMiniBar` slim strip below ticker; visible on phone and iPad portrait, hidden on desktop/iPad landscape via CSS (v2.61)
+- [x] 🎯 Focus Mode — `#focusOverlay` full modal with hero count pips, diamond, matchup stats, pitch sequence, game switcher; custom 4px scrollbar (v2.61)
+- [x] 🎯 Focus Mode — Soft alert `#focusAlertStack` for game-switch suggestions; 90s per-game cooldown (v2.61)
+- [x] 🎯 Focus Mode — `focusCard.js` visual templates: `window.FocusCard.renderCard/renderOverlay/renderPitchPill/demo()`; `Shift+F` shortcut (v2.61)
+- [x] 🎯 Focus Mode — Session-cached player stats (`focusStatsCache`); batter AVG/OPS/HR/RBI + pitcher ERA/WHIP/W/L in overlay (v2.61)
+- [x] 🎯 Focus Mode — Pitch types shown as full name (`typeName`: "Sinker", "Sweeper") not abbreviated code; `typeCode` fallback if absent (v2.61)
+- [x] 🎯 Focus Mode — Last-pitch strip in both compact card and overlay: pitch name + speed + result with color-coded dot (v2.61)
+- [x] 🎯 Focus Mode — Demo Mode guard: all focus polls return early when `demoMode=true`; focus card hidden during demo (v2.61)
 - [x] ⚡ Pulse — League-wide live play-by-play feed merged into index.html as lazy-loaded nav section (v2.1)
 - [x] ⚡ Pulse — Mock mode toggle and Sound Alerts trigger moved to Settings panel (v2.1)
 - [x] ⚡ Pulse — Mock bar inline (not fixed-position); no conflict with mobile nav (v2.1)
@@ -894,7 +1610,7 @@ On every commit that changes app content, bump **three** things:
 - [x] 📖 Story Carousel — Lazy Statcast distance: `pollGamePlays` patches `item.data.distance` on subsequent fetches once `hitData.totalDistance` populates; HR headline shows "Xft" when available (v2.9)
 - [x] 📖 Story Carousel — Big-inning card: HIGHLIGHT badge + crimson background (`rgba(220,60,60,0.13)`) via `.story-biginning` CSS class, distinct from HR amber (v2.9.1)
 - [x] 📖 Story Carousel — Big-inning card sub-line simplified to "AWAY @ HOME" — score removed (v2.12.2)
-- [x] 📖 Story Carousel — Cooldowns dynamically capped to `pool.length × STORY_ROTATE_MS × 1.5` (floor 2 min) so thin pre-game pools recycle cards in seconds rather than hitting 60-min nominal cooldowns (v2.12.3)
+- [x] 📖 Story Carousel — Cooldowns dynamically capped to `pool.length × devTuning.rotateMs × 1.5` (floor 2 min) so thin pre-game pools recycle cards in seconds rather than hitting 60-min nominal cooldowns (v2.12.3)
 - [x] ⚡ Pulse — Ticker chips stacked vertically: away-team row / home-team row / inning+outs row; reduces chip width significantly vs prior horizontal layout (v2.13)
 - [x] ⚡ Pulse — Out-dot indicators on ticker chips: 3 small circles (red hollow outline → filled `#e03030`) showing current out count; displayed on both normal and RISP chips' inning row; only visible for live games (v2.13)
 - [x] ⚡ Pulse — Live dot changed from red to green (`#22c55e`, pulse-ring animation updated to match) to avoid visual clash with red out-dot indicators (v2.13)
@@ -911,9 +1627,10 @@ On every commit that changes app content, bump **three** things:
 - [x] 📖 Story Carousel — Walk-off story fires on game state alone (bottom 9th+, tied/1-run) — no runner on base required; per-inning ID (`walkoff_{pk}_{inning}`) so extra innings each get a fresh card; cooldown raised 1m → 5m to prevent repeated firing within the same inning (v2.11)
 - [x] 📖 Story Carousel — Walk-off detection tightened to winning-run-at-bat logic: `deficit ≤ runnersOn + 1` — correctly fires for tied/down-1-with-runner/down-2-with-2-runners/bases-loaded-down-3; no longer fires when home leads or trailing by more than runners can cover (v2.12.1)
 - [x] 📖 Story Carousel — Bases loaded story card: tier-1, priority 88, fires any inning/half when all three bases occupied; per half-inning ID prevents duplicate; 3-min cooldown, 80% decay (v2.12)
+- [ ] ⚡ Pulse — HR/RBI player cards: Career stats expansion — 2024 career HR high by year, hot streak context (last 10-game average, current streak), populate from `/people/{id}/stats` with season=all; currently shows placeholders (deferred to future branch, v2.31)
 - [ ] 📖 Story Carousel — HR distance via Statcast (`hitData.totalDistance` in `/game/{pk}/playByPlay`) needs real-world verification — field may not populate for all games or all parks; confirm distance appears in headlines during live play
 - [ ] ⚡ Pulse — "Game underway!" feed ordering: status items for games transitioning to In Progress appear near the top of the newest-first feed instead of being anchored to the game's scheduled start time; root cause likely `gameDateMs` null/stale or else-branch `playTime` missing at line 1162; deferred — data usage too high to investigate further
-- [ ] ⚡ Pulse — Real audio files to replace Web Audio API stubs
+- [ ] ⚡ Pulse — Sound system upgrade: replace Web Audio API synthesis with real CC0 MP3 samples. Infrastructure is fully in place (branch `claude/explore-platform-sound-LSGL8`, merged fixes to main via v2.64.x). To complete: source 9 CC0 audio files from Pixabay (no attribution required), encode each as base64 (`base64 -i file.mp3` on macOS), paste into `SOUND_DATA` object in index.html. Events needing samples: `hr` (bat crack + crowd), `run` (bell/chime), `risp` (heartbeat/tension), `sb` (whoosh), `dp` (glove pop ×2), `tp` (bugle fanfare), `gameStart` (organ riff), `gameEnd` (descending chime), `error` (thud). Synthesis fallbacks remain active for any key left as empty string. iOS/shared-context fix already landed (v2.64.4): single `_audioCtx` created on master-toggle user gesture, `playSound()` awaits resume via `.then()` before dispatching, prevents silent audio on suspended context. UAT checklist: `Shift+R` (HR), `Shift+E` (RBI/run), demo at 10x for DP/TP/SB/error/RISP, 1x for gameStart/gameEnd.
 - [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
 - [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
 - [ ] ⚡ Pulse — Persist `enabledGames` to localStorage (game filter survives reload)
@@ -980,3 +1697,37 @@ On every commit that changes app content, bump **three** things:
 - [x] Invert Colours toggle in settings — swaps primary and secondary colours (v1.36)
 - [x] Settings panel closes on click outside (v1.36)
 - [x] iPad responsive layout — CSS grid classes + media queries at ≤1024px and ≤767px (v1.35)
+
+---
+
+## Technical Debt Management
+
+Technical debt audits are tracked in a dedicated workflow system. When code quality improvements are needed, a **technical debt sprint** can be triggered.
+
+### How It Works
+
+**You trigger it:** Say *"Start tech debt sprint"* in conversation with Claude.
+
+**Claude executes:**
+1. **Audit** — Full code review, findings documented in `docs/technical-debt/audits/`
+2. **Remediation** — Fixes applied with before/after code in `docs/technical-debt/remediation/`
+3. **QA** — Comprehensive testing, results in `docs/technical-debt/qa/`
+4. **UAT** — You test in browser
+5. **Finalization** — Code merged to main with summary in `docs/technical-debt/sprints/`
+
+### Key Features
+
+- **Checkpoints:** Explicit user acknowledgement before each stage (no auto-proceeding)
+- **Session continuity:** Can pause mid-sprint and resume across sessions without losing context
+- **Historical awareness:** Claude automatically reads all previous audit findings when starting a new sprint
+- **Permanent archive:** All audit reports stay in `docs/technical-debt/` forever, searchable by date
+- **Version tracking:** Each audit notes the app version it was conducted on
+
+### Entry Points
+
+- **Process guide:** See `docs/technical-debt/WORKFLOW.md` (read once to understand)
+- **Quick reference:** See `docs/technical-debt/README.md`
+- **Completed sprints:** See `docs/technical-debt/HISTORY.md` (append-only archive)
+- **All audits:** Browse `docs/technical-debt/audits/`, `remediation/`, `qa/`, `sprints/` folders
+
+---
