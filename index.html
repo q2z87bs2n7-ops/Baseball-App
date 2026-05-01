@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.c</title>
+<title>MLB Tracker v3.9.d</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -732,7 +732,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.c</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.d</div>
       </div>
     </div>
   </div>
@@ -1288,7 +1288,16 @@ let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s coo
 let focusOverlayOpen=false;
 let mlbAudioWindow=null;  // ref to popup window opened by openFocusAudio()
 let mlbAudioActive=false; // true once user has opted in this session
-const MLB_GAMEDAY_AUDIO_URL='https://www.mlb.com/gameday/{pk}/audio'; // adjust if URL pattern changes
+// Team ID → MLB.com radio broadcast callsign (English flagship station for each team)
+// Source: window.initState.audacyCookieSyncIds on mlb.com/tv player page
+const MLB_RADIO_CALLSIGNS={
+  108:'KLAA',       109:'98.7 FM',    110:'98 Rock',    111:'WEEI',       112:'WSCR',
+  113:'WLW',        114:'WTAM',       115:'KOA',        116:'97.1',       117:'KBME',
+  118:'KCSP',       119:'570',        120:'WJFK',       121:'WCBS 880',   133:'KNEW 960',
+  134:'KDKA',       135:'KWFN',       136:'KIRO',       137:'KNBR',       138:'KMOX',
+  139:'WDAE',       140:'KRLD',       141:'SN590',      142:'WCCO',       143:'WIP',
+  144:'680 AM',     145:'WMVP',       146:'FOX940AM',   147:'WFAN',       158:'WTMJ'
+};
 let collectionFilter='all';         // 'all' | 'HR' | 'RBI'
 let collectionSort='newest';        // 'newest' | 'rarity' | 'team'
 let collectionPage=0;               // 0-indexed page for binder display
@@ -3084,7 +3093,14 @@ function setFocusGame(pk) {
   focusFastTimer=setInterval(pollFocusLinescore,5000);
 }
 
-function focusAudioUrl(pk){return MLB_GAMEDAY_AUDIO_URL.replace('{pk}',pk);}
+function focusAudioUrl(pk){
+  var g=gameStates[pk]||{};
+  var cs=MLB_RADIO_CALLSIGNS[g.homeId]||MLB_RADIO_CALLSIGNS[g.awayId]||'';
+  var url='https://www.mlb.com/tv/g'+pk;
+  if(cs) url+='?callsign='+encodeURIComponent(cs)+'&affiliateId=GAMEDAY';
+  else url+='?affiliateId=GAMEDAY';
+  return url;
+}
 function openFocusAudio(){
   if(!focusGamePk) return;
   var url=focusAudioUrl(focusGamePk);
