@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.8.5</title>
+<title>MLB Tracker v3.8.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -723,7 +723,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.8.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.8.6</div>
       </div>
     </div>
   </div>
@@ -3288,16 +3288,35 @@ function saveCollection(obj) {
 function showCollectedToast(type, playerName, eventType, tier) {
   var el = document.getElementById('cardCollectedToast');
   if (!el) return;
-  var tierLabel = tier === 'legendary' ? '🔴 Legendary' : tier === 'epic' ? '🟠 Epic' : tier === 'rare' ? '🔵 Rare' : '⚪ Common';
-  var msg = type === 'new'       ? '🎴 New card — ' + playerName + ' ' + eventType + ' · ' + tierLabel
-          : type === 'upgrade'   ? '⬆ Upgraded — ' + playerName + ' ' + eventType + ' → ' + tierLabel
-          : '✓ Already have ' + playerName + '\'s ' + eventType + ' card';
-  el.textContent = msg;
+  var tierColor = { legendary:'#e03030', epic:'#f59e0b', rare:'#3b82f6', common:'#9aa0a8' }[tier] || '#9aa0a8';
+  var lastName = playerName.split(' ').pop();
+  var prefix, msg;
+  if (type === 'new') {
+    if (tier === 'legendary') { prefix = '🔴'; msg = 'LEGENDARY PULL! ' + lastName + ' ' + eventType; }
+    else if (tier === 'epic') { prefix = '🟠'; msg = 'EPIC CARD! ' + lastName + ' ' + eventType; }
+    else if (tier === 'rare') { prefix = '💎'; msg = 'Rare find — ' + lastName + ' ' + eventType; }
+    else                      { prefix = '🎴'; msg = 'Card collected — ' + lastName + ' ' + eventType; }
+  } else if (type === 'upgrade') {
+    if (tier === 'legendary') { prefix = '🔴'; msg = 'UPGRADED TO LEGENDARY! ' + lastName; }
+    else if (tier === 'epic') { prefix = '⚡'; msg = 'Upgraded to Epic! ' + lastName + ' ' + eventType; }
+    else if (tier === 'rare') { prefix = '💎'; msg = 'Upgraded to Rare — ' + lastName + ' ' + eventType; }
+    else                      { prefix = '⬆'; msg = 'Upgraded — ' + lastName + ' ' + eventType; }
+  } else {
+    if (tier === 'legendary') { prefix = '👑'; msg = 'Another legendary ' + lastName + ' moment!'; }
+    else if (tier === 'epic') { prefix = '🔥'; msg = 'Epic variant added — ' + lastName; }
+    else if (tier === 'rare') { prefix = '💎'; msg = 'Rare event added — ' + lastName + ' ' + eventType; }
+    else                      { prefix = '✓'; msg = lastName + "'s " + eventType + ' card updated'; }
+  }
+  el.style.borderColor = tierColor + '99';
+  el.style.boxShadow = (tier === 'legendary' || tier === 'epic') ? '0 0 14px ' + tierColor + '55' : '';
+  el.innerHTML = '<span style="color:' + tierColor + ';font-weight:800;">' + prefix + '</span> ' + msg;
+  var duration = (tier === 'legendary' || tier === 'epic') ? 2800 : 2100;
+  el.style.animationDuration = duration + 'ms';
   el.style.display = 'block';
   el.classList.remove('show');
-  void el.offsetWidth; // force reflow to restart animation
+  void el.offsetWidth;
   el.classList.add('show');
-  setTimeout(function() { el.style.display = 'none'; el.classList.remove('show'); }, 2100);
+  setTimeout(function() { el.style.display = 'none'; el.classList.remove('show'); }, duration);
 }
 
 function collectCard(data, force) {
@@ -3544,16 +3563,36 @@ function flashCollectionRailMessage() {
   var r = lastCollectionResult;
   lastCollectionResult = null;
   var tierColor = { legendary:'#e03030', epic:'#f59e0b', rare:'#3b82f6', common:'#9aa0a8' }[r.tier] || '#9aa0a8';
-  var label = r.type === 'new' ? 'New card' : r.type === 'upgrade' ? '⬆ Upgraded' : '✓ Already have';
-  var name = r.playerName.split(' ').pop(); // last name for brevity
+  var name = r.playerName.split(' ').pop();
+  var label, sublabel;
+  if (r.type === 'new') {
+    if (r.tier === 'legendary')   { label = '🔴 LEGENDARY PULL!';     sublabel = name + ' ' + r.eventType; }
+    else if (r.tier === 'epic')   { label = '⚡ EPIC CARD!';           sublabel = name + ' ' + r.eventType; }
+    else if (r.tier === 'rare')   { label = '💎 Rare Find!';           sublabel = name + ' ' + r.eventType; }
+    else                          { label = '🎴 Card Collected';       sublabel = name + ' ' + r.eventType; }
+  } else if (r.type === 'upgrade') {
+    if (r.tier === 'legendary')   { label = '🔴 LEGENDARY UPGRADE!';   sublabel = name + ' ' + r.eventType; }
+    else if (r.tier === 'epic')   { label = '⚡ Upgraded to Epic!';    sublabel = name + ' ' + r.eventType; }
+    else if (r.tier === 'rare')   { label = '💎 Upgraded to Rare';     sublabel = name + ' ' + r.eventType; }
+    else                          { label = '⬆ Upgraded';             sublabel = name + ' ' + r.eventType; }
+  } else {
+    if (r.tier === 'legendary')   { label = '👑 Legendary';            sublabel = 'Another ' + name + ' moment!'; }
+    else if (r.tier === 'epic')   { label = '🔥 Epic Variant';         sublabel = 'Added to collection'; }
+    else if (r.tier === 'rare')   { label = '💎 Rare Variant';         sublabel = name + ' ' + r.eventType; }
+    else                          { label = '✓ Already Have';          sublabel = name + ' ' + r.eventType; }
+  }
+  var dotGlow = (r.tier === 'legendary' || r.tier === 'epic') ? ';box-shadow:0 0 6px ' + tierColor : '';
   el.innerHTML =
     '<div onclick="openCollection()" style="' +
       'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;' +
-      'border-radius:8px;border:1px solid ' + tierColor + '44;' +
-      'background:linear-gradient(90deg,' + tierColor + '18,transparent);' +
+      'border-radius:8px;border:1px solid ' + tierColor + '55;' +
+      'background:linear-gradient(90deg,' + tierColor + '22,transparent);' +
       'font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;">' +
-      '<span style="width:8px;height:8px;border-radius:50%;background:' + tierColor + ';flex-shrink:0;"></span>' +
-      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;">' + label + ' — ' + name + ' ' + r.eventType + '</span>' +
+      '<span style="width:8px;height:8px;border-radius:50%;background:' + tierColor + ';flex-shrink:0' + dotGlow + '"></span>' +
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;">' +
+        '<span style="font-weight:700;color:' + tierColor + ';">' + label + '</span>' +
+        ' <span style="color:var(--muted);">' + sublabel + '</span>' +
+      '</span>' +
       '<span style="color:var(--muted);font-size:11px;flex-shrink:0;">Open →</span>' +
     '</div>';
   setTimeout(function() { renderCollectionRailModule(); }, 4000);
