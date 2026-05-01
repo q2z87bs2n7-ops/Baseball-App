@@ -112,6 +112,22 @@
       'display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);',
       'gap:14px;width:100%;height:100%;min-height:600px;',
     '}',
+    /* Team-grouped grid — auto rows, no fixed height */
+    '.cc-grid.cc-grid-team{',
+      'grid-template-rows:auto;height:auto;min-height:0;align-content:start;',
+    '}',
+    '.cc-team-header{',
+      'grid-column:1/-1;display:flex;align-items:center;gap:8px;',
+      'padding:7px 10px;border-left:3px solid rgba(255,255,255,.15);',
+      'background:rgba(255,255,255,.025);border-radius:0 6px 6px 0;',
+      'margin-top:8px;',
+    '}',
+    '.cc-team-header:first-child{margin-top:0;}',
+    '.cc-team-abbr{',
+      'font-size:11px;font-weight:700;letter-spacing:.14em;',
+      'color:#7d8694;text-transform:uppercase;flex:1;',
+    '}',
+    '.cc-team-count{font-size:10px;color:#4a5361;}',
 
     /* ── Pocket sleeve ──────────────────────────────────────────────── */
     '.cc-pocket{',
@@ -397,25 +413,64 @@
     var startIdx = page * perPage;
     var pageSlots = slots.slice(startIdx, startIdx + perPage);
 
-    // Build 9 pocket cells (fill empties)
+    // Build pocket grid content — normal 3×3 paged view or team-grouped view
     var pockets = '';
-    for (var i = 0; i < perPage; i++) {
-      var slot = pageSlots[i];
-      if (slot) {
-        var globalIdx = startIdx + i;
-        var ev = slot.events && slot.events.length
-          ? slot.events[Math.floor(Math.random() * slot.events.length)]
-          : null;
-        var stats = statsMap[slot.playerId] || null;
-        pockets +=
-          '<div class="cc-pocket">' +
-            renderMiniCard(slot, ev, stats, globalIdx) +
+    var teamPageContent = '';
+
+    if (isTeam && slots.length > 0) {
+      // Group by teamAbbr (slots already sorted by teamAbbr → tier)
+      var teamGroups = {};
+      var teamOrder = [];
+      for (var ti = 0; ti < slots.length; ti++) {
+        var ts = slots[ti];
+        if (!teamGroups[ts.teamAbbr]) {
+          teamGroups[ts.teamAbbr] = { abbr: ts.teamAbbr, primary: ts.teamPrimary, teamId: ts._teamId, cards: [] };
+          teamOrder.push(ts.teamAbbr);
+        }
+        teamGroups[ts.teamAbbr].cards.push(ts);
+      }
+      for (var tgi = 0; tgi < teamOrder.length; tgi++) {
+        var abbr = teamOrder[tgi];
+        var grp = teamGroups[abbr];
+        var logoHtml = grp.teamId
+          ? '<img src="https://www.mlbstatic.com/team-logos/' + grp.teamId + '.svg"' +
+            ' style="width:26px;height:26px;opacity:.45;flex-shrink:0;"' +
+            ' onerror="this.style.display=\'none\'">'
+          : '';
+        teamPageContent +=
+          '<div class="cc-team-header" style="border-left-color:' + grp.primary + '">' +
+            logoHtml +
+            '<span class="cc-team-abbr">' + abbr + '</span>' +
+            '<span class="cc-team-count">' + grp.cards.length + ' card' + (grp.cards.length !== 1 ? 's' : '') + '</span>' +
           '</div>';
-      } else {
-        pockets +=
-          '<div class="cc-pocket is-empty">' +
-            '<span class="cc-pocket-empty-icon">🔒</span>' +
-          '</div>';
+        for (var ci = 0; ci < grp.cards.length; ci++) {
+          var cs = grp.cards[ci];
+          var gIdx = slots.indexOf(cs);
+          var cev = cs.events && cs.events.length
+            ? cs.events[Math.floor(Math.random() * cs.events.length)] : null;
+          teamPageContent +=
+            '<div class="cc-pocket">' + renderMiniCard(cs, cev, statsMap[cs.playerId] || null, gIdx) + '</div>';
+        }
+      }
+    } else {
+      for (var i = 0; i < perPage; i++) {
+        var slot = pageSlots[i];
+        if (slot) {
+          var globalIdx = startIdx + i;
+          var ev = slot.events && slot.events.length
+            ? slot.events[Math.floor(Math.random() * slot.events.length)]
+            : null;
+          var stats = statsMap[slot.playerId] || null;
+          pockets +=
+            '<div class="cc-pocket">' +
+              renderMiniCard(slot, ev, stats, globalIdx) +
+            '</div>';
+        } else {
+          pockets +=
+            '<div class="cc-pocket is-empty">' +
+              '<span class="cc-pocket-empty-icon">🔒</span>' +
+            '</div>';
+        }
       }
     }
 
@@ -424,7 +479,7 @@
     for (var r = 0; r < 5; r++) rings += '<div class="cc-ring"></div>';
 
     var isAll = filter === 'all', isHR = filter === 'HR', isRBI = filter === 'RBI';
-    var isNew = sort === 'newest', isRare = sort === 'rarity';
+    var isNew = sort === 'newest', isRare = sort === 'rarity', isTeam = sort === 'team';
 
     var emptyOverlay = slots.length === 0
       ? '<div class="cc-empty"><div class="cc-empty-inner">' +
@@ -456,22 +511,26 @@
             '<span class="cc-toolbar-label">Sort</span>' +
             '<button class="cc-pill ' + (isNew  ? 'is-active' : '') + '" onclick="sortCollection(\'newest\')">Newest</button>' +
             '<button class="cc-pill ' + (isRare ? 'is-active' : '') + '" onclick="sortCollection(\'rarity\')">By Rarity</button>' +
+            '<button class="cc-pill ' + (isTeam ? 'is-active' : '') + '" onclick="sortCollection(\'team\')">By Team</button>' +
           '</div>' +
         '</div>' +
         // Body
         '<div class="cc-body">' +
           '<div class="cc-spine">' + rings + '</div>' +
           '<div class="cc-page">' +
-            '<div class="cc-grid">' + pockets + '</div>' +
+            (isTeam
+              ? '<div class="cc-grid cc-grid-team">' + teamPageContent + '</div>'
+              : '<div class="cc-grid">' + pockets + '</div>') +
             emptyOverlay +
           '</div>' +
         '</div>' +
-        // Footer
-        '<footer class="cc-foot">' +
-          '<button class="cc-page-btn" onclick="goCollectionPage(-1)" ' + (page <= 0 ? 'disabled' : '') + '>◀</button>' +
-          '<span class="cc-page-lbl">PAGE ' + (page + 1) + ' / ' + totalPages + '</span>' +
-          '<button class="cc-page-btn" onclick="goCollectionPage(1)" ' + (page >= totalPages - 1 ? 'disabled' : '') + '>▶</button>' +
-        '</footer>' +
+        // Footer — hidden in team view (all cards shown at once)
+        (isTeam ? '' :
+          '<footer class="cc-foot">' +
+            '<button class="cc-page-btn" onclick="goCollectionPage(-1)" ' + (page <= 0 ? 'disabled' : '') + '>◀</button>' +
+            '<span class="cc-page-lbl">PAGE ' + (page + 1) + ' / ' + totalPages + '</span>' +
+            '<button class="cc-page-btn" onclick="goCollectionPage(1)" ' + (page >= totalPages - 1 ? 'disabled' : '') + '>▶</button>' +
+          '</footer>') +
       '</div>';
   }
 

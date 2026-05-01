@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.2</title>
+<title>MLB Tracker v3.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -725,7 +725,7 @@
           </div>
           <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.3</div>
       </div>
     </div>
   </div>
@@ -1258,9 +1258,10 @@ let focusStatsCache={};
 let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
 let focusOverlayOpen=false;
 let collectionFilter='all';         // 'all' | 'HR' | 'RBI'
-let collectionSort='newest';        // 'newest' | 'rarity'
+let collectionSort='newest';        // 'newest' | 'rarity' | 'team'
 let collectionPage=0;               // 0-indexed page for binder display
 let collectionCareerStatsCache={};  // playerId → career stat object (session-only)
+let lastCollectionResult=null;      // {type,playerName,eventType,tier} — set by collectCard, read by flashCollectionRailMessage
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -3279,8 +3280,8 @@ function showCollectedToast(type, playerName, eventType, tier) {
   setTimeout(function() { el.style.display = 'none'; el.classList.remove('show'); }, 2100);
 }
 
-function collectCard(data) {
-  if (demoMode) return;
+function collectCard(data, force) {
+  if (demoMode && !force) return;
   var playerId = data.playerId, playerName = data.playerName, teamAbbr = data.teamAbbr;
   var teamPrimary = data.teamPrimary, teamSecondary = data.teamSecondary, position = data.position || '';
   var eventType = data.eventType, badge = data.badge || '', rbi = data.rbi || 0;
@@ -3301,6 +3302,7 @@ function collectCard(data) {
     col[key] = { playerId: playerId, playerName: playerName, teamAbbr: teamAbbr,
                  teamPrimary: teamPrimary, teamSecondary: teamSecondary, position: position,
                  eventType: eventType, tier: tier, collectedAt: Date.now(), events: [eventCtx] };
+    lastCollectionResult = { type:'new', playerName:playerName, eventType:eventType, tier:tier };
     showCollectedToast('new', playerName, eventType, tier);
   } else {
     var existing = col[key];
@@ -3312,9 +3314,11 @@ function collectCard(data) {
       existing.teamPrimary = teamPrimary;
       existing.teamSecondary = teamSecondary;
       existing.position = position || existing.position;
+      lastCollectionResult = { type:'upgrade', playerName:playerName, eventType:eventType, tier:tier };
       showCollectedToast('upgrade', playerName, eventType, tier);
     } else if (newRank === existRank) {
       if (existing.events.length < 10) existing.events.push(eventCtx);
+      lastCollectionResult = { type:'dup', playerName:playerName, eventType:eventType, tier:tier };
       showCollectedToast('dup', playerName, eventType, tier);
     }
     // lower tier → silent no-op
@@ -3372,14 +3376,27 @@ async function renderCollectionBook() {
   if (collectionFilter !== 'all') slots = slots.filter(function(s) { return s.eventType === collectionFilter; });
   if (collectionSort === 'rarity') {
     slots.sort(function(a,b) { return tierRank(b.tier) - tierRank(a.tier) || b.collectedAt - a.collectedAt; });
+  } else if (collectionSort === 'team') {
+    slots.sort(function(a,b) {
+      if (a.teamAbbr < b.teamAbbr) return -1;
+      if (a.teamAbbr > b.teamAbbr) return 1;
+      return tierRank(b.tier) - tierRank(a.tier);
+    });
+    // Augment slots with _teamId for logo URL (looked up once, not stored in localStorage)
+    slots.forEach(function(slot) {
+      var td = TEAMS.find(function(t) { return t.short === slot.teamAbbr; });
+      slot._teamId = td ? td.id : null;
+    });
   } else {
     slots.sort(function(a,b) { return b.collectedAt - a.collectedAt; });
   }
   var totalPages = Math.max(1, Math.ceil(slots.length / 9));
   collectionPage = Math.min(collectionPage, totalPages - 1);
 
-  // Fetch career stats for visible page slots in parallel
-  var pageSlots = slots.slice(collectionPage * 9, (collectionPage + 1) * 9);
+  // Fetch career stats: team sort fetches first 18; paged sorts fetch current page
+  var pageSlots = (collectionSort === 'team')
+    ? slots.slice(0, 18)
+    : slots.slice(collectionPage * 9, (collectionPage + 1) * 9);
   var careerStatsMap = Object.assign({}, collectionCareerStatsCache);
   await Promise.all(pageSlots.map(async function(slot) {
     if (!careerStatsMap[slot.playerId]) {
@@ -3418,6 +3435,28 @@ function renderCollectionRailModule() {
   el.innerHTML = window.CollectionCard.renderRailModule(count);
 }
 
+function flashCollectionRailMessage() {
+  if (!lastCollectionResult) return;
+  var el = document.getElementById('collectionRailModule');
+  if (!el) return;
+  var r = lastCollectionResult;
+  lastCollectionResult = null;
+  var tierColor = { legendary:'#e03030', epic:'#f59e0b', rare:'#3b82f6', common:'#9aa0a8' }[r.tier] || '#9aa0a8';
+  var label = r.type === 'new' ? 'New card' : r.type === 'upgrade' ? '⬆ Upgraded' : '✓ Already have';
+  var name = r.playerName.split(' ').pop(); // last name for brevity
+  el.innerHTML =
+    '<div onclick="openCollection()" style="' +
+      'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;' +
+      'border-radius:8px;border:1px solid ' + tierColor + '44;' +
+      'background:linear-gradient(90deg,' + tierColor + '18,transparent);' +
+      'font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;">' +
+      '<span style="width:8px;height:8px;border-radius:50%;background:' + tierColor + ';flex-shrink:0;"></span>' +
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;">' + label + ' — ' + name + ' ' + r.eventType + '</span>' +
+      '<span style="color:var(--muted);font-size:11px;flex-shrink:0;">Open →</span>' +
+    '</div>';
+  setTimeout(function() { renderCollectionRailModule(); }, 4000);
+}
+
 function generateTestCard() {
   var pool = (rosterData.hitting||[]).concat(rosterData.pitching||[]);
   if (!pool.length) { showCollectedToast('new', 'No roster', '', 'common'); return; }
@@ -3449,7 +3488,7 @@ function generateTestCard() {
     homeAbbr:      activeTeam.short,
     awayScore:     scores[Math.floor(Math.random()*scores.length)],
     homeScore:     scores[Math.floor(Math.random()*scores.length)],
-  });
+  }, true);  // force=true bypasses demoMode guard
 }
 
 function baseDiamondSvg(on1,on2,on3) {
@@ -3735,6 +3774,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
 function dismissPlayerCard() {
   var overlay = document.getElementById('playerCardOverlay');
   if (!overlay || !overlay.classList.contains('open')) return;
+  flashCollectionRailMessage();
   if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
   overlay.classList.add('closing');
   setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, 280);
