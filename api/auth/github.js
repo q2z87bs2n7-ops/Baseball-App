@@ -75,13 +75,15 @@ export default async function handler(req, res) {
     const githubId = userData.id;
     const githubLogin = userData.login;
 
-    // Generate or retrieve user ID
-    const userIdKey = `github_user_map:${githubId}`;
-    let userId = await kv.get(userIdKey);
+    // Check if this GitHub account is already linked to a user
+    const githubMapKey = `github_map:${githubId}`;
+    let userId = await kv.get(githubMapKey);
 
     if (!userId) {
+      // Not linked yet — generate new user ID
       userId = generateUserId();
-      await kv.set(userIdKey, userId);
+      // Store both the GitHub mapping and the user ID
+      await kv.set(githubMapKey, userId);
     } else {
       userId = userId.toString();
     }
@@ -103,7 +105,7 @@ export default async function handler(req, res) {
 
     // Redirect back to app with token
     const appUrl = redirect || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-    const redirectUrl = `${appUrl}/?auth_token=${sessionToken}&auth_method=github`;
+    const redirectUrl = `${appUrl}/?auth_token=${sessionToken}&auth_method=github&github_login=${encodeURIComponent(githubLogin)}`;
 
     res.status(302).setHeader('Location', redirectUrl).end();
   } catch (err) {
@@ -111,3 +113,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+

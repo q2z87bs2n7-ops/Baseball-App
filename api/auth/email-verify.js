@@ -47,13 +47,15 @@ export default async function handler(req, res) {
     // Delete the used token
     await kv.del(tokenKey);
 
-    // Generate or retrieve user ID
-    const userIdKey = `email_user_map:${email}`;
-    let userId = await kv.get(userIdKey);
+    // Check if this email is already linked to a user
+    const emailMapKey = `email_map:${email}`;
+    let userId = await kv.get(emailMapKey);
 
     if (!userId) {
+      // Not linked yet — generate new user ID
       userId = generateUserId();
-      await kv.set(userIdKey, userId);
+      // Store the email mapping
+      await kv.set(emailMapKey, userId);
     } else {
       userId = userId.toString();
     }
