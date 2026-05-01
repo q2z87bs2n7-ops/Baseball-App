@@ -725,7 +725,11 @@
           </div>
           <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.6</div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
+          <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.7</div>
       </div>
     </div>
   </div>
@@ -1191,6 +1195,11 @@ let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 let screenWakeLock=null;
+
+// ── Session Storage & Sync globals ────────────────────────────────────────────
+let mlbSessionToken=null;
+let mlbAuthUser=null;
+let mlbSyncInterval=null;
 
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null;
@@ -3342,6 +3351,7 @@ function collectCard(data, force) {
   }
   saveCollection(col);
   updateCollectionUI();
+  if(mlbSessionToken)syncCollection();
 }
 
 async function fetchCareerStats(playerId, position) {
@@ -4097,7 +4107,7 @@ function toggleColorLock(enable){
   document.getElementById('lockThemeToggle').checked=devColorLocked;
 }
 
-function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);}
+function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);localStorage.setItem('mlb_sound_settings',JSON.stringify(soundSettings));if(mlbSessionToken)syncSettings();}
 function playSound(type){
   if (!soundSettings.master||!soundSettings[type]) return;
   if(type==='hr')playHrSound();else if(type==='run')playRunSound();else if(type==='risp')playRispSound();
@@ -4211,6 +4221,97 @@ function toggleInvert(){
   applyTeamTheme(activeTeam);
   loadTodayGame();loadNextGame();
   if(mediaEnabled&&document.getElementById('media').classList.contains('active'))loadMedia();
+  if(mlbSessionToken)syncSettings();
+}
+
+// ── Session & Sync Functions ──────────────────────────────────────────────────
+function signInWithGitHub(){
+  var redirectUrl=encodeURIComponent(window.location.origin+window.location.pathname);
+  window.location=(window.API_BASE||'')+'/api/auth/github?redirect='+redirectUrl;
+}
+function signInWithEmail(){
+  var email=prompt('Enter your email to receive a sign-in link:');
+  if(!email||!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))return alert('Invalid email');
+  fetch((window.API_BASE||'')+'/api/auth/email-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}).then(r=>r.json()).then(d=>{if(d.error)alert('Error: '+d.error);else alert(d.message);}).catch(e=>alert('Network error'));
+}
+function signOut(){
+  if(!confirm('Sign out and disconnect sync?'))return;
+  mlbSessionToken=null;mlbAuthUser=null;
+  localStorage.removeItem('mlb_session_token');localStorage.removeItem('mlb_auth_user');
+  clearInterval(mlbSyncInterval);mlbSyncInterval=null;
+  updateSyncUI();
+}
+function updateSyncUI(){
+  var panel=document.getElementById('syncStatus');
+  if(!panel)return;
+  if(mlbSessionToken&&mlbAuthUser){
+    panel.innerHTML='<div style="font-size:.72rem;color:var(--text)">✓ Synced · '+mlbAuthUser+'</div><button onclick="signOut()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer">Sign Out</button>';
+  }else{
+    panel.innerHTML='<button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">🔐 Sign in with GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;margin-top:6px;text-align:left">✉️ Sign in with Email</button>';
+  }
+}
+async function syncCollection(){
+  if(!mlbSessionToken)return;
+  try{
+    var local=loadCollection();
+    var r=await fetch((window.API_BASE||'')+'/api/collection/sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({slot:'',card:{}})});
+    if(r.ok){
+      var data=await r.json();
+      if(data.collection){
+        saveCollection(data.collection);
+        console.log('[Sync] Collection synced');
+      }
+    }
+  }catch(e){console.error('[Sync] Collection error',e);}
+}
+async function syncSettings(){
+  if(!mlbSessionToken)return;
+  try{
+    var data={sound:soundSettings,theme:localStorage.getItem('mlb_theme'),invert:localStorage.getItem('mlb_invert'),timestamp:Date.now()};
+    var r=await fetch((window.API_BASE||'')+'/api/settings/sync',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify(data)});
+    if(r.ok){console.log('[Sync] Settings synced');}
+  }catch(e){console.error('[Sync] Settings error',e);}
+}
+async function mergeCollectionOnSignIn(){
+  if(!mlbSessionToken)return;
+  try{
+    var r=await fetch((window.API_BASE||'')+'/api/collection/sync?token='+mlbSessionToken);
+    if(r.ok){
+      var data=await r.json();
+      if(data.collection&&Object.keys(data.collection).length>0){
+        var local=loadCollection();
+        var merged=mergeCollectionSlots(local,data.collection);
+        saveCollection(merged);
+        console.log('[Sync] Merged',Object.keys(merged).length,'cards from server');
+      }
+    }
+  }catch(e){console.error('[Sync] Merge error',e);}
+}
+function mergeCollectionSlots(local,remote){
+  function tierRank(t){var r={legendary:4,epic:3,rare:2,common:1};return r[t]||0;}
+  var merged={...local,...remote};
+  Object.keys(local).forEach(k=>{
+    if(remote[k]){
+      var lr=tierRank(local[k].tier),rr=tierRank(remote[k].tier);
+      if(lr>rr){merged[k]=local[k];}
+      else if(rr>lr){merged[k]=remote[k];}
+      else{
+        var newer=local[k].collectedAt>=remote[k].collectedAt?local[k]:remote[k];
+        var em=new Map();
+        (local[k].events||[]).forEach(e=>em.set(e.date+':'+e.badge,e));
+        (remote[k].events||[]).forEach(e=>em.set(e.date+':'+e.badge,e));
+        var events=Array.from(em.values()).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
+        merged[k]={...newer,events:events};
+      }
+    }
+  });
+  return merged;
+}
+function startSyncInterval(){
+  if(mlbSyncInterval)return;
+  mlbSyncInterval=setInterval(async()=>{
+    syncCollection();syncSettings();
+  },30000);
 }
 
 function buildTeamSelect(){
@@ -4979,6 +5080,26 @@ function togglePush(){
 
 (async function(){
   var sv=function(k){return localStorage.getItem(k);};
+  // Restore soundSettings from localStorage
+  if(sv('mlb_sound_settings')){try{soundSettings=JSON.parse(sv('mlb_sound_settings'));}catch(e){}}
+  // Restore session token
+  mlbSessionToken=sv('mlb_session_token');mlbAuthUser=sv('mlb_auth_user');
+  // Handle auth from OAuth redirect
+  var params=new URLSearchParams(window.location.search);
+  var authToken=params.get('auth_token'),authMethod=params.get('auth_method');
+  if(authToken&&authMethod){
+    mlbSessionToken=authToken;
+    localStorage.setItem('mlb_session_token',authToken);
+    if(authMethod==='github'){mlbAuthUser=params.get('github_login')||'GitHub User';}
+    else if(authMethod==='email'){mlbAuthUser=params.get('email')||'Email User';}
+    localStorage.setItem('mlb_auth_user',mlbAuthUser);
+    // Clean up URL
+    window.history.replaceState({},'',window.location.pathname);
+    await mergeCollectionOnSignIn();
+    startSyncInterval();
+  }else if(mlbSessionToken){
+    startSyncInterval();
+  }
   if(sv('mlb_team'))activeTeam=TEAMS.find(t=>t.id===parseInt(sv('mlb_team')))||activeTeam;
   if(sv('mlb_theme')&&sv('mlb_theme')!=='0'){
     if(sv('mlb_theme')==='-1'){themeOverride=MLB_THEME;}
@@ -4993,6 +5114,7 @@ function togglePush(){
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
   updateCollectionUI();
+  updateSyncUI();
   pulseInitialized=true;initLeaguePulse();
 })();
 
