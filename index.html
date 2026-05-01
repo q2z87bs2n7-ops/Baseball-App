@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.3</title>
+<title>MLB Tracker v3.9.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -855,9 +855,38 @@
 }
 
 /* Team-tinted score chips (.fc-card team boxes) carry an inline
-   `box-shadow:inset 0 -2px 0 <teamColor>`. Override the painted shadow
-   on those chips so they read neutral inside Pulse. */
+   `box-shadow:inset 0 -2px 0 <teamColor>` (compact card) or -3px (overlay).
+   Override both so they read neutral. */
+#pulse .fc-card span[style*="box-shadow:inset 0 -2px 0"],
 #pulse .fc-overlay-card span[style*="box-shadow:inset 0 -3px 0"] {
+  box-shadow: inset 0 -3px 0 var(--pulse-text) !important;
+  opacity: 0.92;
+}
+
+/* === PULSE: Focus Overlay (full-screen modal, lives outside #pulse) =====
+   #focusOverlay is a top-level sibling of #pulse so it doesn't inherit
+   --pulse-* vars. Redeclare the neutral surface tokens here, then apply
+   the same three overrides as the in-rail card above. */
+#focusOverlay {
+  --pulse-surface-1:     #0e1320;
+  --pulse-border:        rgba(255,255,255,0.07);
+  --pulse-border-strong: rgba(255,255,255,0.14);
+  --pulse-text:          #eef1f6;
+}
+#focusOverlayCard .fc-overlay-card {
+  background: var(--pulse-surface-1) !important;
+  border-color: var(--pulse-border) !important;
+  color: var(--pulse-text);
+}
+#focusOverlayCard .fc-overlay-card > div[style*="height:3px"][style*="linear-gradient"] {
+  background: linear-gradient(90deg,
+    var(--pulse-border-strong) 0%,
+    var(--pulse-border-strong) 50%,
+    var(--pulse-text) 50%,
+    var(--pulse-text) 100%) !important;
+  opacity: 0.55;
+}
+#focusOverlayCard span[style*="box-shadow:inset 0 -3px 0"] {
   box-shadow: inset 0 -3px 0 var(--pulse-text) !important;
   opacity: 0.92;
 }
@@ -1080,7 +1109,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.4</div>
       </div>
     </div>
   </div>
