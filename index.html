@@ -1117,6 +1117,7 @@
 </div>
 
 <script>
+const DEBUG=false; // Set true locally to enable verbose console logging
 const SEASON=2026,WC_SPOTS=3,MLB_BASE='https://statsapi.mlb.com/api/v1';
 const TEAMS=[
   {id:121,espnId:21,name:'New York Mets',short:'Mets',division:'National League East',league:'NL',primary:'#002D72',secondary:'#FF5910',youtubeUC:'UCgIMbGazP0uBDy9JVCqBUaA'},
@@ -1513,7 +1514,7 @@ async function loadDailyEventsJSON(){
         }
       });
     }
-    console.log('Demo: Loaded daily-events.json —',Object.keys(data.gameStates).length,'games,',data.feedItems.length,'plays');
+    if(DEBUG) console.log('Demo: Loaded daily-events.json —',Object.keys(data.gameStates).length,'games,',data.feedItems.length,'plays');
     return data;
   }catch(e){
     console.error('Demo: Failed to load daily-events.json',e);
@@ -1655,7 +1656,7 @@ async function initDemo() {
   demoPlayIdx=0;
   // Demo starts at first play (game start notification), carousel context loaded from entire JSON dataset
   demoCurrentTime=demoPlayQueue.length>0?demoPlayQueue[0].ts:0;
-  console.log('Demo: Loaded',enabledGames.size,'games from',localDateStr(demoDate),',',feedItems.length,'feed items,',demoPlayQueue.length,'plays queued');
+  if(DEBUG) console.log('Demo: Loaded',enabledGames.size,'games from',localDateStr(demoDate),',',feedItems.length,'feed items,',demoPlayQueue.length,'plays queued');
   // Clear real feed DOM without rendering (pollDemoFeeds will add items via addFeedItem)
   var feed=document.getElementById('feed');
   if(feed) feed.innerHTML='';
@@ -1676,22 +1677,22 @@ async function loadDemoGames() {
     for(var dayOffset=1;dayOffset<=7;dayOffset++){
       var d=new Date();d.setDate(d.getDate()-dayOffset);
       var dateStr=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
-      console.log('Demo: Fetching games from',dateStr);
+      if(DEBUG) console.log('Demo: Fetching games from',dateStr);
       var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1');
       if(!r.ok) continue;
       var data=await r.json();
       var allGames=data.games||[];
-      console.log('Demo: Found',allGames.length,'total games on',dateStr);
+      if(DEBUG) console.log('Demo: Found',allGames.length,'total games on',dateStr);
       var games=allGames.filter(function(g){return g.status.abstractGameState==='Final';});
       if(games.length>0){
-        console.log('Demo: Loaded',games.length,'Final games from',dateStr);
+        if(DEBUG) console.log('Demo: Loaded',games.length,'Final games from',dateStr);
         demoGamesCache=games.map(function(g){
           return{gamePk:g.gamePk,gameDateTime:g.gameDateTime,awayTeam:{id:g.teams.away.team.id,name:g.teams.away.name,shortName:g.teams.away.shortName},homeTeam:{id:g.teams.home.team.id,name:g.teams.home.name,shortName:g.teams.home.shortName},venue:g.venue||'',gameDetails:g};
         });
         return demoGamesCache;
       }
     }
-    console.warn('Demo: No Final games found in past 7 days');
+    if(DEBUG) console.warn('Demo: No Final games found in past 7 days');
     return [];
   }catch(e){
     console.error('Demo: loadDemoGames error',e.message);
@@ -1726,12 +1727,12 @@ async function buildDemoPlayQueue(games) {
         });
       }
     }catch(e){
-      console.warn('Demo: playByPlay error for gamePk',g.gamePk,e.message);
+      if(DEBUG) console.warn('Demo: playByPlay error for gamePk',g.gamePk,e.message);
     }
   }
   demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
   demoPlayIdx=0;
-  console.log('Demo: Built queue with',demoPlayQueue.length,'plays (real API data only)');
+  if(DEBUG) console.log('Demo: Built queue with',demoPlayQueue.length,'plays (real API data only)');
 }
 
 async function pollDemoFeeds(){
@@ -2022,7 +2023,7 @@ function renderSideRailGames() {
   var upcomingHtml='', completedHtml='';
   var upcomingGames=[], completedGames=[];
   var filterDate=demoMode?localDateStr(demoDate):localDateStr(new Date());
-  if(demoMode) console.log('Demo: renderSideRailGames filtering to date',filterDate,'from',Object.keys(gameStates).length,'total games');
+  if(demoMode&&DEBUG) console.log('Demo: renderSideRailGames filtering to date',filterDate,'from',Object.keys(gameStates).length,'total games');
   Object.values(gameStates).forEach(function(g) {
     if(demoMode&&localDateStr(new Date(g.gameDateMs))!==filterDate) return;
     if (g.status==='Live') return;
@@ -2089,13 +2090,13 @@ function fetchMLBNewsFeed() {
           feed.push({title:title,link:link,image:imageUrl});
         });
         if(feed.length>0) {
-          console.log('[📰 News] ✅ ESPN JSON loaded successfully');
+          if(DEBUG) console.log('[📰 News] ✅ ESPN JSON loaded successfully');
           return feed;
         } else {
           throw new Error('No articles in ESPN response');
         }
       }catch(e){
-        console.log('[📰 News] ❌ ESPN parse error:',e);
+        if(DEBUG) console.log('[📰 News] ❌ ESPN parse error:',e);
         throw e;
       }
     });
@@ -2110,13 +2111,13 @@ function fetchMLBNewsFeed() {
         return {title:a.title,link:a.link||'https://mlb.com',image:a.image||''};
       });
       if(feed.length>0) {
-        console.log('[📰 News] ✅ MLB RSS proxy loaded successfully');
+        if(DEBUG) console.log('[📰 News] ✅ MLB RSS proxy loaded successfully');
         return feed;
       } else {
         throw new Error('No items in proxy response');
       }
     }).catch(function(e){
-      console.log('[📰 News] ❌ MLB RSS proxy error:',e);
+      if(DEBUG) console.log('[📰 News] ❌ MLB RSS proxy error:',e);
       throw e;
     });
   }
@@ -2124,12 +2125,12 @@ function fetchMLBNewsFeed() {
     mlbNewsFeed=feed;
     renderMLBNewsFeed();
   }).catch(function(proxyErr){
-    console.log('[📰 News] MLB RSS failed, trying ESPN fallback...');
+    if(DEBUG) console.log('[📰 News] MLB RSS failed, trying ESPN fallback...');
     tryESPN().then(function(feed){
       mlbNewsFeed=feed;
       renderMLBNewsFeed();
     }).catch(function(e){
-      console.log('[📰 News] ⚠️ All news sources failed');
+      if(DEBUG) console.log('[📰 News] ⚠️ All news sources failed');
       showNewsUnavailable();
     });
   });
@@ -2465,7 +2466,7 @@ function genYesterdayHighlights(){
 }
 
 async function fetchMissingHRBatterStats(){
-  if(demoMode){console.log('Demo: Skipping fetchMissingHRBatterStats API call');return;}
+  if(demoMode){if(DEBUG) console.log('Demo: Skipping fetchMissingHRBatterStats API call');return;}
   var ids=[];
   feedItems.forEach(function(item){
     if(!item.data||item.data.event!=='Home Run') return;
@@ -2485,7 +2486,7 @@ async function fetchMissingHRBatterStats(){
 }
 
 async function loadProbablePitcherStats(){
-  if(demoMode){console.log('Demo: Skipping loadProbablePitcherStats API call');return;}
+  if(demoMode){if(DEBUG) console.log('Demo: Skipping loadProbablePitcherStats API call');return;}
   var ids=[];
   Object.values(storyCarouselRawGameData).forEach(function(raw){
     var awayPP=raw.teams&&raw.teams.away&&raw.teams.away.probablePitcher;
@@ -2507,7 +2508,7 @@ async function loadProbablePitcherStats(){
 function genProbablePitchers(){
   var out=[], today=localDateStr(getEffectiveDate());
   var games=[];
-  if(demoMode) console.log('Demo: genProbablePitchers filtering to date',today,'found',Object.values(gameStates).filter(g=>localDateStr(new Date(g.gameDateMs))===today).length,'matching games');
+  if(demoMode&&DEBUG) console.log('Demo: genProbablePitchers filtering to date',today,'found',Object.values(gameStates).filter(g=>localDateStr(new Date(g.gameDateMs))===today).length,'matching games');
 
   // Try to find today's games from gameStates (already fetched with probablePitcher by pollLeaguePulse)
   Object.values(gameStates).forEach(function(g){
@@ -2876,7 +2877,7 @@ async function loadYesterdayCache(){
 }
 
 async function loadDailyLeaders(){
-  if(demoMode){console.log('Demo: Skipping loadDailyLeaders API call');return;}
+  if(demoMode){if(DEBUG) console.log('Demo: Skipping loadDailyLeaders API call');return;}
   try{
     var rH=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=homeRuns,battingAverage,rbi,stolenBases&season='+SEASON+'&statGroup=hitting&limit=5');
     var dH=await rH.json();
@@ -3181,7 +3182,7 @@ function replayHRCard(itemIndex) {
   var badgeText = play.desc.includes('walk-off') ? 'WALK-OFF HOME RUN!' : '💥 HOME RUN!';
 
   showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, null, null, badgeText, item.gamePk);
-  console.log('Replaying HR:', batterName, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
+  if(DEBUG) console.log('Replaying HR:', batterName, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
 // DEBUG: Replay most recent RBI card from live feed (press Shift+E)
@@ -3195,7 +3196,7 @@ function replayRBICard(itemIndex) {
   var gs = gameStates[item.gamePk];
   if (!gs) { alert('Game state not found'); return; }
   showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning, item.gamePk);
-  console.log('Replaying RBI:', play.batterName, play.event, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
+  if(DEBUG) console.log('Replaying RBI:', play.batterName, play.event, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
 function baseDiamondSvg(on1,on2,on3) {
@@ -3620,7 +3621,7 @@ function toggleDevTools(){var p=document.getElementById('devToolsPanel');var ope
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
     devTuning[param]=val==='true';
-    console.log('✓ Bases Loaded '+(devTuning[param]?'enabled':'disabled'));
+    if(DEBUG) console.log('✓ Bases Loaded '+(devTuning[param]?'enabled':'disabled'));
     return;
   }
   var parsed=parseInt(val,10);
@@ -3629,9 +3630,9 @@ function updateTuning(param,val){
   if(param==='rotateMs'){
     if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
     if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
-    console.log('✓ Carousel rotation updated to '+parsed+'ms');
+    if(DEBUG) console.log('✓ Carousel rotation updated to '+parsed+'ms');
   }else{
-    console.log('✓ '+param+' updated to '+parsed);
+    if(DEBUG) console.log('✓ '+param+' updated to '+parsed);
   }
 }
 
@@ -3654,7 +3655,7 @@ function resetTuning(){
   document.getElementById('tuneFocusAlertCooldown').value=devTuningDefaults.focus_alert_cooldown;
   if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
   if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
-  console.log('✓ Dev tuning reset to defaults');
+  if(DEBUG) console.log('✓ Dev tuning reset to defaults');
 }
 
 function updateColorOverride(context,colorVar,value){
@@ -3663,7 +3664,7 @@ function updateColorOverride(context,colorVar,value){
     if(context==='app') applyTeamTheme(activeTeam);
     else applyPulseMLBTheme();
   }
-  console.log('✓ '+context+' theme.'+colorVar+' → '+value);
+  if(DEBUG) console.log('✓ '+context+' theme.'+colorVar+' → '+value);
 }
 
 function captureCurrentTheme(context){
@@ -3676,7 +3677,7 @@ function captureCurrentTheme(context){
     var el=document.getElementById(elId);
     if(el) el.value=cssVal;
   });
-  console.log('✓ Captured current '+context+' theme colors');
+  if(DEBUG) console.log('✓ Captured current '+context+' theme colors');
 }
 
 function toggleColorLock(enable){
@@ -3685,11 +3686,11 @@ function toggleColorLock(enable){
     if(!devColorOverrides.app.primary) captureCurrentTheme('app');
     if(!devColorOverrides.pulse.primary) captureCurrentTheme('pulse');
     applyTeamTheme(activeTeam);
-    console.log('✓ Theme lock enabled — auto-switching disabled');
+    if(DEBUG) console.log('✓ Theme lock enabled — auto-switching disabled');
   }else{
     applyTeamTheme(activeTeam);
     applyPulseMLBTheme();
-    console.log('✓ Theme lock disabled — auto-switching restored');
+    if(DEBUG) console.log('✓ Theme lock disabled — auto-switching restored');
   }
   document.getElementById('lockThemeToggle').checked=devColorLocked;
 }
