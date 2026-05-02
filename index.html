@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.18.1</title>
+<title>MLB Pulse v3.18.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -343,6 +343,13 @@
 .ptb-bolt { color: var(--accent); font-size: 1rem; line-height: 1; }
 .ptb-brand { font-size: .78rem; font-weight: 800; letter-spacing: .14em; color: var(--text); }
 .ptb-tagline { font-size: .72rem; color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptb-lens { flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px 4px 12px; cursor: pointer; color: var(--muted); transition: border-color .15s, color .15s; }
+.ptb-lens:hover { border-color: var(--accent); color: var(--text); }
+.ptb-lens.on { border-color: var(--accent); color: var(--text); }
+.ptb-lens-label { font-size: .66rem; font-weight: 800; letter-spacing: .14em; }
+.ptb-lens-track { position: relative; width: 34px; height: 16px; background: var(--card2); border-radius: 999px; transition: background .15s; }
+.ptb-lens.on .ptb-lens-track { background: var(--accent); }
+.ptb-lens-knob { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--text); transition: left .15s; }
 
 #gameTicker {
   position: sticky;
@@ -757,7 +764,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18.2</div>
       </div>
     </div>
   </div>
@@ -925,6 +932,10 @@
       <span class="ptb-brand">MLB PULSE</span>
       <span class="ptb-tagline" id="ptbTagline">Every game, one feed.</span>
     </div>
+    <button id="myTeamLensBtn" class="ptb-lens" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
+      <span class="ptb-lens-label">MY TEAM</span>
+      <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
+    </button>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="focusMiniBar" style="display:none"></div>
@@ -1281,6 +1292,7 @@ const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
 let pulseInitialized=false;
 let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
+let myTeamLens=(localStorage.getItem('mlb_my_team_lens')==='1');
 let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
@@ -1502,7 +1514,7 @@ async function pollLeaguePulse() {
           venueName:g.venue?g.venue.name:null,
           onFirst:!!(ls.offense&&ls.offense.first), onSecond:!!(ls.offense&&ls.offense.second), onThird:!!(ls.offense&&ls.offense.third),
         };
-        enabledGames.add(pk);
+        if (!myTeamLens || gameStates[pk].awayId===activeTeam.id || gameStates[pk].homeId===activeTeam.id) enabledGames.add(pk);
         // Synthesise historical status items so they appear on first load (no sounds/alerts)
         var g0=gameStates[pk], ts0=gameDateMs?new Date(gameDateMs):new Date();
         if (newStatus==='Final') {
@@ -4161,6 +4173,36 @@ function toggleGame(gamePk) {
   updateFeedEmpty(); renderTicker();
 }
 
+function myTeamGamePks() {
+  var out=new Set();
+  Object.values(gameStates).forEach(function(g){
+    if (g.awayId===activeTeam.id||g.homeId===activeTeam.id) out.add(g.gamePk);
+  });
+  return out;
+}
+function applyMyTeamLens(on) {
+  myTeamLens=!!on;
+  localStorage.setItem('mlb_my_team_lens', myTeamLens?'1':'0');
+  var btn=document.getElementById('myTeamLensBtn'),knob=document.getElementById('myTeamLensKnob');
+  if (btn) btn.classList.toggle('on', myTeamLens);
+  if (knob) knob.style.left=myTeamLens?'21px':'2px';
+  if (myTeamLens) {
+    var keep=myTeamGamePks();
+    enabledGames=new Set();
+    keep.forEach(function(pk){ enabledGames.add(pk); });
+    document.querySelectorAll('[data-gamepk]').forEach(function(el){
+      var pk=+el.getAttribute('data-gamepk');
+      el.classList.toggle('feed-hidden', !keep.has(pk));
+    });
+  } else {
+    Object.keys(gameStates).forEach(function(pk){ enabledGames.add(+pk); });
+    document.querySelectorAll('[data-gamepk]').forEach(function(el){ el.classList.remove('feed-hidden'); });
+  }
+  if (typeof renderTicker==='function') renderTicker();
+  updateFeedEmpty();
+}
+function toggleMyTeamLens(){ applyMyTeamLens(!myTeamLens); }
+
 function updateFeedEmpty() {
   var feed=document.getElementById('feed');
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
@@ -5242,6 +5284,7 @@ function switchTeam(teamId){
   loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
   if(document.getElementById('schedule').classList.contains('active'))loadSchedule();
   if(document.getElementById('media').classList.contains('active'))loadMedia();
+  if(myTeamLens) applyMyTeamLens(true);
 }
 
 async function requestScreenWakeLock(){
@@ -6036,6 +6079,7 @@ function togglePush(){
   applyPulseMLBTheme();
   requestScreenWakeLock();
   refreshPulseTagline();
+  applyMyTeamLens(myTeamLens);
 })();
 
 document.addEventListener('visibilitychange',function(){
