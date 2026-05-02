@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.18.4</title>
+<title>MLB Pulse v3.18.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -764,7 +764,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18.5</div>
       </div>
     </div>
   </div>
@@ -3064,6 +3064,65 @@ function genLiveWinProbStories(){
   return out;
 }
 
+function genDailyIntro(){
+  var todayStr=localDateStr(getEffectiveDate());
+  var todayGames=Object.values(gameStates).filter(function(g){
+    return g.gameDateMs && localDateStr(new Date(g.gameDateMs))===todayStr;
+  });
+  if(!todayGames.length) return [];
+  var liveCount =todayGames.filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';}).length;
+  var finalCount=todayGames.filter(function(g){return g.status==='Final';}).length;
+  if(liveCount>=2 || finalCount>=Math.ceil(todayGames.length/2)) return [];
+
+  var hotStreak=null;
+  if(scheduleData && scheduleData.length){
+    var byTeam={};
+    scheduleData.filter(function(g){return g.status.abstractGameState==='Final';}).forEach(function(g){
+      [g.teams.away,g.teams.home].forEach(function(side){
+        var tid=side.team.id;
+        if(!byTeam[tid]) byTeam[tid]={id:tid,name:side.team.name,short:(TEAMS.find(function(t){return t.id===tid;})||{}).short,games:[]};
+        var isHome=(side===g.teams.home);
+        var my =isHome?g.teams.home.score:g.teams.away.score;
+        var opp=isHome?g.teams.away.score:g.teams.home.score;
+        if(my!=null&&opp!=null) byTeam[tid].games.push({win:my>opp,date:new Date(g.gameDate)});
+      });
+    });
+    Object.values(byTeam).forEach(function(team){
+      team.games.sort(function(a,b){return b.date-a.date;});
+      var s=0; for(var i=0;i<team.games.length;i++){ if(team.games[i].win) s++; else break; }
+      if(s>=5 && (!hotStreak||s>hotStreak.streak)) hotStreak={team:team,streak:s};
+    });
+  }
+
+  var marquee=null;
+  todayGames.forEach(function(g){
+    var raw=storyCarouselRawGameData&&storyCarouselRawGameData[g.gamePk];
+    if(!raw||!raw.teams) return;
+    var aPP=raw.teams.away&&raw.teams.away.probablePitcher;
+    var hPP=raw.teams.home&&raw.teams.home.probablePitcher;
+    if(!aPP||!hPP) return;
+    var aW=(probablePitcherStatsCache[aPP.id]||{}).wins||0;
+    var hW=(probablePitcherStatsCache[hPP.id]||{}).wins||0;
+    var combined=aW+hW;
+    if(!marquee||combined>marquee.combined){
+      marquee={away:aPP.fullName,home:hPP.fullName,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,combined:combined};
+    }
+  });
+
+  var n=todayGames.length, headline, sub;
+  if(hotStreak){
+    headline=hotStreak.team.name+' rolling — '+hotStreak.streak+' straight wins.';
+    sub=n+' games tonight · '+(hotStreak.team.short||hotStreak.team.name)+' on fire';
+  } else if(marquee && marquee.combined>=8){
+    headline=marquee.away.split(' ').pop()+' vs '+marquee.home.split(' ').pop()+' is the matchup tonight.';
+    sub=n+' games · '+marquee.awayAbbr+' @ '+marquee.homeAbbr+' headlines';
+  } else {
+    headline=n+' games on the slate. Pulse is on.';
+    sub='Live play-by-play across every game';
+  }
+  return [makeStory('dailyintro_'+todayStr,'editorial',4,50,'📰',headline,sub,'today',null,new Date(),4*60*60000,0.4)];
+}
+
 async function buildStoryPool(){
   var now=Date.now();
   if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
@@ -3081,7 +3140,7 @@ async function buildStoryPool(){
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
     wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories(),
-    genLiveWinProbStories()
+    genLiveWinProbStories(),genDailyIntro()
   );
   storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
