@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.11</title>
+<title>MLB Tracker v3.11.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.11</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.11.1</div>
       </div>
     </div>
   </div>
@@ -968,15 +968,13 @@
 </div>
 <div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--text);white-space:nowrap"></div>
 
-<div id="signInCTA" onclick="if(event.target.id==='signInCTA')closeSignInCTA()" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:360px;box-shadow:0 20px 25px rgba(0,0,0,.3)">
-    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:12px">💾 Save Your Collection</div>
-    <div style="font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:20px">Sign in to sync your collected cards across devices and days. Your collection is only local until you sign in.</div>
-    <div style="display:flex;gap:10px">
-      <button onclick="signInWithGitHub();closeSignInCTA()" style="flex:1;background:var(--primary);color:var(--header-text);font-size:14px;font-weight:600;padding:10px 16px;border:none;border-radius:8px;cursor:pointer">Sign In</button>
-      <button onclick="closeSignInCTA()" style="flex:1;background:var(--card2);color:var(--text);font-size:14px;font-weight:600;padding:10px 16px;border:1px solid var(--border);border-radius:8px;cursor:pointer">Later</button>
-    </div>
+<div id="signInCTA" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);z-index:950;max-width:320px;width:calc(100% - 32px);background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="flex:1;font-size:13px;color:var(--muted);line-height:1.4">☁️ Sync your collection — sign in to save cards across devices</div>
+    <button onclick="signInWithGitHub();closeSignInCTA()" style="flex-shrink:0;background:var(--primary);color:var(--header-text);font-size:12px;font-weight:600;padding:6px 12px;border:none;border-radius:20px;cursor:pointer;white-space:nowrap">Sign In</button>
+    <button onclick="closeSignInCTA()" style="flex-shrink:0;background:none;border:none;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:2px 4px" aria-label="Dismiss">✕</button>
   </div>
+  <div id="signInCTAProgress" style="margin-top:8px;height:2px;background:var(--border);border-radius:1px;overflow:hidden"><div id="signInCTABar" style="height:100%;width:100%;background:var(--primary);transform-origin:left;transform:scaleX(1);transition:transform 8s linear"></div></div>
 </div>
 
 <div id="devToolsPanel">
@@ -1269,7 +1267,7 @@ let screenWakeLock=null;
 let mlbSessionToken=null;
 let mlbAuthUser=null;
 let mlbSyncInterval=null;
-let shownSignInCTA=false;
+let shownSignInCTA=false;let signInCTACardCount=0;let signInCTATimer=null;
 
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null,storyPoolTimer=null;
@@ -4964,13 +4962,30 @@ function startSyncInterval(){
   },30000);
 }
 function showSignInCTA(){
-  if(!mlbSessionToken&&!shownSignInCTA){
-    document.getElementById('signInCTA').style.display='flex';
-    shownSignInCTA=true;
-  }
+  if(mlbSessionToken||shownSignInCTA)return;
+  signInCTACardCount++;
+  if(signInCTACardCount<3)return;
+  shownSignInCTA=true;
+  var el=document.getElementById('signInCTA');
+  el.style.display='block';
+  el.style.pointerEvents='auto';
+  // Slide-up + fade-in on next frame
+  requestAnimationFrame(function(){
+    el.style.opacity='1';
+    el.style.transform='translateX(-50%) translateY(0)';
+    // Progress bar shrink over 8s
+    var bar=document.getElementById('signInCTABar');
+    if(bar){requestAnimationFrame(function(){bar.style.transform='scaleX(0)'});}
+  });
+  signInCTATimer=setTimeout(closeSignInCTA,8000);
 }
 function closeSignInCTA(){
-  document.getElementById('signInCTA').style.display='none';
+  if(signInCTATimer){clearTimeout(signInCTATimer);signInCTATimer=null;}
+  var el=document.getElementById('signInCTA');
+  el.style.opacity='0';
+  el.style.transform='translateX(-50%) translateY(16px)';
+  el.style.pointerEvents='none';
+  setTimeout(function(){el.style.display='none';},260);
 }
 
 function buildTeamSelect(){
