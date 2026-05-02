@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.17</title>
+<title>MLB Pulse v3.18</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MLB Tracker">
+<meta name="apple-mobile-web-app-title" content="MLB Pulse">
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#002D72" id="themeColorMeta">
@@ -672,9 +672,9 @@
   <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span></div>
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
   <nav>
-    <button class="active" onclick="showSection('home',this)">🏠<span class="nav-label"> Home</span></button>
+    <button class="active" onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
+    <button onclick="showSection('home',this)">🏠<span class="nav-label"> My Team</span></button>
     <button onclick="showSection('league',this)">🌐<span class="nav-label"> League</span></button>
-    <button onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
     <button onclick="showSection('schedule',this)">📅<span class="nav-label"> Schedule</span></button>
     <button onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
     <button onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
@@ -743,14 +743,14 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.17</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18</div>
       </div>
     </div>
   </div>
 </header>
 
 <div class="main">
-<div id="home" class="section active">
+<div id="home" class="section">
 
   <div class="grid2" style="margin-bottom:16px">
     <div id="todayGame"><div class="loading">Loading next game...</div></div>
@@ -902,7 +902,7 @@
   </div>
 </div>
 
-<div id="pulse" class="section">
+<div id="pulse" class="section active">
   <div id="pulseLeft">
   <div id="alertStack"></div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
@@ -5996,6 +5996,10 @@ function togglePush(){
   updateCollectionUI();
   updateSyncUI();
   pulseInitialized=true;initLeaguePulse();
+  // Pulse-first cold-open: mirror showSection('pulse') side-effects so theme + wake-lock match the active landing section
+  savedThemeForPulse=themeOverride;
+  applyPulseMLBTheme();
+  requestScreenWakeLock();
 })();
 
 document.addEventListener('visibilitychange',function(){
