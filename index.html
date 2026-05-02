@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.b</title>
+<title>MLB Tracker v3.10</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,6 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#002D72" id="themeColorMeta">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.light.min.js" async></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(160,100,255,0.10);--hr-border:rgba(160,100,255,0.40);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
@@ -715,12 +716,19 @@
         </div>
         <div id="radioRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">📻 Background Radio</div>
-            <div style="font-size:.68rem;color:var(--muted)" id="radioStatusText">Off · Fox Sports Radio</div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">📻 Live Game Radio</div>
+            <div style="font-size:.68rem;color:var(--muted)" id="radioStatusText">Off · Auto-pairs to focus game</div>
           </div>
           <div onclick="toggleRadio()" id="radioToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="radioToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔍 Radio Check</div>
+            <div style="font-size:.68rem;color:var(--muted)">Sweep all stations · report results</div>
+          </div>
+          <button onclick="openRadioCheck()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="display:flex;align-items:center;justify-content:space-between">
@@ -732,7 +740,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.b</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.10</div>
       </div>
     </div>
   </div>
@@ -1160,6 +1168,25 @@
     <div class="sound-row"><div class="sound-label">⚾ Game Start</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameStart',this.checked)"><span class="sound-knob"></span></label></div>
     <div class="sound-row"><div class="sound-label">🏁 Game End</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('gameEnd',this.checked)"><span class="sound-knob"></span></label></div>
     <div class="sound-row"><div class="sound-label">⚠️ Error</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('error',this.checked)"><span class="sound-knob"></span></label></div>
+  </div>
+</div>
+
+<div id="radioCheckOverlay" onclick="if(event.target===this)closeRadioCheck()" style="display:none;position:fixed;inset:0;z-index:550;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
+  <div style="width:100%;max-width:680px;max-height:90vh;background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div>
+        <div style="font-size:1rem;font-weight:800;color:var(--text)">🔍 Radio Check</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:2px">Tap ▶ to test · ✅/❌ (tap again to clear) · add notes · then Copy</div>
+      </div>
+      <button onclick="closeRadioCheck()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.85rem;padding:4px 12px;border-radius:8px;cursor:pointer;font-weight:700">✕</button>
+    </div>
+    <div id="radioCheckList" style="flex:1;overflow-y:auto;padding:8px"></div>
+    <div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;align-items:center">
+      <button onclick="radioCheckStop()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.75rem;padding:8px 12px;border-radius:8px;cursor:pointer">⏹ Stop</button>
+      <button onclick="radioCheckReset()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.75rem;padding:8px 12px;border-radius:8px;cursor:pointer">Reset</button>
+      <div style="flex:1"></div>
+      <button id="radioCheckCopyBtn" onclick="radioCheckCopy()" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.78rem;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer">📋 Copy Results</button>
+    </div>
   </div>
 </div>
 
@@ -3076,6 +3103,7 @@ function setFocusGame(pk) {
   if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
   if(focusAbortCtrl){focusAbortCtrl.abort();focusAbortCtrl=null;}
   if(focusOverlayOpen) renderFocusOverlay();
+  updateRadioForFocus();
   pollFocusLinescore();
   focusFastTimer=setInterval(pollFocusLinescore,5000);
 }
@@ -4162,23 +4190,233 @@ function confirmDevToolsChanges(){
   setTimeout(function(){btn.textContent='Confirm Changes';btn.classList.remove('applied');},1500);
 }
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
+// MLB Stats API teamId → primary flagship radio broadcast (extracted from radio.net)
+// `format`: 'hls' uses Hls.js (or native Safari); 'direct' is plain <audio> AAC/MP3
+const MLB_TEAM_RADIO={
+  108:{name:'KLAA Angels Radio',     url:'https://klaa.streamguys1.com/live',                                        format:'direct'},
+  109:{name:'KMVP Arizona Sports',   url:'https://bonneville.cdnstream1.com/2699_48.aac?kmvp',                       format:'direct'},
+  110:{name:'WJZ-FM 105.7 The Fan',  url:'https://live.amperwave.net/manifest/audacy-wjzfmaac-hlsc.m3u8',            format:'hls'},
+  111:{name:'WEEI 93.7 FM',          url:'https://live.amperwave.net/manifest/audacy-weeifmaac-hlsc.m3u8',           format:'hls'},
+  112:{name:'WSCR 670 The Score',    url:'https://live.amperwave.net/manifest/audacy-wscramaac-hlsc.m3u8',           format:'hls'},
+  113:{name:'700 WLW',               url:'https://stream.revma.ihrhls.com/zc1713/hls.m3u8',                          format:'hls'},
+  114:{name:'WTAM 1100 AM',          url:'https://stream.revma.ihrhls.com/zc1749/hls.m3u8',                          format:'hls'},
+  115:{name:'KOA 850 / 94.1',        url:'https://stream.revma.ihrhls.com/zc389',                                    format:'direct'},
+  116:{name:'WXYT 97.1 The Ticket',  url:'https://live.amperwave.net/manifest/audacy-wxytfmaac-hlsc.m3u8',           format:'hls'},
+  117:{name:'SportsTalk 790 AM',     url:'https://stream.revma.ihrhls.com/zc2257',                                   format:'direct'},
+  118:{name:'KCSP 610 Sports',       url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KCSPAMAAC.aac', format:'direct'},
+  119:{name:'KLAC AM 570 LA Sports', url:'https://stream.revma.ihrhls.com/zc189',                                    format:'direct'},
+  120:{name:'WJFK The Fan 106.7',    url:'https://live.amperwave.net/manifest/audacy-wjfkfmaac-hlsc.m3u8',           format:'hls'},
+  121:{name:'1010 WINS',             url:'https://live.amperwave.net/manifest/audacy-winsamaac-hlsc.m3u8',           format:'hls'},
+  133:{name:'WDGG The Dawg 93.7',    url:'https://ice23.securenetsystems.net/WDGG',                                  format:'direct'},
+  134:{name:'KDKA-FM 93.7 The Fan',  url:'https://live.amperwave.net/manifest/audacy-kdkafmaac-hlsc.m3u8',           format:'hls'},
+  135:{name:'KWFN 97.3 The Fan',     url:'https://live.amperwave.net/manifest/audacy-kwfnfmaac-llhlsc.m3u8',         format:'hls'},
+  136:{name:'KIRO 710 ESPN Seattle', url:'https://bonneville.cdnstream1.com/2642_48.aac',                            format:'direct'},
+  137:{name:'KNBR 104.5 / 680',      url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KNBRAMAAC.aac', format:'direct'},
+  138:{name:'KMOX NewsRadio 1120',   url:'https://live.amperwave.net/manifest/audacy-kmoxamaac-llhlsc.m3u8',         format:'hls'},
+  139:{name:'WYGM 96.9 The Game',    url:'https://stream.revma.ihrhls.com/zc601/64_1k1hau6k1qsq502/playlist.m3u8',   format:'hls'},
+  140:{name:'105.3 The Fan',         url:'https://live.amperwave.net/manifest/audacy-krldfmaac-hlsc.m3u8',           format:'hls'},
+  141:{name:'CJCL Sportsnet 590',    url:'https://rogers-hls.leanstream.co/rogers/tor590.stream/playlist.m3u8',      format:'hls'},
+  142:{name:'WCCO News Talk 830',    url:'https://live.amperwave.net/manifest/audacy-wccoamaac-llhlsc.m3u8',         format:'hls'},
+  143:{name:'94 WIP Sportsradio',    url:'https://live.amperwave.net/manifest/audacy-wipfmaac-hlsc.m3u8',            format:'hls'},
+  144:{name:'WCNN 680 The Fan',      url:'https://stream.zeno.fm/q9458433dm8uv',                                     format:'direct'},
+  145:{name:'WMVP ESPN 1000 AM',     url:'https://live.amperwave.net/manifest/goodkarma-wmvpamaac-hlsc1.m3u8',       format:'hls'},
+  146:{name:'WQAM 560 AM',           url:'https://live.amperwave.net/manifest/audacy-wqamamaac-hlsc.m3u8',           format:'hls'},
+  147:{name:'WFAN 66 / 101.9',       url:'https://live.amperwave.net/manifest/audacy-wfanamaac-hlsc.m3u8',           format:'hls'},
+  158:{name:'WTMJ Newsradio 620',    url:'https://live.amperwave.net/manifest/goodkarma-wtmjamaac-hlsc.m3u8',        format:'hls'}
+};
+const FALLBACK_RADIO={name:'Fox Sports Radio',url:'https://ais-sa1.streamon.fm/7852_128k.aac',format:'direct'};
+// Approved team IDs whose flagship feeds verifiably play live game audio.
+// Source of truth: in-app Radio Check sweep — last updated 2026-05-02.
+// Update this Set as the sweep grows; non-approved teams skip to Fox Sports fallback.
+const APPROVED_RADIO_TEAM_IDS=new Set([108,114,116,117,140,142,144,146,147]);
 var radioAudio=null;
-var RADIO_URL='https://ais-sa1.streamon.fm/7852_128k.aac';
-function toggleRadio(){if(radioAudio&&!radioAudio.paused){stopRadio();}else{startRadio();}}
-function startRadio(){
-  if(!radioAudio){radioAudio=new Audio(RADIO_URL);}
-  radioAudio.play().then(function(){setRadioUI(true);}).catch(function(err){
-    console.error('Radio play failed:',err);
-    alert('Radio failed to start: '+err.message);
-    setRadioUI(false);
-  });
+var radioHls=null;
+var radioCurrentTeamId=null;  // teamId whose broadcast is currently loaded; null = fallback
+function pickRadioForFocus(){
+  if(focusGamePk&&gameStates[focusGamePk]){
+    var g=gameStates[focusGamePk];
+    if(MLB_TEAM_RADIO[g.homeId]&&APPROVED_RADIO_TEAM_IDS.has(g.homeId)) return Object.assign({teamId:g.homeId,abbr:g.homeAbbr},MLB_TEAM_RADIO[g.homeId]);
+    if(MLB_TEAM_RADIO[g.awayId]&&APPROVED_RADIO_TEAM_IDS.has(g.awayId)) return Object.assign({teamId:g.awayId,abbr:g.awayAbbr},MLB_TEAM_RADIO[g.awayId]);
+  }
+  return Object.assign({teamId:null,abbr:''},FALLBACK_RADIO);
 }
-function stopRadio(){if(radioAudio){radioAudio.pause();}setRadioUI(false);}
-function setRadioUI(on){
+function toggleRadio(){if(radioAudio&&!radioAudio.paused){stopRadio();}else{startRadio();}}
+function startRadio(){loadRadioStream(pickRadioForFocus());}
+function loadRadioStream(pick){
+  if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
+  if(!radioAudio){radioAudio=new Audio();radioAudio.preload='none';}
+  radioAudio.pause();
+  radioCurrentTeamId=pick.teamId;
+  var isHls=pick.format==='hls';
+  var nativeHls=radioAudio.canPlayType('application/vnd.apple.mpegurl');
+  if(isHls&&window.Hls&&Hls.isSupported()){
+    radioHls=new Hls();
+    radioHls.loadSource(pick.url);
+    radioHls.attachMedia(radioAudio);
+    radioHls.on(Hls.Events.ERROR,function(_,d){if(d.fatal){console.error('HLS fatal:',d);handleRadioError(new Error(d.details||'HLS error'));}});
+    radioAudio.play().then(function(){setRadioUI(true,pick);}).catch(handleRadioError);
+  }else if(isHls&&nativeHls){
+    radioAudio.src=pick.url;
+    radioAudio.play().then(function(){setRadioUI(true,pick);}).catch(handleRadioError);
+  }else{
+    radioAudio.src=pick.url;
+    radioAudio.play().then(function(){setRadioUI(true,pick);}).catch(handleRadioError);
+  }
+}
+function stopRadio(){
+  if(radioAudio){radioAudio.pause();}
+  if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
+  radioCurrentTeamId=null;
+  setRadioUI(false,null);
+}
+function handleRadioError(err){
+  console.error('Radio play failed:',err);
+  alert('Radio failed: '+(err&&err.message?err.message:'unknown'));
+  setRadioUI(false,null);
+}
+function setRadioUI(on,pick){
   var t=document.getElementById('radioToggle'),k=document.getElementById('radioToggleKnob'),s=document.getElementById('radioStatusText');
   if(!t)return;
-  if(on){t.style.background='#22c55e';k.style.left='21px';s.textContent='Playing · Fox Sports Radio';}
-  else{t.style.background='var(--border)';k.style.left='3px';s.textContent='Off · Fox Sports Radio';}
+  if(on){
+    t.style.background='#22c55e';k.style.left='21px';
+    var label=pick&&pick.name?pick.name:'Radio';
+    if(pick&&pick.abbr) label=pick.abbr+' · '+label;
+    s.textContent='Playing · '+label;
+  }else{
+    t.style.background='var(--border)';k.style.left='3px';
+    s.textContent='Off · Auto-pairs to focus game';
+  }
+}
+function updateRadioForFocus(){
+  if(!radioAudio||radioAudio.paused) return;
+  var pick=pickRadioForFocus();
+  if(pick.teamId!==radioCurrentTeamId) loadRadioStream(pick);
+}
+
+// ── 🔍 Radio Check ────────────────────────────────────────────────────────
+var radioCheckResults={}; // key: teamId or 'fallback' → 'yes'|'no' (absent = untested)
+var radioCheckNotes={};   // key: teamId or 'fallback' → free-text note
+var radioCheckPlayingKey=null;
+function loadRadioCheckResults(){
+  try{var s=localStorage.getItem('mlb_radio_check');if(s)radioCheckResults=JSON.parse(s)||{};}catch(e){radioCheckResults={};}
+  try{var n=localStorage.getItem('mlb_radio_check_notes');if(n)radioCheckNotes=JSON.parse(n)||{};}catch(e){radioCheckNotes={};}
+}
+function saveRadioCheckResults(){
+  try{localStorage.setItem('mlb_radio_check',JSON.stringify(radioCheckResults));}catch(e){}
+}
+function saveRadioCheckNotes(){
+  try{localStorage.setItem('mlb_radio_check_notes',JSON.stringify(radioCheckNotes));}catch(e){}
+}
+function openRadioCheck(){
+  loadRadioCheckResults();
+  document.getElementById('radioCheckOverlay').style.display='flex';
+  renderRadioCheckList();
+  toggleSettings(); // close settings panel
+}
+function closeRadioCheck(){
+  document.getElementById('radioCheckOverlay').style.display='none';
+  radioCheckStop();
+}
+function radioCheckEntries(){
+  var entries=[];
+  Object.keys(MLB_TEAM_RADIO).forEach(function(tid){
+    var team=TEAMS.find(function(t){return t.id===+tid;});
+    entries.push({key:tid,teamId:+tid,teamName:team?team.name:'Team '+tid,abbr:team?team.short:'',station:MLB_TEAM_RADIO[tid].name,url:MLB_TEAM_RADIO[tid].url,format:MLB_TEAM_RADIO[tid].format});
+  });
+  entries.sort(function(a,b){return a.teamName.localeCompare(b.teamName);});
+  entries.push({key:'fallback',teamId:null,teamName:'(Fallback)',abbr:'',station:FALLBACK_RADIO.name,url:FALLBACK_RADIO.url,format:FALLBACK_RADIO.format});
+  return entries;
+}
+function renderRadioCheckList(){
+  var list=document.getElementById('radioCheckList');
+  if(!list)return;
+  var entries=radioCheckEntries();
+  var html=entries.map(function(e){
+    var status=radioCheckResults[e.key]||'';
+    var note=(radioCheckNotes[e.key]||'').replace(/"/g,'&quot;');
+    var playing=radioCheckPlayingKey===e.key;
+    return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);'+(playing?'background:rgba(34,197,94,.08)':'')+'">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<button onclick="radioCheckPlay(\''+e.key+'\')" style="background:'+(playing?'#22c55e':'var(--card2)')+';border:1px solid var(--border);color:'+(playing?'#000':'var(--text)')+';font-size:.7rem;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700;flex-shrink:0;min-width:36px">▶</button>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.teamName+(e.abbr?' <span style="color:var(--muted);font-weight:500">· '+e.abbr+'</span>':'')+'</div>'+
+          '<div style="font-size:.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.station+' · '+e.format.toUpperCase()+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:4px;flex-shrink:0">'+
+          '<button onclick="radioCheckSet(\''+e.key+'\',\'yes\')" title="Tap again to clear" style="cursor:pointer;background:'+(status==='yes'?'#22c55e':'var(--card2)')+';color:'+(status==='yes'?'#000':'var(--text)')+';border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.7rem;font-weight:700">✅</button>'+
+          '<button onclick="radioCheckSet(\''+e.key+'\',\'no\')" title="Tap again to clear" style="cursor:pointer;background:'+(status==='no'?'#e03030':'var(--card2)')+';color:'+(status==='no'?'#fff':'var(--text)')+';border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.7rem;font-weight:700">❌</button>'+
+        '</div>'+
+      '</div>'+
+      '<input type="text" value="'+note+'" oninput="radioCheckSetNote(\''+e.key+'\',this.value)" placeholder="Notes (e.g. plays ads during games)" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 8px;border-radius:6px;box-sizing:border-box">'+
+    '</div>';
+  }).join('');
+  var done=Object.values(radioCheckResults).filter(function(v){return v==='yes'||v==='no';}).length;
+  var summary='<div style="padding:8px 10px;font-size:.7rem;color:var(--muted);text-align:center">'+done+' of '+entries.length+' checked</div>';
+  list.innerHTML=summary+html;
+}
+function radioCheckPlay(key){
+  var entries=radioCheckEntries();
+  var e=entries.find(function(x){return x.key===key;});
+  if(!e)return;
+  radioCheckPlayingKey=key;
+  var pick={teamId:e.teamId,abbr:e.abbr,name:e.station,url:e.url,format:e.format};
+  loadRadioStream(pick);
+  renderRadioCheckList();
+}
+function radioCheckStop(){
+  radioCheckPlayingKey=null;
+  if(radioAudio&&!radioAudio.paused)stopRadio();
+  if(document.getElementById('radioCheckOverlay').style.display!=='none')renderRadioCheckList();
+}
+function radioCheckSet(key,val){
+  if(radioCheckResults[key]===val) delete radioCheckResults[key];
+  else radioCheckResults[key]=val;
+  saveRadioCheckResults();
+  renderRadioCheckList();
+}
+function radioCheckSetNote(key,val){
+  if(val) radioCheckNotes[key]=val;
+  else delete radioCheckNotes[key];
+  saveRadioCheckNotes();
+}
+function radioCheckReset(){
+  radioCheckResults={};
+  radioCheckNotes={};
+  saveRadioCheckResults();
+  saveRadioCheckNotes();
+  renderRadioCheckList();
+}
+function radioCheckCopy(){
+  var entries=radioCheckEntries();
+  var lines=['MLB Radio Check Results','Date: '+new Date().toISOString().slice(0,10),''];
+  var works=[],broken=[],untested=[];
+  entries.forEach(function(e){
+    var s=radioCheckResults[e.key];
+    var note=radioCheckNotes[e.key]||'';
+    var block=['• '+e.teamName+(e.abbr?' ('+e.abbr+')':'')+' — '+e.station+' — '+e.url];
+    if(note) block.push('  📝 '+note);
+    if(s==='yes')works.push.apply(works,block);
+    else if(s==='no')broken.push.apply(broken,block);
+    else untested.push.apply(untested,block);
+  });
+  lines.push('✅ WORKS ('+works.filter(function(l){return l.charAt(0)==='•';}).length+'):');lines.push.apply(lines,works.length?works:['  (none marked)']);lines.push('');
+  lines.push('❌ BROKEN ('+broken.filter(function(l){return l.charAt(0)==='•';}).length+'):');lines.push.apply(lines,broken.length?broken:['  (none marked)']);lines.push('');
+  if(untested.length){lines.push('⏳ UNTESTED ('+untested.filter(function(l){return l.charAt(0)==='•';}).length+'):');lines.push.apply(lines,untested);}
+  var text=lines.join('\n');
+  var btn=document.getElementById('radioCheckCopyBtn');
+  function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;setTimeout(function(){btn.textContent=orig;},1800);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');},function(){fallbackCopy(text);flash('✓ Copied (fallback)');});
+  }else{
+    fallbackCopy(text);flash('✓ Copied (fallback)');
+  }
+}
+function fallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);
 }
 function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
