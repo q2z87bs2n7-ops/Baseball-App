@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.21</title>
+<title>MLB Pulse v3.21</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -330,7 +330,7 @@
 .alert-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alert-progress { position: absolute; bottom: 0; left: 0; height: 2px; background: currentColor; opacity: 0.35; animation: progress-drain var(--toast-duration, 5s) linear forwards; }
 
-#pulseTopBar {
+#pulseTopBar, #ydSectionBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -338,6 +338,16 @@
   padding: 8px 14px;
   background: var(--dark);
   border-bottom: 1px solid var(--border);
+}
+#yesterday.section.active {
+  margin-top: -20px; /* cancel .main padding-top so bar is flush under header */
+}
+#ydSectionBar {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 80;
+  margin: 0 -20px 16px; /* extend bar edge-to-edge; no top margin (section handles that) */
+  padding: 8px 20px;    /* restore horizontal padding */
 }
 .ptb-kicker { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; }
 .ptb-bolt { color: var(--accent); font-size: .8rem; flex-shrink: 0; }
@@ -374,6 +384,11 @@
 #gameTicker::-webkit-scrollbar-track  { background: transparent; }
 #gameTicker::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
 #gameTicker::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+.fc-chip-strip { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.fc-chip-strip::-webkit-scrollbar { height: 3px; }
+.fc-chip-strip::-webkit-scrollbar-track { background: transparent; }
+.fc-chip-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.fc-chip-strip::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 .ticker-game {
   flex-shrink: 0;
@@ -536,7 +551,6 @@
 .yd-game-thumb-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); }
 .yd-game-thumb-play span { width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; }
 .yd-game-thumb-label { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.82)); padding:8px 10px; font-size:.62rem; color:rgba(255,255,255,.9); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-body.yd-active .main { display:none !important; }
 @media(min-width:860px){
   .yd-hero-grid { flex-direction:row; align-items:stretch; max-width:1100px; margin:0 auto; aspect-ratio:7/3; overflow:hidden; }
   .yd-player-col { flex:1 1 0; overflow:hidden; border-right:1px solid var(--border); }
@@ -737,8 +751,8 @@ body.yd-active .main { display:none !important; }
   <nav>
     <button class="active" onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
     <button onclick="showSection('home',this)">🏠<span class="nav-label"> My Team</span></button>
-    <button onclick="showSection('league',this)">🌐<span class="nav-label"> League</span></button>
     <button onclick="showSection('schedule',this)">📅<span class="nav-label"> Schedule</span></button>
+    <button onclick="showSection('league',this)">🌐<span class="nav-label"> League</span></button>
     <button onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
     <button onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
     <button onclick="showSection('stats',this)">📊<span class="nav-label"> Stats</span></button>
@@ -806,7 +820,7 @@ body.yd-active .main { display:none !important; }
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.21</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.21</div>
       </div>
     </div>
   </div>
@@ -922,11 +936,7 @@ body.yd-active .main { display:none !important; }
 <div id="media" class="section"><div id="mediaCard"></div></div>
 
 <div id="league" class="section">
-  <div id="ydRecapBanner" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:10px;align-items:center;justify-content:space-between;gap:12px">
-    <div style="font-size:.75rem;color:var(--muted)">📅 Yesterday's slate is complete</div>
-    <button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:5px 12px;cursor:pointer;white-space:nowrap">Yesterday Recap →</button>
-  </div>
-  <div class="card" style="margin-bottom:16px">
+<div class="card" style="margin-bottom:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>⚾ <span id="matchupDayLabel">Today's</span> Matchups</span>
       <div class="matchup-day-controls" style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -979,10 +989,15 @@ body.yd-active .main { display:none !important; }
       <span class="ptb-sep">·</span>
       <span class="ptb-tagline" id="ptbTagline">Every game, one feed.</span>
     </div>
-    <button id="myTeamLensBtn" class="ptb-lens" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
-      <span class="ptb-lens-label">MY TEAM</span>
-      <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button id="ptbYestBtn" onclick="openYesterdayRecap()" class="ptb-lens" style="display:none;padding:5px 12px">
+        <span class="ptb-lens-label">YESTERDAY'S RECAP</span>
+      </button>
+      <button id="myTeamLensBtn" class="ptb-lens" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
+        <span class="ptb-lens-label">MY TEAM</span>
+        <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
+      </button>
+    </div>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="focusMiniBar" style="display:none"></div>
@@ -1034,6 +1049,20 @@ body.yd-active .main { display:none !important; }
     </div>
   </div>
 </div>
+<div id="yesterday" class="section">
+  <div id="ydSectionBar">
+    <div class="ptb-kicker">
+      <span class="ptb-bolt">⚡</span>
+      <span class="ptb-brand">MLB PULSE</span>
+      <span class="ptb-sep">·</span>
+      <span class="ptb-tagline" id="ydDateLabel">Yesterday</span>
+    </div>
+    <button onclick="closeYesterdayRecap()" class="ptb-lens" style="padding:5px 12px">
+      <span class="ptb-lens-label">← BACK</span>
+    </button>
+  </div>
+  <div id="yesterdayCard" style="padding:0 0 40px"></div>
+</div>
 </div>
 
 <div id="playerCardOverlay" onclick="dismissPlayerCard()">
@@ -1044,13 +1073,6 @@ body.yd-active .main { display:none !important; }
 </div>
 <div id="collectionOverlay" onclick="if(event.target===this)closeCollection()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
   <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
-</div>
-<div id="yesterday" class="section">
-  <div id="ydSectionBar" style="position:sticky;top:0;z-index:80;background:var(--dark);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:10px 20px">
-    <button onclick="closeYesterdayRecap()" style="background:none;border:none;color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer;padding:0;letter-spacing:.04em">← Back</button>
-    <div style="font-size:.88rem;font-weight:700;color:var(--text)">📅 Yesterday — <span id="ydDateLabel"></span></div>
-  </div>
-  <div id="yesterdayCard" style="padding:0 0 40px"></div>
 </div>
 <div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--text);white-space:nowrap"></div>
 
@@ -1869,6 +1891,7 @@ async function initDemo() {
   dailyLeadersCache=jsonData.dailyLeadersCache||null;
   onThisDayCache=jsonData.onThisDayCache||[];
   yesterdayCache=jsonData.yesterdayCache||[];
+  var ybtn=document.getElementById('ptbYestBtn');if(ybtn)ybtn.style.display=yesterdayCache.length?'':'none';
   hrBatterStatsCache=jsonData.hrBatterStatsCache||{};
   probablePitcherStatsCache=jsonData.probablePitcherStatsCache||{};
   dailyHitsTracker=jsonData.dailyHitsTracker||{};
@@ -3424,6 +3447,7 @@ async function loadYesterdayCache(){
       yesterdayCache.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
     }
   }catch(e){}
+  var ybtn=document.getElementById('ptbYestBtn');if(ybtn)ybtn.style.display=yesterdayCache.length?'':'none';
 }
 
 async function loadDailyLeaders(){
@@ -3978,16 +4002,15 @@ function openYesterdayRecap() {
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById('yesterday').classList.add('active');
-  document.body.classList.add('yd-active');
+  window.scrollTo(0,0); // reset scroll before render so bar starts at top
   var lbl=document.getElementById('ydDateLabel');
   if(lbl) lbl.textContent=getYesterdayDisplayStr();
   renderYesterdayRecap();
-  window.scrollTo(0,0);
+  requestAnimationFrame(function(){ window.scrollTo(0,0); }); // safety net for iOS Safari
 }
 
 function closeYesterdayRecap() {
   yesterdayOverlayOpen=false;
-  document.body.classList.remove('yd-active');
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   var returnId=ydPrevSection||'pulse';
   var returnEl=document.getElementById(returnId);
@@ -4786,7 +4809,7 @@ function updateFeedEmpty() {
   var hasAnyGames=Object.keys(gameStates).length>0;
   var postSlate=isPostSlate();
   var intermission=!postSlate&&isIntermission();
-  var showHype=!hasVisible||postSlate||intermission;
+  var showHype=(!hasVisible&&!myTeamLens)||(!hasAnyGames)||postSlate||intermission;
   if (showHype) renderEmptyState(postSlate, intermission);
   document.getElementById('feedEmpty').style.display=showHype?'':'none';
   var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames'];
@@ -4907,8 +4930,7 @@ function renderEmptyState(postSlate, intermission) {
       } else if (tomorrowPreview.fetchedAt && tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      var ydLink=yesterdayCache&&yesterdayCache.length?'<div style="margin-top:16px"><button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--accent);font-size:.75rem;font-weight:600;padding:6px 14px;cursor:pointer;letter-spacing:.04em">📅 Yesterday Recap →</button></div>':'';
-      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+ydLink;
+      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
       var g0=pulseGreeting();
@@ -4949,9 +4971,6 @@ function renderEmptyState(postSlate, intermission) {
         +'</div></div>';
     });
     html+='</div>';
-  }
-  if (yesterdayCache&&yesterdayCache.length) {
-    html+='<div style="margin-top:12px;text-align:center"><button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:.72rem;font-weight:600;padding:5px 14px;cursor:pointer;letter-spacing:.04em">📅 Yesterday Recap →</button></div>';
   }
   el.innerHTML=html;
   if (hero.gameDateMs) startCountdown(hero.gameDateMs);
@@ -6527,7 +6546,7 @@ function selectMediaVideo(videoId){selectedVideoId=videoId;var player=document.g
 var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={},leagueMatchupOffset=0;
 let homeLiveTimer=null;
 let leagueRefreshTimer=null;
-async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";var ydBanner=document.getElementById('ydRecapBanner');if(ydBanner)ydBanner.style.display=(yesterdayCache&&yesterdayCache.length)?'flex':'none';await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,60000);}
+async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,60000);}
 async function loadLeagueStandings(){try{var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team');var d=await r.json();leagueStandingsMap={};(d.records||[]).forEach(function(rec){(rec.teamRecords||[]).forEach(function(t){leagueStandingsMap[t.team.id]={w:t.wins,l:t.losses};});});}catch(e){}}
 async function loadLeagueMatchups(){
   var el=document.getElementById('leagueMatchups');
