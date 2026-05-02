@@ -110,7 +110,7 @@
     '}',
     '.cc-grid{',
       'display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);',
-      'gap:14px;width:100%;height:100%;min-height:600px;',
+      'gap:14px;width:100%;height:100%;',
     '}',
     /* Team-view footer nav */
     '.cc-team-nav{',
