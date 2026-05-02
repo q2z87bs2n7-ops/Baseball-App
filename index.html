@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.16</title>
+<title>MLB Tracker v3.16.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.16</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.16.1</div>
       </div>
     </div>
   </div>
@@ -2879,30 +2879,30 @@ function genRosterMoveStories(){
     if(!t.person||!t.person.fullName) return;
     var txDate=t.date?new Date(t.date).getTime():0;
     if(txDate&&txDate<cutoff) return;
-    var lastName=t.person.fullName.split(' ').slice(1).join(' ')||t.person.fullName;
+    var fullName=t.person.fullName;
     var desc=t.typeDesc||'';
     var icon,priority,headline;
     var toAbbr=(t.toTeam&&t.toTeam.abbreviation)||'MLB';
-    if(desc.indexOf('Injured List')!==-1){
+    if(desc.indexOf('Activated')!==-1){
+      icon='✅';priority=devTuning.roster_priority_il||40;
+      headline=fullName+' ('+toAbbr+') activated';
+    }else if(desc.indexOf('Injured List')!==-1){
       icon='🏥';priority=devTuning.roster_priority_il||40;
       var ilMatch=desc.match(/(\d+)-Day/);var ilDays=ilMatch?ilMatch[1]:'';
-      headline=lastName+' placed on the '+(ilDays?ilDays+'-Day ':'')+'IL';
+      headline=fullName+' ('+toAbbr+') placed on the '+(ilDays?ilDays+'-Day ':'')+'IL';
     }else if(desc.indexOf('Designated')!==-1){
       icon='⬇️';priority=devTuning.roster_priority_il||40;
-      headline=lastName+' designated for assignment';
+      headline=fullName+' ('+toAbbr+') designated for assignment';
     }else if(desc.indexOf('Selected')!==-1||desc.indexOf('Called Up')!==-1){
       icon='⬆️';priority=devTuning.roster_priority_trade||55;
-      headline=lastName+' called up by '+toAbbr;
+      headline=fullName+' called up by '+toAbbr;
     }else if(desc.indexOf('Trade')!==-1){
       icon='🔄';priority=devTuning.roster_priority_trade||55;
       var fromAbbr=(t.fromTeam&&t.fromTeam.abbreviation)||'';
-      headline=lastName+' traded '+(fromAbbr?'from '+fromAbbr+' ':'')+'to '+toAbbr;
-    }else if(desc.indexOf('Activated')!==-1){
-      icon='✅';priority=devTuning.roster_priority_il||40;
-      headline=lastName+' activated by '+toAbbr;
+      headline=fullName+' traded '+(fromAbbr?'from '+fromAbbr+' ':'')+'to '+toAbbr;
     }else{
       icon='📋';priority=35;
-      headline=lastName+' — '+desc;
+      headline=fullName+' ('+toAbbr+') — '+desc;
     }
     var id='roster_'+t.typeCode+'_'+(t.person.id||0)+'_'+(t.date||'today');
     var sub=toAbbr+(t.date?' · '+t.date:'');
