@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.17</title>
+<title>MLB Pulse v3.19</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MLB Tracker">
+<meta name="apple-mobile-web-app-title" content="MLB Pulse">
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#002D72" id="themeColorMeta">
@@ -329,6 +329,29 @@
 .alert-event { font-weight: 700; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alert-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alert-progress { position: absolute; bottom: 0; left: 0; height: 2px; background: currentColor; opacity: 0.35; animation: progress-drain var(--toast-duration, 5s) linear forwards; }
+
+#pulseTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--dark);
+  border-bottom: 1px solid var(--border);
+}
+.ptb-kicker { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; }
+.ptb-bolt { color: var(--accent); font-size: .8rem; flex-shrink: 0; }
+.ptb-brand { font-size: .84rem; font-weight: 900; letter-spacing: .18em; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+.ptb-sep { color: var(--border); font-size: .6rem; flex-shrink: 0; }
+.ptb-tagline { font-size: .68rem; font-weight: 400; color: var(--muted); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptb-lens { flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px; background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px 5px 12px; cursor: pointer; color: var(--muted); transition: border-color .15s, color .15s; }
+.ptb-lens:hover { border-color: var(--accent); color: var(--text); }
+.ptb-lens.on { border-color: var(--accent); color: var(--text); }
+.ptb-lens-label { font-size: .68rem; font-weight: 600; letter-spacing: .09em; }
+.ptb-lens-track { position: relative; width: 30px; height: 16px; background: var(--card2); border-radius: 999px; transition: background .15s; }
+.ptb-lens.on .ptb-lens-track { background: var(--accent); }
+.ptb-lens-knob { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .15s; }
+.ptb-lens.on .ptb-lens-knob { left: 16px; }
 
 #gameTicker {
   position: sticky;
@@ -672,9 +695,9 @@
   <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span></div>
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
   <nav>
-    <button class="active" onclick="showSection('home',this)">🏠<span class="nav-label"> Home</span></button>
+    <button class="active" onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
+    <button onclick="showSection('home',this)">🏠<span class="nav-label"> My Team</span></button>
     <button onclick="showSection('league',this)">🌐<span class="nav-label"> League</span></button>
-    <button onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
     <button onclick="showSection('schedule',this)">📅<span class="nav-label"> Schedule</span></button>
     <button onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
     <button onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
@@ -743,14 +766,14 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.17</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19</div>
       </div>
     </div>
   </div>
 </header>
 
 <div class="main">
-<div id="home" class="section active">
+<div id="home" class="section">
 
   <div class="grid2" style="margin-bottom:16px">
     <div id="todayGame"><div class="loading">Loading next game...</div></div>
@@ -902,9 +925,21 @@
   </div>
 </div>
 
-<div id="pulse" class="section">
+<div id="pulse" class="section active">
   <div id="pulseLeft">
   <div id="alertStack"></div>
+  <div id="pulseTopBar">
+    <div class="ptb-kicker">
+      <span class="ptb-bolt">⚡</span>
+      <span class="ptb-brand">MLB PULSE</span>
+      <span class="ptb-sep">·</span>
+      <span class="ptb-tagline" id="ptbTagline">Every game, one feed.</span>
+    </div>
+    <button id="myTeamLensBtn" class="ptb-lens" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
+      <span class="ptb-lens-label">MY TEAM</span>
+      <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
+    </button>
+  </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="focusMiniBar" style="display:none"></div>
   <div id="focusAlertBanner" style="display:none"></div>
@@ -1260,6 +1295,7 @@ const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
 let pulseInitialized=false;
 let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
+let myTeamLens=(localStorage.getItem('mlb_my_team_lens')==='1');
 let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
@@ -1481,7 +1517,7 @@ async function pollLeaguePulse() {
           venueName:g.venue?g.venue.name:null,
           onFirst:!!(ls.offense&&ls.offense.first), onSecond:!!(ls.offense&&ls.offense.second), onThird:!!(ls.offense&&ls.offense.third),
         };
-        enabledGames.add(pk);
+        if (!myTeamLens || gameStates[pk].awayId===activeTeam.id || gameStates[pk].homeId===activeTeam.id) enabledGames.add(pk);
         // Synthesise historical status items so they appear on first load (no sounds/alerts)
         var g0=gameStates[pk], ts0=gameDateMs?new Date(gameDateMs):new Date();
         if (newStatus==='Final') {
@@ -3031,6 +3067,47 @@ function genLiveWinProbStories(){
   return out;
 }
 
+function genDailyIntro(){
+  var todayStr=localDateStr(getEffectiveDate());
+  var todayGames=Object.values(gameStates).filter(function(g){
+    return g.gameDateMs && localDateStr(new Date(g.gameDateMs))===todayStr;
+  });
+  if(!todayGames.length) return [];
+  var liveCount =todayGames.filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';}).length;
+  var finalCount=todayGames.filter(function(g){return g.status==='Final';}).length;
+  if(liveCount>=2 || finalCount>=Math.ceil(todayGames.length/2)) return [];
+
+  // Marquee duel — combined record above .500. Threshold scales naturally with the season:
+  // aW+hW grows monotonically (every pitcher accrues wins) but (aW-aL)+(hW-hL) only grows
+  // when pitchers are genuinely above average, so a fixed threshold works in May and August.
+  var marquee=null;
+  todayGames.forEach(function(g){
+    var raw=storyCarouselRawGameData&&storyCarouselRawGameData[g.gamePk];
+    if(!raw||!raw.teams) return;
+    var aPP=raw.teams.away&&raw.teams.away.probablePitcher;
+    var hPP=raw.teams.home&&raw.teams.home.probablePitcher;
+    if(!aPP||!hPP) return;
+    var aS=probablePitcherStatsCache[aPP.id]||{}, hS=probablePitcherStatsCache[hPP.id]||{};
+    var aW=aS.wins||0, aL=aS.losses||0, hW=hS.wins||0, hL=hS.losses||0;
+    if(aW<=aL||hW<=hL) return;
+    var aboveZero=(aW-aL)+(hW-hL);
+    if(!marquee||aboveZero>marquee.score){
+      marquee={away:aPP.fullName,home:hPP.fullName,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,score:aboveZero,gamePk:g.gamePk};
+    }
+  });
+
+  var n=todayGames.length, headline, sub, gamePk=null;
+  if(marquee && marquee.score>=6){
+    headline=marquee.away.split(' ').pop()+' vs '+marquee.home.split(' ').pop()+' is the matchup tonight.';
+    sub=n+' games · '+marquee.awayAbbr+' @ '+marquee.homeAbbr+' headlines';
+    gamePk=marquee.gamePk;
+  } else {
+    headline=n+' games on the slate. Pulse is on.';
+    sub='Live play-by-play across every game';
+  }
+  return [makeStory('dailyintro_'+todayStr,'editorial',4,50,'📰',headline,sub,'today',gamePk,new Date(),4*60*60000,0.4)];
+}
+
 async function buildStoryPool(){
   var now=Date.now();
   if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
@@ -3048,8 +3125,15 @@ async function buildStoryPool(){
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
     wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories(),
-    genLiveWinProbStories()
+    genLiveWinProbStories(),genDailyIntro()
   );
+  // When daily intro picks the marquee path, drop the matching probable_{pk} card to avoid
+  // surfacing the same pitcher matchup twice (editorial framing + game-by-game listing).
+  var introMarquee=fresh.find(function(s){return s.type==='editorial'&&s.id.indexOf('dailyintro_')===0&&s.gamePk;});
+  if(introMarquee){
+    var dupId='probable_'+introMarquee.gamePk;
+    fresh=fresh.filter(function(s){return s.id!==dupId;});
+  }
   storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
   if(!carousel) return;
@@ -4140,6 +4224,36 @@ function toggleGame(gamePk) {
   updateFeedEmpty(); renderTicker();
 }
 
+function myTeamGamePks() {
+  var out=new Set();
+  Object.values(gameStates).forEach(function(g){
+    if (g.awayId===activeTeam.id||g.homeId===activeTeam.id) out.add(g.gamePk);
+  });
+  return out;
+}
+function applyMyTeamLens(on) {
+  myTeamLens=!!on;
+  localStorage.setItem('mlb_my_team_lens', myTeamLens?'1':'0');
+  var btn=document.getElementById('myTeamLensBtn'),knob=document.getElementById('myTeamLensKnob');
+  if (btn) btn.classList.toggle('on', myTeamLens);
+  if (knob) knob.style.left=myTeamLens?'21px':'2px';
+  if (myTeamLens) {
+    var keep=myTeamGamePks();
+    enabledGames=new Set();
+    keep.forEach(function(pk){ enabledGames.add(pk); });
+    document.querySelectorAll('[data-gamepk]').forEach(function(el){
+      var pk=+el.getAttribute('data-gamepk');
+      el.classList.toggle('feed-hidden', !keep.has(pk));
+    });
+  } else {
+    Object.keys(gameStates).forEach(function(pk){ enabledGames.add(+pk); });
+    document.querySelectorAll('[data-gamepk]').forEach(function(el){ el.classList.remove('feed-hidden'); });
+  }
+  if (typeof renderTicker==='function') renderTicker();
+  updateFeedEmpty();
+}
+function toggleMyTeamLens(){ applyMyTeamLens(!myTeamLens); }
+
 function updateFeedEmpty() {
   var feed=document.getElementById('feed');
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
@@ -4230,6 +4344,18 @@ async function fetchTomorrowPreview() {
   finally{tomorrowPreview.inFlight=false;}
 }
 
+function pulseGreeting() {
+  var h=new Date().getHours();
+  if (h<6)  return {kicker:'Late innings', headline:'West coast still in play.',     tagline:'West coast still on the wire.'};
+  if (h<11) return {kicker:'Good morning', headline:"Here's what you missed.",      tagline:"Last night's wrap, today's slate."};
+  if (h<14) return {kicker:'Midday slate', headline:'First pitches roll in soon.',  tagline:'Lineups going up. First pitch soon.'};
+  if (h<17) return {kicker:'Pre-game',     headline:'Lineups locked.',              tagline:"Lineups locked. We're close."};
+  if (h<22) return {kicker:'Game on',      headline:'Action across the league.',    tagline:'Every game, one feed.'};
+  return            {kicker:'Late night',  headline:'West coast finals shaking out.', tagline:'West coast finals shaking out.'};
+}
+function refreshPulseTagline(){ var t=document.getElementById('ptbTagline'); if(t) t.textContent=pulseGreeting().tagline; }
+setInterval(refreshPulseTagline,60000);
+
 function renderEmptyState(postSlate, intermission) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(gameStates).filter(function(g){
@@ -4258,18 +4384,20 @@ function renderEmptyState(postSlate, intermission) {
       el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
-      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">League Pulse</div><div class="empty-sub">Live play-by-play from every game will appear here</div>';
+      var g0=pulseGreeting();
+      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">'+g0.kicker+'</div><div class="empty-sub">'+g0.headline+'</div>';
     }
     return;
   }
   el.className='has-upcoming';
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
+  var greeting=pulseGreeting();
   var labelText=intermission
     ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
-    : 'TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
+    : n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
   var hypeBlock=intermission?'':
-    '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">'+greeting.headline+'</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
   var html='<div class="empty-upcoming-label">'+labelText+'</div>'
@@ -5207,6 +5335,7 @@ function switchTeam(teamId){
   loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();
   if(document.getElementById('schedule').classList.contains('active'))loadSchedule();
   if(document.getElementById('media').classList.contains('active'))loadMedia();
+  if(myTeamLens) applyMyTeamLens(true);
 }
 
 async function requestScreenWakeLock(){
@@ -5996,6 +6125,12 @@ function togglePush(){
   updateCollectionUI();
   updateSyncUI();
   pulseInitialized=true;initLeaguePulse();
+  // Pulse-first cold-open: mirror showSection('pulse') side-effects so theme + wake-lock match the active landing section
+  savedThemeForPulse=themeOverride;
+  applyPulseMLBTheme();
+  requestScreenWakeLock();
+  refreshPulseTagline();
+  applyMyTeamLens(myTeamLens);
 })();
 
 document.addEventListener('visibilitychange',function(){
