@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.3</title>
+<title>MLB Pulse v3.20.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.4</div>
       </div>
     </div>
   </div>
@@ -1412,7 +1412,6 @@ let collectionSlotsDisplay=[];      // sorted slot array set by renderCollection
 let yesterdayContentCache={};      // gamePk → content API response (session-only)
 let yesterdayOverlayOpen=false;
 let ydHighlightClips=[];           // top-5 editorial clips for the carousel (session)
-let ydHighlightIndex=0;            // currently displayed carousel position
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -4096,6 +4095,20 @@ function pickMarqueeGame() {
 }
 
 
+function mountSharedPlayer(heroRegion) {
+  if(!heroRegion||heroRegion.dataset.mounted) return;
+  heroRegion.dataset.mounted='1';
+  heroRegion.innerHTML=
+    '<div style="padding:8px 16px 6px;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em" id="ydPlayerKicker">TOP HIGHLIGHT</div>'
+    +'<div style="position:relative;background:#000">'
+    +'<video id="ydSharedVideo" controls playsinline style="width:100%;max-height:340px;display:block"></video>'
+    +'</div>'
+    +'<div style="padding:10px 16px 14px">'
+    +'<div id="ydPlayerTitle" style="font-size:.82rem;font-weight:700;color:var(--text);line-height:1.4"></div>'
+    +'<div id="ydPlayerBlurb" style="font-size:.72rem;color:var(--muted);margin-top:3px"></div>'
+    +'</div>';
+}
+
 async function loadYesterdayHero() {
   var heroRegion=document.getElementById('ydHeroRegion');
   if(!heroRegion) return;
@@ -4106,60 +4119,55 @@ async function loadYesterdayHero() {
   var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
   var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
   if(!playable.length) { prefetchAllYesterdayContent(); return; }
-  // Take top 5 in MLB editorial order; store for carousel nav
   ydHighlightClips=playable.slice(0,5);
-  ydHighlightIndex=0;
-  // Build carousel shell — single <video> + overlay nav buttons, news-module style
-  heroRegion.innerHTML=''
-    +'<div style="padding:8px 16px 4px;display:flex;align-items:center;justify-content:space-between">'
-    +'<span style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em">TOP HIGHLIGHTS</span>'
-    +'<span id="ydHlCount" style="font-size:.65rem;color:var(--muted)">1 / '+ydHighlightClips.length+'</span>'
-    +'</div>'
-    +'<div id="ydCarousel" style="position:relative;background:#000">'
-    +'<button class="news-nav" onclick="prevYdHighlight()" style="left:8px;top:40%">‹</button>'
-    +'<video id="ydSharedVideo" controls playsinline style="width:100%;max-height:320px;display:block"></video>'
-    +'<button class="news-nav" onclick="nextYdHighlight()" style="right:8px;top:40%">›</button>'
-    +'</div>'
-    +'<div style="padding:10px 16px 14px">'
-    +'<div id="ydPlayerTitle" class="news-card-title" style="font-size:.82rem;font-weight:700"></div>'
-    +'<div id="ydPlayerBlurb" style="font-size:.72rem;color:var(--muted);margin-top:3px"></div>'
-    +'</div>';
-  loadYdCarouselClip(0);
+  // Stable player area (dca91d3 pattern)
+  mountSharedPlayer(heroRegion);
+  // Clip carousel below — news-module card style, one card visible at a time
+  var carouselHtml='<div id="ydClipCarousel" style="position:relative;border-top:1px solid var(--border);margin-top:4px">'
+    +'<button class="news-nav" onclick="navigateYdClip(-1)">‹</button>';
+  ydHighlightClips.forEach(function(clip,i){
+    var thumb=pickHeroImage(clip)||'';
+    var active=i===0?' active':'';
+    carouselHtml+='<div class="news-card-item'+active+'">'
+      +(thumb?'<img class="news-card-image" src="'+thumb+'" onerror="this.style.display=\'none\'" alt="">'
+        :'<div class="news-card-image" style="background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted)">🎬</div>')
+      +'<div class="news-card-title">'+escHtml(clip.headline||clip.blurb||'Highlight')+'</div>'
+      +'</div>';
+  });
+  carouselHtml+='<button class="news-nav" onclick="navigateYdClip(1)">›</button></div>';
+  heroRegion.insertAdjacentHTML('beforeend', carouselHtml);
+  // Load first clip into the player
+  loadClipIntoSharedPlayer(
+    pickPlayback(ydHighlightClips[0].playbacks),
+    pickHeroImage(ydHighlightClips[0])||'',
+    ydHighlightClips[0].headline||ydHighlightClips[0].blurb||'Top Highlight',
+    ydHighlightClips[0].blurb||'',
+    'TOP HIGHLIGHT'
+  );
   prefetchAllYesterdayContent();
 }
 
-function loadYdCarouselClip(idx) {
-  var clip=ydHighlightClips[idx];
+function navigateYdClip(dir) {
+  var carousel=document.getElementById('ydClipCarousel');
+  if(!carousel) return;
+  var cards=carousel.querySelectorAll('.news-card-item');
+  var activeIdx=0;
+  cards.forEach(function(c,i){ if(c.classList.contains('active')) activeIdx=i; });
+  var nextIdx=(activeIdx+dir+cards.length)%cards.length;
+  cards[activeIdx].classList.remove('active');
+  cards[nextIdx].classList.add('active');
+  var clip=ydHighlightClips[nextIdx];
   if(!clip) return;
-  var video=document.getElementById('ydSharedVideo');
-  var titleEl=document.getElementById('ydPlayerTitle');
-  var blurbEl=document.getElementById('ydPlayerBlurb');
-  var countEl=document.getElementById('ydHlCount');
-  if(!video) return;
-  video.pause();
-  video.removeAttribute('src');
-  video.load();
-  var poster=pickHeroImage(clip);
-  if(poster) video.poster=poster; else video.removeAttribute('poster');
-  video.src=pickPlayback(clip.playbacks);
-  if(titleEl) titleEl.textContent=clip.headline||clip.blurb||'Highlight';
-  if(blurbEl) blurbEl.textContent=(clip.blurb&&clip.blurb!==clip.headline)?clip.blurb:'';
-  if(countEl) countEl.textContent=(idx+1)+' / '+ydHighlightClips.length;
-  ydHighlightIndex=idx;
+  loadClipIntoSharedPlayer(
+    pickPlayback(clip.playbacks),
+    pickHeroImage(clip)||'',
+    clip.headline||clip.blurb||'Highlight',
+    clip.blurb||'',
+    'NOW PLAYING'
+  );
 }
 
-function prevYdHighlight() {
-  if(!ydHighlightClips.length) return;
-  loadYdCarouselClip((ydHighlightIndex-1+ydHighlightClips.length)%ydHighlightClips.length);
-}
-
-function nextYdHighlight() {
-  if(!ydHighlightClips.length) return;
-  loadYdCarouselClip((ydHighlightIndex+1)%ydHighlightClips.length);
-}
-
-function loadClipIntoSharedPlayer(url, poster, title) {
-  // Used by per-game strip thumbnails — loads into the same #ydSharedVideo
+function loadClipIntoSharedPlayer(url, poster, title, blurb, kicker) {
   var video=document.getElementById('ydSharedVideo');
   if(!video) return;
   video.pause();
@@ -4168,11 +4176,11 @@ function loadClipIntoSharedPlayer(url, poster, title) {
   if(poster) video.poster=poster; else video.removeAttribute('poster');
   video.src=url;
   var titleEl=document.getElementById('ydPlayerTitle');
-  var countEl=document.getElementById('ydHlCount');
-  if(titleEl) titleEl.textContent=title||'';
   var blurbEl=document.getElementById('ydPlayerBlurb');
-  if(blurbEl) blurbEl.textContent='';
-  if(countEl) countEl.textContent='NOW PLAYING';
+  var kickerEl=document.getElementById('ydPlayerKicker');
+  if(titleEl) titleEl.textContent=title||'';
+  if(blurbEl) blurbEl.textContent=(blurb&&blurb!==title)?blurb:'';
+  if(kickerEl) kickerEl.textContent=kicker||'TOP HIGHLIGHT';
   var heroRegion=document.getElementById('ydHeroRegion');
   if(heroRegion) heroRegion.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -4304,7 +4312,9 @@ function playYesterdayClip(gamePk, itemIndex) {
   loadClipIntoSharedPlayer(
     pickPlayback(item.playbacks),
     pickHeroImage(item)||'',
-    item.headline||item.blurb||'Highlight'
+    item.headline||item.blurb||'Highlight',
+    item.blurb||'',
+    'NOW PLAYING'
   );
 }
 
