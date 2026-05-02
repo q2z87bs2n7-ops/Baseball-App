@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.19.2</title>
+<title>MLB Pulse v3.19.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.3</div>
       </div>
     </div>
   </div>
@@ -4073,6 +4073,58 @@ function renderYesterdayRecap() {
     // Fallback: load all immediately
     yesterdayCache.forEach(function(item){ loadYesterdayVideoStrip(item.gamePk); });
   }
+  // Eagerly load hero for the marquee game
+  loadYesterdayHero();
+}
+
+function pickMarqueeGame() {
+  if(!yesterdayCache||!yesterdayCache.length) return null;
+  // Priority: walk-off > no-hitter > first game in cache (most notable by position)
+  var walkoff=yesterdayCache.find(function(item){return item.headline&&(item.headline.indexOf('Walk-off')!==-1||item.headline.indexOf('walk-off')!==-1);});
+  if(walkoff) return walkoff;
+  var nohit=yesterdayCache.find(function(item){return item.headline&&item.headline.indexOf('No-hitter')!==-1;});
+  if(nohit) return nohit;
+  // Fall back to the first game (usually most notable by league schedule ordering)
+  return yesterdayCache[0];
+}
+
+function parseDurationSecs(durStr) {
+  if(!durStr) return 0;
+  var parts=durStr.split(':').map(Number);
+  if(parts.length===3) return parts[0]*3600+parts[1]*60+parts[2];
+  if(parts.length===2) return parts[0]*60+parts[1];
+  return 0;
+}
+
+async function loadYesterdayHero() {
+  var heroRegion=document.getElementById('ydHeroRegion');
+  if(!heroRegion) return;
+  var marquee=pickMarqueeGame();
+  if(!marquee) return;
+  var content=await fetchGameContent(marquee.gamePk);
+  if(!content) return;
+  var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+  if(!playable.length) return;
+  // Pick longest-duration clip
+  playable.sort(function(a,b){return parseDurationSecs(b.duration)-parseDurationSecs(a.duration);});
+  var hero=playable[0];
+  var url=pickPlayback(hero.playbacks);
+  var poster=pickHeroImage(hero)||'';
+  var title=hero.headline||hero.blurb||'Top Highlight';
+  var blurb=hero.blurb||'';
+  heroRegion.innerHTML='<div style="padding:0 0 0 0">'
+    +'<div style="padding:8px 16px 6px;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em">TOP HIGHLIGHT</div>'
+    +'<div style="position:relative;background:#000">'
+    +'<video controls playsinline style="width:100%;max-height:340px;display:block"'+(poster?' poster="'+poster+'"':'')+'>'
+    +'<source src="'+url+'" type="video/mp4">'
+    +'</video>'
+    +'</div>'
+    +'<div style="padding:10px 16px 14px">'
+    +'<div style="font-size:.82rem;font-weight:700;color:var(--text);line-height:1.4">'+title+'</div>'
+    +(blurb&&blurb!==title?'<div style="font-size:.72rem;color:var(--muted);margin-top:3px">'+blurb+'</div>':'')
+    +'</div>'
+    +'</div>';
 }
 
 async function loadYesterdayVideoStrip(gamePk) {
