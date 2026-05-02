@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.15</title>
+<title>MLB Tracker v3.16</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.16</div>
       </div>
     </div>
   </div>
@@ -1272,6 +1272,7 @@ let shownSignInCTA=false;let signInCTACardCount=0;let signInCTATimer=null;
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null,storyPoolTimer=null;
 let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersLastFetch=0;
+let tomorrowPreview={dateStr:null,firstPitchMs:null,gameTime:null,gameCount:0,fetchedAt:0,inFlight:false};
 let dailyHitsTracker={},dailyPitcherKs={},stolenBaseEvents=[];
 let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
@@ -1414,6 +1415,15 @@ async function pollLeaguePulse() {
     // Fix 3: safety net — don't advance past midnight until 6 AM local (skip in demo mode)
     if (!hasGamesFromCurrentDate&&!isMidnightWindow) {
       pollDateStr=localDateStr(getEffectiveDate());
+    }
+    // Day rollover: post-slate past midnight window → prune yesterday + advance to today.
+    // Guard pollDateStr<todayStr so PPD-only days don't keep advancing into the future.
+    else if (!isMidnightWindow&&isPostSlate()) {
+      var todayStr=localDateStr(getEffectiveDate());
+      if (pollDateStr<todayStr) {
+        pruneStaleGames(todayStr);
+        pollDateStr=todayStr;
+      }
     }
   }
   var dateStr=pollDateStr;
@@ -4091,21 +4101,94 @@ function toggleGame(gamePk) {
 function updateFeedEmpty() {
   var feed=document.getElementById('feed');
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
-  if (!hasVisible) renderEmptyState();
-  document.getElementById('feedEmpty').style.display=hasVisible?'none':'';
-  // Hide UI elements when no visible feed items (storyCarousel stays visible for Probable Pitchers)
+  var hasAnyGames=Object.keys(gameStates).length>0;
+  var postSlate=isPostSlate();
+  var intermission=!postSlate&&isIntermission();
+  var showHype=!hasVisible||postSlate||intermission;
+  if (showHype) renderEmptyState(postSlate, intermission);
+  document.getElementById('feedEmpty').style.display=showHype?'':'none';
   var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames'];
-  // Apply pulse-empty layout when there are NO games at all OR no visible feed items
-  // This centers hype content whether in zero-game state or just pre-game/all-upcoming state
-  var hasAnyGames = Object.keys(gameStates).length > 0;
-  document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || !hasVisible);
+  document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || showHype);
   hideWhenEmpty.forEach(function(id){
     var el=document.getElementById(id);
-    if(el) el.style.display=hasVisible?'':'none';
+    if(el) el.style.display=showHype?'none':'';
   });
 }
 
-function renderEmptyState() {
+function isPostSlate() {
+  var games=Object.values(gameStates);
+  if (!games.length) return false;
+  if (!games.every(function(g){return g.status==='Final';})) return false;
+  var lastTerminalMs=0;
+  feedItems.forEach(function(fi){
+    if (fi.data&&fi.data.type==='status'&&(fi.data.label==='Game Final'||fi.data.label==='Game Postponed')) {
+      var ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
+    }
+  });
+  if (!lastTerminalMs) return false;
+  return (Date.now()-lastTerminalMs) > (devTuning.postSlateRevertMs||20*60*1000);
+}
+
+function isIntermission() {
+  var games=Object.values(gameStates);
+  if (!games.length) return false;
+  if (!games.some(function(g){return g.status==='Final';})) return false;
+  if (games.some(function(g){return g.status==='Live'&&g.detailedState==='In Progress';})) return false;
+  if (!games.some(function(g){return g.status!=='Final';})) return false;
+  var lastTerminalMs=0;
+  feedItems.forEach(function(fi){
+    if (fi.data&&fi.data.type==='status'&&(fi.data.label==='Game Final'||fi.data.label==='Game Postponed')) {
+      var ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
+    }
+  });
+  if (!lastTerminalMs) return false;
+  return (Date.now()-lastTerminalMs) > (devTuning.intermissionRevertMs||20*60*1000);
+}
+
+function pruneStaleGames(beforeDateStr) {
+  Object.keys(gameStates).forEach(function(pk) {
+    var g=gameStates[pk];
+    if (g.status!=='Final'||!g.gameDateMs) return;
+    var gDate=localDateStr(new Date(g.gameDateMs));
+    if (gDate<beforeDateStr) {
+      delete gameStates[pk];
+      enabledGames.delete(+pk);
+    }
+  });
+  feedItems=feedItems.filter(function(fi){return gameStates[fi.gamePk]!==undefined;});
+  renderFeed();
+}
+
+async function fetchTomorrowPreview() {
+  if (tomorrowPreview.inFlight) return;
+  if (Date.now()-tomorrowPreview.fetchedAt < 10*60*1000) return;
+  tomorrowPreview.inFlight=true;
+  try {
+    var seed=pollDateStr?pollDateStr.split('-').map(Number):null;
+    var nextDate=seed?new Date(seed[0],seed[1]-1,seed[2]):new Date();
+    nextDate.setDate(nextDate.getDate()+1);
+    var ts=localDateStr(nextDate);
+    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+ts+'&hydrate=team');
+    var d=await r.json();
+    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    tomorrowPreview.dateStr=ts;
+    tomorrowPreview.gameCount=games.length;
+    if (games.length) {
+      games.sort(function(a,b){return new Date(a.gameDate).getTime()-new Date(b.gameDate).getTime();});
+      var first=games[0], ms=new Date(first.gameDate).getTime();
+      tomorrowPreview.firstPitchMs=ms;
+      tomorrowPreview.gameTime=new Date(ms).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    } else {
+      tomorrowPreview.firstPitchMs=null;
+      tomorrowPreview.gameTime=null;
+    }
+    tomorrowPreview.fetchedAt=Date.now();
+    if (isPostSlate()) renderEmptyState(true);
+  } catch(e){if(DEBUG)console.warn('fetchTomorrowPreview',e);}
+  finally{tomorrowPreview.inFlight=false;}
+}
+
+function renderEmptyState(postSlate, intermission) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(gameStates).filter(function(g){
     if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
@@ -4119,16 +4202,36 @@ function renderEmptyState() {
   upcoming.sort(function(a,b){var aMs=a.gameDateMs||0,bMs=b.gameDateMs||0;if(aMs!==bMs)return aMs-bMs;return a.awayAbbr.localeCompare(b.awayAbbr);});
   if (!upcoming.length){
     el.className='';
-    el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">League Pulse</div><div class="empty-sub">Live play-by-play from every game will appear here</div>';
+    if (postSlate) {
+      fetchTomorrowPreview();
+      var subText='Live play-by-play returns when games begin.';
+      var countdownHtml='';
+      if (tomorrowPreview.firstPitchMs) {
+        countdownHtml='<div id="heroCountdown" style="margin-top:14px;font-size:1rem;color:var(--accent);font-weight:700"></div>';
+        var n=tomorrowPreview.gameCount;
+        subText='Next slate · '+n+' '+(n===1?'game':'games')+' · first pitch '+(tomorrowPreview.gameTime||'TBD');
+      } else if (tomorrowPreview.fetchedAt && tomorrowPreview.gameCount===0) {
+        subText='No games scheduled in the next slate.';
+      }
+      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
+      if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
+    } else {
+      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">League Pulse</div><div class="empty-sub">Live play-by-play from every game will appear here</div>';
+    }
     return;
   }
   el.className='has-upcoming';
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
-  var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+  var labelText=intermission
+    ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
+    : 'TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
+  var hypeBlock=intermission?'':
+    '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
-    +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
+    +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
+  var html='<div class="empty-upcoming-label">'+labelText+'</div>'
+    +hypeBlock
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
     +'<div class="upcoming-hero-kicker">NEXT UP</div>'
     +'<div class="upcoming-matchup-row">'
