@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.14</title>
+<title>MLB Tracker v3.14.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.14</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.14.1</div>
       </div>
     </div>
   </div>
@@ -5053,6 +5053,7 @@ function buildTeamSelect(){
 }
 
 function switchTeam(teamId){
+  if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
   activeTeam=TEAMS.find(t=>t.id===parseInt(teamId));localStorage.setItem('mlb_team',teamId);applyTeamTheme(activeTeam);
   document.getElementById('settingsPanel').classList.remove('open');
   scheduleData=[];scheduleLoaded=false;rosterData={hitting:[],pitching:[],fielding:[]};statsCache={hitting:[],pitching:[]};selectedPlayer=null;
@@ -5093,6 +5094,7 @@ function onSoundPanelClickOutside(e){
 function showSection(id,btn){
   if(demoMode)exitDemo();
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
+  if(id!=='league'&&leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById(id).classList.add('active');btn.classList.add('active');
@@ -5192,6 +5194,7 @@ function renderNextGame(g,label){
 }
 
 async function loadTodayGame(){
+  if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
   var now=new Date(),today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   document.getElementById('todayGame').innerHTML='<div class="loading">Loading next game...</div>';
   try{
@@ -5201,7 +5204,7 @@ async function loadTodayGame(){
     var upcomingToday=todayGames.find(function(g){return g.status.abstractGameState==='Preview'||g.status.abstractGameState==='Scheduled'||(g.status.abstractGameState==='Live'&&(g.status.detailedState==='Warmup'||g.status.detailedState==='Pre-Game'));});
     var gameToRender=liveGame||upcomingToday;
     if(gameToRender&&!scheduleData.length){try{var gd=new Date(gameToRender.gameDate),s7=new Date(gd);s7.setDate(gd.getDate()-7);var e7=new Date(gd);e7.setDate(gd.getDate()+7);var fmtD=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};var sr=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+fmtD(s7)+'&endDate='+fmtD(e7)+'&teamId='+activeTeam.id+'&hydrate=team,linescore');var srd=await sr.json();(srd.dates||[]).forEach(function(dt){dt.games.forEach(function(g){scheduleData.push(g);});});}catch(e){}}
-    if(liveGame){document.getElementById('todayGame').innerHTML=renderNextGame(liveGame,'TODAY');return;}
+    if(liveGame){document.getElementById('todayGame').innerHTML=renderNextGame(liveGame,'TODAY');homeLiveTimer=setInterval(loadTodayGame,60000);return;}
     if(upcomingToday){document.getElementById('todayGame').innerHTML=renderNextGame(upcomingToday,'TODAY');return;}
     var end=new Date();end.setDate(end.getDate()+14);
     var endStr=end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
@@ -5610,7 +5613,7 @@ async function loadNews(){
 function switchNewsFeed(mode,btn){newsFeedMode=mode;['newsMlbBtn','newsTeamBtn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});if(btn)btn.classList.add('active');loadNews();}
 
 var liveGamePk=null,liveInterval=null;
-function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,300000);}
+function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,30000);}
 function closeLiveView(){clearInterval(liveInterval);liveInterval=null;if(liveAbortCtrl){liveAbortCtrl.abort();liveAbortCtrl=null;}liveGamePk=null;document.getElementById('liveView').classList.remove('active');document.querySelector('.main').style.display='block';}
 async function fetchLiveGame(){
   if(liveAbortCtrl){liveAbortCtrl.abort();}
@@ -5655,7 +5658,6 @@ async function fetchLiveGame(){
     if(bs.info&&bs.info.length){giHtml='<div class="boxscore-wrap" style="margin-top:16px"><div class="live-card-title" style="margin-bottom:10px">Game Info</div><div style="background:var(--card);border-radius:8px;padding:10px">';bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)giHtml+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else giHtml+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--accent);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text);overflow-wrap:break-word;min-width:0;flex:1">'+val+'</span></div>';});giHtml+='</div></div>';}
     document.getElementById('liveGameInfo').innerHTML=giHtml;
     if(isFinal){if(liveInterval){clearInterval(liveInterval);liveInterval=null;}document.getElementById('liveRefreshTime').textContent='Game Final';}
-    else document.getElementById('liveRefreshTime').textContent='Last updated: '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+' · Auto-refreshes every 5 min';
   }catch(e){if(e.name!=='AbortError')document.getElementById('liveHeader').innerHTML='<div class="error">Could not load live game data</div>';}
   fetchPlayByPlay();
 }
@@ -5718,7 +5720,9 @@ function renderMediaList(){var listEl=document.getElementById('mediaList');if(!l
 function selectMediaVideo(videoId){selectedVideoId=videoId;var player=document.getElementById('mediaPlayer');if(player)player.src='https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay=1&rel=0';renderMediaList();}
 
 var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={},leagueMatchupOffset=0;
-async function loadLeagueView(){leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();}
+let homeLiveTimer=null;
+let leagueRefreshTimer=null;
+async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,60000);}
 async function loadLeagueStandings(){try{var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team');var d=await r.json();leagueStandingsMap={};(d.records||[]).forEach(function(rec){(rec.teamRecords||[]).forEach(function(t){leagueStandingsMap[t.team.id]={w:t.wins,l:t.losses};});});}catch(e){}}
 async function loadLeagueMatchups(){
   var el=document.getElementById('leagueMatchups');
