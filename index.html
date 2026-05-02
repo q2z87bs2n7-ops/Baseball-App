@@ -4588,11 +4588,15 @@ function renderRadioCheckList(){
     var status=radioCheckResults[e.key]||'';
     var note=(radioCheckNotes[e.key]||'').replace(/"/g,'&quot;');
     var playing=radioCheckPlayingKey===e.key;
+    var gameLive=radioCheckTeamHasLiveGame(e.teamId);
     return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);'+(playing?'background:rgba(34,197,94,.08)':'')+'">'+
       '<div style="display:flex;align-items:center;gap:8px">'+
         '<button onclick="radioCheckPlay(\''+e.key+'\')" style="background:'+(playing?'#22c55e':'var(--card2)')+';border:1px solid var(--border);color:'+(playing?'#000':'var(--text)')+';font-size:.7rem;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700;flex-shrink:0;min-width:36px">▶</button>'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.teamName+(e.abbr?' <span style="color:var(--muted);font-weight:500">· '+e.abbr+'</span>':'')+'</div>'+
+          '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
+            '<span style="font-size:.78rem;font-weight:700;color:var(--text)">'+e.teamName+(e.abbr?' <span style="color:var(--muted);font-weight:500">· '+e.abbr+'</span>':'')+'</span>'+
+            (gameLive?'<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,.15);border:1px solid #22c55e;border-radius:10px;padding:1px 6px;font-size:.6rem;font-weight:700;color:#22c55e">● GAME ON</span>':'')+
+          '</div>'+
           '<div style="font-size:.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.station+' · '+e.format.toUpperCase()+'</div>'+
         '</div>'+
         '<div style="display:flex;gap:4px;flex-shrink:0">'+
@@ -4606,6 +4610,12 @@ function renderRadioCheckList(){
   var done=Object.values(radioCheckResults).filter(function(v){return v==='yes'||v==='no';}).length;
   var summary='<div style="padding:8px 10px;font-size:.7rem;color:var(--muted);text-align:center">'+done+' of '+entries.length+' checked</div>';
   list.innerHTML=summary+html;
+}
+function radioCheckTeamHasLiveGame(teamId){
+  if(!teamId) return false;
+  return Object.values(gameStates).some(function(g){
+    return g.status==='Live'&&g.detailedState==='In Progress'&&(g.awayId===teamId||g.homeId===teamId);
+  });
 }
 function radioCheckPlay(key){
   var entries=radioCheckEntries();
