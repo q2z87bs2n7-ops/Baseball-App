@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.a</title>
+<title>MLB Tracker v3.9.b</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -713,6 +713,15 @@
           </div>
           <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊</button>
         </div>
+        <div id="radioRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">📻 Background Radio</div>
+            <div style="font-size:.68rem;color:var(--muted)" id="radioStatusText">Off · Fox Sports Radio</div>
+          </div>
+          <div onclick="toggleRadio()" id="radioToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+            <div id="radioToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
+          </div>
+        </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🛠️ Dev Tools</div>
@@ -723,7 +732,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.a</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.b</div>
       </div>
     </div>
   </div>
@@ -4153,6 +4162,24 @@ function confirmDevToolsChanges(){
   setTimeout(function(){btn.textContent='Confirm Changes';btn.classList.remove('applied');},1500);
 }
 function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
+var radioAudio=null;
+var RADIO_URL='https://ais-sa1.streamon.fm/7852_128k.aac';
+function toggleRadio(){if(radioAudio&&!radioAudio.paused){stopRadio();}else{startRadio();}}
+function startRadio(){
+  if(!radioAudio){radioAudio=new Audio(RADIO_URL);}
+  radioAudio.play().then(function(){setRadioUI(true);}).catch(function(err){
+    console.error('Radio play failed:',err);
+    alert('Radio failed to start: '+err.message);
+    setRadioUI(false);
+  });
+}
+function stopRadio(){if(radioAudio){radioAudio.pause();}setRadioUI(false);}
+function setRadioUI(on){
+  var t=document.getElementById('radioToggle'),k=document.getElementById('radioToggleKnob'),s=document.getElementById('radioStatusText');
+  if(!t)return;
+  if(on){t.style.background='#22c55e';k.style.left='21px';s.textContent='Playing · Fox Sports Radio';}
+  else{t.style.background='var(--border)';k.style.left='3px';s.textContent='Off · Fox Sports Radio';}
+}
 function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 function updateTuning(param,val){
