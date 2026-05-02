@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.12</title>
+<title>MLB Tracker v3.12.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.12</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.12.1</div>
       </div>
     </div>
   </div>
@@ -1402,7 +1402,18 @@ async function pollLeaguePulse() {
   pulseAbortCtrl=new AbortController();
   var sig=pulseAbortCtrl.signal;
   var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live';});
-  if (!hasLive) pollDateStr=localDateStr(getEffectiveDate());
+  if (!hasLive) {
+    // Fix 1: don't flip date while games from the current poll date are still in gameStates
+    var hasGamesFromCurrentDate=pollDateStr&&Object.values(gameStates).some(function(g){
+      return g.gameDateMs&&localDateStr(new Date(g.gameDateMs))===pollDateStr;
+    });
+    // Fix 3: safety net — don't advance past midnight until 6 AM local (skip in demo mode)
+    var localHour=new Date().getHours();
+    var isMidnightWindow=!demoMode&&localHour>=0&&localHour<6;
+    if (!hasGamesFromCurrentDate&&!isMidnightWindow) {
+      pollDateStr=localDateStr(getEffectiveDate());
+    }
+  }
   var dateStr=pollDateStr;
   try {
     // Fetch from primary date
@@ -1410,8 +1421,8 @@ async function pollLeaguePulse() {
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
 
-    // If no games found on primary date and it's a fresh poll (no prior state), also try yesterday
-    if (!games.length && !hasLive && isFirstPoll) {
+    // If no games found on primary date, also try yesterday (Fix 2: removed isFirstPoll gate)
+    if (!games.length && !hasLive) {
       var yesterday=new Date();
       yesterday.setDate(yesterday.getDate()-1);
       var yDateStr=localDateStr(yesterday);
