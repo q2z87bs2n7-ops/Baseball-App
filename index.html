@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.2</title>
+<title>MLB Pulse v3.20.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.3</div>
       </div>
     </div>
   </div>
@@ -4122,6 +4122,7 @@ async function loadYesterdayHero() {
     +'</div>'
     +'<div style="padding:10px 16px 14px">'
     +'<div id="ydPlayerTitle" class="news-card-title" style="font-size:.82rem;font-weight:700"></div>'
+    +'<div id="ydPlayerBlurb" style="font-size:.72rem;color:var(--muted);margin-top:3px"></div>'
     +'</div>';
   loadYdCarouselClip(0);
   prefetchAllYesterdayContent();
@@ -4132,6 +4133,7 @@ function loadYdCarouselClip(idx) {
   if(!clip) return;
   var video=document.getElementById('ydSharedVideo');
   var titleEl=document.getElementById('ydPlayerTitle');
+  var blurbEl=document.getElementById('ydPlayerBlurb');
   var countEl=document.getElementById('ydHlCount');
   if(!video) return;
   video.pause();
@@ -4141,6 +4143,7 @@ function loadYdCarouselClip(idx) {
   if(poster) video.poster=poster; else video.removeAttribute('poster');
   video.src=pickPlayback(clip.playbacks);
   if(titleEl) titleEl.textContent=clip.headline||clip.blurb||'Highlight';
+  if(blurbEl) blurbEl.textContent=(clip.blurb&&clip.blurb!==clip.headline)?clip.blurb:'';
   if(countEl) countEl.textContent=(idx+1)+' / '+ydHighlightClips.length;
   ydHighlightIndex=idx;
 }
@@ -4167,6 +4170,8 @@ function loadClipIntoSharedPlayer(url, poster, title) {
   var titleEl=document.getElementById('ydPlayerTitle');
   var countEl=document.getElementById('ydHlCount');
   if(titleEl) titleEl.textContent=title||'';
+  var blurbEl=document.getElementById('ydPlayerBlurb');
+  if(blurbEl) blurbEl.textContent='';
   if(countEl) countEl.textContent='NOW PLAYING';
   var heroRegion=document.getElementById('ydHeroRegion');
   if(heroRegion) heroRegion.scrollIntoView({behavior:'smooth',block:'start'});
