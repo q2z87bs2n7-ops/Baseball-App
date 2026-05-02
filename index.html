@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.10</title>
+<title>MLB Pulse v3.20.11</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -774,7 +774,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.10</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.11</div>
       </div>
     </div>
   </div>
@@ -1013,8 +1013,12 @@
 <div id="collectionOverlay" onclick="if(event.target===this)closeCollection()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
   <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
 </div>
-<div id="yesterdayOverlay" onclick="if(event.target===this)closeYesterdayRecap()" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px">
-  <div id="yesterdayCard" style="width:100%;max-width:640px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:0 auto"></div>
+<div id="yesterday" class="section">
+  <div id="ydSectionBar" style="position:sticky;top:0;z-index:80;background:var(--dark);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:10px 20px">
+    <button onclick="closeYesterdayRecap()" style="background:none;border:none;color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer;padding:0;letter-spacing:.04em">← Back</button>
+    <div style="font-size:.88rem;font-weight:700;color:var(--text)">📅 Yesterday — <span id="ydDateLabel"></span></div>
+  </div>
+  <div id="yesterdayCard" style="max-width:860px;margin:0 auto;padding:0 0 40px"></div>
 </div>
 <div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--text);white-space:nowrap"></div>
 
@@ -3932,18 +3936,33 @@ function closeCollection() {
 }
 
 // ── Yesterday Recap overlay (v3.19.1) ─────────────────────────────────────────
+var ydPrevSection=null; // section to return to on close
 function openYesterdayRecap() {
-  var el=document.getElementById('yesterdayOverlay');
-  if(!el) return;
   yesterdayOverlayOpen=true;
-  el.style.display='flex';
+  // remember where we came from
+  var active=document.querySelector('.section.active');
+  ydPrevSection=active?active.id:null;
+  // switch all sections off, activate yesterday
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('yesterday').classList.add('active');
+  var lbl=document.getElementById('ydDateLabel');
+  if(lbl) lbl.textContent=getYesterdayDisplayStr();
   renderYesterdayRecap();
+  window.scrollTo(0,0);
 }
 
 function closeYesterdayRecap() {
-  var el=document.getElementById('yesterdayOverlay');
-  if(el) el.style.display='none';
   yesterdayOverlayOpen=false;
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  var returnId=ydPrevSection||'pulse';
+  var returnEl=document.getElementById(returnId);
+  if(returnEl) returnEl.classList.add('active');
+  // re-activate nav button for the return section
+  document.querySelectorAll('nav button').forEach(function(b){
+    var onclick=b.getAttribute('onclick')||'';
+    if(onclick.indexOf("'"+returnId+"'")!==-1) b.classList.add('active');
+  });
 }
 
 function getYesterdayDateStr() {
@@ -4047,26 +4066,23 @@ function renderYesterdayRecap() {
     }
     // Strip "Yesterday: " prefix from headline for cleaner display
     var headlineText=item.headline.replace(/^Yesterday:\s*/,'');
-    var videoRegion='<div id="ydvideo_'+item.gamePk+'" style="margin-top:8px"></div>';
-    return '<div id="ydtile_'+item.gamePk+'" style="padding:14px 16px;border-top:1px solid var(--border)">'
+    var videoRegion='<div id="ydvideo_'+item.gamePk+'" style="margin-top:10px"></div>';
+    return '<div id="ydtile_'+item.gamePk+'" class="card" style="padding:18px 20px">'
       +capRow
-      +'<div style="font-size:.82rem;color:var(--text);font-weight:600;line-height:1.4">'+headlineText+'</div>'
-      +(item.sub?'<div style="font-size:.68rem;color:var(--muted);margin-top:3px">'+item.sub+'</div>':'')
+      +'<div style="font-size:.88rem;color:var(--text);font-weight:600;line-height:1.45">'+headlineText+'</div>'
+      +(item.sub?'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">'+item.sub+'</div>':'')
       +videoRegion
-      +'<div style="margin-top:10px"><button onclick="showLiveGame('+item.gamePk+')" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:5px 12px;cursor:pointer">Box Score →</button></div>'
+      +'<div style="margin-top:12px"><button onclick="showLiveGame('+item.gamePk+')" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:5px 12px;cursor:pointer">Box Score →</button></div>'
       +'</div>';
   }).join('');
+  var tilesGrid='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;padding:16px 20px">'+tilesHtml+'</div>';
 
   card.innerHTML=''
-    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">'
-    +'<div style="font-size:.9rem;font-weight:700;color:var(--text)">📅 Yesterday — '+getYesterdayDisplayStr()+'</div>'
-    +'<button onclick="closeYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:50%;width:28px;height:28px;color:var(--muted);font-size:14px;cursor:pointer;line-height:1;padding:0">✕</button>'
-    +'</div>'
-    +'<div id="ydHeroRegion"></div>'
+    +'<div id="ydHeroRegion" style="padding:0 20px 0;margin-bottom:4px"></div>'
     +'<div id="ydHeroesStrip"></div>'
-    +tilesHtml
+    +tilesGrid
     +cardsHtml
-    +'<div style="padding:12px 20px;border-top:1px solid var(--border);text-align:center;font-size:.65rem;color:var(--muted)">From yesterday\'s slate</div>';
+    +'<div style="padding:16px 20px;text-align:center;font-size:.65rem;color:var(--muted)">From yesterday\'s slate</div>';
 
   // Lazy-load video strips as tiles scroll into view
   if('IntersectionObserver' in window) {
@@ -4077,7 +4093,7 @@ function renderYesterdayRecap() {
         var pk=tile.dataset.gamepk;
         if(pk) { loadYesterdayVideoStrip(+pk); obs.unobserve(tile); }
       });
-    },{root:document.getElementById('yesterdayOverlay'),rootMargin:'200px'});
+    },{root:null,rootMargin:'200px'});
     yesterdayCache.forEach(function(item){
       var tile=document.getElementById('ydtile_'+item.gamePk);
       if(tile){ tile.dataset.gamepk=item.gamePk; obs.observe(tile); }
