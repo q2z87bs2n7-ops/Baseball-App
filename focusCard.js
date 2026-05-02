@@ -282,10 +282,10 @@
           var autoBtn = d.isManual
             ? '<button type="button" onclick="resetFocusAuto && resetFocusAuto()" style="' +
                 'flex:0 0 auto;padding:3px 8px;border-radius:4px;' +
-                'border:1px solid rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);' +
-                'font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.10em;color:#22c55e;cursor:pointer;"' +
-                ' onmouseover="this.style.background=\'rgba(34,197,94,0.16)\'"' +
-                ' onmouseout="this.style.background=\'rgba(34,197,94,0.08)\'">' +
+                'border:1px solid rgba(125,211,252,0.30);background:rgba(125,211,252,0.07);' +
+                'font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.10em;color:#7dd3fc;cursor:pointer;"' +
+                ' onmouseover="this.style.background=\'rgba(125,211,252,0.14)\'"' +
+                ' onmouseout="this.style.background=\'rgba(125,211,252,0.07)\'">' +
                 '↩ AUTO' +
               '</button>'
             : '';
