@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.22</title>
+<title>MLB Pulse v3.20.23</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -330,7 +330,7 @@
 .alert-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alert-progress { position: absolute; bottom: 0; left: 0; height: 2px; background: currentColor; opacity: 0.35; animation: progress-drain var(--toast-duration, 5s) linear forwards; }
 
-#pulseTopBar {
+#pulseTopBar, #ydSectionBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -338,6 +338,12 @@
   padding: 8px 14px;
   background: var(--dark);
   border-bottom: 1px solid var(--border);
+}
+#ydSectionBar {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 80;
+  margin-bottom: 16px;
 }
 .ptb-kicker { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; }
 .ptb-bolt { color: var(--accent); font-size: .8rem; flex-shrink: 0; }
@@ -805,7 +811,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.22</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.23</div>
       </div>
     </div>
   </div>
@@ -974,10 +980,15 @@
       <span class="ptb-sep">·</span>
       <span class="ptb-tagline" id="ptbTagline">Every game, one feed.</span>
     </div>
-    <button id="myTeamLensBtn" class="ptb-lens" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
-      <span class="ptb-lens-label">MY TEAM</span>
-      <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button id="ptbYestBtn" onclick="openYesterdayRecap()" class="ptb-lens" style="display:none;padding:5px 12px">
+        <span class="ptb-lens-label">LAST NIGHT →</span>
+      </button>
+      <button id="myTeamLensBtn" class="ptb-lens" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
+        <span class="ptb-lens-label">MY TEAM</span>
+        <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
+      </button>
+    </div>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="focusMiniBar" style="display:none"></div>
@@ -1030,9 +1041,16 @@
   </div>
 </div>
 <div id="yesterday" class="section">
-  <div id="ydSectionBar" style="position:sticky;top:var(--header-h);z-index:80;background:var(--dark);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:10px 0;margin-bottom:16px">
-    <button onclick="closeYesterdayRecap()" style="background:none;border:none;color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer;padding:0;letter-spacing:.04em">← Back</button>
-    <div style="font-size:.88rem;font-weight:700;color:var(--text)">📅 Yesterday — <span id="ydDateLabel"></span></div>
+  <div id="ydSectionBar">
+    <div class="ptb-kicker">
+      <span class="ptb-bolt">⚡</span>
+      <span class="ptb-brand">MLB PULSE</span>
+      <span class="ptb-sep">·</span>
+      <span class="ptb-tagline" id="ydDateLabel">Yesterday</span>
+    </div>
+    <button onclick="closeYesterdayRecap()" class="ptb-lens" style="padding:5px 12px">
+      <span class="ptb-lens-label">← BACK</span>
+    </button>
   </div>
   <div id="yesterdayCard" style="padding:0 0 40px"></div>
 </div>
@@ -1864,6 +1882,7 @@ async function initDemo() {
   dailyLeadersCache=jsonData.dailyLeadersCache||null;
   onThisDayCache=jsonData.onThisDayCache||[];
   yesterdayCache=jsonData.yesterdayCache||[];
+  var ybtn=document.getElementById('ptbYestBtn');if(ybtn)ybtn.style.display=yesterdayCache.length?'':'none';
   hrBatterStatsCache=jsonData.hrBatterStatsCache||{};
   probablePitcherStatsCache=jsonData.probablePitcherStatsCache||{};
   dailyHitsTracker=jsonData.dailyHitsTracker||{};
@@ -3419,6 +3438,7 @@ async function loadYesterdayCache(){
       yesterdayCache.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
     }
   }catch(e){}
+  var ybtn=document.getElementById('ptbYestBtn');if(ybtn)ybtn.style.display=yesterdayCache.length?'':'none';
 }
 
 async function loadDailyLeaders(){
@@ -4900,8 +4920,7 @@ function renderEmptyState(postSlate, intermission) {
       } else if (tomorrowPreview.fetchedAt && tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      var ydLink=yesterdayCache&&yesterdayCache.length?'<div style="margin-top:16px"><button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--accent);font-size:.75rem;font-weight:600;padding:6px 14px;cursor:pointer;letter-spacing:.04em">📅 Yesterday Recap →</button></div>':'';
-      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+ydLink;
+      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
       var g0=pulseGreeting();
@@ -4942,9 +4961,6 @@ function renderEmptyState(postSlate, intermission) {
         +'</div></div>';
     });
     html+='</div>';
-  }
-  if (yesterdayCache&&yesterdayCache.length) {
-    html+='<div style="margin-top:12px;text-align:center"><button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:.72rem;font-weight:600;padding:5px 14px;cursor:pointer;letter-spacing:.04em">📅 Yesterday Recap →</button></div>';
   }
   el.innerHTML=html;
   if (hero.gameDateMs) startCountdown(hero.gameDateMs);
