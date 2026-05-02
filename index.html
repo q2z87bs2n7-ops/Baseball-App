@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.15</title>
+<title>MLB Tracker v3.15.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.1</div>
       </div>
     </div>
   </div>
@@ -1403,6 +1403,17 @@ async function pollLeaguePulse() {
   if(pulseAbortCtrl){pulseAbortCtrl.abort();}
   pulseAbortCtrl=new AbortController();
   var sig=pulseAbortCtrl.signal;
+  // 4am cutoff: reset to today if still showing a past date (overnight session cleanup)
+  if (!demoMode) {
+    var _todayStr=localDateStr(new Date());
+    if ((new Date().getHours())>=4 && pollDateStr && pollDateStr!==_todayStr) {
+      pollDateStr=_todayStr;
+      gameStates={};
+      feedItems=[];
+      var _feed=document.getElementById('feed');
+      if(_feed) _feed.innerHTML='';
+    }
+  }
   var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live';});
   // Hoist isMidnightWindow so both the date-flip guard and the yesterday fallback can use it
   var isMidnightWindow=!demoMode&&(new Date().getHours())<6;
