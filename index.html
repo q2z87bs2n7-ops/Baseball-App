@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.19.3</title>
+<title>MLB Pulse v3.19.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.4</div>
       </div>
     </div>
   </div>
@@ -4125,6 +4125,95 @@ async function loadYesterdayHero() {
     +(blurb&&blurb!==title?'<div style="font-size:.72rem;color:var(--muted);margin-top:3px">'+blurb+'</div>':'')
     +'</div>'
     +'</div>';
+  // After hero loads, pre-fetch all games in background then build heroes strip
+  prefetchAllYesterdayContent();
+}
+
+async function prefetchAllYesterdayContent() {
+  if(!yesterdayCache||!yesterdayCache.length) return;
+  await Promise.all(yesterdayCache.map(function(item){return fetchGameContent(item.gamePk);}));
+  buildAndRenderYesterdayHeroes();
+}
+
+function buildYesterdayHeroes() {
+  // Returns array of hero objects derived purely from yesterdayContentCache — no new fetches
+  var heroes=[];
+  var seenPlayers={};
+  if(!yesterdayCache) return heroes;
+  yesterdayCache.forEach(function(cacheItem){
+    var content=yesterdayContentCache[cacheItem.gamePk];
+    if(!content) return;
+    var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    // Group clips by player_id keyword
+    var playerClips={};
+    items.forEach(function(clip){
+      if(!clip.keywordsAll) return;
+      var pidKw=clip.keywordsAll.find(function(kw){return kw.type==='player_id'||kw.slug&&kw.slug.startsWith('player_id-');});
+      if(!pidKw) return;
+      var pid=pidKw.value||pidKw.displayName||pidKw.slug;
+      if(!pid) return;
+      if(!playerClips[pid]) playerClips[pid]={clips:[],name:'',isHR:false,isWalkoff:false,teamAbbr:''};
+      playerClips[pid].clips.push(clip);
+      // Detect HR
+      var isHRClip=clip.keywordsAll.some(function(kw){return (kw.type==='taxonomy'&&kw.value==='home_run')||kw.slug==='home_run';});
+      if(isHRClip) playerClips[pid].isHR=true;
+      // Detect walk-off
+      var isWO=(clip.headline||'').toLowerCase().indexOf('walk-off')!==-1||
+               (clip.blurb||'').toLowerCase().indexOf('walk-off')!==-1||
+               clip.keywordsAll.some(function(kw){return kw.value==='walk_off'||kw.slug==='walk_off';});
+      if(isWO) playerClips[pid].isWalkoff=true;
+      // Capture player name from headline if not yet set
+      if(!playerClips[pid].name&&clip.headline) playerClips[pid].name=clip.headline.split("'")[0].split(' ').slice(0,2).join(' ');
+    });
+    // Build hero objects per player, dedup across all games
+    Object.keys(playerClips).forEach(function(pid){
+      if(seenPlayers[pid]) return;
+      seenPlayers[pid]=true;
+      var pc=playerClips[pid];
+      if(!pc.isHR&&!pc.isWalkoff) return; // only HR hitters and walk-off heroes
+      var hrCount=pc.clips.filter(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});}).length;
+      var role=pc.isWalkoff?'walkoff':hrCount>=2?'multi-HR':'HR';
+      // Pick best clip: walk-off/HR first, then longest
+      var clip=pc.clips.find(function(c){return pc.isWalkoff&&((c.headline||'').toLowerCase().indexOf('walk-off')!==-1);});
+      if(!clip) clip=pc.clips.find(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});});
+      if(!clip) clip=pc.clips[0];
+      var imgUrl=pickHeroImage(clip)||'';
+      if(!imgUrl) return; // skip if no photo
+      heroes.push({pid:pid,playerName:pc.name,role:role,hrCount:hrCount,imageUrl:imgUrl,blurb:clip.headline||clip.blurb||'',gamePk:cacheItem.gamePk,isWalkoff:pc.isWalkoff});
+    });
+  });
+  // Sort: walk-off first, then multi-HR, then single HR
+  var roleOrder={walkoff:0,'multi-HR':1,HR:2};
+  heroes.sort(function(a,b){return (roleOrder[a.role]||9)-(roleOrder[b.role]||9);});
+  return heroes;
+}
+
+function buildAndRenderYesterdayHeroes() {
+  var stripEl=document.getElementById('ydHeroesStrip');
+  if(!stripEl) return;
+  var heroes=buildYesterdayHeroes();
+  if(!heroes.length) return;
+  var roleLabel={walkoff:'WALK-OFF','multi-HR':function(h){return h.hrCount+' HR';},'HR':'HR'};
+  var tiles=heroes.map(function(h){
+    var lbl=typeof roleLabel[h.role]==='function'?roleLabel[h.role](h):roleLabel[h.role];
+    var lastName=h.playerName?h.playerName.split(' ').pop():h.playerName;
+    return '<div onclick="scrollToYdTile('+h.gamePk+')" style="cursor:pointer;flex-shrink:0;width:110px;position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border)">'
+      +'<img src="'+h.imageUrl+'" style="width:110px;height:74px;object-fit:cover;display:block" loading="lazy">'
+      +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.82));padding:4px 6px">'
+      +'<div style="font-size:.58rem;font-weight:700;color:#f59e0b;letter-spacing:.06em">'+lbl+'</div>'
+      +'<div style="font-size:.68rem;font-weight:700;color:#fff">'+lastName+'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  stripEl.innerHTML='<div style="padding:10px 16px 0;border-top:1px solid var(--border)">'
+    +'<div style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">YESTERDAY\'S HEROES</div>'
+    +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px">'+tiles+'</div>'
+    +'</div>';
+}
+
+function scrollToYdTile(gamePk) {
+  var tile=document.getElementById('ydtile_'+gamePk);
+  if(tile) tile.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 async function loadYesterdayVideoStrip(gamePk) {
