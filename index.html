@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.19.1</title>
+<title>MLB Pulse v3.20.21</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -512,6 +512,46 @@
 .news-nav:hover { background: rgba(0,0,0,0.7); border-color: rgba(255,255,255,0.3); }
 .news-nav:first-of-type { left: 8px; }
 .news-nav:last-of-type { right: 8px; }
+/* ── Yesterday Recap ─────────────────────────────────────────────── */
+.yd-hero-grid { display:flex; flex-direction:column; background:var(--card); border-radius:10px; overflow:hidden; }
+.yd-player-col { flex:1 1 auto; min-width:0; }
+.yd-video-wrap { background:#000; line-height:0; height:100%; }
+.yd-video-wrap video { display:block; width:100%; height:100%; object-fit:cover; }
+.yd-playlist { display:flex; flex-direction:row; gap:8px; overflow-x:auto; overflow-y:hidden; padding:10px 14px 12px; border-top:1px solid var(--border); }
+.yd-playlist-kicker { display:none; font-size:.62rem; font-weight:700; color:var(--muted); letter-spacing:.1em; }
+.yd-clip-strip { scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.yd-clip-strip::-webkit-scrollbar { height:4px; width:4px; }
+.yd-clip-strip::-webkit-scrollbar-track { background:transparent; }
+.yd-clip-strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.yd-clip-strip::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+.yd-clip-chip { cursor:pointer; flex-shrink:0; width:150px; border-radius:6px; overflow:hidden; border:2px solid transparent; background:var(--card2); transition:border-color 0.2s; display:flex; flex-direction:column; }
+.yd-clip-chip.active { border-color:var(--accent); }
+.yd-clip-chip:hover:not(.active) { border-color:rgba(255,255,255,.2); }
+.yd-chip-thumb { position:relative; background:var(--card); display:flex; align-items:center; justify-content:center; height:84px; flex-shrink:0; overflow:hidden; }
+.yd-chip-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.yd-chip-text { padding:5px 7px 7px; font-size:.6rem; font-weight:600; color:var(--text); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.yd-tiles-grid { display:grid; grid-template-columns:1fr; gap:12px; padding:14px 0 0; }
+.yd-game-thumb { position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--border); margin-top:10px; cursor:pointer; }
+.yd-game-thumb img { width:100%; max-height:180px; object-fit:cover; display:block; }
+.yd-game-thumb-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); }
+.yd-game-thumb-play span { width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; }
+.yd-game-thumb-label { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.82)); padding:8px 10px; font-size:.62rem; color:rgba(255,255,255,.9); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.yd-active .main { display:none !important; }
+@media(min-width:860px){
+  .yd-hero-grid { flex-direction:row; align-items:stretch; max-width:1100px; margin:0 auto; aspect-ratio:7/3; overflow:hidden; }
+  .yd-player-col { flex:1 1 0; overflow:hidden; border-right:1px solid var(--border); }
+  .yd-playlist { flex-direction:column; overflow-x:hidden; overflow-y:auto; width:260px; flex-shrink:0; border-top:none; padding:0; gap:0; }
+  .yd-playlist-kicker { display:block; padding:10px 12px 8px; border-bottom:1px solid var(--border); }
+  .yd-clip-chip { width:100%; flex-direction:row; border-radius:0; border:none; border-bottom:1px solid var(--border); background:transparent; }
+  .yd-clip-chip:hover:not(.active) { background:rgba(255,255,255,.04); border-bottom-color:var(--border); }
+  .yd-clip-chip.active { background:rgba(255,255,255,.07); border-left:3px solid var(--accent); border-bottom-color:var(--border); }
+  .yd-chip-thumb { width:110px; min-width:110px; height:62px; }
+  .yd-chip-text { -webkit-line-clamp:3; font-size:.62rem; padding:8px 10px; flex:1; }
+  .yd-tiles-grid { grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); max-width:1100px; margin:0 auto; padding:16px 20px 0; gap:14px; }
+  .yd-game-thumb img { max-height:200px; }
+}
+@media(min-width:600px) and (max-width:859px){ .yd-tiles-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:480px){ .yd-clip-chip { width:130px; } .yd-chip-thumb { height:72px; } }
 #newsCard { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .news-card-item { display: none; }
 .news-card-item.active { display: flex; flex-direction: column; gap: 6px; animation: fade-in 0.3s ease; }
@@ -766,7 +806,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.21</div>
       </div>
     </div>
   </div>
@@ -882,6 +922,10 @@
 <div id="media" class="section"><div id="mediaCard"></div></div>
 
 <div id="league" class="section">
+  <div id="ydRecapBanner" style="display:none;margin-bottom:12px;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:10px;align-items:center;justify-content:space-between;gap:12px">
+    <div style="font-size:.75rem;color:var(--muted)">📅 Yesterday's slate is complete</div>
+    <button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:5px 12px;cursor:pointer;white-space:nowrap">Yesterday Recap →</button>
+  </div>
   <div class="card" style="margin-bottom:16px">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>⚾ <span id="matchupDayLabel">Today's</span> Matchups</span>
@@ -1000,6 +1044,13 @@
 </div>
 <div id="collectionOverlay" onclick="if(event.target===this)closeCollection()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
   <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
+</div>
+<div id="yesterday" class="section">
+  <div id="ydSectionBar" style="position:sticky;top:0;z-index:80;background:var(--dark);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:10px 20px">
+    <button onclick="closeYesterdayRecap()" style="background:none;border:none;color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer;padding:0;letter-spacing:.04em">← Back</button>
+    <div style="font-size:.88rem;font-weight:700;color:var(--text)">📅 Yesterday — <span id="ydDateLabel"></span></div>
+  </div>
+  <div id="yesterdayCard" style="padding:0 0 40px"></div>
 </div>
 <div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--text);white-space:nowrap"></div>
 
@@ -1400,6 +1451,11 @@ let collectionPage=0;               // 0-indexed page for binder display
 let collectionCareerStatsCache={};  // playerId → career stat object (session-only)
 let lastCollectionResult=null;      // {type,playerName,eventType,tier} — set by collectCard, read by flashCollectionRailMessage
 let collectionSlotsDisplay=[];      // sorted slot array set by renderCollectionBook; openCardFromCollection indexes into this
+
+// ── Yesterday Recap globals (v3.19.1) ─────────────────────────────────────────
+let yesterdayContentCache={};      // gamePk → content API response (session-only)
+let yesterdayOverlayOpen=false;
+let ydHighlightClips=[];           // top-5 editorial clips for the carousel (session)
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -2872,7 +2928,7 @@ async function loadAwardsCache(){
     var allRecipients=[];
     for(var i=0;i<relevant.length;i++){
       try{
-        var rr=await fetch(MLB_BASE+'/awards/'+relevant[i].id+'/recipients?season='+SEASON);
+        var rr=await fetch(MLB_BASE+'/awards/'+relevant[i].awardId+'/recipients?season='+SEASON);
         var rd=await rr.json();
         (rd.awards||[]).forEach(function(a){allRecipients.push(a);});
       }catch(e){}
@@ -3911,6 +3967,462 @@ function closeCollection() {
   if (el) el.style.display = 'none';
 }
 
+// ── Yesterday Recap overlay (v3.19.1) ─────────────────────────────────────────
+var ydPrevSection=null; // section to return to on close
+function openYesterdayRecap() {
+  yesterdayOverlayOpen=true;
+  // remember where we came from
+  var active=document.querySelector('.section.active');
+  ydPrevSection=active?active.id:null;
+  // switch all sections off, activate yesterday
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('yesterday').classList.add('active');
+  document.body.classList.add('yd-active');
+  var lbl=document.getElementById('ydDateLabel');
+  if(lbl) lbl.textContent=getYesterdayDisplayStr();
+  renderYesterdayRecap();
+  window.scrollTo(0,0);
+}
+
+function closeYesterdayRecap() {
+  yesterdayOverlayOpen=false;
+  document.body.classList.remove('yd-active');
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  var returnId=ydPrevSection||'pulse';
+  var returnEl=document.getElementById(returnId);
+  if(returnEl) returnEl.classList.add('active');
+  // re-activate nav button for the return section
+  document.querySelectorAll('nav button').forEach(function(b){
+    var onclick=b.getAttribute('onclick')||'';
+    if(onclick.indexOf("'"+returnId+"'")!==-1) b.classList.add('active');
+  });
+}
+
+function getYesterdayDateStr() {
+  var yd=new Date(); yd.setDate(yd.getDate()-1);
+  return yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+}
+
+function getYesterdayDisplayStr() {
+  var yd=new Date(); yd.setDate(yd.getDate()-1);
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[yd.getMonth()]+' '+yd.getDate()+', '+yd.getFullYear();
+}
+
+function getYesterdayCollectedCards() {
+  var ydStr=getYesterdayDateStr();
+  try {
+    var col=loadCollection();
+    var slots=Object.values(col).filter(function(s){
+      return s.events&&s.events.some(function(ev){return ev.date===ydStr;});
+    });
+    slots.sort(function(a,b){return tierRank(b.tier)-tierRank(a.tier);});
+    return slots.slice(0,5);
+  } catch(e){ return []; }
+}
+
+async function fetchGameContent(gamePk) {
+  if(yesterdayContentCache[gamePk]) return yesterdayContentCache[gamePk];
+  try {
+    var r=await fetch(MLB_BASE+'/game/'+gamePk+'/content');
+    var d=await r.json();
+    yesterdayContentCache[gamePk]=d;
+    return d;
+  } catch(e){ yesterdayContentCache[gamePk]=null; return null; }
+}
+
+function pickPlayback(playbacks) {
+  if(!playbacks||!playbacks.length) return null;
+  var mp4=playbacks.find(function(p){return p.name==='mp4Avc';});
+  if(mp4) return mp4.url;
+  var any=playbacks.find(function(p){return p.url&&p.url.endsWith('.mp4');});
+  return any?any.url:null;
+}
+
+function pickHeroImage(item) {
+  if(!item||!item.image) return null;
+  var raw=item.image.cuts;
+  if(!raw) return null;
+  // MLB API returns cuts as array [{src,width,aspectRatio}] or as object {"WxH":{src,...}}
+  var cuts=Array.isArray(raw)?raw:Object.values(raw);
+  if(!cuts.length) return null;
+  var c16=cuts.filter(function(c){return c.aspectRatio==='16:9'&&(c.width||0)>=480;});
+  c16.sort(function(a,b){return (a.width||0)-(b.width||0);});
+  if(c16.length) return c16[0].src||c16[0].url||null;
+  cuts.sort(function(a,b){return (b.width||0)-(a.width||0);});
+  return cuts.length?(cuts[0].src||cuts[0].url||null):null;
+}
+
+function renderYesterdayRecap() {
+  var card=document.getElementById('yesterdayCard');
+  if(!card) return;
+  if(!yesterdayCache||!yesterdayCache.length){
+    card.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted)">No yesterday data available.</div>';
+    return;
+  }
+
+  var ydCards=getYesterdayCollectedCards();
+  var cardsHtml='';
+  if(ydCards.length&&window.CollectionCard){
+    var miniCards=ydCards.map(function(s){
+      var key=s.playerId+'_'+s.eventType;
+      var displayEvent=s.events&&s.events[0]||null;
+      var careerStats=collectionCareerStatsCache[s.playerId]||null;
+      var cardHtml=window.CollectionCard.renderMiniCard(s,displayEvent,careerStats,null);
+      // inject click handler onto the <article tag
+      return cardHtml.replace('<article ','<article onclick="openCardFromKey(\''+key+'\')" style="cursor:pointer" ');
+    }).join('');
+    cardsHtml='<div style="padding:16px 20px;border-top:1px solid var(--border)">'
+      +'<div style="font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px">🎴 CARDS COLLECTED YESTERDAY</div>'
+      +'<div class="yd-clip-strip" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">'+miniCards+'</div>'
+      +'</div>';
+  }
+
+  var tilesHtml=yesterdayCache.map(function(item){
+    var g=gameStates[item.gamePk];
+    // Parse teams from headline: "Yesterday: WIN beat LOS W-L · ..."
+    var awayId=null,homeId=null;
+    // Try to get team IDs from scheduleData
+    var sched=(scheduleData||[]).find(function(s){return s.gamePk===item.gamePk||s.gamePk===+item.gamePk;});
+    if(sched){awayId=sched.teams&&sched.teams.away&&sched.teams.away.team&&sched.teams.away.team.id;homeId=sched.teams&&sched.teams.home&&sched.teams.home.team&&sched.teams.home.team.id;}
+    var awayTeam=awayId&&TEAMS.find(function(t){return t.id===awayId;});
+    var homeTeam=homeId&&TEAMS.find(function(t){return t.id===homeId;});
+    var capRow='';
+    if(awayTeam&&homeTeam){
+      capRow='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+        +'<img src="https://www.mlbstatic.com/team-logos/'+awayId+'.svg" style="width:28px;height:28px;object-fit:contain" onerror="this.style.display=\'none\'">'
+        +'<span style="font-size:.75rem;font-weight:700;color:var(--muted)">'+awayTeam.short+'</span>'
+        +'<span style="font-size:.72rem;color:var(--muted)">@</span>'
+        +'<img src="https://www.mlbstatic.com/team-logos/'+homeId+'.svg" style="width:28px;height:28px;object-fit:contain" onerror="this.style.display=\'none\'">'
+        +'<span style="font-size:.75rem;font-weight:700;color:var(--muted)">'+homeTeam.short+'</span>'
+        +'</div>';
+    }
+    // Use the video's own title if available, otherwise fall back to generated story headline
+    var contentItems=(yesterdayContentCache[item.gamePk]&&yesterdayContentCache[item.gamePk].highlights&&yesterdayContentCache[item.gamePk].highlights.highlights&&yesterdayContentCache[item.gamePk].highlights.highlights.items)||[];
+    var videoTitle=contentItems[0]&&(contentItems[0].headline||contentItems[0].blurb);
+    var headlineText=videoTitle||(item.headline.replace(/^Yesterday:\s*/,''));
+    var videoRegion='<div id="ydvideo_'+item.gamePk+'" style="margin-top:10px"></div>';
+    return '<div id="ydtile_'+item.gamePk+'" class="card" style="padding:16px 18px">'
+      +capRow
+      +'<div class="yd-tile-headline" style="font-size:.88rem;color:var(--text);font-weight:600;line-height:1.45">'+headlineText+'</div>'
+      +(item.sub?'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">'+item.sub+'</div>':'')
+      +videoRegion
+      +'<div style="margin-top:12px"><button onclick="showLiveGame('+item.gamePk+')" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:5px 12px;cursor:pointer">Box Score →</button></div>'
+      +'</div>';
+  }).join('');
+  var tilesGrid='<div class="yd-tiles-grid">'+tilesHtml+'</div>';
+
+  card.innerHTML=''
+    +'<div id="ydHeroRegion"></div>'
+    +'<div id="ydVideoMeta" style="max-width:1100px;margin:0 auto;padding:8px 4px 0"></div>'
+    +'<div id="ydHeroesStrip"></div>'
+    +tilesGrid
+    +cardsHtml
+    +'<div style="padding:16px 20px;text-align:center;font-size:.65rem;color:var(--muted)">From yesterday\'s slate</div>';
+
+  // Lazy-load video strips as tiles scroll into view
+  if('IntersectionObserver' in window) {
+    var obs=new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(!entry.isIntersecting) return;
+        var tile=entry.target;
+        var pk=tile.dataset.gamepk;
+        if(pk) { loadYesterdayVideoStrip(+pk); obs.unobserve(tile); }
+      });
+    },{root:null,rootMargin:'200px'});
+    yesterdayCache.forEach(function(item){
+      var tile=document.getElementById('ydtile_'+item.gamePk);
+      if(tile){ tile.dataset.gamepk=item.gamePk; obs.observe(tile); }
+    });
+  } else {
+    // Fallback: load all immediately
+    yesterdayCache.forEach(function(item){ loadYesterdayVideoStrip(item.gamePk); });
+  }
+  // Eagerly load hero for the marquee game, then prefetch all game content
+  // (prefetch resolves → buildTopHighlightsCarousel() builds the full clip carousel)
+  loadYesterdayHero();
+  prefetchAllYesterdayContent();
+}
+
+function pickMarqueeGame() {
+  if(!yesterdayCache||!yesterdayCache.length) return null;
+  // Priority: walk-off > no-hitter > first game in cache (most notable by position)
+  var walkoff=yesterdayCache.find(function(item){return item.headline&&(item.headline.indexOf('Walk-off')!==-1||item.headline.indexOf('walk-off')!==-1);});
+  if(walkoff) return walkoff;
+  var nohit=yesterdayCache.find(function(item){return item.headline&&item.headline.indexOf('No-hitter')!==-1;});
+  if(nohit) return nohit;
+  // Fall back to the first game (usually most notable by league schedule ordering)
+  return yesterdayCache[0];
+}
+
+
+function mountSharedPlayer(heroRegion) {
+  if(!heroRegion||heroRegion.dataset.mounted) return;
+  heroRegion.dataset.mounted='1';
+  heroRegion.className='yd-hero-grid';
+  heroRegion.innerHTML=
+    '<div class="yd-player-col">'
+    +'<div class="yd-video-wrap"><video id="ydSharedVideo" controls playsinline></video></div>'
+    +'</div>';
+}
+
+async function loadYesterdayHero() {
+  // Fast path: mount the player immediately with the marquee game's top editorial clip.
+  // Full carousel (one clip per game) is built by buildTopHighlightsCarousel() after
+  // prefetchAllYesterdayContent() resolves all game content.
+  var heroRegion=document.getElementById('ydHeroRegion');
+  if(!heroRegion) return;
+  var marquee=pickMarqueeGame();
+  if(!marquee) return;
+  var content=await fetchGameContent(marquee.gamePk);
+  if(!content) return;
+  var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+  if(!playable.length) return;
+  // Prefer index 2 (first actual play highlight); fall back to index 0 if fewer than 3 clips
+  var first=playable[2]||playable[0];
+  mountSharedPlayer(heroRegion);
+  loadClipIntoSharedPlayer(
+    pickPlayback(first.playbacks),
+    pickHeroImage(first)||'',
+    first.headline||first.blurb||'Top Highlight',
+    first.blurb||'',
+    'TOP HIGHLIGHT'
+  );
+}
+
+function buildTopHighlightsCarousel() {
+  // Runs after all game content is cached.
+  // Collects items[2..4] (actual play highlights, skipping recap at 0 + condensed at 1)
+  // from each game — marquee first. Builds vertical playlist on desktop, horizontal strip on mobile.
+  var heroRegion=document.getElementById('ydHeroRegion');
+  if(!heroRegion||!yesterdayCache||!yesterdayCache.length) return;
+  var marquee=pickMarqueeGame();
+  var ordered=yesterdayCache.slice().sort(function(a,b){
+    if(marquee){
+      if(a.gamePk===marquee.gamePk) return -1;
+      if(b.gamePk===marquee.gamePk) return 1;
+    }
+    return 0;
+  });
+  ydHighlightClips=[];
+  ordered.forEach(function(game){
+    var content=yesterdayContentCache[game.gamePk];
+    if(!content) return;
+    var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+    // Take indices 2, 3, 4 — actual play highlights (skip 0=recap, 1=condensed)
+    playable.slice(2,5).forEach(function(clip){ ydHighlightClips.push(clip); });
+  });
+  if(!ydHighlightClips.length) return;
+  mountSharedPlayer(heroRegion);
+  var existing=document.getElementById('ydClipCarousel');
+  if(existing) existing.parentNode.removeChild(existing);
+  var chips=ydHighlightClips.map(function(clip,i){
+    var thumb=pickHeroImage(clip)||'';
+    var title=(clip.headline||clip.blurb||'Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="yd-clip-chip'+(i===0?' active':'')+'" onclick="selectYdClip('+i+')">'
+      +'<div class="yd-chip-thumb"><span style="font-size:1.1rem;color:var(--muted)">▶</span>'
+      +(thumb?'<img src="'+thumb+'" onerror="this.style.display=\'none\'" alt="">':'')
+      +'</div>'
+      +'<div class="yd-chip-text">'+title+'</div>'
+      +'</div>';
+  }).join('');
+  heroRegion.insertAdjacentHTML('beforeend',
+    '<div id="ydClipCarousel" class="yd-playlist yd-clip-strip">'
+    +'<div class="yd-playlist-kicker">TOP PLAYS</div>'
+    +chips+'</div>'
+  );
+  // Load first clip into the player
+  loadClipIntoSharedPlayer(
+    pickPlayback(ydHighlightClips[0].playbacks),
+    pickHeroImage(ydHighlightClips[0])||'',
+    ydHighlightClips[0].headline||ydHighlightClips[0].blurb||'Top Highlight',
+    ydHighlightClips[0].blurb||'',
+    'TOP HIGHLIGHT'
+  );
+}
+
+function selectYdClip(idx) {
+  var carousel=document.getElementById('ydClipCarousel');
+  if(carousel) carousel.querySelectorAll('.yd-clip-chip').forEach(function(c,i){ c.classList.toggle('active',i===idx); });
+  var clip=ydHighlightClips[idx];
+  if(!clip) return;
+  loadClipIntoSharedPlayer(
+    pickPlayback(clip.playbacks),
+    pickHeroImage(clip)||'',
+    clip.headline||clip.blurb||'Highlight',
+    clip.blurb||'',
+    'NOW PLAYING'
+  );
+}
+
+function loadClipIntoSharedPlayer(url, poster, title, blurb, kicker) {
+  var video=document.getElementById('ydSharedVideo');
+  if(!video) return;
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  if(poster) video.poster=poster; else video.removeAttribute('poster');
+  video.src=url;
+  var meta=document.getElementById('ydVideoMeta');
+  if(meta){
+    var k=kicker||'NOW PLAYING';
+    var b=(blurb&&blurb!==title)?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+blurb+'</div>':'';
+    meta.innerHTML='<div style="font-size:.62rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:3px">'+k+'</div>'
+      +'<div style="font-size:.92rem;font-weight:700;color:var(--text);line-height:1.35">'+(title||'')+'</div>'+b;
+  }
+  var heroRegion=document.getElementById('ydHeroRegion');
+  if(heroRegion) heroRegion.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function prefetchAllYesterdayContent() {
+  if(!yesterdayCache||!yesterdayCache.length) return;
+  await Promise.all(yesterdayCache.map(function(item){return fetchGameContent(item.gamePk);}));
+  buildAndRenderYesterdayHeroes();
+  buildTopHighlightsCarousel();
+}
+
+function buildYesterdayHeroes() {
+  // Returns array of hero objects derived purely from yesterdayContentCache — no new fetches
+  var heroes=[];
+  var seenPlayers={};
+  if(!yesterdayCache) return heroes;
+  yesterdayCache.forEach(function(cacheItem){
+    var content=yesterdayContentCache[cacheItem.gamePk];
+    if(!content) return;
+    var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    // Group clips by player_id keyword
+    var playerClips={};
+    items.forEach(function(clip){
+      if(!clip.keywordsAll) return;
+      var pidKw=clip.keywordsAll.find(function(kw){return kw.type==='player_id'||kw.slug&&kw.slug.startsWith('player_id-');});
+      if(!pidKw) return;
+      var pid=pidKw.value||pidKw.displayName||pidKw.slug;
+      if(!pid) return;
+      if(!playerClips[pid]) playerClips[pid]={clips:[],name:'',isHR:false,isWalkoff:false,teamAbbr:''};
+      playerClips[pid].clips.push(clip);
+      // Detect HR
+      var isHRClip=clip.keywordsAll.some(function(kw){return (kw.type==='taxonomy'&&kw.value==='home_run')||kw.slug==='home_run';});
+      if(isHRClip) playerClips[pid].isHR=true;
+      // Detect walk-off
+      var isWO=(clip.headline||'').toLowerCase().indexOf('walk-off')!==-1||
+               (clip.blurb||'').toLowerCase().indexOf('walk-off')!==-1||
+               clip.keywordsAll.some(function(kw){return kw.value==='walk_off'||kw.slug==='walk_off';});
+      if(isWO) playerClips[pid].isWalkoff=true;
+      // Capture player name from headline if not yet set
+      if(!playerClips[pid].name&&clip.headline) playerClips[pid].name=clip.headline.split("'")[0].split(' ').slice(0,2).join(' ');
+    });
+    // Build hero objects per player, dedup across all games
+    Object.keys(playerClips).forEach(function(pid){
+      if(seenPlayers[pid]) return;
+      seenPlayers[pid]=true;
+      var pc=playerClips[pid];
+      if(!pc.isHR&&!pc.isWalkoff) return; // only HR hitters and walk-off heroes
+      var hrCount=pc.clips.filter(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});}).length;
+      var role=pc.isWalkoff?'walkoff':hrCount>=2?'multi-HR':'HR';
+      // Pick best clip: walk-off/HR first, then longest
+      var clip=pc.clips.find(function(c){return pc.isWalkoff&&((c.headline||'').toLowerCase().indexOf('walk-off')!==-1);});
+      if(!clip) clip=pc.clips.find(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});});
+      if(!clip) clip=pc.clips[0];
+      var imgUrl=pickHeroImage(clip)||'';
+      if(!imgUrl) return; // skip if no photo
+      heroes.push({pid:pid,playerName:pc.name,role:role,hrCount:hrCount,imageUrl:imgUrl,blurb:clip.headline||clip.blurb||'',gamePk:cacheItem.gamePk,isWalkoff:pc.isWalkoff});
+    });
+  });
+  // Sort: walk-off first, then multi-HR, then single HR
+  var roleOrder={walkoff:0,'multi-HR':1,HR:2};
+  heroes.sort(function(a,b){return (roleOrder[a.role]||9)-(roleOrder[b.role]||9);});
+  return heroes;
+}
+
+function buildAndRenderYesterdayHeroes() {
+  var stripEl=document.getElementById('ydHeroesStrip');
+  if(!stripEl) return;
+  var heroes=buildYesterdayHeroes();
+  if(!heroes.length) return;
+  var roleLabel={walkoff:'WALK-OFF','multi-HR':function(h){return h.hrCount+' HR';},'HR':'HR'};
+  var tiles=heroes.map(function(h){
+    var lbl=typeof roleLabel[h.role]==='function'?roleLabel[h.role](h):roleLabel[h.role];
+    var lastName=h.playerName?h.playerName.split(' ').pop():h.playerName;
+    return '<div onclick="scrollToYdTile('+h.gamePk+')" style="cursor:pointer;flex-shrink:0;width:110px;position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border)">'
+      +'<img src="'+h.imageUrl+'" style="width:110px;height:74px;object-fit:cover;display:block" loading="lazy">'
+      +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.82));padding:4px 6px">'
+      +'<div style="font-size:.58rem;font-weight:700;color:#f59e0b;letter-spacing:.06em">'+lbl+'</div>'
+      +'<div style="font-size:.68rem;font-weight:700;color:#fff">'+lastName+'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  stripEl.innerHTML='<div style="padding:10px 16px 0;border-top:1px solid var(--border)">'
+    +'<div style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">YESTERDAY\'S HEROES</div>'
+    +'<div class="yd-clip-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px">'+tiles+'</div>'
+    +'</div>';
+}
+
+function scrollToYdTile(gamePk) {
+  var tile=document.getElementById('ydtile_'+gamePk);
+  if(tile) tile.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function loadYesterdayVideoStrip(gamePk) {
+  var region=document.getElementById('ydvideo_'+gamePk);
+  if(!region||region.dataset.loaded) return;
+  region.dataset.loaded='1';
+  var content=await fetchGameContent(gamePk);
+  if(!content) return;
+  var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+  if(!items.length) return;
+  // Filter to items that have an mp4 playback URL
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+  if(!playable.length) return;
+  region.innerHTML=renderHighlightStrip(playable, gamePk);
+  // Patch tile headline now that content is loaded
+  var tile=document.getElementById('ydtile_'+gamePk);
+  if(tile&&playable[0]){
+    var vTitle=playable[0].headline||playable[0].blurb;
+    if(vTitle){
+      var headlineEl=tile.querySelector('.yd-tile-headline');
+      if(headlineEl) headlineEl.textContent=vTitle;
+    }
+  }
+}
+
+function renderHighlightStrip(items, gamePk) {
+  // Show only items[0] — the game recap/highlight — as a single featured thumbnail.
+  // items[1] (condensed game) and items[2+] (play highlights) surface in the top carousel.
+  var item=items[0];
+  if(!item) return '';
+  var imgUrl=pickHeroImage(item)||'';
+  var title=(item.headline||item.blurb||'Game Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return '<div class="yd-game-thumb" onclick="playYesterdayClip('+JSON.stringify(gamePk)+',0)">'
+    +(imgUrl
+      ?'<img src="'+imgUrl+'" loading="lazy" alt="">'
+      :'<div style="width:100%;height:140px;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem">▶</div>')
+    +'<div class="yd-game-thumb-play"><span>▶</span></div>'
+    +'<div class="yd-game-thumb-label">'+title+'</div>'
+    +'</div>';
+}
+
+function playYesterdayClip(gamePk, itemIndex) {
+  var content=yesterdayContentCache[gamePk];
+  if(!content) return;
+  var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+  var item=playable[itemIndex];
+  if(!item) return;
+  // Deselect any active carousel chip since this is a per-game tile play
+  var carousel=document.getElementById('ydClipCarousel');
+  if(carousel) carousel.querySelectorAll('.yd-clip-chip').forEach(function(c){c.classList.remove('active');});
+  loadClipIntoSharedPlayer(
+    pickPlayback(item.playbacks),
+    pickHeroImage(item)||'',
+    item.headline||item.blurb||'Game Highlight',
+    item.blurb||'',
+    'GAME HIGHLIGHT'
+  );
+}
+
 function filterCollection(f) { collectionFilter = f; collectionPage = 0; renderCollectionBook(); }
 function sortCollection(s)   { collectionSort = s;   collectionPage = 0; renderCollectionBook(); }
 function goCollectionPage(dir) {
@@ -4035,6 +4547,20 @@ function openCardFromCollection(idx) {
     var rbi = rbiMatch ? parseInt(rbiMatch[1]) : 1;
     showRBICard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, rbi, eventType, ev.awayScore, ev.homeScore, ev.inning, null);
   }
+}
+
+function openCardFromKey(key) {
+  // Stable lookup by playerId_eventType — used from Yesterday Recap cards strip
+  // where collectionSlotsDisplay may not be populated yet
+  var col=loadCollection();
+  var slot=col[key];
+  if(!slot||!slot.events||!slot.events.length) return;
+  // Sync collectionSlotsDisplay so openCardFromCollection(idx) works if called later
+  var sorted=Object.values(col).sort(function(a,b){return (b.collectedAt||0)-(a.collectedAt||0);});
+  collectionSlotsDisplay=sorted;
+  var idx=sorted.indexOf(slot);
+  if(idx===-1){ collectionSlotsDisplay.push(slot); idx=collectionSlotsDisplay.length-1; }
+  openCardFromCollection(idx);
 }
 
 function updateCollectionUI() {
@@ -4381,7 +4907,8 @@ function renderEmptyState(postSlate, intermission) {
       } else if (tomorrowPreview.fetchedAt && tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
+      var ydLink=yesterdayCache&&yesterdayCache.length?'<div style="margin-top:16px"><button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--accent);font-size:.75rem;font-weight:600;padding:6px 14px;cursor:pointer;letter-spacing:.04em">📅 Yesterday Recap →</button></div>':'';
+      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+ydLink;
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
       var g0=pulseGreeting();
@@ -4422,6 +4949,9 @@ function renderEmptyState(postSlate, intermission) {
         +'</div></div>';
     });
     html+='</div>';
+  }
+  if (yesterdayCache&&yesterdayCache.length) {
+    html+='<div style="margin-top:12px;text-align:center"><button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:.72rem;font-weight:600;padding:5px 14px;cursor:pointer;letter-spacing:.04em">📅 Yesterday Recap →</button></div>';
   }
   el.innerHTML=html;
   if (hero.gameDateMs) startCountdown(hero.gameDateMs);
@@ -5997,7 +6527,7 @@ function selectMediaVideo(videoId){selectedVideoId=videoId;var player=document.g
 var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={},leagueMatchupOffset=0;
 let homeLiveTimer=null;
 let leagueRefreshTimer=null;
-async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,60000);}
+async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";var ydBanner=document.getElementById('ydRecapBanner');if(ydBanner)ydBanner.style.display=(yesterdayCache&&yesterdayCache.length)?'flex':'none';await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,60000);}
 async function loadLeagueStandings(){try{var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team');var d=await r.json();leagueStandingsMap={};(d.records||[]).forEach(function(rec){(rec.teamRecords||[]).forEach(function(t){leagueStandingsMap[t.team.id]={w:t.wins,l:t.losses};});});}catch(e){}}
 async function loadLeagueMatchups(){
   var el=document.getElementById('leagueMatchups');
