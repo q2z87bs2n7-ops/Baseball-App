@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.18.2</title>
+<title>MLB Pulse v3.18.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -450,6 +450,17 @@
 .demo-cta { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: color 0.2s; }
 .demo-cta:hover { color: var(--text); }
 .upcoming-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.topfive-strip { margin-top: 14px; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.topfive-title { font-size: .68rem; letter-spacing: .14em; color: var(--muted); margin-bottom: 8px; }
+.topfive-kicker { color: var(--accent); font-weight: 800; }
+.topfive-sub { color: var(--muted); }
+.topfive-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); font-size: .8rem; color: var(--text); }
+.topfive-row:first-of-type { border-top: 0; padding-top: 0; }
+.topfive-rank { flex-shrink: 0; width: 18px; font-weight: 800; color: var(--muted); text-align: center; }
+.topfive-icon { flex-shrink: 0; font-size: .9rem; }
+.topfive-caps { flex-shrink: 0; display: inline-flex; align-items: center; gap: 2px; }
+.topfive-cap { width: 18px; height: 18px; }
+.topfive-headline { flex: 1; min-width: 0; line-height: 1.3; word-break: break-word; }
 .demo-active .empty-hype-block { position: relative; }
 .demo-active #main { display: none !important; }
 .demo-active #feedWrap { display: block !important; }
@@ -764,7 +775,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18.3</div>
       </div>
     </div>
   </div>
@@ -4305,6 +4316,39 @@ function pulseGreeting() {
 function refreshPulseTagline(){ var t=document.getElementById('ptbTagline'); if(t) t.textContent=pulseGreeting().tagline; }
 setInterval(refreshPulseTagline,60000);
 
+function buildLastNightTopFive() {
+  if (!yesterdayCache || !yesterdayCache.length) return '';
+  var ranked=yesterdayCache.slice().map(function(item){
+    var h=item.headline||'', sig=0;
+    if (/walk-off/i.test(h))                sig+=1000;
+    if (/grand slam/i.test(h))              sig+= 600;
+    if (/no-hitter|perfect game/i.test(h))  sig+= 900;
+    var m=h.match(/(\d+)-(\d+)/);
+    var margin=m?Math.abs(parseInt(m[1],10)-parseInt(m[2],10)):0;
+    var total =m?(parseInt(m[1],10)+parseInt(m[2],10)):0;
+    return {item:item, score:sig + margin*8 + Math.min(total,30)};
+  }).sort(function(a,b){return b.score-a.score;}).slice(0,5);
+  if (!ranked.length) return '';
+  var rows=ranked.map(function(r,i){
+    var h=(r.item.headline||'').replace(/^Yesterday:\s*/i,'');
+    var icon = /walk-off/i.test(h)?'🎯':/grand slam/i.test(h)?'💥':/no-hitter|perfect game/i.test(h)?'🚫':'⭐';
+    var caps='';
+    var m=h.match(/^([A-Z]{2,4})\s+beat\s+([A-Z]{2,4})/i);
+    if (m) {
+      var winT =TEAMS.find(function(t){return t.short===m[1].toUpperCase();});
+      var loseT=TEAMS.find(function(t){return t.short===m[2].toUpperCase();});
+      if (winT && loseT) {
+        caps='<span class="topfive-caps">'
+            +'<img class="topfive-cap" src="https://www.mlbstatic.com/team-logos/'+winT.id +'.svg" onerror="this.style.display=\'none\'">'
+            +'<img class="topfive-cap" src="https://www.mlbstatic.com/team-logos/'+loseT.id+'.svg" onerror="this.style.display=\'none\'">'
+            +'</span>';
+      }
+    }
+    return '<div class="topfive-row"><span class="topfive-rank">'+(i+1)+'</span><span class="topfive-icon">'+icon+'</span>'+caps+'<span class="topfive-headline">'+h+'</span></div>';
+  }).join('');
+  return '<div class="topfive-strip"><div class="topfive-title"><span class="topfive-kicker">LAST NIGHT</span> &middot; <span class="topfive-sub">Top 5 moments</span></div>'+rows+'</div>';
+}
+
 function renderEmptyState(postSlate, intermission) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(gameStates).filter(function(g){
@@ -4334,7 +4378,7 @@ function renderEmptyState(postSlate, intermission) {
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
       var g0=pulseGreeting();
-      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">'+g0.kicker+'</div><div class="empty-sub">'+g0.headline+'</div>';
+      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">'+g0.kicker+'</div><div class="empty-sub">'+g0.headline+'</div>'+buildLastNightTopFive();
     }
     return;
   }
@@ -4372,6 +4416,7 @@ function renderEmptyState(postSlate, intermission) {
     });
     html+='</div>';
   }
+  if (!intermission) html+=buildLastNightTopFive();
   el.innerHTML=html;
   if (hero.gameDateMs) startCountdown(hero.gameDateMs);
 }
