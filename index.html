@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.4</title>
+<title>MLB Pulse v3.20.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.5</div>
       </div>
     </div>
   </div>
@@ -4110,19 +4110,58 @@ function mountSharedPlayer(heroRegion) {
 }
 
 async function loadYesterdayHero() {
+  // Fast path: mount the player immediately with the marquee game's top editorial clip.
+  // Full carousel (one clip per game) is built by buildTopHighlightsCarousel() after
+  // prefetchAllYesterdayContent() resolves all game content.
   var heroRegion=document.getElementById('ydHeroRegion');
   if(!heroRegion) return;
   var marquee=pickMarqueeGame();
-  if(!marquee) { prefetchAllYesterdayContent(); return; }
+  if(!marquee) return;
   var content=await fetchGameContent(marquee.gamePk);
-  if(!content) { prefetchAllYesterdayContent(); return; }
+  if(!content) return;
   var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
   var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
-  if(!playable.length) { prefetchAllYesterdayContent(); return; }
-  ydHighlightClips=playable.slice(0,5);
-  // Stable player area (dca91d3 pattern)
+  if(!playable.length) return;
+  var first=playable[0];
   mountSharedPlayer(heroRegion);
-  // Clip carousel below — news-module card style, one card visible at a time
+  loadClipIntoSharedPlayer(
+    pickPlayback(first.playbacks),
+    pickHeroImage(first)||'',
+    first.headline||first.blurb||'Top Highlight',
+    first.blurb||'',
+    'TOP HIGHLIGHT'
+  );
+}
+
+function buildTopHighlightsCarousel() {
+  // Runs after all game content is cached. Collects items[0] from each game
+  // (marquee first), builds the news-module carousel, replaces any existing one
+  // while leaving the stable shared player untouched.
+  var heroRegion=document.getElementById('ydHeroRegion');
+  if(!heroRegion||!yesterdayCache||!yesterdayCache.length) return;
+  // Order: marquee game first, then rest in schedule order
+  var marquee=pickMarqueeGame();
+  var ordered=yesterdayCache.slice().sort(function(a,b){
+    if(marquee){
+      if(a.gamePk===marquee.gamePk) return -1;
+      if(b.gamePk===marquee.gamePk) return 1;
+    }
+    return 0;
+  });
+  ydHighlightClips=[];
+  ordered.forEach(function(game){
+    var content=yesterdayContentCache[game.gamePk];
+    if(!content) return;
+    var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+    if(playable.length) ydHighlightClips.push(playable[0]);
+  });
+  if(!ydHighlightClips.length) return;
+  // Mount player if it hasn't been shown yet (marquee fetch may have failed)
+  mountSharedPlayer(heroRegion);
+  // Replace existing carousel (or append if none)
+  var existing=document.getElementById('ydClipCarousel');
+  if(existing) existing.parentNode.removeChild(existing);
   var carouselHtml='<div id="ydClipCarousel" style="position:relative;border-top:1px solid var(--border);margin-top:4px">'
     +'<button class="news-nav" onclick="navigateYdClip(-1)">‹</button>';
   ydHighlightClips.forEach(function(clip,i){
@@ -4135,8 +4174,8 @@ async function loadYesterdayHero() {
       +'</div>';
   });
   carouselHtml+='<button class="news-nav" onclick="navigateYdClip(1)">›</button></div>';
-  heroRegion.insertAdjacentHTML('beforeend', carouselHtml);
-  // Load first clip into the player
+  heroRegion.insertAdjacentHTML('beforeend',carouselHtml);
+  // Reload first clip (marquee game) to keep player in sync with carousel position
   loadClipIntoSharedPlayer(
     pickPlayback(ydHighlightClips[0].playbacks),
     pickHeroImage(ydHighlightClips[0])||'',
@@ -4144,7 +4183,6 @@ async function loadYesterdayHero() {
     ydHighlightClips[0].blurb||'',
     'TOP HIGHLIGHT'
   );
-  prefetchAllYesterdayContent();
 }
 
 function navigateYdClip(dir) {
@@ -4189,6 +4227,7 @@ async function prefetchAllYesterdayContent() {
   if(!yesterdayCache||!yesterdayCache.length) return;
   await Promise.all(yesterdayCache.map(function(item){return fetchGameContent(item.gamePk);}));
   buildAndRenderYesterdayHeroes();
+  buildTopHighlightsCarousel();
 }
 
 function buildYesterdayHeroes() {
