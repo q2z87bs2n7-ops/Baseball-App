@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.17</title>
+<title>MLB Pulse v3.20.18</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -539,8 +539,8 @@
 body.yd-active .main { display:none !important; }
 @media(min-width:860px){
   .yd-hero-grid { flex-direction:row; align-items:stretch; max-width:1100px; margin:0 auto; }
-  .yd-player-col { flex:1 1 0; display:flex; flex-direction:column; border-right:1px solid var(--border); }
-  .yd-playlist { flex-direction:column; overflow-x:hidden; overflow-y:auto; width:260px; flex-shrink:0; border-top:none; padding:0; gap:0; max-height:560px; }
+  .yd-player-col { flex:1 1 0; border-right:1px solid var(--border); }
+  .yd-playlist { flex-direction:column; overflow-x:hidden; overflow-y:auto; width:260px; flex-shrink:0; border-top:none; padding:0; gap:0; }
   .yd-playlist-kicker { display:block; padding:10px 12px 8px; border-bottom:1px solid var(--border); }
   .yd-clip-chip { width:100%; flex-direction:row; border-radius:0; border:none; border-bottom:1px solid var(--border); background:transparent; }
   .yd-clip-chip:hover:not(.active) { background:rgba(255,255,255,.04); border-bottom-color:var(--border); }
@@ -806,7 +806,7 @@ body.yd-active .main { display:none !important; }
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.17</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.18</div>
       </div>
     </div>
   </div>
@@ -4113,6 +4113,7 @@ function renderYesterdayRecap() {
 
   card.innerHTML=''
     +'<div id="ydHeroRegion"></div>'
+    +'<div id="ydVideoMeta" style="max-width:1100px;margin:0 auto;padding:8px 4px 0"></div>'
     +'<div id="ydHeroesStrip"></div>'
     +tilesGrid
     +cardsHtml
@@ -4160,12 +4161,7 @@ function mountSharedPlayer(heroRegion) {
   heroRegion.className='yd-hero-grid';
   heroRegion.innerHTML=
     '<div class="yd-player-col">'
-    +'<div style="padding:8px 16px 6px;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em" id="ydPlayerKicker">TOP HIGHLIGHT</div>'
     +'<div class="yd-video-wrap"><video id="ydSharedVideo" controls playsinline></video></div>'
-    +'<div style="padding:10px 18px 14px;flex:1">'
-    +'<div id="ydPlayerTitle" style="font-size:.88rem;font-weight:700;color:var(--text);line-height:1.4"></div>'
-    +'<div id="ydPlayerBlurb" style="font-size:.74rem;color:var(--muted);margin-top:4px"></div>'
-    +'</div>'
     +'</div>';
 }
 
@@ -4268,12 +4264,13 @@ function loadClipIntoSharedPlayer(url, poster, title, blurb, kicker) {
   video.load();
   if(poster) video.poster=poster; else video.removeAttribute('poster');
   video.src=url;
-  var titleEl=document.getElementById('ydPlayerTitle');
-  var blurbEl=document.getElementById('ydPlayerBlurb');
-  var kickerEl=document.getElementById('ydPlayerKicker');
-  if(titleEl) titleEl.textContent=title||'';
-  if(blurbEl) blurbEl.textContent=(blurb&&blurb!==title)?blurb:'';
-  if(kickerEl) kickerEl.textContent=kicker||'TOP HIGHLIGHT';
+  var meta=document.getElementById('ydVideoMeta');
+  if(meta){
+    var k=kicker||'NOW PLAYING';
+    var b=(blurb&&blurb!==title)?'<div style="font-size:.72rem;color:var(--muted);margin-top:2px">'+blurb+'</div>':'';
+    meta.innerHTML='<div style="font-size:.62rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:3px">'+k+'</div>'
+      +'<div style="font-size:.92rem;font-weight:700;color:var(--text);line-height:1.35">'+(title||'')+'</div>'+b;
+  }
   var heroRegion=document.getElementById('ydHeroRegion');
   if(heroRegion) heroRegion.scrollIntoView({behavior:'smooth',block:'start'});
 }
