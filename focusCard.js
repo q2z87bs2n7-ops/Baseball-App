@@ -308,6 +308,13 @@
           '<span style="color:#9aa0a8;">→</span>' +
         '</button>' +
 
+        // Box Score shortcut link
+        '<a href="javascript:void(0)" onclick="showLiveGame&&showLiveGame(focusGamePk)" style="' +
+            'display:block;width:100%;padding:7px 12px;border-top:1px solid #1e2d4a;' +
+            'background:#080e1c;color:#9aa0a8;text-align:center;text-decoration:none;box-sizing:border-box;' +
+            'font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;' +
+          '">Box Score →</a>' +
+
         // keyframes (scoped via @media noop wrapper would be cleaner, but inline <style> is fine)
         '<style>@keyframes fcPulse{0%,100%{opacity:1}50%{opacity:0.35}}</style>' +
       '</div>'
@@ -548,6 +555,14 @@
             '</div>' +
           '</div>'
         : '') +
+
+        // Box Score shortcut link
+        '<div style="padding:12px 18px;border-top:1px solid #1e2d4a;text-align:center;">' +
+          '<a href="javascript:void(0)" onclick="closeFocusOverlay&&closeFocusOverlay();showLiveGame&&showLiveGame(focusGamePk)" style="' +
+              'color:#9aa0a8;text-decoration:none;' +
+              'font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;' +
+            '">Box Score →</a>' +
+        '</div>' +
 
         '<style>@keyframes fcPulse{0%,100%{opacity:1}50%{opacity:0.35}}</style>' +
       '</div>'
