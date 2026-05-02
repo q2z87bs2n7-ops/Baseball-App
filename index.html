@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.15.1</title>
+<title>MLB Tracker v3.15.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.2</div>
       </div>
     </div>
   </div>
@@ -1036,6 +1036,11 @@
           <input type="number" id="tuneRbiCooldown" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
           <div style="font-size:.6rem;margin-top:3px">Per-game cooldown between RBI cards (90000 = 90s)</div>
         </div>
+        <div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">Reset Cutoff Hour (ET)</div>
+          <input type="number" id="tuneResetCutoffHour" min="0" max="23" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+          <div style="font-size:.6rem;margin-top:3px">ET hour (0–23) to reset overnight session to today's games. Default: 4 (4am ET)</div>
+        </div>
         <button onclick="resetTuning()" style="margin-top:4px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:6px;border-radius:4px;cursor:pointer;font-weight:600">Reset to Defaults</button>
         <div id="rbiFormulaDisplay" style="background:var(--card);border:1px solid var(--border);border-radius:4px;padding:6px;font-size:.6rem;line-height:1.4;display:none">
           <div style="color:var(--accent);font-weight:600">RBI Scoring Formula:</div>
@@ -1310,7 +1315,8 @@ let devTuning={
   wp_leverage_floor: 2,      // min leverageIndex to show WP story
   wp_extreme_floor: 85,      // win probability % threshold for "extreme" story
   award_priority: 55,        // priority for award winner stories
-  highlow_priority: 25       // priority for season high/low stories
+  highlow_priority: 25,      // priority for season high/low stories
+  resetCutoffHour: 4         // ET hour (0–23) at which overnight session resets to today's games
 };
 let devColorLocked=false;
 let devShowPushOnDesktop=false;
@@ -1327,7 +1333,8 @@ const devTuningDefaults={
   basesloaded_enable:true,basesloaded_priority:88,
   focus_critical:120,focus_high:70,focus_switch_margin:25,focus_alert_cooldown:90000,
   hitstreak_floor:10,hitstreak_priority:65,roster_priority_il:40,roster_priority_trade:55,
-  wp_leverage_floor:2,wp_extreme_floor:85,award_priority:55,highlow_priority:25
+  wp_leverage_floor:2,wp_extreme_floor:85,award_priority:55,highlow_priority:25,
+  resetCutoffHour:4
 };
 
 // ── Focus Mode globals (v2.61) ────────────────────────────────────────────────
@@ -1403,10 +1410,13 @@ async function pollLeaguePulse() {
   if(pulseAbortCtrl){pulseAbortCtrl.abort();}
   pulseAbortCtrl=new AbortController();
   var sig=pulseAbortCtrl.signal;
-  // 4am cutoff: reset to today if still showing a past date (overnight session cleanup)
+  // ET cutoff: reset to today if still showing a past date (overnight session cleanup)
+  // Uses Eastern Time so the cutoff is consistent regardless of user's local timezone
   if (!demoMode) {
     var _todayStr=localDateStr(new Date());
-    if ((new Date().getHours())>=4 && pollDateStr && pollDateStr!==_todayStr) {
+    var _etDate=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+    var _etHour=_etDate.getHours();
+    if (_etHour>=devTuning.resetCutoffHour && pollDateStr && pollDateStr!==_todayStr) {
       pollDateStr=_todayStr;
       gameStates={};
       feedItems=[];
@@ -4500,7 +4510,8 @@ function confirmDevToolsChanges(){
     ['roster_priority_il','tuneRosterPriorityIL'],['roster_priority_trade','tuneRosterPriorityTrade'],
     ['wp_leverage_floor','tuneWPLeverageFloor'],['wp_extreme_floor','tuneWPExtremeFloor'],
     ['focus_critical','tuneFocusCritical'],['focus_high','tuneFocusHigh'],
-    ['focus_switch_margin','tuneFocusSwitchMargin'],['focus_alert_cooldown','tuneFocusAlertCooldown']
+    ['focus_switch_margin','tuneFocusSwitchMargin'],['focus_alert_cooldown','tuneFocusAlertCooldown'],
+    ['resetCutoffHour','tuneResetCutoffHour']
   ];
   fields.forEach(function(f){var el=document.getElementById(f[1]);if(el&&el.value!=='')updateTuning(f[0],el.value);});
   var btn=document.getElementById('devConfirmBtn');
@@ -4746,7 +4757,7 @@ function fallbackCopy(text){
   try{document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
 }
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;var tRCH=document.getElementById('tuneResetCutoffHour');if(tRCH)tRCH.value=devTuning.resetCutoffHour||4;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
@@ -4783,6 +4794,7 @@ function resetTuning(){
   document.getElementById('tuneFocusHigh').value=devTuningDefaults.focus_high;
   document.getElementById('tuneFocusSwitchMargin').value=devTuningDefaults.focus_switch_margin;
   document.getElementById('tuneFocusAlertCooldown').value=devTuningDefaults.focus_alert_cooldown;
+  var tRCH=document.getElementById('tuneResetCutoffHour');if(tRCH)tRCH.value=devTuningDefaults.resetCutoffHour;
   if(storyRotateTimer){clearInterval(storyRotateTimer);storyRotateTimer=null;}
   if(pulseInitialized&&!demoMode)storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
   if(DEBUG) console.log('✓ Dev tuning reset to defaults');
