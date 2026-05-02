@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Collection Card · Demo</title>
+<style>
+  html,body { margin:0; padding:0; height:100%; background:#05080f; color:#e6ebf2;
+              font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .stage { display:flex; min-height:100vh; gap:24px; padding:24px; box-sizing:border-box; }
+  .main { flex:1; display:flex; align-items:center; justify-content:center; }
+  .rail { width:320px; flex-shrink:0; display:flex; flex-direction:column; gap:12px;
+          background:#0a0f1a; border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:14px; height:fit-content; }
+  .rail-h { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#7d8694; margin-bottom:4px; font-weight:700; }
+  .controls { display:flex; gap:10px; flex-wrap:wrap; }
+  .ctl { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:#e6ebf2;
+         padding:8px 14px; border-radius:8px; font-size:12px; cursor:pointer; }
+  .ctl:hover { background:rgba(255,255,255,.1); }
+  #collectionOverlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+                       background:rgba(0,0,0,.72); backdrop-filter:blur(8px); z-index:9999; padding:40px; box-sizing:border-box; }
+  #collectionBook { width:min(1100px,100%); height:min(760px,100%); }
+  h1 { font-size:14px; letter-spacing:1px; text-transform:uppercase; color:#7d8694; margin:0 0 14px; font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="main">
+    <div style="display:flex;flex-direction:column;gap:18px;align-items:flex-start;">
+      <h1>collectionCard.js · demo harness</h1>
+      <div class="controls">
+        <button class="ctl" onclick="CollectionCard.demo()">Open binder (demo)</button>
+        <button class="ctl" onclick="openEmpty()">Open empty binder</button>
+        <button class="ctl" onclick="openLoading()">Open (stats loading)</button>
+      </div>
+      <div style="font-size:12px;color:#7d8694;max-width:560px;line-height:1.6;">
+        Click any mini card to fire <code style="color:#cfd6e0;">openCardFromCollection(idx)</code>.
+        Filter / sort / paginate / close — all wire to the host functions defined below.
+      </div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div class="rail-h">Right side rail</div>
+    <div id="collectionRailModule" style="margin-bottom:12px"></div>
+    <div id="collectionRailModule2" style="margin-bottom:12px"></div>
+    <div id="collectionRailModule3" style="margin-bottom:12px"></div>
+  </aside>
+</div>
+
+<!-- Host overlay (matches the structure index.html will provide) -->
+<div id="collectionOverlay">
+  <div id="collectionBook"></div>
+</div>
+
+<script src="collectionCard.js"></script>
+<script>
+  // Stub host functions that collectionCard.js calls by name.
+  function openCardFromCollection(idx) { console.log('openCardFromCollection', idx); alert('Open card #' + idx); }
+  function filterCollection(f) { console.log('filterCollection', f); }
+  function sortCollection(s)   { console.log('sortCollection', s); }
+  function goCollectionPage(d) { console.log('goCollectionPage', d); }
+  function closeCollection()   { document.getElementById('collectionOverlay').style.display = 'none'; }
+  function openCollection()    { CollectionCard.demo(); }
+
+  // Backdrop click closes
+  document.getElementById('collectionOverlay').addEventListener('click', function (e) {
+    if (e.target.id === 'collectionOverlay') closeCollection();
+  });
+
+  // Render rail modules
+  document.getElementById('collectionRailModule').innerHTML  = CollectionCard.renderRailModule(5);
+  document.getElementById('collectionRailModule2').innerHTML = CollectionCard.renderRailModule(1);
+  document.getElementById('collectionRailModule3').innerHTML = CollectionCard.renderRailModule(0);
+
+  // Empty binder demo
+  function openEmpty() {
+    document.getElementById('collectionBook').innerHTML = CollectionCard.renderBook({
+      slots: [], filter: 'all', sort: 'newest', page: 0, careerStatsMap: {}
+    });
+    document.getElementById('collectionOverlay').style.display = 'flex';
+  }
+
+  // Loading-stats demo (careerStats null for all)
+  function openLoading() {
+    var slots = [
+      { playerId:592450, playerName:'Pete Alonso',  teamAbbr:'NYM', teamPrimary:'#002D72', position:'1B', eventType:'HR',  tier:'legendary', collectedAt:Date.now(),
+        events:[{ badge:'GRAND SLAM!', date:'2026-04-29', inning:7, halfInning:'bottom', awayAbbr:'ATL', homeAbbr:'NYM', awayScore:3, homeScore:8 }]},
+      { playerId:543685, playerName:'Max Scherzer', teamAbbr:'NYM', teamPrimary:'#002D72', position:'SP', eventType:'RBI', tier:'epic', collectedAt:Date.now(),
+        events:[{ badge:'RBI SINGLE',  date:'2026-04-21', inning:5, halfInning:'top',    awayAbbr:'NYM', homeAbbr:'CHC', awayScore:3, homeScore:2 }]},
+    ];
+    document.getElementById('collectionBook').innerHTML = CollectionCard.renderBook({
+      slots: slots, filter: 'all', sort: 'newest', page: 0, careerStatsMap: {}
+    });
+    document.getElementById('collectionOverlay').style.display = 'flex';
+  }
+</script>
+</body>
+</html>

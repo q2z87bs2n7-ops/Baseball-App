@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Focus Card — Design QA</title>
+<style>
+  :root {
+    --page: #0a0f1e;
+    --card: #111827;
+    --card-2: #1a2236;
+    --border: #1e2d4a;
+    --text: #e8eaf0;
+    --muted: #9aa0a8;
+    --accent: #4f7dff;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--page); color: var(--text); margin: 0; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: #0c1426;
+  }
+  .topbar .brand {
+    font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.2em; color: var(--text);
+  }
+  .topbar .crumbs {
+    font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.16em; color: var(--muted);
+  }
+  .topbar .hint {
+    margin-left: auto;
+    font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.14em; color: var(--muted);
+  }
+  .topbar .hint kbd {
+    display: inline-block; padding: 3px 6px; border: 1px solid var(--border);
+    border-radius: 5px; background: #0a0f1e; color: var(--text);
+    font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+  @media (max-width: 880px) { main { grid-template-columns: 1fr; } }
+
+  .pulse h2 {
+    font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.2em; color: var(--muted);
+    margin: 0 0 14px 0;
+  }
+  .news-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 12px;
+  }
+  .news-card h3 {
+    margin: 0 0 6px 0; font-size: 16px; font-weight: 600;
+  }
+  .news-card p {
+    margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5;
+  }
+  .news-card .meta {
+    margin-top: 10px;
+    font: 600 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.16em; color: var(--muted);
+  }
+
+  .rail {
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .rail .rail-label {
+    font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.2em; color: var(--muted);
+    margin-bottom: -6px;
+  }
+
+  /* The mounted FocusCard sits inside .focus-mount with no extra chrome */
+  .focus-mount { display: contents; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">MLB TRACKER</span>
+  <span class="crumbs">PULSE / LIVE</span>
+  <span class="hint">PRESS <kbd>SHIFT</kbd> + <kbd>F</kbd> FOR FULL FOCUS</span>
+</div>
+
+<main>
+  <section class="pulse">
+    <h2>PULSE — TODAY'S TOP STORIES</h2>
+
+    <div class="news-card">
+      <h3>Bullpen meltdown caps shaky weekend in the Bronx</h3>
+      <p>Three blown saves in four games has the back end of the rotation wondering if a deadline move is coming.</p>
+      <div class="meta">2H AGO · BEAT NOTES</div>
+    </div>
+
+    <div class="news-card">
+      <h3>Rookie call-up making the case for an everyday role</h3>
+      <p>After a 4-for-5 night and a pair of doubles into the gap, the conversation around the lineup card just got more interesting.</p>
+      <div class="meta">5H AGO · DEPTH CHART</div>
+    </div>
+
+    <div class="news-card">
+      <h3>Wild-card race tightens with two weeks to go</h3>
+      <p>Three teams within a game of the final spot. Tonight's slate has direct implications for two of them.</p>
+      <div class="meta">YESTERDAY · STANDINGS</div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <span class="rail-label">FOCUS GAME</span>
+    <div id="focus-mount" class="focus-mount"></div>
+  </aside>
+</main>
+
+<script src="focusCard.js"></script>
+<script>
+  // Sample data matching the brief
+  var sampleData = {
+    awayAbbr: 'NYM', homeAbbr: 'PHI',
+    awayScore: 3, homeScore: 2,
+    awayPrimary: '#002D72', homePrimary: '#E81828',
+    inning: 8, halfInning: 'bottom',
+    balls: 3, strikes: 2, outs: 2,
+    onFirst: true, onSecond: false, onThird: true,
+    currentBatterName: 'Pete Alonso',
+    currentPitcherName: 'Zack Wheeler',
+    tensionLabel: 'CRITICAL', tensionColor: '#e03030',
+    lastPitch: { typeCode: 'SL', typeName: 'Slider', speed: 84.2, resultCode: 'F', resultDesc: 'Foul' },
+    pitchSequence: [
+      { typeCode: 'FF', typeName: 'Four-Seam Fastball', speed: 96.1, resultCode: 'C', resultDesc: 'Called Strike' },
+      { typeCode: 'SL', typeName: 'Slider',            speed: 84.2, resultCode: 'B', resultDesc: 'Ball' },
+      { typeCode: 'FF', typeName: 'Four-Seam Fastball', speed: 95.8, resultCode: 'S', resultDesc: 'Swinging Strike' },
+      { typeCode: 'SL', typeName: 'Slider',            speed: 83.9, resultCode: 'F', resultDesc: 'Foul' },
+      { typeCode: 'CH', typeName: 'Changeup',          speed: 88.1, resultCode: 'F', resultDesc: 'Foul' },
+      { typeCode: 'SI', typeName: 'Sinker',            speed: 94.4, resultCode: 'B', resultDesc: 'Ball' },
+      { typeCode: 'SL', typeName: 'Slider',            speed: 84.2, resultCode: 'F', resultDesc: 'Foul' }
+    ],
+    batterStats:  { avg: '.287', obp: '.361', ops: '.912', hr: 14, rbi: 38 },
+    pitcherStats: { era: '2.84', whip: '1.02', wins: 6, losses: 2 },
+    allLiveGames: [
+      { gamePk: 824203, awayAbbr: 'NYM', homeAbbr: 'PHI', awayScore: 3, homeScore: 2, inning: 8, isFocused: true  },
+      { gamePk: 824204, awayAbbr: 'LAD', homeAbbr: 'SF',  awayScore: 1, homeScore: 1, inning: 6, isFocused: false },
+      { gamePk: 824205, awayAbbr: 'BOS', homeAbbr: 'NYY', awayScore: 4, homeScore: 5, inning: 7, isFocused: false },
+      { gamePk: 824206, awayAbbr: 'HOU', homeAbbr: 'SEA', awayScore: 0, homeScore: 2, inning: 4, isFocused: false }
+    ]
+  };
+
+  // Mount compact card
+  document.getElementById('focus-mount').innerHTML = window.FocusCard.renderCard(sampleData);
+
+  // Wire stub host functions the component calls into
+  window.openFocusOverlay = function () {
+    var prior = document.getElementById('fc-demo-overlay');
+    if (prior) prior.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'fc-demo-overlay';
+    wrap.style.cssText =
+      'position:fixed;inset:0;z-index:9999;background:rgba(5,8,18,0.78);' +
+      'backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);' +
+      'display:flex;align-items:center;justify-content:center;padding:24px;' +
+      'animation:fcFadeIn 180ms ease-out;';
+    wrap.innerHTML =
+      '<style>@keyframes fcFadeIn{from{opacity:0}to{opacity:1}}</style>' +
+      window.FocusCard.renderOverlay(sampleData);
+    wrap.addEventListener('click', function (ev) { if (ev.target === wrap) wrap.remove(); });
+    document.body.appendChild(wrap);
+  };
+  window.closeFocusOverlay = function () {
+    var w = document.getElementById('fc-demo-overlay'); if (w) w.remove();
+  };
+  window.setFocusGame = function (pk) {
+    // demo: just log; in the real app Code rebinds focus to the new game
+    console.log('[demo] setFocusGame', pk);
+  };
+
+  // Esc closes overlay
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closeFocusOverlay();
+  });
+</script>
+
+</body>
+</html>
