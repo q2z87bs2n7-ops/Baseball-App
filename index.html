@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.16.1</title>
+<title>MLB Tracker v3.16.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.16.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.16.2</div>
       </div>
     </div>
   </div>
@@ -1283,6 +1283,7 @@ let hittingStreaksCache=null,hittingStreaksLastFetch=0;
 let transactionsCache=[],transactionsLastFetch=0;
 let awardsCache=[],awardsLastFetch=0;
 let highLowCache=null,highLowLastFetch=0;
+let liveWPCache={},liveWPLastFetch=0;
 let perfectGameTracker={};
 
 // ── Dev Tools tuning (real-time optimization) ──────────────────────────
@@ -1311,7 +1312,9 @@ let devTuning={
   wp_leverage_floor: 2,      // min leverageIndex to show WP story
   wp_extreme_floor: 85,      // win probability % threshold for "extreme" story
   award_priority: 55,        // priority for award winner stories
-  highlow_priority: 25       // priority for season high/low stories
+  highlow_priority: 25,      // priority for season high/low stories
+  livewp_priority: 30,       // priority for ambient live-game WP cards
+  livewp_refresh_ms: 90000   // ms between contextMetrics batch refreshes
 };
 let devColorLocked=false;
 let devShowPushOnDesktop=false;
@@ -1328,7 +1331,8 @@ const devTuningDefaults={
   basesloaded_enable:true,basesloaded_priority:88,
   focus_critical:120,focus_high:70,focus_switch_margin:25,focus_alert_cooldown:90000,
   hitstreak_floor:10,hitstreak_priority:65,roster_priority_il:40,roster_priority_trade:55,
-  wp_leverage_floor:2,wp_extreme_floor:85,award_priority:55,highlow_priority:25
+  wp_leverage_floor:2,wp_extreme_floor:85,award_priority:55,highlow_priority:25,
+  livewp_priority:30,livewp_refresh_ms:90000
 };
 
 // ── Focus Mode globals (v2.61) ────────────────────────────────────────────────
@@ -2991,6 +2995,40 @@ function genSeasonHighStories(){
   return out;
 }
 
+async function loadLiveWPCache(){
+  var livePks=Object.keys(gameStates).filter(function(pk){
+    var g=gameStates[pk];return g&&g.status==='Live'&&g.detailedState==='In Progress';
+  });
+  if(!livePks.length){liveWPCache={};liveWPLastFetch=Date.now();return;}
+  await Promise.all(livePks.map(function(pk){
+    return fetch(MLB_BASE+'/game/'+pk+'/contextMetrics').then(function(r){return r.json();}).then(function(d){
+      liveWPCache[pk]={homeWP:d.homeWinProbability||50,leverageIndex:d.leverageIndex||1,ts:Date.now()};
+    }).catch(function(){});
+  }));
+  Object.keys(liveWPCache).forEach(function(pk){if(!gameStates[pk]||gameStates[pk].status!=='Live')delete liveWPCache[pk];});
+  liveWPLastFetch=Date.now();
+}
+
+function genLiveWinProbStories(){
+  var out=[];
+  Object.keys(liveWPCache).forEach(function(pk){
+    var g=gameStates[pk];
+    if(!g||g.status!=='Live'||g.detailedState!=='In Progress') return;
+    var c=liveWPCache[pk];
+    var homeWP=c.homeWP;
+    var favAbbr=homeWP>=50?g.homeAbbr:g.awayAbbr;
+    var dogAbbr=homeWP>=50?g.awayAbbr:g.homeAbbr;
+    var favWP=homeWP>=50?homeWP:(100-homeWP);
+    var bucket=Math.round(homeWP/10)*10;
+    var id='livewp_'+pk+'_'+bucket;
+    var halfArrow=g.halfInning==='top'?'▲':'▼';
+    var headline=favAbbr+' '+Math.round(favWP)+'% to win vs '+dogAbbr;
+    var sub=g.awayAbbr+' @ '+g.homeAbbr+' · '+halfArrow+ordinal(g.inning)+' · '+g.awayScore+'–'+g.homeScore;
+    out.push(makeStory(id,'contextual',4,devTuning.livewp_priority||30,'📈',headline,sub,'live',+pk,new Date(),15*60000,0.10));
+  });
+  return out;
+}
+
 async function buildStoryPool(){
   var now=Date.now();
   if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
@@ -2998,6 +3036,7 @@ async function buildStoryPool(){
   if(now-transactionsLastFetch>120*60000){loadTransactionsCache();}
   if(now-awardsLastFetch>6*60*60000){loadAwardsCache();}
   if(now-highLowLastFetch>6*60*60000){loadHighLowCache();}
+  if(now-liveWPLastFetch>(devTuning.livewp_refresh_ms||90000)){loadLiveWPCache();}
   loadProbablePitcherStats();
   fetchMissingHRBatterStats();
   var multiHitStories=await genMultiHitDay();
@@ -3006,7 +3045,8 @@ async function buildStoryPool(){
     genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
-    wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories()
+    wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories(),
+    genLiveWinProbStories()
   );
   storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
