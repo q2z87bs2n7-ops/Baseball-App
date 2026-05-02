@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.9.d</title>
+<title>MLB Tracker v3.9.e</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -740,7 +740,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.d</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.9.e</div>
       </div>
     </div>
   </div>
@@ -1176,7 +1176,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
       <div>
         <div style="font-size:1rem;font-weight:800;color:var(--text)">🔍 Radio Check</div>
-        <div style="font-size:.7rem;color:var(--muted);margin-top:2px">Tap ▶ to test · pick ✅ Works or ❌ No game · then Copy</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:2px">Tap ▶ to test · ✅/❌ (tap again to clear) · add notes · then Copy</div>
       </div>
       <button onclick="closeRadioCheck()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.85rem;padding:4px 12px;border-radius:8px;cursor:pointer;font-weight:700">✕</button>
     </div>
@@ -4290,13 +4290,18 @@ function updateRadioForFocus(){
 }
 
 // ── 🔍 Radio Check ────────────────────────────────────────────────────────
-var radioCheckResults={}; // key: teamId or 'fallback' → 'yes'|'no'|null
+var radioCheckResults={}; // key: teamId or 'fallback' → 'yes'|'no' (absent = untested)
+var radioCheckNotes={};   // key: teamId or 'fallback' → free-text note
 var radioCheckPlayingKey=null;
 function loadRadioCheckResults(){
   try{var s=localStorage.getItem('mlb_radio_check');if(s)radioCheckResults=JSON.parse(s)||{};}catch(e){radioCheckResults={};}
+  try{var n=localStorage.getItem('mlb_radio_check_notes');if(n)radioCheckNotes=JSON.parse(n)||{};}catch(e){radioCheckNotes={};}
 }
 function saveRadioCheckResults(){
   try{localStorage.setItem('mlb_radio_check',JSON.stringify(radioCheckResults));}catch(e){}
+}
+function saveRadioCheckNotes(){
+  try{localStorage.setItem('mlb_radio_check_notes',JSON.stringify(radioCheckNotes));}catch(e){}
 }
 function openRadioCheck(){
   loadRadioCheckResults();
@@ -4324,19 +4329,21 @@ function renderRadioCheckList(){
   var entries=radioCheckEntries();
   var html=entries.map(function(e){
     var status=radioCheckResults[e.key]||'';
+    var note=(radioCheckNotes[e.key]||'').replace(/"/g,'&quot;');
     var playing=radioCheckPlayingKey===e.key;
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);'+(playing?'background:rgba(34,197,94,.08)':'')+'">'+
-      '<button onclick="radioCheckPlay(\''+e.key+'\')" style="background:'+(playing?'#22c55e':'var(--card2)')+';border:1px solid var(--border);color:'+(playing?'#000':'var(--text)')+';font-size:.7rem;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700;flex-shrink:0;min-width:36px">'+(playing?'▶':'▶')+'</button>'+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.teamName+(e.abbr?' <span style="color:var(--muted);font-weight:500">· '+e.abbr+'</span>':'')+'</div>'+
-        '<div style="font-size:.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.station+' · '+e.format.toUpperCase()+'</div>'+
+    return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);'+(playing?'background:rgba(34,197,94,.08)':'')+'">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<button onclick="radioCheckPlay(\''+e.key+'\')" style="background:'+(playing?'#22c55e':'var(--card2)')+';border:1px solid var(--border);color:'+(playing?'#000':'var(--text)')+';font-size:.7rem;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700;flex-shrink:0;min-width:36px">▶</button>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.teamName+(e.abbr?' <span style="color:var(--muted);font-weight:500">· '+e.abbr+'</span>':'')+'</div>'+
+          '<div style="font-size:.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.station+' · '+e.format.toUpperCase()+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:4px;flex-shrink:0">'+
+          '<button onclick="radioCheckSet(\''+e.key+'\',\'yes\')" title="Tap again to clear" style="cursor:pointer;background:'+(status==='yes'?'#22c55e':'var(--card2)')+';color:'+(status==='yes'?'#000':'var(--text)')+';border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.7rem;font-weight:700">✅</button>'+
+          '<button onclick="radioCheckSet(\''+e.key+'\',\'no\')" title="Tap again to clear" style="cursor:pointer;background:'+(status==='no'?'#e03030':'var(--card2)')+';color:'+(status==='no'?'#fff':'var(--text)')+';border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.7rem;font-weight:700">❌</button>'+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;gap:4px;flex-shrink:0">'+
-        '<label style="cursor:pointer;background:'+(status==='yes'?'#22c55e':'var(--card2)')+';color:'+(status==='yes'?'#000':'var(--text)')+';border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.7rem;font-weight:700">'+
-          '<input type="radio" name="rc_'+e.key+'" '+(status==='yes'?'checked':'')+' onchange="radioCheckSet(\''+e.key+'\',\'yes\')" style="display:none">✅</label>'+
-        '<label style="cursor:pointer;background:'+(status==='no'?'#e03030':'var(--card2)')+';color:'+(status==='no'?'#fff':'var(--text)')+';border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.7rem;font-weight:700">'+
-          '<input type="radio" name="rc_'+e.key+'" '+(status==='no'?'checked':'')+' onchange="radioCheckSet(\''+e.key+'\',\'no\')" style="display:none">❌</label>'+
-      '</div>'+
+      '<input type="text" value="'+note+'" oninput="radioCheckSetNote(\''+e.key+'\',this.value)" placeholder="Notes (e.g. plays ads during games)" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 8px;border-radius:6px;box-sizing:border-box">'+
     '</div>';
   }).join('');
   var done=Object.values(radioCheckResults).filter(function(v){return v==='yes'||v==='no';}).length;
@@ -4358,13 +4365,21 @@ function radioCheckStop(){
   if(document.getElementById('radioCheckOverlay').style.display!=='none')renderRadioCheckList();
 }
 function radioCheckSet(key,val){
-  radioCheckResults[key]=val;
+  if(radioCheckResults[key]===val) delete radioCheckResults[key];
+  else radioCheckResults[key]=val;
   saveRadioCheckResults();
   renderRadioCheckList();
 }
+function radioCheckSetNote(key,val){
+  if(val) radioCheckNotes[key]=val;
+  else delete radioCheckNotes[key];
+  saveRadioCheckNotes();
+}
 function radioCheckReset(){
   radioCheckResults={};
+  radioCheckNotes={};
   saveRadioCheckResults();
+  saveRadioCheckNotes();
   renderRadioCheckList();
 }
 function radioCheckCopy(){
@@ -4373,14 +4388,16 @@ function radioCheckCopy(){
   var works=[],broken=[],untested=[];
   entries.forEach(function(e){
     var s=radioCheckResults[e.key];
-    var line='• '+e.teamName+(e.abbr?' ('+e.abbr+')':'')+' — '+e.station+' — '+e.url;
-    if(s==='yes')works.push(line);
-    else if(s==='no')broken.push(line);
-    else untested.push(line);
+    var note=radioCheckNotes[e.key]||'';
+    var block=['• '+e.teamName+(e.abbr?' ('+e.abbr+')':'')+' — '+e.station+' — '+e.url];
+    if(note) block.push('  📝 '+note);
+    if(s==='yes')works.push.apply(works,block);
+    else if(s==='no')broken.push.apply(broken,block);
+    else untested.push.apply(untested,block);
   });
-  lines.push('✅ WORKS ('+works.length+'):');lines.push.apply(lines,works.length?works:['  (none marked)']);lines.push('');
-  lines.push('❌ BROKEN ('+broken.length+'):');lines.push.apply(lines,broken.length?broken:['  (none marked)']);lines.push('');
-  if(untested.length){lines.push('⏳ UNTESTED ('+untested.length+'):');lines.push.apply(lines,untested);}
+  lines.push('✅ WORKS ('+works.filter(function(l){return l.charAt(0)==='•';}).length+'):');lines.push.apply(lines,works.length?works:['  (none marked)']);lines.push('');
+  lines.push('❌ BROKEN ('+broken.filter(function(l){return l.charAt(0)==='•';}).length+'):');lines.push.apply(lines,broken.length?broken:['  (none marked)']);lines.push('');
+  if(untested.length){lines.push('⏳ UNTESTED ('+untested.filter(function(l){return l.charAt(0)==='•';}).length+'):');lines.push.apply(lines,untested);}
   var text=lines.join('\n');
   var btn=document.getElementById('radioCheckCopyBtn');
   function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;setTimeout(function(){btn.textContent=orig;},1800);}
