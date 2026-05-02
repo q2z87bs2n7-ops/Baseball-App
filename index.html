@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.19</title>
+<title>MLB Pulse v3.19.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.1</div>
       </div>
     </div>
   </div>
@@ -1000,6 +1000,9 @@
 </div>
 <div id="collectionOverlay" onclick="if(event.target===this)closeCollection()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
   <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
+</div>
+<div id="yesterdayOverlay" onclick="if(event.target===this)closeYesterdayRecap()" style="display:none;position:fixed;inset:0;z-index:550;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div id="yesterdayRecapCard" style="width:100%;max-width:640px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden"></div>
 </div>
 <div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--text);white-space:nowrap"></div>
 
@@ -1310,6 +1313,7 @@ let shownSignInCTA=false;let signInCTACardCount=0;let signInCTATimer=null;
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null,storyPoolTimer=null;
 let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersLastFetch=0;
+let yesterdayContentCache={},yesterdayOverlayOpen=false;
 let tomorrowPreview={dateStr:null,firstPitchMs:null,gameTime:null,gameCount:0,fetchedAt:0,inFlight:false};
 let dailyHitsTracker={},dailyPitcherKs={},stolenBaseEvents=[];
 let storyCarouselRawGameData={};
@@ -3365,9 +3369,82 @@ async function loadYesterdayCache(){
         if(allHits.away===0||allHits.home===0) {sigPlay=' · No-hitter!';}
       }catch(e){}
       var headline='Yesterday: '+winner+' beat '+loser+' '+ws+'-'+ls+playerHighlight+sigPlay;
-      yesterdayCache.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
+      yesterdayCache.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now()),
+        awayId:away.team.id,awayAbbr:away.team.abbreviation,awayScore:away.score||0,
+        homeId:home.team.id,homeAbbr:home.team.abbreviation,homeScore:home.score||0,
+        winnerSide:away.score>home.score?'away':'home',
+        venueName:g.venue?g.venue.name:'',durationMin:linescore.gameDurationMinutes||0,
+        gameDateMs:g.gameDate?new Date(g.gameDate).getTime():Date.now()});
     }
   }catch(e){}
+}
+
+function hasYesterdayRecap(){return yesterdayCache&&yesterdayCache.length>0;}
+function getYesterdayDateLabel(){
+  var yd=new Date();yd.setDate(yd.getDate()-1);
+  return yd.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+}
+function recapLinkHtml(){
+  if(!hasYesterdayRecap()) return '';
+  return '<div style="margin-top:10px"><button onclick="openYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--accent);font-size:.78rem;font-weight:600;padding:5px 14px;cursor:pointer;letter-spacing:.04em">📅 Yesterday Recap →</button></div>';
+}
+function openYesterdayRecap(){
+  if(!hasYesterdayRecap()) return;
+  yesterdayOverlayOpen=true;
+  var ov=document.getElementById('yesterdayOverlay');
+  ov.style.display='flex';
+  renderYesterdayRecap();
+}
+function closeYesterdayRecap(){
+  yesterdayOverlayOpen=false;
+  var ov=document.getElementById('yesterdayOverlay');
+  ov.style.display='none';
+}
+function renderYesterdayRecap(){
+  var card=document.getElementById('yesterdayRecapCard');
+  if(!card) return;
+  var label=getYesterdayDateLabel();
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">'
+    +'<div style="font-size:.84rem;font-weight:700;color:var(--text);letter-spacing:.03em">📅 '+label+'</div>'
+    +'<button onclick="closeYesterdayRecap()" style="background:none;border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;cursor:pointer;flex-shrink:0">✕</button>'
+    +'</div>'
+    +'<div style="padding:12px 16px;max-height:calc(90vh - 60px);overflow-y:auto">';
+  if(!yesterdayCache||yesterdayCache.length===0){
+    html+='<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:.9rem">No completed games found for yesterday.</div>';
+  } else {
+    yesterdayCache.forEach(function(entry){html+=renderYesterdayGameTile(entry);});
+  }
+  html+='<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);text-align:center;font-size:.68rem;color:var(--muted)">From yesterday\'s slate · <button onclick="closeYesterdayRecap()" style="background:none;border:none;color:var(--muted);font-size:.68rem;cursor:pointer;text-decoration:underline">Close</button></div>';
+  html+='</div>';
+  card.innerHTML=html;
+}
+function renderYesterdayGameTile(entry){
+  var awayId=entry.awayId||'', homeId=entry.homeId||'';
+  var awayAbbr=entry.awayAbbr||'?', homeAbbr=entry.homeAbbr||'?';
+  var awayScore=entry.awayScore!=null?entry.awayScore:'', homeScore=entry.homeScore!=null?entry.homeScore:'';
+  var winnerSide=entry.winnerSide||'away';
+  var awayW=winnerSide==='away', homeW=winnerSide==='home';
+  var logoStyle='width:32px;height:32px;object-fit:contain;flex-shrink:0';
+  var awayScoreStyle='font-size:1.1rem;font-weight:'+(awayW?'800':'400')+';color:'+(awayW?'var(--text)':'var(--muted)');
+  var homeScoreStyle='font-size:1.1rem;font-weight:'+(homeW?'800':'400')+';color:'+(homeW?'var(--text)':'var(--muted)');
+  var pitcherLine=entry.headline||'';
+  var sub=pitcherLine.replace(/^Yesterday: /,'');
+  var dur=entry.durationMin?Math.floor(entry.durationMin/60)+'h '+String(entry.durationMin%60).padStart(2,'0')+'m':'';
+  var tile='<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px">';
+  tile+='<div style="display:flex;align-items:center;gap:10px">';
+  if(awayId) tile+='<img src="https://www.mlbstatic.com/team-logos/'+awayId+'.svg" style="'+logoStyle+'" onerror="this.style.display=\'none\'">';
+  tile+='<span style="'+awayScoreStyle+'">'+awayAbbr+' '+awayScore+'</span>';
+  tile+='<span style="color:var(--muted);font-size:.8rem;padding:0 2px">@</span>';
+  tile+='<span style="'+homeScoreStyle+'">'+homeAbbr+' '+homeScore+'</span>';
+  if(homeId) tile+='<img src="https://www.mlbstatic.com/team-logos/'+homeId+'.svg" style="'+logoStyle+'" onerror="this.style.display=\'none\'">';
+  if(dur) tile+='<span style="margin-left:auto;font-size:.65rem;color:var(--muted)">'+dur+'</span>';
+  tile+='</div>';
+  if(sub){tile+='<div style="margin-top:7px;font-size:.72rem;color:var(--muted);line-height:1.5">'+sub+'</div>';}
+  if(entry.gamePk){
+    tile+='<div style="margin-top:9px"><button onclick="closeYesterdayRecap();showLiveGame('+entry.gamePk+')" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:4px 12px;cursor:pointer">Box Score →</button></div>';
+  }
+  tile+='</div>';
+  return tile;
 }
 
 async function loadDailyLeaders(){
@@ -4381,11 +4458,11 @@ function renderEmptyState(postSlate, intermission) {
       } else if (tomorrowPreview.fetchedAt && tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
+      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+recapLinkHtml();
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
       var g0=pulseGreeting();
-      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">'+g0.kicker+'</div><div class="empty-sub">'+g0.headline+'</div>';
+      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">'+g0.kicker+'</div><div class="empty-sub">'+g0.headline+'</div>'+recapLinkHtml();
     }
     return;
   }
@@ -4423,6 +4500,7 @@ function renderEmptyState(postSlate, intermission) {
     });
     html+='</div>';
   }
+  html+=recapLinkHtml();
   el.innerHTML=html;
   if (hero.gameDateMs) startCountdown(hero.gameDateMs);
 }
