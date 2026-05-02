@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.18</title>
+<title>MLB Pulse v3.18.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -329,6 +329,20 @@
 .alert-event { font-weight: 700; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alert-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alert-progress { position: absolute; bottom: 0; left: 0; height: 2px; background: currentColor; opacity: 0.35; animation: progress-drain var(--toast-duration, 5s) linear forwards; }
+
+#pulseTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--dark);
+  border-bottom: 1px solid var(--border);
+}
+.ptb-kicker { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.ptb-bolt { color: var(--accent); font-size: 1rem; line-height: 1; }
+.ptb-brand { font-size: .78rem; font-weight: 800; letter-spacing: .14em; color: var(--text); }
+.ptb-tagline { font-size: .72rem; color: var(--muted); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 #gameTicker {
   position: sticky;
@@ -743,7 +757,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.18.1</div>
       </div>
     </div>
   </div>
@@ -905,6 +919,13 @@
 <div id="pulse" class="section active">
   <div id="pulseLeft">
   <div id="alertStack"></div>
+  <div id="pulseTopBar">
+    <div class="ptb-kicker">
+      <span class="ptb-bolt">⚡</span>
+      <span class="ptb-brand">MLB PULSE</span>
+      <span class="ptb-tagline" id="ptbTagline">Every game, one feed.</span>
+    </div>
+  </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
   <div id="focusMiniBar" style="display:none"></div>
   <div id="focusAlertBanner" style="display:none"></div>
@@ -4230,6 +4251,18 @@ async function fetchTomorrowPreview() {
   finally{tomorrowPreview.inFlight=false;}
 }
 
+function pulseGreeting() {
+  var h=new Date().getHours();
+  if (h<6)  return {kicker:'Late innings', headline:'West coast still in play.',     tagline:'West coast still on the wire.'};
+  if (h<11) return {kicker:'Good morning', headline:"Here's what you missed.",      tagline:"Last night's wrap, today's slate."};
+  if (h<14) return {kicker:'Midday slate', headline:'First pitches roll in soon.',  tagline:'Lineups going up. First pitch soon.'};
+  if (h<17) return {kicker:'Pre-game',     headline:'Lineups locked.',              tagline:"Lineups locked. We're close."};
+  if (h<22) return {kicker:'Game on',      headline:'Action across the league.',    tagline:'Every game, one feed.'};
+  return            {kicker:'Late night',  headline:'West coast finals shaking out.', tagline:'West coast finals shaking out.'};
+}
+function refreshPulseTagline(){ var t=document.getElementById('ptbTagline'); if(t) t.textContent=pulseGreeting().tagline; }
+setInterval(refreshPulseTagline,60000);
+
 function renderEmptyState(postSlate, intermission) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(gameStates).filter(function(g){
@@ -4258,18 +4291,20 @@ function renderEmptyState(postSlate, intermission) {
       el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
-      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">League Pulse</div><div class="empty-sub">Live play-by-play from every game will appear here</div>';
+      var g0=pulseGreeting();
+      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">'+g0.kicker+'</div><div class="empty-sub">'+g0.headline+'</div>';
     }
     return;
   }
   el.className='has-upcoming';
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
+  var greeting=pulseGreeting();
   var labelText=intermission
     ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
-    : 'TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
+    : greeting.kicker.toUpperCase()+' &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
   var hypeBlock=intermission?'':
-    '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+    '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">'+greeting.headline+'</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
   var html='<div class="empty-upcoming-label">'+labelText+'</div>'
@@ -6000,6 +6035,7 @@ function togglePush(){
   savedThemeForPulse=themeOverride;
   applyPulseMLBTheme();
   requestScreenWakeLock();
+  refreshPulseTagline();
 })();
 
 document.addEventListener('visibilitychange',function(){
