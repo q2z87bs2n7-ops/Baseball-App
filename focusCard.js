@@ -290,7 +290,7 @@
               '</button>'
             : '';
           return (
-            '<div style="display:flex;align-items:center;gap:5px;padding:6px 12px;border-top:1px solid #1e2d4a;background:#080e1c;overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+            '<div class="fc-chip-strip" style="display:flex;align-items:center;gap:5px;padding:6px 12px;border-top:1px solid #1e2d4a;background:#080e1c;overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
               autoBtn +
               games.map(gameSwitchChipCompact).join('') +
             '</div>'
@@ -552,7 +552,7 @@
         (switcherHtml ?
           '<div style="display:flex;flex-direction:column;gap:8px;padding:14px 18px 18px 18px;border-top:1px solid #1e2d4a;">' +
             '<span style="font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.18em;color:#9aa0a8;">OTHER LIVE GAMES</span>' +
-            '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;">' +
+            '<div class="fc-chip-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">' +
               switcherHtml +
             '</div>' +
           '</div>'
