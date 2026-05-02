@@ -297,23 +297,25 @@
           );
         })() +
 
-        // Footer: Open Focus button
-        '<button type="button" class="fc-open-btn" onclick="openFocusOverlay && openFocusOverlay()" style="' +
-            'display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;' +
-            'padding:9px 12px;border:0;border-top:1px solid #1e2d4a;cursor:pointer;' +
-            'background:#0a0f1e;color:#e8eaf0;text-align:left;' +
-            'font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.14em;' +
-          '" onmouseover="this.style.background=\'#0f172d\'" onmouseout="this.style.background=\'#0a0f1e\'">' +
-          '<span>OPEN FOCUS</span>' +
-          '<span style="color:#9aa0a8;">→</span>' +
-        '</button>' +
-
-        // Box Score shortcut link
-        '<a href="javascript:void(0)" onclick="showLiveGame&&showLiveGame(focusGamePk)" style="' +
-            'display:block;width:100%;padding:7px 12px;border-top:1px solid #1e2d4a;' +
-            'background:#080e1c;color:#9aa0a8;text-align:center;text-decoration:none;box-sizing:border-box;' +
-            'font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;' +
-          '">Box Score →</a>' +
+        // Footer: Open Focus + Box Score in one row
+        '<div style="display:flex;border-top:1px solid #1e2d4a;background:#0a0f1e;">' +
+          '<button type="button" class="fc-open-btn" onclick="openFocusOverlay && openFocusOverlay()" style="' +
+              'display:flex;flex:1;align-items:center;justify-content:space-between;gap:8px;' +
+              'padding:9px 12px;border:0;border-right:1px solid #1e2d4a;cursor:pointer;' +
+              'background:transparent;color:#e8eaf0;text-align:left;' +
+              'font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.14em;' +
+            '" onmouseover="this.style.background=\'#0f172d\'" onmouseout="this.style.background=\'transparent\'">' +
+            '<span>OPEN FOCUS</span>' +
+            '<span style="color:#9aa0a8;">→</span>' +
+          '</button>' +
+          '<a href="javascript:void(0)" onclick="showLiveGame&&showLiveGame(focusGamePk)" style="' +
+              'display:flex;align-items:center;justify-content:center;gap:6px;' +
+              'padding:9px 12px;text-decoration:none;cursor:pointer;background:transparent;' +
+              'color:#9aa0a8;font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;' +
+            '" onmouseover="this.style.background=\'#0f172d\'" onmouseout="this.style.background=\'transparent\'">' +
+            'Box Score →' +
+          '</a>' +
+        '</div>' +
 
         // keyframes (scoped via @media noop wrapper would be cleaner, but inline <style> is fine)
         '<style>@keyframes fcPulse{0%,100%{opacity:1}50%{opacity:0.35}}</style>' +
