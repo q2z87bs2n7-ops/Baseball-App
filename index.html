@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.13</title>
+<title>MLB Pulse v3.20.14</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -535,8 +535,9 @@
 .yd-game-thumb-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); }
 .yd-game-thumb-play span { width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; }
 .yd-game-thumb-label { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.82)); padding:8px 10px; font-size:.62rem; color:rgba(255,255,255,.9); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.yd-active .main { display:none !important; }
 @media(min-width:860px){
-  .yd-hero-grid { flex-direction:row; align-items:stretch; }
+  .yd-hero-grid { flex-direction:row; align-items:flex-start; }
   .yd-player-col { flex:1 1 0; border-right:1px solid var(--border); }
   .yd-playlist { flex-direction:column; overflow-x:hidden; overflow-y:auto; width:260px; flex-shrink:0; border-top:none; padding:0; gap:0; max-height:520px; align-self:flex-start; }
   .yd-playlist-kicker { display:block; padding:10px 12px 8px; border-bottom:1px solid var(--border); }
@@ -804,7 +805,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.13</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.14</div>
       </div>
     </div>
   </div>
@@ -3976,6 +3977,7 @@ function openYesterdayRecap() {
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById('yesterday').classList.add('active');
+  document.body.classList.add('yd-active');
   var lbl=document.getElementById('ydDateLabel');
   if(lbl) lbl.textContent=getYesterdayDisplayStr();
   renderYesterdayRecap();
@@ -3984,6 +3986,7 @@ function openYesterdayRecap() {
 
 function closeYesterdayRecap() {
   yesterdayOverlayOpen=false;
+  document.body.classList.remove('yd-active');
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   var returnId=ydPrevSection||'pulse';
   var returnEl=document.getElementById(returnId);
