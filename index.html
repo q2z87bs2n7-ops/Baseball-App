@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.7</title>
+<title>MLB Pulse v3.20.8</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.7</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.8</div>
       </div>
     </div>
   </div>
@@ -3999,23 +3999,18 @@ function renderYesterdayRecap() {
 
   var ydCards=getYesterdayCollectedCards();
   var cardsHtml='';
-  if(ydCards.length){
-    var tierColors={legendary:'#e03030',epic:'#f59e0b',rare:'#3b82f6',common:'var(--muted)'};
-    var tierLabels={legendary:'LEGENDARY',epic:'EPIC',rare:'RARE',common:'COMMON'};
-    var chips=ydCards.map(function(s){
-      var tc=tierColors[s.tier]||'var(--muted)';
-      var tl=tierLabels[s.tier]||s.tier.toUpperCase();
-      var lastName=s.playerName?s.playerName.split(' ').pop():s.playerName;
+  if(ydCards.length&&window.CollectionCard){
+    var miniCards=ydCards.map(function(s){
       var key=s.playerId+'_'+s.eventType;
-      return '<div onclick="openCardFromKey(\''+key+'\')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 10px;background:var(--card2);border:1px solid '+tc+';border-radius:8px;min-width:70px">'
-        +'<div style="font-size:.62rem;font-weight:700;color:'+tc+';letter-spacing:.08em">'+tl+'</div>'
-        +'<div style="font-size:.8rem;font-weight:700;color:var(--text)">'+lastName+'</div>'
-        +'<div style="font-size:.62rem;color:var(--muted)">'+s.eventType+'</div>'
-        +'</div>';
+      var displayEvent=s.events&&s.events[0]||null;
+      var careerStats=collectionCareerStatsCache[s.playerId]||null;
+      var cardHtml=window.CollectionCard.renderMiniCard(s,displayEvent,careerStats,null);
+      // inject click handler onto the <article tag
+      return cardHtml.replace('<article ','<article onclick="openCardFromKey(\''+key+'\')" style="cursor:pointer" ');
     }).join('');
     cardsHtml='<div style="padding:16px 20px;border-top:1px solid var(--border)">'
-      +'<div style="font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:10px">🎴 CARDS COLLECTED YESTERDAY</div>'
-      +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">'+chips+'</div>'
+      +'<div style="font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px">🎴 CARDS COLLECTED YESTERDAY</div>'
+      +'<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">'+miniCards+'</div>'
       +'</div>';
   }
 
