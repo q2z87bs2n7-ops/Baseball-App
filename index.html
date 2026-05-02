@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.15.1</title>
+<title>MLB Tracker v3.15.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.2</div>
       </div>
     </div>
   </div>
@@ -1272,6 +1272,7 @@ let shownSignInCTA=false;let signInCTACardCount=0;let signInCTATimer=null;
 // ── Story Carousel globals (v2.7.1) ──────────────────────────────────────────
 let storyPool=[],storyShownId=null,storyRotateTimer=null,storyPoolTimer=null;
 let onThisDayCache=null,yesterdayCache=null,dailyLeadersCache=null,dailyLeadersLastFetch=0;
+let tomorrowPreview={dateStr:null,firstPitchMs:null,gameTime:null,gameCount:0,fetchedAt:0,inFlight:false};
 let dailyHitsTracker={},dailyPitcherKs={},stolenBaseEvents=[];
 let storyCarouselRawGameData={};
 let probablePitcherStatsCache={};
@@ -4118,6 +4119,35 @@ function isPostSlate() {
   return (Date.now()-lastTerminalMs) > (devTuning.postSlateRevertMs||20*60*1000);
 }
 
+async function fetchTomorrowPreview() {
+  if (tomorrowPreview.inFlight) return;
+  if (Date.now()-tomorrowPreview.fetchedAt < 10*60*1000) return;
+  tomorrowPreview.inFlight=true;
+  try {
+    var seed=pollDateStr?pollDateStr.split('-').map(Number):null;
+    var nextDate=seed?new Date(seed[0],seed[1]-1,seed[2]):new Date();
+    nextDate.setDate(nextDate.getDate()+1);
+    var ts=localDateStr(nextDate);
+    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+ts+'&hydrate=team');
+    var d=await r.json();
+    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    tomorrowPreview.dateStr=ts;
+    tomorrowPreview.gameCount=games.length;
+    if (games.length) {
+      games.sort(function(a,b){return new Date(a.gameDate).getTime()-new Date(b.gameDate).getTime();});
+      var first=games[0], ms=new Date(first.gameDate).getTime();
+      tomorrowPreview.firstPitchMs=ms;
+      tomorrowPreview.gameTime=new Date(ms).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    } else {
+      tomorrowPreview.firstPitchMs=null;
+      tomorrowPreview.gameTime=null;
+    }
+    tomorrowPreview.fetchedAt=Date.now();
+    if (isPostSlate()) renderEmptyState(true);
+  } catch(e){if(DEBUG)console.warn('fetchTomorrowPreview',e);}
+  finally{tomorrowPreview.inFlight=false;}
+}
+
 function renderEmptyState(postSlate) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(gameStates).filter(function(g){
@@ -4133,7 +4163,18 @@ function renderEmptyState(postSlate) {
   if (!upcoming.length){
     el.className='';
     if (postSlate) {
-      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Today\'s slate is complete</div><div class="empty-sub">All games are final. Tomorrow\'s slate will appear here.</div>';
+      fetchTomorrowPreview();
+      var subText='Live play-by-play returns when games begin.';
+      var countdownHtml='';
+      if (tomorrowPreview.firstPitchMs) {
+        countdownHtml='<div id="heroCountdown" style="margin-top:14px;font-size:1rem;color:var(--accent);font-weight:700"></div>';
+        var n=tomorrowPreview.gameCount;
+        subText='Next slate · '+n+' '+(n===1?'game':'games')+' · first pitch '+(tomorrowPreview.gameTime||'TBD');
+      } else if (tomorrowPreview.fetchedAt && tomorrowPreview.gameCount===0) {
+        subText='No games scheduled in the next slate.';
+      }
+      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
+      if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
       el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">League Pulse</div><div class="empty-sub">Live play-by-play from every game will appear here</div>';
     }
