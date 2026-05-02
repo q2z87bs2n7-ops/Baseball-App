@@ -274,6 +274,29 @@
 
         lastPitchHtml +
 
+        // Compact game switcher strip (abbr-only chips, no scores) + ↩ AUTO when manual
+        (function() {
+          var games = d.allLiveGames || [];
+          var showStrip = games.length > 1 || (d.isManual && games.length >= 1);
+          if (!showStrip) return '';
+          var autoBtn = d.isManual
+            ? '<button type="button" onclick="resetFocusAuto && resetFocusAuto()" style="' +
+                'flex:0 0 auto;padding:3px 8px;border-radius:4px;' +
+                'border:1px solid rgba(34,197,94,0.35);background:rgba(34,197,94,0.08);' +
+                'font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.10em;color:#22c55e;cursor:pointer;"' +
+                ' onmouseover="this.style.background=\'rgba(34,197,94,0.16)\'"' +
+                ' onmouseout="this.style.background=\'rgba(34,197,94,0.08)\'">' +
+                '↩ AUTO' +
+              '</button>'
+            : '';
+          return (
+            '<div style="display:flex;align-items:center;gap:5px;padding:6px 12px;border-top:1px solid #1e2d4a;background:#080e1c;overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+              autoBtn +
+              games.map(gameSwitchChipCompact).join('') +
+            '</div>'
+          );
+        })() +
+
         // Footer: Open Focus button
         '<button type="button" class="fc-open-btn" onclick="openFocusOverlay && openFocusOverlay()" style="' +
             'display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;' +
@@ -299,6 +322,25 @@
         '<span style="font:600 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#9aa0a8;letter-spacing:0.16em;">' + esc(label) + '</span>' +
         '<span style="font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8eaf0;">' + esc(value) + '</span>' +
       '</div>'
+    );
+  }
+
+  // Compact chip for the small card switcher — abbr only, no scores
+  function gameSwitchChipCompact(g) {
+    var focused = !!g.isFocused;
+    return (
+      '<button type="button"' +
+        (focused ? '' : ' onclick="setFocusGameManual && setFocusGameManual(' + (g.gamePk || 0) + ')"') +
+        ' style="flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;padding:3px 7px;' +
+          'border-radius:4px;border:1px solid ' + (focused ? '#3a4d75' : '#1e2d4a') + ';' +
+          'background:' + (focused ? '#162039' : 'transparent') + ';' +
+          'cursor:' + (focused ? 'default' : 'pointer') + ';">' +
+        '<span style="width:4px;height:4px;border-radius:50%;background:' + esc(g.awayPrimary || '#3a4d75') + ';flex:0 0 auto;"></span>' +
+        '<span style="font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.04em;color:' + (focused ? '#e8eaf0' : '#9aa0a8') + ';">' +
+          esc(g.awayAbbr) + '<span style="color:#3a4d75;margin:0 3px;">@</span>' + esc(g.homeAbbr) +
+        '</span>' +
+        '<span style="width:4px;height:4px;border-radius:50%;background:' + esc(g.homePrimary || '#3a4d75') + ';flex:0 0 auto;"></span>' +
+      '</button>'
     );
   }
 
