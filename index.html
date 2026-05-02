@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.16</title>
+<title>MLB Tracker v3.17</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.16</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.17</div>
       </div>
     </div>
   </div>
@@ -1105,6 +1105,8 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
             <div><div style="font-size:.6rem;color:var(--muted)">Leverage Floor</div><input type="number" id="tuneWPLeverageFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
             <div><div style="font-size:.6rem;color:var(--muted)">Extreme WP %</div><input type="number" id="tuneWPExtremeFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">Live WP Priority</div><input type="number" id="tuneLiveWPPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div style="font-size:.6rem;color:var(--muted)">Live WP Refresh (ms)</div><input type="number" id="tuneLiveWPRefresh" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
           </div>
         </div>
       </div>
@@ -1283,6 +1285,7 @@ let hittingStreaksCache=null,hittingStreaksLastFetch=0;
 let transactionsCache=[],transactionsLastFetch=0;
 let awardsCache=[],awardsLastFetch=0;
 let highLowCache=null,highLowLastFetch=0;
+let liveWPCache={},liveWPLastFetch=0;
 let perfectGameTracker={};
 
 // ── Dev Tools tuning (real-time optimization) ──────────────────────────
@@ -1311,7 +1314,9 @@ let devTuning={
   wp_leverage_floor: 2,      // min leverageIndex to show WP story
   wp_extreme_floor: 85,      // win probability % threshold for "extreme" story
   award_priority: 55,        // priority for award winner stories
-  highlow_priority: 25       // priority for season high/low stories
+  highlow_priority: 25,      // priority for season high/low stories
+  livewp_priority: 30,       // priority for ambient live-game WP cards
+  livewp_refresh_ms: 90000   // ms between contextMetrics batch refreshes
 };
 let devColorLocked=false;
 let devShowPushOnDesktop=false;
@@ -1328,7 +1333,8 @@ const devTuningDefaults={
   basesloaded_enable:true,basesloaded_priority:88,
   focus_critical:120,focus_high:70,focus_switch_margin:25,focus_alert_cooldown:90000,
   hitstreak_floor:10,hitstreak_priority:65,roster_priority_il:40,roster_priority_trade:55,
-  wp_leverage_floor:2,wp_extreme_floor:85,award_priority:55,highlow_priority:25
+  wp_leverage_floor:2,wp_extreme_floor:85,award_priority:55,highlow_priority:25,
+  livewp_priority:30,livewp_refresh_ms:90000
 };
 
 // ── Focus Mode globals (v2.61) ────────────────────────────────────────────────
@@ -2879,30 +2885,30 @@ function genRosterMoveStories(){
     if(!t.person||!t.person.fullName) return;
     var txDate=t.date?new Date(t.date).getTime():0;
     if(txDate&&txDate<cutoff) return;
-    var lastName=t.person.fullName.split(' ').slice(1).join(' ')||t.person.fullName;
+    var fullName=t.person.fullName;
     var desc=t.typeDesc||'';
     var icon,priority,headline;
     var toAbbr=(t.toTeam&&t.toTeam.abbreviation)||'MLB';
-    if(desc.indexOf('Injured List')!==-1){
+    if(desc.indexOf('Activated')!==-1){
+      icon='✅';priority=devTuning.roster_priority_il||40;
+      headline=fullName+' ('+toAbbr+') activated';
+    }else if(desc.indexOf('Injured List')!==-1){
       icon='🏥';priority=devTuning.roster_priority_il||40;
       var ilMatch=desc.match(/(\d+)-Day/);var ilDays=ilMatch?ilMatch[1]:'';
-      headline=lastName+' placed on the '+(ilDays?ilDays+'-Day ':'')+'IL';
+      headline=fullName+' ('+toAbbr+') placed on the '+(ilDays?ilDays+'-Day ':'')+'IL';
     }else if(desc.indexOf('Designated')!==-1){
       icon='⬇️';priority=devTuning.roster_priority_il||40;
-      headline=lastName+' designated for assignment';
+      headline=fullName+' ('+toAbbr+') designated for assignment';
     }else if(desc.indexOf('Selected')!==-1||desc.indexOf('Called Up')!==-1){
       icon='⬆️';priority=devTuning.roster_priority_trade||55;
-      headline=lastName+' called up by '+toAbbr;
+      headline=fullName+' called up by '+toAbbr;
     }else if(desc.indexOf('Trade')!==-1){
       icon='🔄';priority=devTuning.roster_priority_trade||55;
       var fromAbbr=(t.fromTeam&&t.fromTeam.abbreviation)||'';
-      headline=lastName+' traded '+(fromAbbr?'from '+fromAbbr+' ':'')+'to '+toAbbr;
-    }else if(desc.indexOf('Activated')!==-1){
-      icon='✅';priority=devTuning.roster_priority_il||40;
-      headline=lastName+' activated by '+toAbbr;
+      headline=fullName+' traded '+(fromAbbr?'from '+fromAbbr+' ':'')+'to '+toAbbr;
     }else{
       icon='📋';priority=35;
-      headline=lastName+' — '+desc;
+      headline=fullName+' ('+toAbbr+') — '+desc;
     }
     var id='roster_'+t.typeCode+'_'+(t.person.id||0)+'_'+(t.date||'today');
     var sub=toAbbr+(t.date?' · '+t.date:'');
@@ -2991,6 +2997,40 @@ function genSeasonHighStories(){
   return out;
 }
 
+async function loadLiveWPCache(){
+  var livePks=Object.keys(gameStates).filter(function(pk){
+    var g=gameStates[pk];return g&&g.status==='Live'&&g.detailedState==='In Progress';
+  });
+  if(!livePks.length){liveWPCache={};liveWPLastFetch=Date.now();return;}
+  await Promise.all(livePks.map(function(pk){
+    return fetch(MLB_BASE+'/game/'+pk+'/contextMetrics').then(function(r){return r.json();}).then(function(d){
+      liveWPCache[pk]={homeWP:d.homeWinProbability||50,leverageIndex:d.leverageIndex||1,ts:Date.now()};
+    }).catch(function(){});
+  }));
+  Object.keys(liveWPCache).forEach(function(pk){if(!gameStates[pk]||gameStates[pk].status!=='Live')delete liveWPCache[pk];});
+  liveWPLastFetch=Date.now();
+}
+
+function genLiveWinProbStories(){
+  var out=[];
+  Object.keys(liveWPCache).forEach(function(pk){
+    var g=gameStates[pk];
+    if(!g||g.status!=='Live'||g.detailedState!=='In Progress') return;
+    var c=liveWPCache[pk];
+    var homeWP=c.homeWP;
+    var favAbbr=homeWP>=50?g.homeAbbr:g.awayAbbr;
+    var dogAbbr=homeWP>=50?g.awayAbbr:g.homeAbbr;
+    var favWP=homeWP>=50?homeWP:(100-homeWP);
+    var bucket=Math.round(homeWP/10)*10;
+    var id='livewp_'+pk+'_'+bucket;
+    var halfArrow=g.halfInning==='top'?'▲':'▼';
+    var headline=favAbbr+' '+Math.round(favWP)+'% to win vs '+dogAbbr;
+    var sub=g.awayAbbr+' @ '+g.homeAbbr+' · '+halfArrow+ordinal(g.inning)+' · '+g.awayScore+'–'+g.homeScore;
+    out.push(makeStory(id,'contextual',4,devTuning.livewp_priority||30,'📈',headline,sub,'live',+pk,new Date(),15*60000,0.10));
+  });
+  return out;
+}
+
 async function buildStoryPool(){
   var now=Date.now();
   if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
@@ -2998,6 +3038,7 @@ async function buildStoryPool(){
   if(now-transactionsLastFetch>120*60000){loadTransactionsCache();}
   if(now-awardsLastFetch>6*60*60000){loadAwardsCache();}
   if(now-highLowLastFetch>6*60*60000){loadHighLowCache();}
+  if(now-liveWPLastFetch>(devTuning.livewp_refresh_ms||90000)){loadLiveWPCache();}
   loadProbablePitcherStats();
   fetchMissingHRBatterStats();
   var multiHitStories=await genMultiHitDay();
@@ -3006,7 +3047,8 @@ async function buildStoryPool(){
     genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
-    wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories()
+    wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories(),
+    genLiveWinProbStories()
   );
   storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
@@ -4591,6 +4633,7 @@ function confirmDevToolsChanges(){
     ['hitstreak_floor','tuneHitstreakFloor'],['hitstreak_priority','tuneHitstreakPriority'],
     ['roster_priority_il','tuneRosterPriorityIL'],['roster_priority_trade','tuneRosterPriorityTrade'],
     ['wp_leverage_floor','tuneWPLeverageFloor'],['wp_extreme_floor','tuneWPExtremeFloor'],
+    ['livewp_priority','tuneLiveWPPriority'],['livewp_refresh_ms','tuneLiveWPRefresh'],
     ['focus_critical','tuneFocusCritical'],['focus_high','tuneFocusHigh'],
     ['focus_switch_margin','tuneFocusSwitchMargin'],['focus_alert_cooldown','tuneFocusAlertCooldown']
   ];
@@ -4838,7 +4881,7 @@ function fallbackCopy(text){
   try{document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
 }
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
+function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;var tLP=document.getElementById('tuneLiveWPPriority');if(tLP)tLP.value=devTuning.livewp_priority||30;var tLR=document.getElementById('tuneLiveWPRefresh');if(tLR)tLR.value=devTuning.livewp_refresh_ms||90000;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
