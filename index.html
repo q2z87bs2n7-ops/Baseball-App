@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.19</title>
+<title>MLB Pulse v3.20.20</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -806,7 +806,7 @@ body.yd-active .main { display:none !important; }
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.19</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.20</div>
       </div>
     </div>
   </div>
@@ -4098,12 +4098,14 @@ function renderYesterdayRecap() {
         +'<span style="font-size:.75rem;font-weight:700;color:var(--muted)">'+homeTeam.short+'</span>'
         +'</div>';
     }
-    // Strip "Yesterday: " prefix from headline for cleaner display
-    var headlineText=item.headline.replace(/^Yesterday:\s*/,'');
+    // Use the video's own title if available, otherwise fall back to generated story headline
+    var contentItems=(yesterdayContentCache[item.gamePk]&&yesterdayContentCache[item.gamePk].highlights&&yesterdayContentCache[item.gamePk].highlights.highlights&&yesterdayContentCache[item.gamePk].highlights.highlights.items)||[];
+    var videoTitle=contentItems[0]&&(contentItems[0].headline||contentItems[0].blurb);
+    var headlineText=videoTitle||(item.headline.replace(/^Yesterday:\s*/,''));
     var videoRegion='<div id="ydvideo_'+item.gamePk+'" style="margin-top:10px"></div>';
     return '<div id="ydtile_'+item.gamePk+'" class="card" style="padding:16px 18px">'
       +capRow
-      +'<div style="font-size:.88rem;color:var(--text);font-weight:600;line-height:1.45">'+headlineText+'</div>'
+      +'<div class="yd-tile-headline" style="font-size:.88rem;color:var(--text);font-weight:600;line-height:1.45">'+headlineText+'</div>'
       +(item.sub?'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">'+item.sub+'</div>':'')
       +videoRegion
       +'<div style="margin-top:12px"><button onclick="showLiveGame('+item.gamePk+')" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:5px 12px;cursor:pointer">Box Score →</button></div>'
@@ -4375,6 +4377,15 @@ async function loadYesterdayVideoStrip(gamePk) {
   var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
   if(!playable.length) return;
   region.innerHTML=renderHighlightStrip(playable, gamePk);
+  // Patch tile headline now that content is loaded
+  var tile=document.getElementById('ydtile_'+gamePk);
+  if(tile&&playable[0]){
+    var vTitle=playable[0].headline||playable[0].blurb;
+    if(vTitle){
+      var headlineEl=tile.querySelector('.yd-tile-headline');
+      if(headlineEl) headlineEl.textContent=vTitle;
+    }
+  }
 }
 
 function renderHighlightStrip(items, gamePk) {
