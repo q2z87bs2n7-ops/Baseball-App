@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.19.1</title>
+<title>MLB Pulse v3.19.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -766,7 +766,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.19.2</div>
       </div>
     </div>
   </div>
@@ -4054,6 +4054,78 @@ function renderYesterdayRecap() {
     +tilesHtml
     +cardsHtml
     +'<div style="padding:12px 20px;border-top:1px solid var(--border);text-align:center;font-size:.65rem;color:var(--muted)">From yesterday\'s slate</div>';
+
+  // Lazy-load video strips as tiles scroll into view
+  if('IntersectionObserver' in window) {
+    var obs=new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(!entry.isIntersecting) return;
+        var tile=entry.target;
+        var pk=tile.dataset.gamepk;
+        if(pk) { loadYesterdayVideoStrip(+pk); obs.unobserve(tile); }
+      });
+    },{root:document.getElementById('yesterdayOverlay'),rootMargin:'200px'});
+    yesterdayCache.forEach(function(item){
+      var tile=document.getElementById('ydtile_'+item.gamePk);
+      if(tile){ tile.dataset.gamepk=item.gamePk; obs.observe(tile); }
+    });
+  } else {
+    // Fallback: load all immediately
+    yesterdayCache.forEach(function(item){ loadYesterdayVideoStrip(item.gamePk); });
+  }
+}
+
+async function loadYesterdayVideoStrip(gamePk) {
+  var region=document.getElementById('ydvideo_'+gamePk);
+  if(!region||region.dataset.loaded) return;
+  region.dataset.loaded='1';
+  var content=await fetchGameContent(gamePk);
+  if(!content) return;
+  var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+  if(!items.length) return;
+  // Filter to items that have an mp4 playback URL
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+  if(!playable.length) return;
+  region.innerHTML=renderHighlightStrip(playable, gamePk);
+}
+
+function renderHighlightStrip(items, gamePk) {
+  var thumbs=items.map(function(item, i){
+    var imgUrl=pickHeroImage(item)||'';
+    var dur=item.duration||'';
+    var title=item.headline||item.blurb||'Highlight';
+    return '<div onclick="playYesterdayClip('+JSON.stringify(gamePk)+','+i+')" style="cursor:pointer;flex-shrink:0;width:120px;position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'
+      +(imgUrl?'<img src="'+imgUrl+'" style="width:120px;height:68px;object-fit:cover;display:block" loading="lazy">':'<div style="width:120px;height:68px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.2rem">▶</div>')
+      +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:3px 5px">'
+      +'<div style="font-size:.58rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+title+'</div>'
+      +(dur?'<div style="font-size:.55rem;color:rgba(255,255,255,.7)">'+dur+'</div>':'')
+      +'</div>'
+      +'</div>';
+  }).join('');
+  return '<div style="margin-top:8px">'
+    +'<div id="ydplayer_'+gamePk+'" style="display:none"></div>'
+    +'<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">'+thumbs+'</div>'
+    +'</div>';
+}
+
+function playYesterdayClip(gamePk, itemIndex) {
+  var content=yesterdayContentCache[gamePk];
+  if(!content) return;
+  var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+  var item=playable[itemIndex];
+  if(!item) return;
+  var url=pickPlayback(item.playbacks);
+  if(!url) return;
+  var poster=pickHeroImage(item)||'';
+  var playerEl=document.getElementById('ydplayer_'+gamePk);
+  if(!playerEl) return;
+  playerEl.style.display='block';
+  playerEl.innerHTML='<video controls playsinline style="width:100%;border-radius:6px;margin-bottom:6px;max-height:280px;background:#000"'
+    +(poster?' poster="'+poster+'"':'')+'>'
+    +'<source src="'+url+'" type="video/mp4">'
+    +'Your browser does not support HTML5 video.</video>';
+  playerEl.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 function filterCollection(f) { collectionFilter = f; collectionPage = 0; renderCollectionBook(); }
