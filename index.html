@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.15.3</title>
+<title>MLB Tracker v3.15.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.4</div>
       </div>
     </div>
   </div>
@@ -4103,8 +4103,9 @@ function updateFeedEmpty() {
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
   var hasAnyGames=Object.keys(gameStates).length>0;
   var postSlate=isPostSlate();
-  var showHype=!hasVisible||postSlate;
-  if (showHype) renderEmptyState(postSlate);
+  var intermission=!postSlate&&isIntermission();
+  var showHype=!hasVisible||postSlate||intermission;
+  if (showHype) renderEmptyState(postSlate, intermission);
   document.getElementById('feedEmpty').style.display=showHype?'':'none';
   var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames'];
   document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || showHype);
@@ -4126,6 +4127,22 @@ function isPostSlate() {
   });
   if (!lastTerminalMs) return false;
   return (Date.now()-lastTerminalMs) > (devTuning.postSlateRevertMs||20*60*1000);
+}
+
+function isIntermission() {
+  var games=Object.values(gameStates);
+  if (!games.length) return false;
+  if (!games.some(function(g){return g.status==='Final';})) return false;
+  if (games.some(function(g){return g.status==='Live'&&g.detailedState==='In Progress';})) return false;
+  if (!games.some(function(g){return g.status!=='Final';})) return false;
+  var lastTerminalMs=0;
+  feedItems.forEach(function(fi){
+    if (fi.data&&fi.data.type==='status'&&(fi.data.label==='Game Final'||fi.data.label==='Game Postponed')) {
+      var ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
+    }
+  });
+  if (!lastTerminalMs) return false;
+  return (Date.now()-lastTerminalMs) > (devTuning.intermissionRevertMs||20*60*1000);
 }
 
 function pruneStaleGames(beforeDateStr) {
@@ -4171,7 +4188,7 @@ async function fetchTomorrowPreview() {
   finally{tomorrowPreview.inFlight=false;}
 }
 
-function renderEmptyState(postSlate) {
+function renderEmptyState(postSlate, intermission) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(gameStates).filter(function(g){
     if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
@@ -4206,10 +4223,15 @@ function renderEmptyState(postSlate) {
   el.className='has-upcoming';
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
-  var html='<div class="empty-upcoming-label">TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES')+'</div>'
-    +'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
+  var labelText=intermission
+    ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
+    : 'TODAY &middot; '+n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
+  var hypeBlock=intermission?'':
+    '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">Every big moment.<br>Every game. Live.</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
-    +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>'
+    +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
+  var html='<div class="empty-upcoming-label">'+labelText+'</div>'
+    +hypeBlock
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
     +'<div class="upcoming-hero-kicker">NEXT UP</div>'
     +'<div class="upcoming-matchup-row">'
