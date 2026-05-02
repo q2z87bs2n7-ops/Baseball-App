@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.20.11</title>
+<title>MLB Pulse v3.20.12</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -512,14 +512,44 @@
 .news-nav:hover { background: rgba(0,0,0,0.7); border-color: rgba(255,255,255,0.3); }
 .news-nav:first-of-type { left: 8px; }
 .news-nav:last-of-type { right: 8px; }
-.yd-clip-strip { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-.yd-clip-strip::-webkit-scrollbar { height: 4px; }
-.yd-clip-strip::-webkit-scrollbar-track { background: transparent; }
-.yd-clip-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-.yd-clip-strip::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-.yd-clip-chip { cursor:pointer; flex-shrink:0; width:160px; border-radius:6px; overflow:hidden; border:2px solid transparent; background:var(--card2); transition:border-color 0.2s; }
+/* ── Yesterday Recap ─────────────────────────────────────────────── */
+.yd-hero-grid { display:flex; flex-direction:column; background:var(--card); border-radius:10px; overflow:hidden; }
+.yd-player-col { flex:1 1 auto; min-width:0; }
+.yd-player-col video { width:100%; max-height:420px; display:block; background:#000; }
+.yd-playlist { display:flex; flex-direction:row; gap:8px; overflow-x:auto; overflow-y:hidden; padding:10px 14px 12px; border-top:1px solid var(--border); }
+.yd-playlist-kicker { display:none; font-size:.62rem; font-weight:700; color:var(--muted); letter-spacing:.1em; }
+.yd-clip-strip { scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.yd-clip-strip::-webkit-scrollbar { height:4px; width:4px; }
+.yd-clip-strip::-webkit-scrollbar-track { background:transparent; }
+.yd-clip-strip::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.yd-clip-strip::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+.yd-clip-chip { cursor:pointer; flex-shrink:0; width:150px; border-radius:6px; overflow:hidden; border:2px solid transparent; background:var(--card2); transition:border-color 0.2s; display:flex; flex-direction:column; }
 .yd-clip-chip.active { border-color:var(--accent); }
 .yd-clip-chip:hover:not(.active) { border-color:rgba(255,255,255,.2); }
+.yd-chip-thumb { position:relative; background:var(--card); display:flex; align-items:center; justify-content:center; height:84px; flex-shrink:0; overflow:hidden; }
+.yd-chip-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.yd-chip-text { padding:5px 7px 7px; font-size:.6rem; font-weight:600; color:var(--text); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.yd-tiles-grid { display:grid; grid-template-columns:1fr; gap:12px; padding:14px 0 0; }
+.yd-game-thumb { position:relative; border-radius:8px; overflow:hidden; border:1px solid var(--border); margin-top:10px; cursor:pointer; }
+.yd-game-thumb img { width:100%; max-height:180px; object-fit:cover; display:block; }
+.yd-game-thumb-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); }
+.yd-game-thumb-play span { width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,.6); border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; }
+.yd-game-thumb-label { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(0,0,0,.82)); padding:8px 10px; font-size:.62rem; color:rgba(255,255,255,.9); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media(min-width:860px){
+  .yd-hero-grid { flex-direction:row; align-items:stretch; }
+  .yd-player-col { flex:1 1 0; border-right:1px solid var(--border); }
+  .yd-playlist { flex-direction:column; overflow-x:hidden; overflow-y:auto; width:260px; flex-shrink:0; border-top:none; padding:0; gap:0; }
+  .yd-playlist-kicker { display:block; padding:10px 12px 8px; border-bottom:1px solid var(--border); }
+  .yd-clip-chip { width:100%; flex-direction:row; border-radius:0; border:none; border-bottom:1px solid var(--border); background:transparent; }
+  .yd-clip-chip:hover:not(.active) { background:rgba(255,255,255,.04); border-bottom-color:var(--border); }
+  .yd-clip-chip.active { background:rgba(255,255,255,.07); border-left:3px solid var(--accent); border-bottom-color:var(--border); }
+  .yd-chip-thumb { width:110px; min-width:110px; height:62px; }
+  .yd-chip-text { -webkit-line-clamp:3; font-size:.62rem; padding:8px 10px; flex:1; }
+  .yd-tiles-grid { grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); padding:16px 20px 0; gap:14px; }
+  .yd-game-thumb img { max-height:200px; }
+}
+@media(min-width:600px) and (max-width:859px){ .yd-tiles-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:480px){ .yd-clip-chip { width:130px; } .yd-chip-thumb { height:72px; } }
 #newsCard { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .news-card-item { display: none; }
 .news-card-item.active { display: flex; flex-direction: column; gap: 6px; animation: fade-in 0.3s ease; }
@@ -774,7 +804,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.11</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.20.12</div>
       </div>
     </div>
   </div>
@@ -1018,7 +1048,7 @@
     <button onclick="closeYesterdayRecap()" style="background:none;border:none;color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer;padding:0;letter-spacing:.04em">← Back</button>
     <div style="font-size:.88rem;font-weight:700;color:var(--text)">📅 Yesterday — <span id="ydDateLabel"></span></div>
   </div>
-  <div id="yesterdayCard" style="max-width:860px;margin:0 auto;padding:0 0 40px"></div>
+  <div id="yesterdayCard" style="padding:0 0 40px"></div>
 </div>
 <div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;color:var(--text);white-space:nowrap"></div>
 
@@ -4067,7 +4097,7 @@ function renderYesterdayRecap() {
     // Strip "Yesterday: " prefix from headline for cleaner display
     var headlineText=item.headline.replace(/^Yesterday:\s*/,'');
     var videoRegion='<div id="ydvideo_'+item.gamePk+'" style="margin-top:10px"></div>';
-    return '<div id="ydtile_'+item.gamePk+'" class="card" style="padding:18px 20px">'
+    return '<div id="ydtile_'+item.gamePk+'" class="card" style="padding:16px 18px">'
       +capRow
       +'<div style="font-size:.88rem;color:var(--text);font-weight:600;line-height:1.45">'+headlineText+'</div>'
       +(item.sub?'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">'+item.sub+'</div>':'')
@@ -4075,10 +4105,10 @@ function renderYesterdayRecap() {
       +'<div style="margin-top:12px"><button onclick="showLiveGame('+item.gamePk+')" style="background:none;border:1px solid var(--border);border-radius:16px;color:var(--accent);font-size:.72rem;font-weight:600;padding:5px 12px;cursor:pointer">Box Score →</button></div>'
       +'</div>';
   }).join('');
-  var tilesGrid='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;padding:16px 20px">'+tilesHtml+'</div>';
+  var tilesGrid='<div class="yd-tiles-grid">'+tilesHtml+'</div>';
 
   card.innerHTML=''
-    +'<div id="ydHeroRegion" style="padding:0 20px 0;margin-bottom:4px"></div>'
+    +'<div id="ydHeroRegion"></div>'
     +'<div id="ydHeroesStrip"></div>'
     +tilesGrid
     +cardsHtml
@@ -4123,14 +4153,15 @@ function pickMarqueeGame() {
 function mountSharedPlayer(heroRegion) {
   if(!heroRegion||heroRegion.dataset.mounted) return;
   heroRegion.dataset.mounted='1';
+  heroRegion.className='yd-hero-grid';
   heroRegion.innerHTML=
-    '<div style="padding:8px 16px 6px;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em" id="ydPlayerKicker">TOP HIGHLIGHT</div>'
-    +'<div style="position:relative;background:#000">'
-    +'<video id="ydSharedVideo" controls playsinline style="width:100%;max-height:340px;display:block"></video>'
+    '<div class="yd-player-col">'
+    +'<div style="padding:8px 16px 6px;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em" id="ydPlayerKicker">TOP HIGHLIGHT</div>'
+    +'<video id="ydSharedVideo" controls playsinline></video>'
+    +'<div style="padding:10px 18px 14px">'
+    +'<div id="ydPlayerTitle" style="font-size:.88rem;font-weight:700;color:var(--text);line-height:1.4"></div>'
+    +'<div id="ydPlayerBlurb" style="font-size:.74rem;color:var(--muted);margin-top:4px"></div>'
     +'</div>'
-    +'<div style="padding:10px 16px 14px">'
-    +'<div id="ydPlayerTitle" style="font-size:.82rem;font-weight:700;color:var(--text);line-height:1.4"></div>'
-    +'<div id="ydPlayerBlurb" style="font-size:.72rem;color:var(--muted);margin-top:3px"></div>'
     +'</div>';
 }
 
@@ -4147,7 +4178,8 @@ async function loadYesterdayHero() {
   var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
   var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
   if(!playable.length) return;
-  var first=playable[0];
+  // Prefer index 2 (first actual play highlight); fall back to index 0 if fewer than 3 clips
+  var first=playable[2]||playable[0];
   mountSharedPlayer(heroRegion);
   loadClipIntoSharedPlayer(
     pickPlayback(first.playbacks),
@@ -4159,12 +4191,11 @@ async function loadYesterdayHero() {
 }
 
 function buildTopHighlightsCarousel() {
-  // Runs after all game content is cached. Collects items[0] from each game
-  // (marquee first), builds the news-module carousel, replaces any existing one
-  // while leaving the stable shared player untouched.
+  // Runs after all game content is cached.
+  // Collects items[2..4] (actual play highlights, skipping recap at 0 + condensed at 1)
+  // from each game — marquee first. Builds vertical playlist on desktop, horizontal strip on mobile.
   var heroRegion=document.getElementById('ydHeroRegion');
   if(!heroRegion||!yesterdayCache||!yesterdayCache.length) return;
-  // Order: marquee game first, then rest in schedule order
   var marquee=pickMarqueeGame();
   var ordered=yesterdayCache.slice().sort(function(a,b){
     if(marquee){
@@ -4179,7 +4210,8 @@ function buildTopHighlightsCarousel() {
     if(!content) return;
     var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
     var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
-    if(playable.length) ydHighlightClips.push(playable[0]);
+    // Take indices 2, 3, 4 — actual play highlights (skip 0=recap, 1=condensed)
+    playable.slice(2,5).forEach(function(clip){ ydHighlightClips.push(clip); });
   });
   if(!ydHighlightClips.length) return;
   mountSharedPlayer(heroRegion);
@@ -4189,16 +4221,18 @@ function buildTopHighlightsCarousel() {
     var thumb=pickHeroImage(clip)||'';
     var title=(clip.headline||clip.blurb||'Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     return '<div class="yd-clip-chip'+(i===0?' active':'')+'" onclick="selectYdClip('+i+')">'
-      +'<div style="width:100%;height:90px;position:relative;background:var(--card);display:flex;align-items:center;justify-content:center">'
-      +'<span style="font-size:1.2rem;color:var(--muted)">▶</span>'
-      +(thumb?'<img src="'+thumb+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'" alt="">':'')
+      +'<div class="yd-chip-thumb"><span style="font-size:1.1rem;color:var(--muted)">▶</span>'
+      +(thumb?'<img src="'+thumb+'" onerror="this.style.display=\'none\'" alt="">':'')
       +'</div>'
-      +'<div style="padding:5px 7px 7px;font-size:.6rem;font-weight:600;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+title+'</div>'
+      +'<div class="yd-chip-text">'+title+'</div>'
       +'</div>';
   }).join('');
   heroRegion.insertAdjacentHTML('beforeend',
-    '<div id="ydClipCarousel" class="yd-clip-strip" style="display:flex;gap:8px;overflow-x:auto;padding:10px 16px 12px;border-top:1px solid var(--border)">'+chips+'</div>'
+    '<div id="ydClipCarousel" class="yd-playlist yd-clip-strip">'
+    +'<div class="yd-playlist-kicker">TOP PLAYS</div>'
+    +chips+'</div>'
   );
+  // Load first clip into the player
   loadClipIntoSharedPlayer(
     pickPlayback(ydHighlightClips[0].playbacks),
     pickHeroImage(ydHighlightClips[0])||'',
@@ -4343,19 +4377,19 @@ async function loadYesterdayVideoStrip(gamePk) {
 }
 
 function renderHighlightStrip(items, gamePk) {
-  var thumbs=items.map(function(item, i){
-    var imgUrl=pickHeroImage(item)||'';
-    var dur=item.duration||'';
-    var title=item.headline||item.blurb||'Highlight';
-    return '<div onclick="playYesterdayClip('+JSON.stringify(gamePk)+','+i+')" style="cursor:pointer;flex-shrink:0;width:120px;position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'
-      +(imgUrl?'<img src="'+imgUrl+'" style="width:120px;height:68px;object-fit:cover;display:block" loading="lazy">':'<div style="width:120px;height:68px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.2rem">▶</div>')
-      +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:3px 5px">'
-      +'<div style="font-size:.58rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+title+'</div>'
-      +(dur?'<div style="font-size:.55rem;color:rgba(255,255,255,.7)">'+dur+'</div>':'')
-      +'</div>'
-      +'</div>';
-  }).join('');
-  return '<div class="yd-clip-strip" style="margin-top:8px;display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">'+thumbs+'</div>';
+  // Show only items[0] — the game recap/highlight — as a single featured thumbnail.
+  // items[1] (condensed game) and items[2+] (play highlights) surface in the top carousel.
+  var item=items[0];
+  if(!item) return '';
+  var imgUrl=pickHeroImage(item)||'';
+  var title=(item.headline||item.blurb||'Game Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return '<div class="yd-game-thumb" onclick="playYesterdayClip('+JSON.stringify(gamePk)+',0)">'
+    +(imgUrl
+      ?'<img src="'+imgUrl+'" loading="lazy" alt="">'
+      :'<div style="width:100%;height:140px;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem">▶</div>')
+    +'<div class="yd-game-thumb-play"><span>▶</span></div>'
+    +'<div class="yd-game-thumb-label">'+title+'</div>'
+    +'</div>';
 }
 
 function playYesterdayClip(gamePk, itemIndex) {
@@ -4365,12 +4399,15 @@ function playYesterdayClip(gamePk, itemIndex) {
   var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
   var item=playable[itemIndex];
   if(!item) return;
+  // Deselect any active carousel chip since this is a per-game tile play
+  var carousel=document.getElementById('ydClipCarousel');
+  if(carousel) carousel.querySelectorAll('.yd-clip-chip').forEach(function(c){c.classList.remove('active');});
   loadClipIntoSharedPlayer(
     pickPlayback(item.playbacks),
     pickHeroImage(item)||'',
-    item.headline||item.blurb||'Highlight',
+    item.headline||item.blurb||'Game Highlight',
     item.blurb||'',
-    'NOW PLAYING'
+    'GAME HIGHLIGHT'
   );
 }
 
