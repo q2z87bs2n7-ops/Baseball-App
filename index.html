@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v3.15</title>
+<title>MLB Tracker v3.15.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -743,7 +743,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.15.1</div>
       </div>
     </div>
   </div>
@@ -4091,21 +4091,34 @@ function toggleGame(gamePk) {
 function updateFeedEmpty() {
   var feed=document.getElementById('feed');
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
-  if (!hasVisible) renderEmptyState();
-  document.getElementById('feedEmpty').style.display=hasVisible?'none':'';
-  // Hide UI elements when no visible feed items (storyCarousel stays visible for Probable Pitchers)
+  var hasAnyGames=Object.keys(gameStates).length>0;
+  var postSlate=isPostSlate();
+  var showHype=!hasVisible||postSlate;
+  if (showHype) renderEmptyState(postSlate);
+  document.getElementById('feedEmpty').style.display=showHype?'':'none';
   var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames'];
-  // Apply pulse-empty layout when there are NO games at all OR no visible feed items
-  // This centers hype content whether in zero-game state or just pre-game/all-upcoming state
-  var hasAnyGames = Object.keys(gameStates).length > 0;
-  document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || !hasVisible);
+  document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || showHype);
   hideWhenEmpty.forEach(function(id){
     var el=document.getElementById(id);
-    if(el) el.style.display=hasVisible?'':'none';
+    if(el) el.style.display=showHype?'none':'';
   });
 }
 
-function renderEmptyState() {
+function isPostSlate() {
+  var games=Object.values(gameStates);
+  if (!games.length) return false;
+  if (!games.every(function(g){return g.status==='Final';})) return false;
+  var lastTerminalMs=0;
+  feedItems.forEach(function(fi){
+    if (fi.data&&fi.data.type==='status'&&(fi.data.label==='Game Final'||fi.data.label==='Game Postponed')) {
+      var ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
+    }
+  });
+  if (!lastTerminalMs) return false;
+  return (Date.now()-lastTerminalMs) > (devTuning.postSlateRevertMs||20*60*1000);
+}
+
+function renderEmptyState(postSlate) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(gameStates).filter(function(g){
     if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
@@ -4119,7 +4132,11 @@ function renderEmptyState() {
   upcoming.sort(function(a,b){var aMs=a.gameDateMs||0,bMs=b.gameDateMs||0;if(aMs!==bMs)return aMs-bMs;return a.awayAbbr.localeCompare(b.awayAbbr);});
   if (!upcoming.length){
     el.className='';
-    el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">League Pulse</div><div class="empty-sub">Live play-by-play from every game will appear here</div>';
+    if (postSlate) {
+      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Today\'s slate is complete</div><div class="empty-sub">All games are final. Tomorrow\'s slate will appear here.</div>';
+    } else {
+      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">League Pulse</div><div class="empty-sub">Live play-by-play from every game will appear here</div>';
+    }
     return;
   }
   el.className='has-upcoming';
