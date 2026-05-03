@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.22.10</title>
+<title>MLB Pulse v3.22.11</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -352,8 +352,6 @@
 .ptb-kicker { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; }
 .ptb-bolt { color: var(--accent); font-size: .8rem; flex-shrink: 0; }
 .ptb-brand { font-size: .84rem; font-weight: 900; letter-spacing: .18em; color: var(--text); white-space: nowrap; flex-shrink: 0; }
-.ptb-sep { color: var(--border); font-size: .6rem; flex-shrink: 0; }
-.ptb-tagline { font-size: .68rem; font-weight: 400; color: var(--muted); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ptb-lens { flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px; background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px 5px 12px; cursor: pointer; color: var(--muted); transition: border-color .15s, color .15s; }
 .ptb-lens:hover { border-color: var(--accent); color: var(--text); }
 .ptb-lens.on { border-color: var(--accent); color: var(--text); }
@@ -864,7 +862,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.10</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.11</div>
       </div>
     </div>
   </div>
@@ -1030,8 +1028,6 @@
     <div class="ptb-kicker">
       <span class="ptb-bolt">⚡</span>
       <span class="ptb-brand">MLB PULSE</span>
-      <span class="ptb-sep">·</span>
-      <span class="ptb-tagline" id="ptbTagline">Every game, one feed.</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
       <button id="ptbYestBtn" onclick="openYesterdayRecap()" class="ptb-lens" style="display:none;padding:5px 12px">
@@ -4957,8 +4953,6 @@ function pulseGreeting() {
   if (h<22) return {kicker:'Game on',      headline:'Action across the league.',    tagline:'Every game, one feed.'};
   return            {kicker:'Late night',  headline:'West coast finals shaking out.', tagline:'West coast finals shaking out.'};
 }
-function refreshPulseTagline(){ var t=document.getElementById('ptbTagline'); if(t) t.textContent=pulseGreeting().tagline; }
-setInterval(refreshPulseTagline,60000);
 
 function renderEmptyState(postSlate, intermission) {
   var el=document.getElementById('feedEmpty');
