@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.28.3</title>
+<title>MLB Pulse v3.28.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -131,6 +131,8 @@
   .linescore-table tr:last-child td{border-bottom:none}
   .linescore-table td:first-child{text-align:left;font-weight:600;min-width:36px}
   .linescore-table td.rhe{font-weight:800;color:var(--accent)}
+  .hl-detail-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+  .hl-detail-right{position:sticky;top:calc(var(--header-h) + 8px)}
   .game-notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:12px}
   .media-layout{display:grid;grid-template-columns:25% 75%;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px}
   .league-leaders-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -212,6 +214,8 @@
     .grid2{grid-template-columns:1fr}
     .card-cap{width:40px!important;height:40px!important}
     .series-ghost{width:220px!important;height:220px!important;right:-30px!important;bottom:-30px!important}
+    .hl-detail-grid{grid-template-columns:1fr}
+    .hl-detail-right{position:static}
   }
   @media(max-width:480px){
     html,body{overflow-x:hidden}
@@ -856,7 +860,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.28.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.28.4</div>
       </div>
     </div>
   </div>
@@ -6317,7 +6321,7 @@ async function buildGameDetailPanel(g,gameNum){
   var highlight=content.highlights&&content.highlights.highlights&&content.highlights.highlights.items&&content.highlights.highlights.items[0]?content.highlights.highlights.items[0]:null;
   var highlightUrl=highlight?highlight.playbacks&&highlight.playbacks.find(function(p){return p.name==='FLASH_2500K_1280X720';})?highlight.playbacks.find(function(p){return p.name==='FLASH_2500K_1280X720';}).url:highlight.playbacks&&highlight.playbacks.length>0?highlight.playbacks[highlight.playbacks.length-1].url:null:null;
   var html=sep+'<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>';
-  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:12px"><div>';
+  if(highlightUrl){html+='<div class="hl-detail-grid"><div class="hl-detail-left">';}
   var innings=ls.innings||[];
   html+='<div style="overflow-x:auto"><table class="linescore-table"><thead><tr><th></th>';
   innings.forEach(function(inn){html+='<th>'+inn.num+'</th>';});
@@ -6326,12 +6330,7 @@ async function buildGameDetailPanel(g,gameNum){
   html+='<td class="rhe" style="border-left:2px solid var(--border)">'+(ls.teams&&ls.teams.away&&ls.teams.away.runs!=null?ls.teams.away.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.away&&ls.teams.away.hits!=null?ls.teams.away.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.away&&ls.teams.away.errors!=null?ls.teams.away.errors:'—')+'</td></tr>';
   html+='<tr><td>'+home.team.teamName+'</td>';innings.forEach(function(inn){html+='<td>'+(inn.home&&inn.home.runs!=null?inn.home.runs:'—')+'</td>';});
   html+='<td class="rhe" style="border-left:2px solid var(--border)">'+(ls.teams&&ls.teams.home&&ls.teams.home.runs!=null?ls.teams.home.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.hits!=null?ls.teams.home.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.errors!=null?ls.teams.home.errors:'—')+'</td></tr>';
-  html+='</tbody></table></div></div>';
-  if(highlightUrl){
-    var highlightHeadline=highlight.headline||'Full Game Highlight';
-    html+='<div style="display:flex;flex-direction:column;gap:8px"><div style="background:var(--card);border-radius:8px;overflow:hidden;aspect-ratio:16/9"><video width="100%" height="100%" controls style="width:100%;height:100%;display:block"><source src="'+highlightUrl+'" type="video/mp4"></video></div><div style="background:var(--card);border-radius:8px;padding:10px"><div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:4px">HIGHLIGHTS</div><div style="font-size:.85rem;color:var(--text);line-height:1.4">'+highlightHeadline+'</div></div></div>';
-  }
-  html+='</div>';
+  html+='</tbody></table></div>';
   var awayAbbr=away.team.abbreviation||away.team.teamName,homeAbbr=home.team.abbreviation||home.team.teamName;
   var awayPlayers=bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{},homePlayers=bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{};
   var awayBox=buildBoxscore(awayPlayers),homeBox=buildBoxscore(homePlayers),bsId='bs_'+g.gamePk;
@@ -6343,6 +6342,10 @@ async function buildGameDetailPanel(g,gameNum){
     html+='<div style="margin-top:12px"><div class="game-note-label" style="margin-bottom:8px">Game Summary</div><div style="background:var(--card);border-radius:8px;padding:10px">';
     bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)html+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else html+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--accent);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text)">'+val+'</span></div>';});
     html+='</div></div>';
+  }
+  if(highlightUrl){
+    var highlightHeadline=highlight.headline||'Full Game Highlight';
+    html+='</div><div class="hl-detail-right"><div style="background:var(--card);border-radius:8px;overflow:hidden"><div style="aspect-ratio:16/9"><video width="100%" height="100%" controls preload="none" style="width:100%;height:100%;display:block"><source src="'+highlightUrl+'" type="video/mp4"></video></div><div style="padding:10px"><div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:4px">HIGHLIGHTS</div><div style="font-size:.85rem;color:var(--text);line-height:1.4">'+highlightHeadline+'</div></div></div></div></div>';
   }
   html+='</div>';
   return html;
@@ -6597,7 +6600,7 @@ async function loadMediaFeed(uc){
   }catch(e){if(listEl)listEl.innerHTML='<div class="error" style="padding:12px">Could not load videos</div>';}
 }
 function renderMediaList(){var listEl=document.getElementById('mediaList');if(!listEl)return;var html='';mediaVideos.forEach(function(v){var sel=v.videoId===selectedVideoId;html+='<div onclick="selectMediaVideo(\''+v.videoId+'\')" style="cursor:pointer;padding:10px;border-bottom:1px solid var(--border);background:'+(sel?'color-mix(in srgb,var(--accent) 12%,transparent)':'transparent')+';'+(sel?'border-left:3px solid var(--accent)':'border-left:3px solid transparent')+'"><img src="'+v.thumb+'" style="width:100%;border-radius:4px;margin-bottom:6px;display:block" loading="lazy"/><div style="font-size:.72rem;font-weight:600;color:'+(sel?'var(--accent)':'var(--text)')+';line-height:1.3;margin-bottom:3px">'+v.title+'</div><div style="font-size:.65rem;color:var(--muted)">'+v.date+'</div></div>';});listEl.innerHTML=html;}
-function selectMediaVideo(videoId){selectedVideoId=videoId;var player=document.getElementById('mediaPlayer');if(player)player.src='https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay=1&rel=0';renderMediaList();}
+function selectMediaVideo(videoId){selectedVideoId=videoId;var player=document.getElementById('mediaPlayer');if(player)player.src='https://www.youtube-nocookie.com/embed/'+videoId+'?rel=0';renderMediaList();}
 
 var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={},leagueMatchupOffset=0;
 let homeLiveTimer=null;
