@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.27.5</title>
+<title>MLB Pulse v3.27.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -409,12 +409,9 @@
   user-select: none;
 }
 .ticker-game:hover { background: var(--card2); }
-.ticker-game.status-live { border-color: rgba(34, 197, 94, 0.35); }
 .ticker-game.status-final { opacity: 0.55; }
 .ticker-game.status-preview { opacity: 0.75; }
-.ticker-game.feed-enabled { box-shadow: inset 0 -2px 0 var(--accent); }
 .ticker-game.feed-disabled { opacity: 0.32; filter: grayscale(0.4); }
-.ticker-game.status-live.feed-disabled { border-color: var(--border); }
 .ticker-game.has-risp { align-items: stretch; gap: 4px; padding: 0.375rem 0.625rem 0.4375rem; white-space: normal; }
 .ticker-row { display: flex; align-items: center; gap: 5px; }
 .ticker-top { display: flex; align-items: center; gap: 7px; }
@@ -859,7 +856,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.27.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.27.6</div>
       </div>
     </div>
   </div>
