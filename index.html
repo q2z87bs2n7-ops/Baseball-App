@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.27.4</title>
+<title>MLB Pulse v3.27.5</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -859,7 +859,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.27.4</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.27.5</div>
       </div>
     </div>
   </div>
@@ -3792,7 +3792,7 @@ function renderFocusMiniBar() {
     }
     liveGames.forEach(function(g){
       var focused=g.gamePk===focusGamePk;
-      stripHtml+='<button'+(focused?'':' onclick="setFocusGameManual('+g.gamePk+')"')+' style="flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;border:1px solid '+(focused?'var(--p-border,#3a4d75)':'var(--p-border,#1e2d4a)')+';background:'+(focused?'var(--p-card,#162039)':'transparent')+';cursor:'+(focused?'default':'pointer')+'">'
+      stripHtml+='<button'+(focused?'':' onclick="setFocusGameManual('+g.gamePk+')"')+' style="flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;border:'+(focused?'1.5px solid var(--p-accent,#3a4d75)':'1px solid var(--p-border,#1e2d4a)')+';background:transparent;cursor:'+(focused?'default':'pointer')+'">'
         +'<span style="width:4px;height:4px;border-radius:50%;background:'+(g.awayPrimary||'#3a4d75')+';flex:0 0 auto"></span>'
         +'<span style="font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;color:'+(focused?'var(--p-text,#e8eaf0)':'var(--p-muted,#9aa0a8)')+'">'+g.awayAbbr+'<span style="color:var(--p-border,#3a4d75);margin:0 2px">@</span>'+g.homeAbbr+'</span>'
         +'<span style="width:4px;height:4px;border-radius:50%;background:'+(g.homePrimary||'#3a4d75')+';flex:0 0 auto"></span>'

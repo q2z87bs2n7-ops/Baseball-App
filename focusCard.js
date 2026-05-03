@@ -341,8 +341,9 @@
       '<button type="button"' +
         (focused ? '' : ' onclick="setFocusGameManual && setFocusGameManual(' + (g.gamePk || 0) + ')"') +
         ' style="flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;padding:3px 7px;' +
-          'border-radius:4px;border:1px solid ' + (focused ? 'var(--p-border,#3a4d75)' : 'var(--p-border,#1e2d4a)') + ';' +
-          'background:' + (focused ? 'var(--p-card,#162039)' : 'transparent') + ';' +
+          'border-radius:4px;' +
+          'border:' + (focused ? '1.5px solid var(--p-accent,#3a4d75)' : '1px solid var(--p-border,#1e2d4a)') + ';' +
+          'background:transparent;' +
           'cursor:' + (focused ? 'default' : 'pointer') + ';">' +
         '<span style="width:4px;height:4px;border-radius:50%;background:' + esc(g.awayPrimary || '#3a4d75') + ';flex:0 0 auto;"></span>' +
         '<span style="font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.04em;color:' + (focused ? 'var(--p-text,#e8eaf0)' : 'var(--p-muted,#9aa0a8)') + ';">' +
@@ -358,9 +359,9 @@
     return (
       '<button type="button" onclick="setFocusGame && setFocusGame(' + (g.gamePk || 0) + ')" style="' +
           'flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;padding:8px 11px;' +
-          'border-radius:8px;border:1px solid ' + (focused ? 'var(--p-border,#3a4d75)' : 'var(--p-border,#1e2d4a)') + ';' +
-          'background:' + (focused ? 'var(--p-card,#162039)' : 'var(--p-dark,#0a0f1e)') + ';cursor:pointer;color:var(--p-text,#e8eaf0);' +
-          (focused ? 'box-shadow:0 0 0 1px var(--p-border,#3a4d75) inset;' : '') +
+          'border-radius:8px;' +
+          'border:' + (focused ? '1.5px solid var(--p-accent,#3a4d75)' : '1px solid var(--p-border,#1e2d4a)') + ';' +
+          'background:transparent;cursor:pointer;color:var(--p-text,#e8eaf0);' +
         '">' +
         '<span style="font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.06em;color:var(--p-muted,#9aa0a8);">' +
           esc(g.awayAbbr) + ' <span style="color:var(--p-text,#e8eaf0);">' + esc(g.awayScore) + '</span>' +
