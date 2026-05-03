@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.22.5</title>
+<title>MLB Pulse v3.22.10</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -436,11 +436,32 @@
 #pulseFeedHeader { margin: 0 0 24px 0; padding: 8px 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .pulse-feed-label { font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .pulse-feed-label .pulse-bolt { color: var(--muted); font-size: 14px; }
-/* Pulse is team-neutral. Re-point --accent only inside the Pulse view. */
+/* Pulse is team-neutral. All chrome vars are driven by --p-* tokens set by applyPulseMLBTheme(). */
 #pulse {
-  --accent: #cfd3dc;
-  --accent-soft: rgba(255,255,255,0.08);
-  --accent-strong: #ffffff;
+  --dark: var(--p-dark, #0F1B2E);
+  --card: var(--p-card, #172B4D);
+  --card2: var(--p-card2, #1E3A5F);
+  --border: var(--p-border, #2C4A7F);
+  --accent: var(--p-accent, #cfd3dc);
+  --accent-soft: var(--p-accent-soft, rgba(255,255,255,0.08));
+  --accent-strong: var(--p-accent-strong, #ffffff);
+  --text: var(--p-text, #e8eaf0);
+  --muted: var(--p-muted, #9aa0a8);
+  --scoring-bg: var(--p-scoring-bg, rgba(60,190,100,0.10));
+  --scoring-border: var(--p-scoring-border, rgba(60,190,100,0.28));
+  --hr-bg: var(--p-hr-bg, rgba(160,100,255,0.10));
+  --hr-border: var(--p-hr-border, rgba(160,100,255,0.40));
+  --status-bg: var(--p-status-bg, rgba(80,140,255,0.08));
+  --status-border: var(--p-status-border, rgba(80,140,255,0.22));
+}
+/* Yesterday Recap inherits Pulse tokens so the light theme carries through */
+#yesterday {
+  --dark: var(--p-dark, #0F1B2E);
+  --card: var(--p-card, #172B4D);
+  --card2: var(--p-card2, #1E3A5F);
+  --border: var(--p-border, #2C4A7F);
+  --text: var(--p-text, #e8eaf0);
+  --muted: var(--p-muted, #9aa0a8);
 }
 #feedWrap { margin: 8px 0 0; padding: 14px 12px 24px; border: 1px solid var(--border); border-radius: var(--radius); }
 #feedEmpty { text-align: center; padding: 64px 24px; color: var(--muted); }
@@ -452,7 +473,7 @@
 .empty-hype-block { margin-bottom: 18px; position: relative; }
 .empty-hype-headline { font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
 .empty-hype-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.hype-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: #cfd3dc; }
+.hype-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; background: var(--card2); border: 1px solid var(--border); color: var(--accent); }
 .empty-hype-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
 .upcoming-hero { border-radius: 10px; padding: 18px 20px; margin-bottom: 10px; overflow: hidden; }
 .upcoming-hero-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 10px; }
@@ -498,13 +519,29 @@
 .play-tag.tp-tag   { background: rgba(220,  60,  60, 0.18); color: #e03030; }
 .feed-play { font-size: 13.5px; color: var(--text); line-height: 1.45; }
 .feed-item.homerun .feed-play { font-weight: 600; }
-.feed-score-badge { display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; margin-left: 5px; vertical-align: middle; color: rgba(255,255,255,0.55); }
-.feed-score-scorer { color: #ffffff; font-weight: 800; }
-.feed-score-sep { color: rgba(255,255,255,0.25); margin: 0 4px; }
+.feed-score-badge { display: inline-block; background: var(--card2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; margin-left: 5px; vertical-align: middle; color: var(--muted); }
+.feed-score-scorer { color: var(--text); font-weight: 800; }
+.feed-score-sep { color: var(--border); margin: 0 4px; }
 .status-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .status-icon { font-size: 16px; }
 .status-label { font-size: 13px; font-weight: 700; color: var(--text); }
 .status-sub { font-size: 12px; color: var(--muted); }
+
+/* ── Pulse theme-adaptive element overrides ────────────────────────────────
+   Replaces every hardcoded rgba(255,255,255,x) and #cfd3dc inside Pulse with
+   live CSS vars so both light and dark schemes render correctly.             */
+#pulse .hype-pill { background: var(--card2); border-color: var(--border); color: var(--accent); }
+#pulse .story-badge.today,#pulse .story-badge.final,#pulse .story-badge.yesterday,
+#pulse .story-badge.onthisday,#pulse .story-badge.upcoming,#pulse .story-badge.leaders,
+#pulse .story-badge.probables,#pulse .story-badge.highlight { background: var(--card2); color: var(--muted); border-color: var(--border); }
+#pulse .feed-score-badge { background: var(--card2); border-color: var(--border); color: var(--muted); }
+#pulse .feed-score-scorer { color: var(--text); }
+#pulse .feed-score-sep { color: var(--border); }
+#pulse .matchup-card { background: var(--card); border-color: var(--border); }
+#pulse .matchup-card:hover { background: var(--card2); border-color: var(--border); }
+#pulse .side-rail-game:hover { background: var(--card2); }
+#pulse .news-nav { background: var(--card2); border-color: var(--border); color: var(--text); }
+#pulse .news-nav:hover { background: var(--card); border-color: var(--accent); }
 
 #sideRail { display: none; width: 320px; flex-shrink: 0; overflow-y: auto; padding-left: 8px; }
 #sideRailGames { margin-bottom: 24px; }
@@ -617,9 +654,9 @@
 .story-badge.leaders,
 .story-badge.probables,
 .story-badge.highlight {
-  background: rgba(255,255,255,0.06);
-  color: #cfd3dc;
-  border: 1px solid rgba(255,255,255,0.10);
+  background: var(--card2);
+  color: var(--muted);
+  border: 1px solid var(--border);
 }
 .story-icon { font-size: 18px; margin-right: 6px; }
 .story-headline { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.35; }
@@ -773,6 +810,14 @@
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">☀️ Pulse Light Mode</div>
+          </div>
+          <div onclick="setPulseColorScheme(pulseColorScheme==='dark'?'light':'dark')" id="pulseSchemeToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+            <div id="pulseSchemeKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔄 Invert Colours</div>
           </div>
           <div onclick="toggleInvert()" id="invertToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
@@ -819,7 +864,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.5</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.10</div>
       </div>
     </div>
   </div>
@@ -4975,9 +5020,9 @@ function renderEmptyState(postSlate, intermission) {
     rest.forEach(function(g){
       html+='<div class="matchup-card"><div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">'+(g.gameTime||'TBD')+'</div>'
         +'<div style="display:flex;align-items:center;justify-content:center;gap:6px">'
-        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.awayId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:#fff">'+g.awayAbbr+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(g.awayW!=null?'('+g.awayW+'-'+g.awayL+')':'')+'</div></div>'
+        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.awayId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:var(--text)">'+g.awayAbbr+'</div><div style="font-size:.62rem;color:var(--muted)">'+(g.awayW!=null?'('+g.awayW+'-'+g.awayL+')':'')+'</div></div>'
         +'<span style="color:var(--muted);font-size:.8rem">vs</span>'
-        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.homeId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:#fff">'+g.homeAbbr+'</div><div style="font-size:.62rem;color:rgba(255,255,255,.5)">'+(g.homeW!=null?'('+g.homeW+'-'+g.homeL+')':'')+'</div></div>'
+        +'<div style="text-align:center"><img class="matchup-cap" src="https://www.mlbstatic.com/team-logos/'+g.homeId+'.svg" onerror="this.style.display=\'none\'"><div style="font-size:.8rem;font-weight:700;color:var(--text)">'+g.homeAbbr+'</div><div style="font-size:.62rem;color:var(--muted)">'+(g.homeW!=null?'('+g.homeW+'-'+g.homeL+')':'')+'</div></div>'
         +'</div></div>';
     });
     html+='</div>';
@@ -5716,20 +5761,71 @@ function applyTeamTheme(team){
   var chip=document.getElementById('teamChip');if(chip)chip.textContent=team.name.toUpperCase();
 }
 
+// ── Pulse color schemes ─────────────────────────────────────────────────────
+const PULSE_SCHEME = {
+  dark: {
+    label:'Navy', emoji:'⚾',
+    dark:'#0F1B2E', card:'#172B4D', card2:'#1E3A5F', border:'#2C4A7F',
+    accent:'#cfd3dc', accentSoft:'rgba(255,255,255,0.08)', accentStrong:'#ffffff',
+    text:'#e8eaf0', muted:'#9aa0a8',
+    scoringBg:'rgba(60,190,100,0.10)', scoringBorder:'rgba(60,190,100,0.28)',
+    hrBg:'rgba(160,100,255,0.10)', hrBorder:'rgba(160,100,255,0.40)',
+    statusBg:'rgba(80,140,255,0.08)', statusBorder:'rgba(80,140,255,0.22)'
+  },
+  light: {
+    label:'Light', emoji:'☀️',
+    dark:'#F1F5F9', card:'#FFFFFF', card2:'#E8EDF3', border:'#CBD5E1',
+    accent:'#2563EB', accentSoft:'rgba(37,99,235,0.08)', accentStrong:'#1E40AF',
+    text:'#0F172A', muted:'#64748B',
+    scoringBg:'rgba(22,163,74,0.07)', scoringBorder:'rgba(22,163,74,0.32)',
+    hrBg:'rgba(109,40,217,0.07)', hrBorder:'rgba(109,40,217,0.28)',
+    statusBg:'rgba(37,99,235,0.06)', statusBorder:'rgba(37,99,235,0.22)'
+  }
+};
+let pulseColorScheme=(function(){try{return localStorage.getItem('mlb_pulse_scheme')||'light';}catch(e){return'light';}})();
+
 function applyPulseMLBTheme(){
   if(devColorLocked&&devColorOverrides.pulse.primary){
     document.documentElement.style.setProperty('--dark',devColorOverrides.pulse.dark);
-    document.documentElement.style.setProperty('--card',devColorOverrides.pulse.card);
-    document.documentElement.style.setProperty('--card2',devColorOverrides.pulse.card2);
-    document.documentElement.style.setProperty('--border',devColorOverrides.pulse.border);
+    document.documentElement.style.setProperty('--p-dark',devColorOverrides.pulse.dark);
+    document.documentElement.style.setProperty('--p-card',devColorOverrides.pulse.card);
+    document.documentElement.style.setProperty('--p-card2',devColorOverrides.pulse.card2);
+    document.documentElement.style.setProperty('--p-border',devColorOverrides.pulse.border);
     return;
   }
-  document.documentElement.style.setProperty('--dark','#0F1B2E');
-  document.documentElement.style.setProperty('--card','#172B4D');
-  document.documentElement.style.setProperty('--card2','#1E3A5F');
-  document.documentElement.style.setProperty('--border','#2C4A7F');
+  var s=PULSE_SCHEME[pulseColorScheme]||PULSE_SCHEME.dark;
+  document.documentElement.style.setProperty('--dark',s.dark);
+  document.documentElement.style.setProperty('--p-dark',s.dark);
+  document.documentElement.style.setProperty('--p-card',s.card);
+  document.documentElement.style.setProperty('--p-card2',s.card2);
+  document.documentElement.style.setProperty('--p-border',s.border);
+  document.documentElement.style.setProperty('--p-accent',s.accent);
+  document.documentElement.style.setProperty('--p-accent-soft',s.accentSoft);
+  document.documentElement.style.setProperty('--p-accent-strong',s.accentStrong);
+  document.documentElement.style.setProperty('--p-text',s.text);
+  document.documentElement.style.setProperty('--p-muted',s.muted);
+  document.documentElement.style.setProperty('--p-scoring-bg',s.scoringBg);
+  document.documentElement.style.setProperty('--p-scoring-border',s.scoringBorder);
+  document.documentElement.style.setProperty('--p-hr-bg',s.hrBg);
+  document.documentElement.style.setProperty('--p-hr-border',s.hrBorder);
+  document.documentElement.style.setProperty('--p-status-bg',s.statusBg);
+  document.documentElement.style.setProperty('--p-status-border',s.statusBorder);
 }
 
+function setPulseColorScheme(scheme){
+  pulseColorScheme=scheme;
+  try{localStorage.setItem('mlb_pulse_scheme',scheme);}catch(e){}
+  var ps=document.getElementById('pulse');
+  if(ps&&ps.classList.contains('active'))applyPulseMLBTheme();
+  updatePulseToggle();
+}
+function updatePulseToggle(){
+  var isLight=pulseColorScheme==='light';
+  var track=document.getElementById('pulseSchemeToggle');
+  var knob=document.getElementById('pulseSchemeKnob');
+  if(track){track.style.background=isLight?'var(--accent)':'var(--border)';}
+  if(knob){knob.style.left=isLight?'21px':'3px';}
+}
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
 document.addEventListener('click',function(e){
   if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');
@@ -6675,7 +6771,7 @@ function togglePush(){
   }
   if(sv('mlb_invert')==='true')themeInvert=true;
   if(sv('mlb_media')==='true')mediaEnabled=true;
-  buildTeamSelect();buildThemeSelect();
+  buildTeamSelect();buildThemeSelect();updatePulseToggle();
   if(sv('mlb_theme'))document.getElementById('themeSelect').value=sv('mlb_theme');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='';mt.style.background='var(--secondary)';mk.style.left='21px';}
