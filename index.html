@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.22.8</title>
+<title>MLB Pulse v3.22.9</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -438,6 +438,10 @@
 .pulse-feed-label .pulse-bolt { color: var(--muted); font-size: 14px; }
 /* Pulse is team-neutral. All chrome vars are driven by --p-* tokens set by applyPulseMLBTheme(). */
 #pulse {
+  --dark: var(--p-dark, #0F1B2E);
+  --card: var(--p-card, #172B4D);
+  --card2: var(--p-card2, #1E3A5F);
+  --border: var(--p-border, #2C4A7F);
   --accent: var(--p-accent, #cfd3dc);
   --accent-soft: var(--p-accent-soft, rgba(255,255,255,0.08));
   --accent-strong: var(--p-accent-strong, #ffffff);
@@ -450,8 +454,15 @@
   --status-bg: var(--p-status-bg, rgba(80,140,255,0.08));
   --status-border: var(--p-status-border, rgba(80,140,255,0.22));
 }
-/* Yesterday Recap inherits Pulse text/muted so the light theme carries through */
-#yesterday { --text: var(--p-text, #e8eaf0); --muted: var(--p-muted, #9aa0a8); }
+/* Yesterday Recap inherits Pulse tokens so the light theme carries through */
+#yesterday {
+  --dark: var(--p-dark, #0F1B2E);
+  --card: var(--p-card, #172B4D);
+  --card2: var(--p-card2, #1E3A5F);
+  --border: var(--p-border, #2C4A7F);
+  --text: var(--p-text, #e8eaf0);
+  --muted: var(--p-muted, #9aa0a8);
+}
 #feedWrap { margin: 8px 0 0; padding: 14px 12px 24px; border: 1px solid var(--border); border-radius: var(--radius); }
 #feedEmpty { text-align: center; padding: 64px 24px; color: var(--muted); }
 #feedEmpty .empty-icon { font-size: 40px; display: block; margin-bottom: 14px; opacity: 0.6; }
@@ -797,37 +808,17 @@
           <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Color Theme</div>
           <select id="themeSelect" onchange="switchTheme(this.value)" style="width:100%"></select>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">⚡ Pulse Theme</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
-            <button data-pulse-scheme="snow"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌨️ Snow</button>
-            <button data-pulse-scheme="paper"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">📄 Paper</button>
-            <button data-pulse-scheme="cloud"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">☁️ Cloud</button>
-            <button data-pulse-scheme="ice"       onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🧊 Ice</button>
-            <button data-pulse-scheme="frost"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">❄️ Frost</button>
-            <button data-pulse-scheme="arctic"    onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🏔️ Arctic</button>
-            <button data-pulse-scheme="steel"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">⚙️ Steel</button>
-            <button data-pulse-scheme="mist"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌫️ Mist</button>
-            <button data-pulse-scheme="ocean"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌊 Ocean</button>
-            <button data-pulse-scheme="cerulean"  onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🔵 Cerulean</button>
-            <button data-pulse-scheme="cobalt"    onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">💠 Cobalt</button>
-            <button data-pulse-scheme="horizon"   onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🏙️ Horizon</button>
-            <button data-pulse-scheme="light"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">☀️ Light</button>
-            <button data-pulse-scheme="dark"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">⚾ Navy</button>
-            <button data-pulse-scheme="admiral"   onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">⚓ Admiral</button>
-            <button data-pulse-scheme="deep"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🔷 Deep</button>
-            <button data-pulse-scheme="eve"       onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌉 Eve</button>
-            <button data-pulse-scheme="abyss"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🫙 Abyss</button>
-            <button data-pulse-scheme="onyx"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">◼️ Onyx</button>
-            <button data-pulse-scheme="graphite"  onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🪨 Graphite</button>
-            <button data-pulse-scheme="carbon"    onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">⚫ Carbon</button>
-            <button data-pulse-scheme="ink"       onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🖋️ Ink</button>
-            <button data-pulse-scheme="slate"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌃 Slate</button>
-            <button data-pulse-scheme="neutral"   onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">⬛ Neutral</button>
-            <button data-pulse-scheme="midnight"  onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌌 Midnight</button>
-            <button data-pulse-scheme="forest"    onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌲 Forest</button>
-            <button data-pulse-scheme="broadcast" onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">📺 Broadcast</button>
-            <button data-pulse-scheme="dusk"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 2px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.65rem;font-weight:600;cursor:pointer;transition:.15s">🌆 Dusk</button>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;color:var(--text)">⚡ Pulse Theme</div>
+            <div id="pulseSchemeLabel" style="font-size:.7rem;color:var(--muted);margin-top:2px">Navy</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:.68rem;color:var(--muted);font-weight:600;letter-spacing:.06em">NAVY</span>
+            <div onclick="setPulseColorScheme(pulseColorScheme==='dark'?'light':'dark')" id="pulseSchemeToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
+              <div id="pulseSchemeKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
+            </div>
+            <span style="font-size:.68rem;color:var(--muted);font-weight:600;letter-spacing:.06em">LIGHT</span>
           </div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -878,7 +869,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.8</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.9</div>
       </div>
     </div>
   </div>
@@ -5794,245 +5785,6 @@ const PULSE_SCHEME = {
     scoringBg:'rgba(22,163,74,0.07)', scoringBorder:'rgba(22,163,74,0.32)',
     hrBg:'rgba(109,40,217,0.07)', hrBorder:'rgba(109,40,217,0.28)',
     statusBg:'rgba(37,99,235,0.06)', statusBorder:'rgba(37,99,235,0.22)'
-  },
-  slate: {
-    label:'Slate', emoji:'🌃',
-    dark:'#111318', card:'#1A1D24', card2:'#21252E', border:'#2D3347',
-    accent:'#38BDF8', accentSoft:'rgba(56,189,248,0.10)', accentStrong:'#0EA5E9',
-    text:'#F1F5F9', muted:'#8898AA',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.30)',
-    hrBg:'rgba(167,139,250,0.10)', hrBorder:'rgba(167,139,250,0.35)',
-    statusBg:'rgba(56,189,248,0.08)', statusBorder:'rgba(56,189,248,0.22)'
-  },
-  neutral: {
-    label:'Neutral', emoji:'⬛',
-    dark:'#141414', card:'#1E1E1E', card2:'#262626', border:'#363636',
-    accent:'#D4D8DF', accentSoft:'rgba(212,216,223,0.08)', accentStrong:'#F1F5F9',
-    text:'#F0F0F0', muted:'#878787',
-    scoringBg:'rgba(34,197,94,0.10)', scoringBorder:'rgba(34,197,94,0.30)',
-    hrBg:'rgba(168,85,247,0.10)', hrBorder:'rgba(168,85,247,0.35)',
-    statusBg:'rgba(96,165,250,0.08)', statusBorder:'rgba(96,165,250,0.22)'
-  },
-  midnight: {
-    label:'Midnight', emoji:'🌌',
-    dark:'#0C0D14', card:'#131525', card2:'#1A1D30', border:'#252A42',
-    accent:'#818CF8', accentSoft:'rgba(129,140,248,0.10)', accentStrong:'#6366F1',
-    text:'#E2E8F0', muted:'#6B7A94',
-    scoringBg:'rgba(52,211,153,0.10)', scoringBorder:'rgba(52,211,153,0.28)',
-    hrBg:'rgba(244,114,182,0.10)', hrBorder:'rgba(244,114,182,0.30)',
-    statusBg:'rgba(129,140,248,0.08)', statusBorder:'rgba(129,140,248,0.22)'
-  },
-  forest: {
-    label:'Forest', emoji:'🌲',
-    dark:'#091209', card:'#111A10', card2:'#172216', border:'#213320',
-    accent:'#4ADE80', accentSoft:'rgba(74,222,128,0.10)', accentStrong:'#16A34A',
-    text:'#ECFDF5', muted:'#86A887',
-    scoringBg:'rgba(74,222,128,0.12)', scoringBorder:'rgba(74,222,128,0.35)',
-    hrBg:'rgba(251,191,36,0.10)', hrBorder:'rgba(251,191,36,0.35)',
-    statusBg:'rgba(34,211,238,0.07)', statusBorder:'rgba(34,211,238,0.22)'
-  },
-  broadcast: {
-    label:'Broadcast', emoji:'📺',
-    dark:'#100E07', card:'#1A1810', card2:'#232018', border:'#332F1A',
-    accent:'#FCD34D', accentSoft:'rgba(252,211,77,0.10)', accentStrong:'#F59E0B',
-    text:'#FFFBEB', muted:'#A89A60',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(252,211,77,0.12)', hrBorder:'rgba(252,211,77,0.40)',
-    statusBg:'rgba(251,146,60,0.08)', statusBorder:'rgba(251,146,60,0.25)'
-  },
-  dusk: {
-    label:'Dusk', emoji:'🌆',
-    dark:'#0D0B12', card:'#15121D', card2:'#1D1927', border:'#2C2640',
-    accent:'#C4B5FD', accentSoft:'rgba(196,181,253,0.10)', accentStrong:'#7C3AED',
-    text:'#EDE9FE', muted:'#9083B8',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(251,191,36,0.10)', hrBorder:'rgba(251,191,36,0.32)',
-    statusBg:'rgba(196,181,253,0.08)', statusBorder:'rgba(196,181,253,0.22)'
-  },
-  // ── White / off-white ──────────────────────────────────────────────────────
-  snow: {
-    label:'Snow', emoji:'🌨️',
-    dark:'#FFFFFF', card:'#F8FAFC', card2:'#F0F4F8', border:'#DDE3EC',
-    accent:'#2563EB', accentSoft:'rgba(37,99,235,0.08)', accentStrong:'#1D4ED8',
-    text:'#0F172A', muted:'#64748B',
-    scoringBg:'rgba(22,163,74,0.07)', scoringBorder:'rgba(22,163,74,0.28)',
-    hrBg:'rgba(37,99,235,0.07)', hrBorder:'rgba(37,99,235,0.28)',
-    statusBg:'rgba(37,99,235,0.05)', statusBorder:'rgba(37,99,235,0.20)'
-  },
-  paper: {
-    label:'Paper', emoji:'📄',
-    dark:'#FAFAF8', card:'#F4F4EF', card2:'#ECEAE2', border:'#D8D5C8',
-    accent:'#1E3A5F', accentSoft:'rgba(30,58,95,0.08)', accentStrong:'#152D4A',
-    text:'#1C1C18', muted:'#6B6B55',
-    scoringBg:'rgba(22,163,74,0.07)', scoringBorder:'rgba(22,163,74,0.25)',
-    hrBg:'rgba(30,58,95,0.07)', hrBorder:'rgba(30,58,95,0.25)',
-    statusBg:'rgba(30,58,95,0.05)', statusBorder:'rgba(30,58,95,0.18)'
-  },
-  cloud: {
-    label:'Cloud', emoji:'☁️',
-    dark:'#EEF2F7', card:'#E5ECF4', card2:'#D9E4EE', border:'#C2CFE0',
-    accent:'#1D4ED8', accentSoft:'rgba(29,78,216,0.08)', accentStrong:'#1E40AF',
-    text:'#1E2940', muted:'#5A6880',
-    scoringBg:'rgba(22,163,74,0.07)', scoringBorder:'rgba(22,163,74,0.28)',
-    hrBg:'rgba(29,78,216,0.07)', hrBorder:'rgba(29,78,216,0.26)',
-    statusBg:'rgba(29,78,216,0.05)', statusBorder:'rgba(29,78,216,0.20)'
-  },
-  ice: {
-    label:'Ice', emoji:'🧊',
-    dark:'#EBF4FB', card:'#DFF0FA', card2:'#D0E8F5', border:'#B6D6ED',
-    accent:'#0369A1', accentSoft:'rgba(3,105,161,0.08)', accentStrong:'#0284C7',
-    text:'#0B2340', muted:'#4C7097',
-    scoringBg:'rgba(22,163,74,0.08)', scoringBorder:'rgba(22,163,74,0.30)',
-    hrBg:'rgba(3,105,161,0.08)', hrBorder:'rgba(3,105,161,0.28)',
-    statusBg:'rgba(3,105,161,0.05)', statusBorder:'rgba(3,105,161,0.20)'
-  },
-  // ── Cool light blue ────────────────────────────────────────────────────────
-  frost: {
-    label:'Frost', emoji:'❄️',
-    dark:'#E5F0F8', card:'#D8EAF4', card2:'#C8E0EF', border:'#A8CDE5',
-    accent:'#0C4A6E', accentSoft:'rgba(12,74,110,0.09)', accentStrong:'#0369A1',
-    text:'#07213A', muted:'#3B6280',
-    scoringBg:'rgba(22,163,74,0.08)', scoringBorder:'rgba(22,163,74,0.30)',
-    hrBg:'rgba(12,74,110,0.08)', hrBorder:'rgba(12,74,110,0.30)',
-    statusBg:'rgba(12,74,110,0.06)', statusBorder:'rgba(12,74,110,0.22)'
-  },
-  arctic: {
-    label:'Arctic', emoji:'🏔️',
-    dark:'#DCE9F2', card:'#CCDFED', card2:'#BAD4E7', border:'#94BDD8',
-    accent:'#1E40AF', accentSoft:'rgba(30,64,175,0.10)', accentStrong:'#1D4ED8',
-    text:'#071828', muted:'#38607A',
-    scoringBg:'rgba(22,163,74,0.08)', scoringBorder:'rgba(22,163,74,0.30)',
-    hrBg:'rgba(30,64,175,0.08)', hrBorder:'rgba(30,64,175,0.28)',
-    statusBg:'rgba(30,64,175,0.06)', statusBorder:'rgba(30,64,175,0.22)'
-  },
-  steel: {
-    label:'Steel', emoji:'⚙️',
-    dark:'#E2E8EF', card:'#D5DDE7', card2:'#C6CFD8', border:'#AEBAC9',
-    accent:'#1E3A5F', accentSoft:'rgba(30,58,95,0.10)', accentStrong:'#2563EB',
-    text:'#111827', muted:'#4A5568',
-    scoringBg:'rgba(22,163,74,0.07)', scoringBorder:'rgba(22,163,74,0.28)',
-    hrBg:'rgba(30,58,95,0.08)', hrBorder:'rgba(30,58,95,0.28)',
-    statusBg:'rgba(30,58,95,0.06)', statusBorder:'rgba(30,58,95,0.22)'
-  },
-  mist: {
-    label:'Mist', emoji:'🌫️',
-    dark:'#D8E4EE', card:'#C8D7E5', card2:'#B6C9DA', border:'#96B2C8',
-    accent:'#1E3A8A', accentSoft:'rgba(30,58,138,0.10)', accentStrong:'#1D4ED8',
-    text:'#0A1929', muted:'#3E5570',
-    scoringBg:'rgba(22,163,74,0.08)', scoringBorder:'rgba(22,163,74,0.30)',
-    hrBg:'rgba(30,58,138,0.08)', hrBorder:'rgba(30,58,138,0.28)',
-    statusBg:'rgba(30,58,138,0.06)', statusBorder:'rgba(30,58,138,0.22)'
-  },
-  // ── Mid blue ───────────────────────────────────────────────────────────────
-  ocean: {
-    label:'Ocean', emoji:'🌊',
-    dark:'#0B3D6E', card:'#0E4D8A', card2:'#1259A0', border:'#1A6FBF',
-    accent:'#93C5FD', accentSoft:'rgba(147,197,253,0.12)', accentStrong:'#BFDBFE',
-    text:'#EFF6FF', muted:'#7BAED8',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(147,197,253,0.12)', hrBorder:'rgba(147,197,253,0.40)',
-    statusBg:'rgba(147,197,253,0.08)', statusBorder:'rgba(147,197,253,0.25)'
-  },
-  cerulean: {
-    label:'Cerulean', emoji:'🔵',
-    dark:'#0C4D8B', card:'#105EA8', card2:'#1469BF', border:'#1E7CDC',
-    accent:'#BAE6FD', accentSoft:'rgba(186,230,253,0.12)', accentStrong:'#E0F2FE',
-    text:'#F0F9FF', muted:'#7DBEE8',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(186,230,253,0.12)', hrBorder:'rgba(186,230,253,0.40)',
-    statusBg:'rgba(186,230,253,0.08)', statusBorder:'rgba(186,230,253,0.25)'
-  },
-  cobalt: {
-    label:'Cobalt', emoji:'💠',
-    dark:'#0A2A70', card:'#0C3382', card2:'#0F3F9A', border:'#1550B8',
-    accent:'#93C5FD', accentSoft:'rgba(147,197,253,0.12)', accentStrong:'#DBEAFE',
-    text:'#EFF6FF', muted:'#6B9DC8',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(147,197,253,0.12)', hrBorder:'rgba(147,197,253,0.40)',
-    statusBg:'rgba(147,197,253,0.08)', statusBorder:'rgba(147,197,253,0.25)'
-  },
-  horizon: {
-    label:'Horizon', emoji:'🏙️',
-    dark:'#192F4A', card:'#213A5C', card2:'#2A4770', border:'#385D8A',
-    accent:'#90B8D8', accentSoft:'rgba(144,184,216,0.12)', accentStrong:'#BAD5EC',
-    text:'#EBF4FC', muted:'#7898B2',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(144,184,216,0.12)', hrBorder:'rgba(144,184,216,0.35)',
-    statusBg:'rgba(144,184,216,0.08)', statusBorder:'rgba(144,184,216,0.25)'
-  },
-  // ── Dark blue ──────────────────────────────────────────────────────────────
-  admiral: {
-    label:'Admiral', emoji:'⚓',
-    dark:'#06172E', card:'#0A2140', card2:'#0E2C55', border:'#163D74',
-    accent:'#60A5FA', accentSoft:'rgba(96,165,250,0.12)', accentStrong:'#93C5FD',
-    text:'#E8F4FF', muted:'#6A91B4',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(96,165,250,0.12)', hrBorder:'rgba(96,165,250,0.38)',
-    statusBg:'rgba(96,165,250,0.08)', statusBorder:'rgba(96,165,250,0.25)'
-  },
-  deep: {
-    label:'Deep', emoji:'🔷',
-    dark:'#040D1A', card:'#071525', card2:'#0A1D33', border:'#112D4A',
-    accent:'#7DB8E8', accentSoft:'rgba(125,184,232,0.10)', accentStrong:'#AECFE8',
-    text:'#E2EFF8', muted:'#5A7E9A',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.26)',
-    hrBg:'rgba(125,184,232,0.10)', hrBorder:'rgba(125,184,232,0.35)',
-    statusBg:'rgba(125,184,232,0.07)', statusBorder:'rgba(125,184,232,0.22)'
-  },
-  eve: {
-    label:'Eve', emoji:'🌉',
-    dark:'#0D1525', card:'#121E34', card2:'#192843', border:'#243A5E',
-    accent:'#7AB3D8', accentSoft:'rgba(122,179,216,0.10)', accentStrong:'#A8CDE8',
-    text:'#DDEEFF', muted:'#5C7EA0',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.26)',
-    hrBg:'rgba(122,179,216,0.10)', hrBorder:'rgba(122,179,216,0.35)',
-    statusBg:'rgba(122,179,216,0.07)', statusBorder:'rgba(122,179,216,0.22)'
-  },
-  abyss: {
-    label:'Abyss', emoji:'🫙',
-    dark:'#030912', card:'#060E1C', card2:'#091527', border:'#0E2240',
-    accent:'#5A9EC8', accentSoft:'rgba(90,158,200,0.10)', accentStrong:'#8BBDD8',
-    text:'#D8EAF5', muted:'#4A6E8A',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.25)',
-    hrBg:'rgba(90,158,200,0.10)', hrBorder:'rgba(90,158,200,0.32)',
-    statusBg:'rgba(90,158,200,0.07)', statusBorder:'rgba(90,158,200,0.20)'
-  },
-  // ── Dark / charcoal ────────────────────────────────────────────────────────
-  onyx: {
-    label:'Onyx', emoji:'◼️',
-    dark:'#0A0A0A', card:'#131313', card2:'#1C1C1C', border:'#2A2A2A',
-    accent:'#5B9BD5', accentSoft:'rgba(91,155,213,0.10)', accentStrong:'#7EB5E8',
-    text:'#E8ECF0', muted:'#6A7685',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(91,155,213,0.10)', hrBorder:'rgba(91,155,213,0.35)',
-    statusBg:'rgba(91,155,213,0.07)', statusBorder:'rgba(91,155,213,0.22)'
-  },
-  graphite: {
-    label:'Graphite', emoji:'🪨',
-    dark:'#141618', card:'#1E2124', card2:'#272B2F', border:'#383D44',
-    accent:'#7EB8DC', accentSoft:'rgba(126,184,220,0.10)', accentStrong:'#A8D0E8',
-    text:'#ECF1F6', muted:'#6E7E8E',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(126,184,220,0.10)', hrBorder:'rgba(126,184,220,0.35)',
-    statusBg:'rgba(126,184,220,0.07)', statusBorder:'rgba(126,184,220,0.22)'
-  },
-  carbon: {
-    label:'Carbon', emoji:'⚫',
-    dark:'#0E1014', card:'#181C22', card2:'#20252D', border:'#2E3540',
-    accent:'#6AAFD4', accentSoft:'rgba(106,175,212,0.10)', accentStrong:'#96C8E4',
-    text:'#E8EEF4', muted:'#63748A',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
-    hrBg:'rgba(106,175,212,0.10)', hrBorder:'rgba(106,175,212,0.35)',
-    statusBg:'rgba(106,175,212,0.07)', statusBorder:'rgba(106,175,212,0.22)'
-  },
-  ink: {
-    label:'Ink', emoji:'🖋️',
-    dark:'#08090E', card:'#0E1018', card2:'#141622', border:'#1E2233',
-    accent:'#7EC8F0', accentSoft:'rgba(126,200,240,0.10)', accentStrong:'#A8DAFA',
-    text:'#E2ECF5', muted:'#58708A',
-    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.26)',
-    hrBg:'rgba(126,200,240,0.10)', hrBorder:'rgba(126,200,240,0.35)',
-    statusBg:'rgba(126,200,240,0.07)', statusBorder:'rgba(126,200,240,0.22)'
   }
 };
 let pulseColorScheme=(function(){try{return localStorage.getItem('mlb_pulse_scheme')||'dark';}catch(e){return'dark';}})();
@@ -6040,16 +5792,18 @@ let pulseColorScheme=(function(){try{return localStorage.getItem('mlb_pulse_sche
 function applyPulseMLBTheme(){
   if(devColorLocked&&devColorOverrides.pulse.primary){
     document.documentElement.style.setProperty('--dark',devColorOverrides.pulse.dark);
-    document.documentElement.style.setProperty('--card',devColorOverrides.pulse.card);
-    document.documentElement.style.setProperty('--card2',devColorOverrides.pulse.card2);
-    document.documentElement.style.setProperty('--border',devColorOverrides.pulse.border);
+    document.documentElement.style.setProperty('--p-dark',devColorOverrides.pulse.dark);
+    document.documentElement.style.setProperty('--p-card',devColorOverrides.pulse.card);
+    document.documentElement.style.setProperty('--p-card2',devColorOverrides.pulse.card2);
+    document.documentElement.style.setProperty('--p-border',devColorOverrides.pulse.border);
     return;
   }
   var s=PULSE_SCHEME[pulseColorScheme]||PULSE_SCHEME.dark;
   document.documentElement.style.setProperty('--dark',s.dark);
-  document.documentElement.style.setProperty('--card',s.card);
-  document.documentElement.style.setProperty('--card2',s.card2);
-  document.documentElement.style.setProperty('--border',s.border);
+  document.documentElement.style.setProperty('--p-dark',s.dark);
+  document.documentElement.style.setProperty('--p-card',s.card);
+  document.documentElement.style.setProperty('--p-card2',s.card2);
+  document.documentElement.style.setProperty('--p-border',s.border);
   document.documentElement.style.setProperty('--p-accent',s.accent);
   document.documentElement.style.setProperty('--p-accent-soft',s.accentSoft);
   document.documentElement.style.setProperty('--p-accent-strong',s.accentStrong);
@@ -6068,16 +5822,16 @@ function setPulseColorScheme(scheme){
   try{localStorage.setItem('mlb_pulse_scheme',scheme);}catch(e){}
   var ps=document.getElementById('pulse');
   if(ps&&ps.classList.contains('active'))applyPulseMLBTheme();
-  updatePulseSchemeButtons();
+  updatePulseToggle();
 }
-function updatePulseSchemeButtons(){
-  document.querySelectorAll('[data-pulse-scheme]').forEach(function(btn){
-    var active=btn.dataset.pulseScheme===pulseColorScheme;
-    btn.style.background=active?'var(--secondary)':'';
-    btn.style.color=active?'var(--accent-text)':'';
-    btn.style.borderColor=active?'var(--secondary)':'';
-    btn.style.fontWeight=active?'700':'600';
-  });
+function updatePulseToggle(){
+  var isLight=pulseColorScheme==='light';
+  var track=document.getElementById('pulseSchemeToggle');
+  var knob=document.getElementById('pulseSchemeKnob');
+  var lbl=document.getElementById('pulseSchemeLabel');
+  if(track){track.style.background=isLight?'var(--accent)':'var(--border)';}
+  if(knob){knob.style.left=isLight?'21px':'3px';}
+  if(lbl){lbl.textContent=isLight?'Light':'Navy';}
 }
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
 document.addEventListener('click',function(e){
@@ -7024,7 +6778,7 @@ function togglePush(){
   }
   if(sv('mlb_invert')==='true')themeInvert=true;
   if(sv('mlb_media')==='true')mediaEnabled=true;
-  buildTeamSelect();buildThemeSelect();updatePulseSchemeButtons();
+  buildTeamSelect();buildThemeSelect();updatePulseToggle();
   if(sv('mlb_theme'))document.getElementById('themeSelect').value=sv('mlb_theme');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(mediaEnabled){var mb=document.getElementById('mediaNavBtn'),mt=document.getElementById('mediaToggle'),mk=document.getElementById('mediaToggleKnob');mb.style.display='';mt.style.background='var(--secondary)';mk.style.left='21px';}
