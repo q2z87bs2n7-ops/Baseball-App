@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.26.9</title>
+<title>MLB Pulse v3.26.10</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -823,12 +823,6 @@
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
           </div>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">⚡ Pulse: Sound Alerts</div>
-          </div>
-          <button id="btnSound" onclick="toggleSoundPanel()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">🔊</button>
-        </div>
         <div id="radioRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">📻 Live Game Radio</div>
@@ -854,7 +848,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.26.9</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.26.10</div>
       </div>
     </div>
   </div>
@@ -1029,6 +1023,7 @@
         <span class="ptb-lens-label">MY TEAM</span>
         <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
       </button>
+      <button id="ptbSoundBtn" class="ptb-lens" onclick="toggleSoundPanel()" title="Sound Alerts" style="padding:5px 10px;font-size:.85rem">🔊</button>
       <button id="ptbRadioBtn" class="ptb-lens" onclick="toggleRadio()" title="Live Game Radio" style="padding:5px 10px;font-size:.85rem">📻</button>
       <button id="ptbSchemeBtn" class="ptb-lens" onclick="setPulseColorScheme(pulseColorScheme==='dark'?'light':'dark')" title="Toggle light/dark mode" style="padding:5px 10px;font-size:.85rem">
         <span id="ptbSchemeIcon">☀️</span>
@@ -6020,7 +6015,7 @@ async function releaseScreenWakeLock(){
 }
 
 function onSoundPanelClickOutside(e){
-  var panel=document.getElementById('soundPanel'),btn=document.getElementById('btnSound');
+  var panel=document.getElementById('soundPanel'),btn=document.getElementById('ptbSoundBtn');
   if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
   var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDevTools');
   if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
