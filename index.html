@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.27.6</title>
+<title>MLB Pulse v3.27.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -856,7 +856,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.27.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.27.7</div>
       </div>
     </div>
   </div>
@@ -4789,14 +4789,14 @@ function resetCollection() {
 }
 
 function baseDiamondSvg(on1,on2,on3) {
-  var dim='rgba(255,255,255,0.18)',lit='#ffd000',glow='filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
-  var s1=on1?' style="'+glow+'"':'', s2=on2?' style="'+glow+'"':'', s3=on3?' style="'+glow+'"':'';
+  var litStyle='fill:#ffd000;filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
+  var dimStyle='fill:var(--muted,#9aa0a8);opacity:0.4';
   return '<svg class="ticker-diamond" width="28" height="24" viewBox="0 0 28 24" aria-hidden="true">'
-    +'<path d="M14,21 L24,12 L14,3 L4,12 Z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1.2"/>'
-    +'<circle cx="14" cy="21" r="2" fill="rgba(255,255,255,0.13)"/>'
-    +'<circle'+s1+' cx="24" cy="12" r="3" fill="'+(on1?lit:dim)+'"/>'
-    +'<circle'+s2+' cx="14" cy="3"  r="3" fill="'+(on2?lit:dim)+'"/>'
-    +'<circle'+s3+' cx="4"  cy="12" r="3" fill="'+(on3?lit:dim)+'"/>'
+    +'<path d="M14,21 L24,12 L14,3 L4,12 Z" fill="none" style="stroke:var(--border,rgba(255,255,255,0.1))" stroke-width="1.2" opacity="0.45"/>'
+    +'<circle cx="14" cy="21" r="2" style="'+dimStyle+'"/>'
+    +'<circle cx="24" cy="12" r="3" style="'+(on1?litStyle:dimStyle)+'"/>'
+    +'<circle cx="14" cy="3"  r="3" style="'+(on2?litStyle:dimStyle)+'"/>'
+    +'<circle cx="4"  cy="12" r="3" style="'+(on3?litStyle:dimStyle)+'"/>'
     +'</svg>';
 }
 
