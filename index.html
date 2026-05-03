@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.22.2</title>
+<title>MLB Pulse v3.22.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -658,17 +658,17 @@
 .sound-toggle input:checked + .sound-knob { background: color-mix(in srgb, var(--accent) 22%, var(--card)); border-color: var(--accent); }
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
 
-#devToolsPanel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 380px; max-height: 90vh; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 201; overflow-y: auto; display: none; }
-.dev-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 11px; border-bottom: 1px solid var(--border); }
+#devToolsPanel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(560px, 94vw); max-height: 90vh; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 201; overflow-y: auto; display: none; }
+.dev-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 11px; border-bottom: 1px solid var(--border); }
 .dev-panel-title { font-size: 13px; font-weight: 700; color: var(--text); }
 .dev-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 2px 5px; border-radius: 4px; line-height: 1; font-family: inherit; }
 .dev-close:hover { background: var(--card2); color: var(--text); }
-.dev-buttons { padding: 6px 0 4px; }
-.dev-btn { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding: 12px 15px; gap: 4px; border: none; background: none; cursor: pointer; width: 100%; text-align: left; border-bottom: 1px solid var(--border); }
+.dev-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+.dev-btn { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 11px 14px; gap: 10px; border: none; background: var(--card); cursor: pointer; width: 100%; text-align: left; }
 .dev-btn:hover { background: var(--card2); }
 .dev-btn:last-child { border-bottom: none; }
-.dev-btn-label { font-size: 12px; font-weight: 600; color: var(--text); }
-.dev-btn-shortcut { font-size: 10px; color: var(--muted); }
+.dev-btn-label { font-size: 12px; font-weight: 600; color: var(--text); flex: 1; }
+.dev-btn-shortcut { font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 
 /* ── Player Card Flash (v2.7, v2.31 Topps redesign) ────────────────────── */
 @keyframes card-in {
@@ -782,7 +782,7 @@
         <div id="pushRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔔 Game Start Alerts</div>
-            <div style="font-size:.68rem;color:var(--muted)" id="pushStatusText">Off</div>
+            <div style="display:none" id="pushStatusText">Off</div>
           </div>
           <div onclick="togglePush()" id="pushToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
@@ -797,7 +797,7 @@
         <div id="radioRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">📻 Live Game Radio</div>
-            <div style="font-size:.68rem;color:var(--muted)" id="radioStatusText">Off · Auto-pairs to focus game</div>
+            <div style="display:none" id="radioStatusText">Off · Auto-pairs to focus game</div>
           </div>
           <div onclick="toggleRadio()" id="radioToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
             <div id="radioToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
@@ -806,7 +806,6 @@
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔍 Radio Check</div>
-            <div style="font-size:.68rem;color:var(--muted)">Sweep all stations · report results</div>
           </div>
           <button onclick="openRadioCheck()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
         </div>
@@ -820,7 +819,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.3</div>
       </div>
     </div>
   </div>
@@ -1129,22 +1128,26 @@
     <details style="cursor:pointer;open">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚡ Pulse Tuning</summary>
       <div style="margin-top:10px;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">Carousel Rotation (ms)</div>
-          <input type="number" id="tuneRotateMs" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
-          <div style="font-size:.6rem;margin-top:3px">How often the story carousel advances</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:4px">Carousel Rotation (ms)</div>
+            <input type="number" id="tuneRotateMs" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+            <div style="font-size:.6rem;margin-top:3px">Carousel advance interval</div>
+          </div>
+          <div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Card Threshold</div>
+            <input type="number" id="tuneRbiThreshold" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+            <div style="font-size:.6rem;margin-top:3px">Min score to trigger RBI card</div>
+          </div>
+          <div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Cooldown (ms)</div>
+            <input type="number" id="tuneRbiCooldown" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
+            <div style="font-size:.6rem;margin-top:3px">Per-game cooldown (90000 = 90s)</div>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button onclick="resetTuning()" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:6px;border-radius:4px;cursor:pointer;font-weight:600">Reset to Defaults</button>
+          </div>
         </div>
-        <div>
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Card Threshold</div>
-          <input type="number" id="tuneRbiThreshold" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
-          <div style="font-size:.6rem;margin-top:3px">Minimum score (0–∞) to trigger RBI card</div>
-        </div>
-        <div>
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Cooldown (ms)</div>
-          <input type="number" id="tuneRbiCooldown" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
-          <div style="font-size:.6rem;margin-top:3px">Per-game cooldown between RBI cards (90000 = 90s)</div>
-        </div>
-        <button onclick="resetTuning()" style="margin-top:4px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:6px;border-radius:4px;cursor:pointer;font-weight:600">Reset to Defaults</button>
         <div id="rbiFormulaDisplay" style="background:var(--card);border:1px solid var(--border);border-radius:4px;padding:6px;font-size:.6rem;line-height:1.4;display:none">
           <div style="color:var(--accent);font-weight:600">RBI Scoring Formula:</div>
           <div>score = (baseRBI × hitMult + context) × inningMult</div>
