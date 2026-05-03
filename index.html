@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.28</title>
+<title>MLB Pulse v3.28.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -856,7 +856,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.28</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.28.1</div>
       </div>
     </div>
   </div>
@@ -1541,7 +1541,6 @@ async function fetchBoxscore(gamePk){
 function initLeaguePulse() {
   initReal();
 }
-
 function initReal() {
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
@@ -1760,7 +1759,7 @@ async function pollGamePlays(gamePk) {
         else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=devTuning.rbiCooldown;
 if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning,gamePk);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
-        else if (event.indexOf('Double Play')!==-1){playSound('dp');}
+        else if (event.indexOf('Double Play')!==-1||event.indexOf('Grounded Into DP')!==-1){playSound('dp');}
         else if (event.indexOf('Error')!==-1){playSound('error');}
         else if (hasRISP){playSound('risp');}
         if(outs===3){var _rk=gamePk+'_'+inning+'_'+halfInning.toLowerCase();if(!inningRecapsFired.has(_rk))inningRecapsPending[_rk]={gamePk:gamePk,inning:inning,halfInning:halfInning.toLowerCase()};}
@@ -5089,7 +5088,7 @@ function buildFeedEl(item) {
   else if (evt==='Strikeout') playBadge='<span class="play-tag k-tag">K</span>';
   else if (evt.indexOf('Error')!==-1) playBadge='<span class="play-tag err-tag">E</span>';
   else if (evt.indexOf('Triple Play')!==-1) playBadge='<span class="play-tag tp-tag">TP</span>';
-  else if (evt.indexOf('Double Play')!==-1) playBadge='<span class="play-tag dp-tag">DP</span>';
+  else if (evt.indexOf('Double Play')!==-1||evt.indexOf('Grounded Into DP')!==-1) playBadge='<span class="play-tag dp-tag">DP</span>';
   el.innerHTML=metaHtml+'<div class="feed-play">'+icon+d.desc+rispBadge+playBadge+scoreBadge+'</div>';
   return el;
 }
