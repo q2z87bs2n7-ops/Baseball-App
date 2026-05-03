@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.26.3</title>
+<title>MLB Pulse v3.27</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -4986,7 +4986,24 @@ function renderEmptyState(postSlate, intermission) {
       } else if (tomorrowPreview.fetchedAt && tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
+
+      // Yesterday Recap hero card
+      var yesterdayHtml='';
+      if (yesterdayCache&&yesterdayCache.length>0) {
+        var ydHlCount=yesterdayCache.reduce(function(sum,g){return sum+(g.highlights||[]).length;},0);
+        var ydGameCount=yesterdayCache.length;
+        yesterdayHtml='<div class="upcoming-hero" style="background:linear-gradient(90deg,rgba(100,120,150,0.4) 0%,#111827 45%,rgba(100,120,150,0.4) 100%);cursor:pointer;position:relative;overflow:hidden" onclick="openYesterdayRecap()">'
+          +'<div class="upcoming-hero-kicker" style="color:var(--muted)">YESTERDAY\'S RECAP</div>'
+          +'<div class="upcoming-matchup-row" style="margin:16px 0;font-size:1.2rem;font-weight:700">'
+          +'<span class="upcoming-team-name">'+ydGameCount+' '+(ydGameCount===1?'game':'games')</span>'
+          +'<span class="upcoming-at" style="margin:0 12px">·</span>'
+          +'<span class="upcoming-team-name">'+ydHlCount+' highlights</span>'
+          +'</div>'
+          +'<div style="font-size:.9rem;color:var(--muted);margin-top:12px">Browse top moments and video highlights →</div>'
+          +'</div>';
+      }
+
+      el.innerHTML=yesterdayHtml+'<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml;
       if (tomorrowPreview.firstPitchMs) startCountdown(tomorrowPreview.firstPitchMs);
     } else {
       var g0=pulseGreeting();
@@ -6785,7 +6802,6 @@ function togglePush(){
   savedThemeForPulse=themeOverride;
   applyPulseMLBTheme();
   requestScreenWakeLock();
-  refreshPulseTagline();
   applyMyTeamLens(myTeamLens);
 })();
 
