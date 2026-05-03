@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Tracker v2.28.1</title>
+<title>MLB Pulse v3.24</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -622,6 +622,93 @@
   .pc-photo-wrap { width:60px; height:60px; }
   .pc-name { font-size:1rem; }
 }
+/* Hamburger drawer menu for Pulse mode (v3.24) */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--header-text);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 8px;
+  margin-left: auto;
+  transition: opacity 0.2s;
+}
+.hamburger-btn:hover { opacity: 0.7; }
+body:has(#pulse.active) nav { display: none; }
+body:has(#pulse.active) .hamburger-btn { display: block; }
+.nav-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 499;
+  animation: backdrop-fade-in 0.2s ease;
+}
+.nav-drawer {
+  position: fixed;
+  left: -280px;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  animation: drawer-slide-in 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  overflow-y: auto;
+}
+.nav-drawer.closing {
+  animation: drawer-slide-out 0.25s ease-out forwards;
+}
+@keyframes drawer-slide-in {
+  from { left: -280px; }
+  to { left: 0; }
+}
+@keyframes drawer-slide-out {
+  from { left: 0; }
+  to { left: -280px; }
+}
+@keyframes backdrop-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.nav-drawer-close {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+.nav-drawer-close:hover { opacity: 0.7; }
+.nav-drawer-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+.nav-drawer-menu button {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  padding: 14px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.nav-drawer-menu button:hover {
+  background: rgba(255,255,255,0.05);
+}
+.nav-drawer-menu button:last-child {
+  border-bottom: none;
+}
 </style>
 </head>
 <body>
@@ -638,6 +725,7 @@
     <button onclick="showSection('stats',this)">📊<span class="nav-label"> Stats</span></button>
     <button onclick="showSection('media',this)" id="mediaNavBtn" style="display:none">📺<span class="nav-label"> Media</span></button>
   </nav>
+  <button id="hamburgerBtn" class="hamburger-btn" onclick="toggleNavDrawer()" style="display:none">☰</button>
   <div class="settings-wrap">
     <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
       <div class="settings-panel" id="settingsPanel">
@@ -702,11 +790,26 @@
             <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
           </details>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v2.28.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.24</div>
       </div>
     </div>
   </div>
 </header>
+
+<div id="navDrawerBackdrop" class="nav-drawer-backdrop" onclick="closeNavDrawer()" style="display:none"></div>
+<div id="navDrawer" class="nav-drawer" style="display:none">
+  <button class="nav-drawer-close" onclick="closeNavDrawer()">✕</button>
+  <nav class="nav-drawer-menu">
+    <button onclick="showSection('home',this);closeNavDrawer()">🏠 Home</button>
+    <button onclick="showSection('league',this);closeNavDrawer()">🌐 League</button>
+    <button onclick="showSection('pulse',this);closeNavDrawer()">⚡ Pulse</button>
+    <button onclick="showSection('schedule',this);closeNavDrawer()">📅 Schedule</button>
+    <button onclick="showSection('news',this);closeNavDrawer()">📰 News</button>
+    <button onclick="showSection('standings',this);closeNavDrawer()">🏆 Standings</button>
+    <button onclick="showSection('stats',this);closeNavDrawer()">📊 Stats</button>
+    <button id="mediaDrawerBtn" onclick="showSection('media',this);closeNavDrawer()" style="display:none">📺 Media</button>
+  </nav>
+</div>
 
 <div class="main">
 <div id="home" class="section active">
@@ -3152,6 +3255,31 @@ function applyPulseMLBTheme(){
 }
 
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
+function toggleNavDrawer(){
+  var drawer=document.getElementById('navDrawer');
+  var backdrop=document.getElementById('navDrawerBackdrop');
+  if(drawer.style.display==='none'){
+    drawer.style.display='flex';
+    backdrop.style.display='block';
+  }else{
+    drawer.classList.add('closing');
+    setTimeout(function(){
+      drawer.style.display='none';
+      backdrop.style.display='none';
+      drawer.classList.remove('closing');
+    },250);
+  }
+}
+function closeNavDrawer(){
+  var drawer=document.getElementById('navDrawer');
+  var backdrop=document.getElementById('navDrawerBackdrop');
+  drawer.classList.add('closing');
+  setTimeout(function(){
+    drawer.style.display='none';
+    backdrop.style.display='none';
+    drawer.classList.remove('closing');
+  },250);
+}
 document.addEventListener('click',function(e){
   if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');
   var tt=document.getElementById('calTooltip');if(tt&&tt.classList.contains('open')&&!e.target.closest('.cal-day'))tt.classList.remove('open');
@@ -3809,7 +3937,7 @@ function loadMedia(){
   loadMediaFeed(uc);
 }
 var mediaEnabled=false;
-function toggleMedia(){mediaEnabled=!mediaEnabled;localStorage.setItem('mlb_media',mediaEnabled);var btn=document.getElementById('mediaNavBtn'),toggle=document.getElementById('mediaToggle'),knob=document.getElementById('mediaToggleKnob');btn.style.display=mediaEnabled?'':'none';toggle.style.background=mediaEnabled?'var(--secondary)':'var(--border)';knob.style.left=mediaEnabled?'21px':'3px';if(!mediaEnabled){var ms=document.getElementById('media');if(ms&&ms.classList.contains('active'))showSection('home',document.querySelector('nav button'));}}
+function toggleMedia(){mediaEnabled=!mediaEnabled;localStorage.setItem('mlb_media',mediaEnabled);var btn=document.getElementById('mediaNavBtn'),dBtn=document.getElementById('mediaDrawerBtn'),toggle=document.getElementById('mediaToggle'),knob=document.getElementById('mediaToggleKnob');btn.style.display=mediaEnabled?'':'none';if(dBtn)dBtn.style.display=mediaEnabled?'':'none';toggle.style.background=mediaEnabled?'var(--secondary)':'var(--border)';knob.style.left=mediaEnabled?'21px':'3px';if(!mediaEnabled){var ms=document.getElementById('media');if(ms&&ms.classList.contains('active'))showSection('home',document.querySelector('nav button'));}}
 var selectedVideoId=null,mediaVideos=[];
 async function loadMediaFeed(uc){
   var listEl=document.getElementById('mediaList');
