@@ -5746,7 +5746,7 @@ function applyTeamTheme(team){
     try{localStorage.setItem('mlb_theme_vars',JSON.stringify({'--dark':ct.dark,'--card':ct.card,'--card2':ct.card2,'--border':ct.border,'--primary':ct.primary,'--secondary':ct.secondary,'--text':ct.text||'#0F172A','--muted':ct.muted||'#64748B','--accent-text':ct.accentText||'#000000','--accent':ct.accent,'--header-text':ct.headerText||'#FFFFFF'}));}catch(e){}
   } else {
     // Clear light theme marker for dark themes
-    document.body.dataset.themeMode='dark'; else {
+    document.body.dataset.themeMode='dark';
     // Original dynamic color calculation from hue
     var cp=themeInvert?ct.secondary:ct.primary,cs=themeInvert?ct.primary:ct.secondary;
     var l1=relLuminance(cp),l2=relLuminance(cs),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?cs:'#ffffff',accentLum=relLuminance(accent);
