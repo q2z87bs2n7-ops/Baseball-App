@@ -304,7 +304,7 @@
               'padding:9px 12px;border:0;border-right:1px solid var(--p-border,#1e2d4a);cursor:pointer;' +
               'background:transparent;color:var(--p-text,#e8eaf0);text-align:left;' +
               'font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.14em;' +
-            '" onmouseover="this.style.background=\'#0f172d\'" onmouseout="this.style.background=\'transparent\'">' +
+            '" onmouseover="this.style.background=\'var(--p-card2,#0f172d)\'" onmouseout="this.style.background=\'transparent\'">' +
             '<span>OPEN FOCUS</span>' +
             '<span style="color:var(--p-muted,#9aa0a8);">→</span>' +
           '</button>' +
@@ -312,7 +312,7 @@
               'display:flex;align-items:center;justify-content:center;gap:6px;' +
               'padding:9px 12px;text-decoration:none;cursor:pointer;background:transparent;' +
               'color:var(--p-muted,#9aa0a8);font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;' +
-            '" onmouseover="this.style.background=\'#0f172d\'" onmouseout="this.style.background=\'transparent\'">' +
+            '" onmouseover="this.style.background=\'var(--p-card2,#0f172d)\'" onmouseout="this.style.background=\'transparent\'">' +
             'Box Score →' +
           '</a>' +
         '</div>' +
@@ -359,7 +359,7 @@
       '<button type="button" onclick="setFocusGame && setFocusGame(' + (g.gamePk || 0) + ')" style="' +
           'flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;padding:8px 11px;' +
           'border-radius:8px;border:1px solid ' + (focused ? 'var(--p-border,#3a4d75)' : 'var(--p-border,#1e2d4a)') + ';' +
-          'background:' + (focused ? '#162039' : '#0a0f1e') + ';cursor:pointer;color:var(--p-text,#e8eaf0);' +
+          'background:' + (focused ? 'var(--p-card,#162039)' : 'var(--p-dark,#0a0f1e)') + ';cursor:pointer;color:var(--p-text,#e8eaf0);' +
           (focused ? 'box-shadow:0 0 0 1px var(--p-border,#3a4d75) inset;' : '') +
         '">' +
         '<span style="font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.06em;color:var(--p-muted,#9aa0a8);">' +
