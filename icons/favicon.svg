@@ -1,13 +1,10 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" fill="#0F1B33"/>
-  <g transform="translate(256 256) rotate(45)">
-    <path d="M -195 -195 A 276 276 0 0 1 195 -195 L 195 195 L -195 195 Z"
-          fill="none" stroke="#F5F1E8" stroke-width="10" opacity=".35"/>
-    <rect x="-128" y="-128" width="256" height="256" fill="none" stroke="#F5F1E8" stroke-width="13" rx="13"/>
-    <rect x="-27" y="-155" width="54" height="54" fill="#E85D1F" rx="7"/>
-    <rect x="-155" y="-27" width="54" height="54" fill="#F5F1E8" rx="7"/>
-    <rect x="101" y="-27" width="54" height="54" fill="#F5F1E8" rx="7"/>
-    <rect x="-27" y="101" width="54" height="54" fill="#F5F1E8" rx="7"/>
-    <circle cx="0" cy="0" r="17" fill="#E85D1F"/>
-  </g>
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="transparent"/>
+  <path d="M 24 220 L 130 220 L 158 220 L 184 160 L 218 304 L 246 96 L 274 304 L 302 160 L 332 220 L 488 220"
+    fill="none" stroke="#FAFAF6" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="0" y="290" width="512" height="60" fill="#FAFAF6"/>
+  <rect x="0" y="378" width="512" height="6" fill="#FAFAF6" opacity="0.6"/>
+  <rect x="0" y="406" width="512" height="6" fill="#FAFAF6" opacity="0.4"/>
+  <rect x="0" y="434" width="512" height="6" fill="#FAFAF6" opacity="0.3"/>
+  <circle cx="246" cy="96" r="20" fill="#FAFAF6"/>
 </svg>
