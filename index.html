@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.22.2</title>
+<title>MLB Pulse v3.22.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -430,6 +430,28 @@
 .out-dot.out-on { background: #e03030; border-color: #e03030; }
 .ticker-empty { color: var(--muted); font-size: 12px; padding: 0 4px; }
 
+/* ── Pulse Line Bar (v3.22.3 POC) ─────────────────────────────── */
+#pulseLineBar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  height: 48px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.plb-label { flex-shrink: 0; display: flex; flex-direction: column; gap: 0; width: 52px; }
+.plb-title { font-size: 8.5px; font-weight: 700; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
+.plb-score { font-size: 19px; font-weight: 900; line-height: 1.1; color: var(--text); font-variant-numeric: tabular-nums; }
+.plb-svg-wrap { flex: 1; height: 36px; min-width: 0; overflow: hidden; }
+.plb-svg { display: block; width: 100%; height: 100%; }
+.plb-badge { flex-shrink: 0; font-size: 9px; font-weight: 700; letter-spacing: .12em; padding: 3px 8px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+@keyframes plb-now-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(1.7)} }
+.plb-now-dot { animation: plb-now-pulse 1.8s ease-out infinite; transform-origin: center; transform-box: fill-box; }
+
 #pulse { display: flex; gap: 12px; }
 #pulse:not(.active) { display: none !important; }
 #pulse .pulse-left { flex: 0 0 700px; }
@@ -820,7 +842,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.2</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.3</div>
       </div>
     </div>
   </div>
@@ -1000,6 +1022,16 @@
     </div>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
+  <div id="pulseLineBar">
+    <div class="plb-label">
+      <span class="plb-title">PULSE</span>
+      <span class="plb-score" id="plbScore">—</span>
+    </div>
+    <div class="plb-svg-wrap">
+      <svg class="plb-svg" id="plbSvg" preserveAspectRatio="none"></svg>
+    </div>
+    <div class="plb-badge" id="plbBadge" style="color:#9aa0a8;border-color:rgba(154,160,168,0.4)">NORMAL</div>
+  </div>
   <div id="focusMiniBar" style="display:none"></div>
   <div id="focusAlertBanner" style="display:none"></div>
   <div id="storyCarousel" style="display:none">
@@ -1373,6 +1405,7 @@ let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
 let screenWakeLock=null;
+let pulseLineHistory=[]; // {score,ts}[] ring-buffer, max 60 pts — Pulse Line Bar POC
 
 // ── Session Storage & Sync globals ────────────────────────────────────────────
 let mlbSessionToken=null;
@@ -1514,6 +1547,7 @@ function initReal() {
   document.addEventListener('visibilitychange',onStoryVisibilityChange);
   document.removeEventListener('visibilitychange',onNewsVisibilityChange);
   document.addEventListener('visibilitychange',onNewsVisibilityChange);
+  seedPulseLineHistory(); updatePulseLine();
   pollLeaguePulse().then(function(){buildStoryPool();setFocusGame(focusGamePk);});
   pulseTimer=setInterval(pollLeaguePulse,15000);
   if(storyPoolTimer){clearInterval(storyPoolTimer);storyPoolTimer=null;}
@@ -1649,6 +1683,7 @@ async function pollLeaguePulse() {
     renderTicker(); updateFeedEmpty();
     renderSideRailGames();
     selectFocusGame();
+    updatePulseLine();
     refreshDebugPanel();
   } catch(e){if(e.name!=='AbortError')console.error('poll error',e);}
 }
@@ -3519,6 +3554,83 @@ function refreshDebugPanel(){
   }
   html+='</div>';
   panel.innerHTML=html;
+}
+
+// ── Pulse Line Bar — POC (v3.22.3) ────────────────────────────────────────────
+
+function seedPulseLineHistory() {
+  var now=Date.now();
+  pulseLineHistory=[];
+  for(var i=0;i<60;i++){
+    var progress=i/59;
+    var base=22+52*progress;
+    var wave=20*Math.sin(i*0.38+1.1);
+    var noise=(Math.random()-0.5)*18;
+    pulseLineHistory.push({score:Math.max(4,Math.min(190,base+wave+noise)),ts:now-(60-i)*15000});
+  }
+}
+
+function calcLeaguePulseScore() {
+  var live=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  if(!live.length) return 0;
+  var total=live.reduce(function(sum,g){return sum+calcFocusScore(g);},0);
+  return Math.round(total+(live.length-1)*8);
+}
+
+function updatePulseLine() {
+  var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var score;
+  if(hasLive){
+    score=calcLeaguePulseScore();
+  } else {
+    var last=pulseLineHistory.length?pulseLineHistory[pulseLineHistory.length-1].score:30;
+    score=Math.max(4,Math.min(150,last+(Math.random()-0.5)*14));
+  }
+  pulseLineHistory.push({score:score,ts:Date.now()});
+  if(pulseLineHistory.length>60) pulseLineHistory.shift();
+  renderPulseLine();
+}
+
+function renderPulseLine() {
+  var bar=document.getElementById('pulseLineBar');
+  var svg=document.getElementById('plbSvg');
+  var scoreEl=document.getElementById('plbScore');
+  var badgeEl=document.getElementById('plbBadge');
+  if(!bar||!svg||!pulseLineHistory.length) return;
+
+  var current=pulseLineHistory[pulseLineHistory.length-1].score;
+  // getTensionInfo uses the same NORMAL/HIGH/CRITICAL thresholds
+  var tension=getTensionInfo(current);
+
+  scoreEl.textContent=Math.round(current);
+  badgeEl.textContent=tension.label;
+  badgeEl.style.color=tension.color;
+  badgeEl.style.borderColor=tension.color+'55';
+  bar.style.display='flex';
+
+  var wrap=bar.querySelector('.plb-svg-wrap');
+  var W=wrap?(wrap.clientWidth||220):220;
+  var H=36; var MAX=200;
+  var pts=pulseLineHistory; var n=pts.length;
+  function px(i){return n>1?(i/(n-1))*W:W/2;}
+  function py(s){return H-(Math.min(s,MAX)/MAX)*H;}
+
+  var linePts=pts.map(function(p,i){return px(i).toFixed(1)+','+py(p.score).toFixed(1);}).join(' ');
+  var areaD='M '+pts.map(function(p,i){return px(i).toFixed(1)+','+py(p.score).toFixed(1);}).join(' L ')+
+            ' L '+W.toFixed(1)+','+H+' L 0,'+H+' Z';
+  var col=tension.color;
+
+  svg.setAttribute('viewBox','0 0 '+W.toFixed(1)+' '+H);
+  svg.setAttribute('preserveAspectRatio','none');
+  svg.innerHTML=
+    '<defs>'+
+    '<linearGradient id="plbAreaGrad" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="'+col+'" stop-opacity="0.2"/>'+
+    '<stop offset="100%" stop-color="'+col+'" stop-opacity="0.02"/>'+
+    '</linearGradient></defs>'+
+    '<path d="'+areaD+'" fill="url(#plbAreaGrad)"/>'+
+    '<polyline points="'+linePts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>'+
+    '<circle class="plb-now-dot" cx="'+px(n-1).toFixed(1)+'" cy="'+py(current).toFixed(1)+'" r="3" fill="'+col+'"/>';
 }
 
 // ── Focus Mode functions (v2.61) ──────────────────────────────────────────────
