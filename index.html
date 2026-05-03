@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.28.10</title>
+<title>MLB Pulse v3.28.11</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -133,6 +133,7 @@
   .linescore-table td.rhe{font-weight:800;color:var(--accent)}
   .hl-detail-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .hl-card-right{position:sticky;top:calc(var(--header-h) + 16px);height:fit-content}
+  .final-game-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .game-notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:12px}
   .media-layout{display:grid;grid-template-columns:25% 75%;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px}
   .league-leaders-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -216,6 +217,7 @@
     .series-ghost{width:220px!important;height:220px!important;right:-30px!important;bottom:-30px!important}
     .hl-detail-wrapper{grid-template-columns:1fr}
     .hl-card-right{position:static}
+    .final-game-grid{grid-template-columns:1fr}
   }
   @media(max-width:480px){
     html,body{overflow-x:hidden}
@@ -859,7 +861,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.28.10</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.28.11</div>
       </div>
     </div>
   </div>
@@ -6330,10 +6332,9 @@ async function buildGameDetailPanel(g,gameNum){
   var thumbCuts=highlight&&highlight.image&&highlight.image.cuts?highlight.image.cuts:[];
   var thumbCut=thumbCuts.find(function(c){return c.width>=640&&c.width<=960;})||thumbCuts[thumbCuts.length-1]||null;
   var thumbUrl=thumbCut?thumbCut.src:null;
-  var html=sep;
-  if(highlightUrl){html+='<div class="hl-detail-wrapper">';}
-  // Linescore card
-  html+='<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>';
+  var html=sep+'<div class="final-game-grid">';
+  // TOP-LEFT: Linescore + Video
+  html+='<div class="boxscore-wrap"><div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</div>';
   var innings=ls.innings||[];
   html+='<div style="overflow-x:auto"><table class="linescore-table"><thead><tr><th></th>';
   innings.forEach(function(inn){html+='<th>'+inn.num+'</th>';});
@@ -6343,29 +6344,13 @@ async function buildGameDetailPanel(g,gameNum){
   html+='<tr><td>'+home.team.teamName+'</td>';innings.forEach(function(inn){html+='<td>'+(inn.home&&inn.home.runs!=null?inn.home.runs:'—')+'</td>';});
   html+='<td class="rhe" style="border-left:2px solid var(--border)">'+(ls.teams&&ls.teams.home&&ls.teams.home.runs!=null?ls.teams.home.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.hits!=null?ls.teams.home.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.errors!=null?ls.teams.home.errors:'—')+'</td></tr>';
   html+='</tbody></table></div>';
-  html+='</div>';
-  // Box score card
-  var awayAbbr=away.team.abbreviation||away.team.teamName,homeAbbr=home.team.abbreviation||home.team.teamName;
-  var awayPlayers=bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{},homePlayers=bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{};
-  var awayBox=buildBoxscore(awayPlayers),homeBox=buildBoxscore(homePlayers),bsId='bs_'+g.gamePk;
-  html+='<div class="boxscore-wrap"><div style="display:flex;gap:6px;margin-bottom:10px">';
-  html+='<button onclick="switchBoxTab(\''+bsId+'\',\'away\')" id="'+bsId+'_away_btn" style="background:var(--secondary);color:var(--accent-text);border:none;padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:700">'+awayAbbr+'</button>';
-  html+='<button onclick="switchBoxTab(\''+bsId+'\',\'home\')" id="'+bsId+'_home_btn" style="background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:20px;cursor:pointer;font-size:.8rem">'+homeAbbr+'</button></div>';
-  html+='<div id="'+bsId+'_away">'+awayBox+'</div><div id="'+bsId+'_home" style="display:none">'+homeBox+'</div>';
-  html+='</div>';
-  // Game summary card
-  if(bs.info&&bs.info.length){
-    html+='<div class="boxscore-wrap"><div class="game-note-label" style="margin-bottom:8px">Game Summary</div>';
-    bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)html+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else html+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--accent);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text)">'+val+'</span></div>';});
-    html+='</div>';
-  }
-  // Highlights video card (right side / sticky)
+  // Video below linescore
   if(highlightUrl){
     var highlightHeadline=highlight.headline||'Full Game Highlight';
     var safeUrl=highlightUrl.replace(/'/g,"\\'");
-    html+='<div class="hl-card-right"><div class="boxscore-wrap" style="margin:0">';
+    html+='<div style="margin-top:12px;border-radius:8px;overflow:hidden">';
     if(thumbUrl){
-      html+='<div onclick="playHighlightVideo(this,\''+safeUrl+'\')" style="cursor:pointer;position:relative;line-height:0;border-radius:8px;overflow:hidden">';
+      html+='<div onclick="playHighlightVideo(this,\''+safeUrl+'\')" style="cursor:pointer;position:relative;line-height:0">';
       html+='<img src="'+thumbUrl+'" style="width:100%;display:block" loading="lazy">';
       html+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.12)">';
       html+='<div style="width:56px;height:56px;background:rgba(0,0,0,.65);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.55)">';
@@ -6373,10 +6358,28 @@ async function buildGameDetailPanel(g,gameNum){
     }else{
       html+='<div style="aspect-ratio:16/9;border-radius:8px;overflow:hidden"><video controls preload="none" style="width:100%;height:100%;display:block;background:#000"><source src="'+highlightUrl+'" type="video/mp4"></video></div>';
     }
-    html+='<div style="padding:10px"><div style="font-size:.8rem;font-weight:700;color:var(--accent);margin-bottom:4px">HIGHLIGHTS</div><div style="font-size:.85rem;color:var(--text);line-height:1.4">'+highlightHeadline+'</div></div>';
-    html+='</div></div>';
+    html+='<div style="padding:8px"><div style="font-size:.75rem;font-weight:700;color:var(--accent)">HIGHLIGHTS</div><div style="font-size:.8rem;color:var(--text);line-height:1.3">'+highlightHeadline+'</div></div>';
     html+='</div>';
   }
+  html+='</div>';
+  // TOP-RIGHT: Active team stats
+  var awayAbbr=away.team.abbreviation||away.team.teamName,homeAbbr=home.team.abbreviation||home.team.teamName;
+  var isHomeActive=activeTeam.id===home.team.id,activeAbbr=isHomeActive?homeAbbr:awayAbbr,activeTeamName=isHomeActive?home.team.teamName:away.team.teamName;
+  var activePlayers=isHomeActive?(bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{}):(bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{});
+  var activeBox=buildBoxscore(activePlayers);
+  html+='<div class="boxscore-wrap"><div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--accent);margin-bottom:8px">'+activeTeamName+' Batting</div>';
+  html+=activeBox+'</div>';
+  // BOTTOM-LEFT: Game summary
+  if(bs.info&&bs.info.length){
+    html+='<div class="boxscore-wrap"><div class="game-note-label" style="margin-bottom:8px">Game Summary</div>';
+    bs.info.forEach(function(item){if(!item.value)return;var val=item.value.replace(/\.$/,'').trim();if(!item.label)html+='<div style="font-size:.72rem;color:var(--muted);margin-top:6px;font-style:italic">'+val+'</div>';else html+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.8rem"><span style="color:var(--accent);font-weight:700;min-width:120px;flex-shrink:0">'+item.label+'</span><span style="color:var(--text)">'+val+'</span></div>';});
+    html+='</div>';
+  }
+  // BOTTOM-RIGHT: Opposition team stats
+  var oppPlayers=isHomeActive?(bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{}):(bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{});
+  var oppBox=buildBoxscore(oppPlayers),oppTeamName=isHomeActive?away.team.teamName:home.team.teamName;
+  html+='<div class="boxscore-wrap"><div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--accent);margin-bottom:8px">'+oppTeamName+' Batting</div>';
+  html+=oppBox+'</div>';
   html+='</div>';
   return html;
 }
