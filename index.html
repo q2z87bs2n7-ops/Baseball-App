@@ -6367,7 +6367,7 @@ async function buildGameDetailPanel(g,gameNum){
   var isHomeActive=activeTeam.id===home.team.id,activeAbbr=isHomeActive?homeAbbr:awayAbbr,activeTeamName=isHomeActive?home.team.teamName:away.team.teamName;
   var activePlayers=isHomeActive?(bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{}):(bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{});
   var activeBox=buildBoxscore(activePlayers);
-  html+='<div class="boxscore-wrap"><div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--accent);margin-bottom:8px">'+activeTeamName+' Batting</div>';
+  html+='<div class="boxscore-wrap"><div style="font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--accent)">'+activeTeamName+'</div>';
   html+=activeBox+'</div>';
   // BOTTOM-LEFT: Game summary
   if(bs.info&&bs.info.length){
@@ -6378,7 +6378,7 @@ async function buildGameDetailPanel(g,gameNum){
   // BOTTOM-RIGHT: Opposition team stats
   var oppPlayers=isHomeActive?(bs.teams&&bs.teams.away&&bs.teams.away.players?bs.teams.away.players:{}):(bs.teams&&bs.teams.home&&bs.teams.home.players?bs.teams.home.players:{});
   var oppBox=buildBoxscore(oppPlayers),oppTeamName=isHomeActive?away.team.teamName:home.team.teamName;
-  html+='<div class="boxscore-wrap"><div style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--accent);margin-bottom:8px">'+oppTeamName+' Batting</div>';
+  html+='<div class="boxscore-wrap"><div style="font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--accent)">'+oppTeamName+'</div>';
   html+=oppBox+'</div>';
   html+='</div>';
   return html;
