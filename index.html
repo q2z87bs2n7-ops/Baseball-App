@@ -1433,9 +1433,7 @@ let probablePitcherStatsCache={};
 let hrBatterStatsCache={};
 let boxscoreCache={};
 let inningRecapsFired=new Set(),inningRecapsPending={},lastInningState={},displayedStoryIds=new Set();
-let hittingStreaksCache=null,hittingStreaksLastFetch=0;
 let transactionsCache=[],transactionsLastFetch=0;
-let awardsCache=[],awardsLastFetch=0;
 let highLowCache=null,highLowLastFetch=0;
 let liveWPCache={},liveWPLastFetch=0;
 let perfectGameTracker={};
@@ -1549,7 +1547,7 @@ function initReal() {
   else{pollDateStr=localDateStr(getEffectiveDate());}
   loadRoster();
   loadOnThisDayCache(); loadYesterdayCache();
-  loadTransactionsCache(); loadAwardsCache(); loadHighLowCache();
+  loadTransactionsCache(); loadHighLowCache();
   if(newsRotateTimer){clearTimeout(newsRotateTimer);newsRotateTimer=null;}
   fetchMLBNewsFeed();
   document.removeEventListener('visibilitychange',onStoryVisibilityChange);
@@ -2968,27 +2966,6 @@ function genInningRecapStories(){
   return out;
 }
 
-async function loadHittingStreaksCache(){
-  try{
-    // Try primary endpoint with full parameters
-    var r=await fetch(MLB_BASE+'/stats/streaks?streakType=hittingStreakOverall&season='+SEASON+'&sportId=1&limit=15&streakSpan=season&gameType=R');
-    if(!r.ok){
-      // Fallback: try without streakSpan parameter
-      r=await fetch(MLB_BASE+'/stats/streaks?streakType=hittingStreakOverall&season='+SEASON+'&sportId=1&limit=15&gameType=R');
-    }
-    if(r.ok){
-      var d=await r.json();
-      hittingStreaksCache=(d.streaks||[]).filter(function(s){return s.streakActive&&s.streakNumber>=(devTuning.hitstreak_floor||10);});
-      hittingStreaksLastFetch=Date.now();
-    }else{
-      hittingStreaksCache=[];
-    }
-  }catch(e){
-    console.debug('Hitting streaks fetch failed:',e.message);
-    hittingStreaksCache=hittingStreaksCache||[];
-  }
-}
-
 async function loadTransactionsCache(){
   try{
     var today=new Date(),start=new Date(today);
@@ -3002,35 +2979,6 @@ async function loadTransactionsCache(){
   }catch(e){transactionsCache=transactionsCache||[];}
 }
 
-async function loadAwardsCache(){
-  try{
-    var r=await fetch(MLB_BASE+'/awards?sportId=1');
-    var d=await r.json();
-    var keywords=['Player of the Week','Pitcher of the Week','Player of the Month','Pitcher of the Month'];
-    var mlbLeaguePattern=/^(AL|NL)(POM|PITOM)$/; // AL/NL Player/Pitcher of Month
-    var relevant=(d.awards||[]).filter(function(a){
-      var name=a.name||'';
-      var awardId=a.awardId||a.id||'';
-      var isKeywordMatch=keywords.some(function(kw){return name.indexOf(kw)!==-1;});
-      var isMLBLeague=mlbLeaguePattern.test(awardId); // Only AL/NL awards, skip minors
-      return isKeywordMatch&&isMLBLeague;
-    });
-    var allRecipients=[];
-    for(var i=0;i<relevant.length;i++){
-      try{
-        var aid=relevant[i].awardId||relevant[i].id;
-        if(!aid) continue;
-        var rr=await fetch(MLB_BASE+'/awards/'+aid+'/recipients?season='+SEASON);
-        if(!rr.ok) continue; // Skip non-200 responses
-        var rd=await rr.json();
-        (rd.awards||[]).forEach(function(a){allRecipients.push(a);});
-      }catch(e){}
-    }
-    var cutoff=Date.now()-28*24*60*60*1000;
-    awardsCache=allRecipients.filter(function(a){return a.player&&a.date&&new Date(a.date).getTime()>=cutoff;});
-    awardsLastFetch=Date.now();
-  }catch(e){awardsCache=awardsCache||[];}
-}
 
 async function loadHighLowCache(){
   try{
@@ -3046,20 +2994,6 @@ async function loadHighLowCache(){
     highLowCache=allResults;
     highLowLastFetch=Date.now();
   }catch(e){highLowCache=highLowCache||{};}
-}
-
-function genHittingStreakStories(){
-  var out=[];
-  if(!hittingStreaksCache||!hittingStreaksCache.length) return out;
-  hittingStreaksCache.slice(0,5).forEach(function(s,i){
-    var lastName=s.person.fullName.split(' ').slice(1).join(' ')||s.person.fullName;
-    var id='hitstreak_'+s.person.id+'_'+s.streakNumber;
-    var headline=lastName+' has hit safely in '+s.streakNumber+' straight games';
-    var sub=s.team.abbreviation+' · Active hitting streak';
-    var priority=(devTuning.hitstreak_priority||65)-i*3;
-    out.push(makeStory(id,'daily_stat',2,priority,'📈',headline,sub,'streak',null,new Date(),30*60000,0.15));
-  });
-  return out;
 }
 
 function genRosterMoveStories(){
@@ -3135,22 +3069,6 @@ async function genWinProbabilityStories(){
     storyPool=storyPool.filter(function(s){return s.id.indexOf('wp_'+focusGamePk+'_')!==0;});
     out.push(makeStory(id,'realtime',tier,priority,icon,headline,sub,badge,focusGamePk,new Date(),3*60000,0.60));
   }catch(e){}
-  return out;
-}
-
-function genAwardWinnerStories(){
-  var out=[];
-  if(!awardsCache||!awardsCache.length) return out;
-  awardsCache.forEach(function(a){
-    if(!a.player||!a.player.fullName) return;
-    var lastName=a.player.fullName.split(' ').slice(1).join(' ')||a.player.fullName;
-    var teamAbbr=(a.team&&a.team.abbreviation)||'';
-    var awardName=a.name||a.awardId||'Award';
-    var id='award_'+(a.awardId||'')+'_'+(a.player.id||0)+'_'+(a.date||SEASON);
-    var headline=lastName+' named '+awardName;
-    var sub=(teamAbbr?teamAbbr+' · ':'')+(a.notes||'')+(a.date?' · '+a.date:'');
-    out.push(makeStory(id,'award',3,devTuning.award_priority||55,'🏆',headline,sub,'award',null,a.date?new Date(a.date):new Date(),6*60*60000,0.1));
-  });
   return out;
 }
 
@@ -3260,9 +3178,7 @@ function genDailyIntro(){
 async function buildStoryPool(){
   var now=Date.now();
   if(now-dailyLeadersLastFetch>5*60000){loadDailyLeaders();dailyLeadersLastFetch=now;}
-  if(now-hittingStreaksLastFetch>30*60000){loadHittingStreaksCache();}
   if(now-transactionsLastFetch>120*60000){loadTransactionsCache();}
-  if(now-awardsLastFetch>6*60*60000){loadAwardsCache();}
   if(now-highLowLastFetch>6*60*60000){loadHighLowCache();}
   if(now-liveWPLastFetch>(devTuning.livewp_refresh_ms||90000)){loadLiveWPCache();}
   loadProbablePitcherStats();
@@ -3273,7 +3189,7 @@ async function buildStoryPool(){
     genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
-    wpStories,genHittingStreakStories(),genRosterMoveStories(),genAwardWinnerStories(),genSeasonHighStories(),
+    wpStories,genRosterMoveStories(),genSeasonHighStories(),
     genLiveWinProbStories(),genDailyIntro()
   );
   // When daily intro picks the marquee path, drop the matching probable_{pk} card to avoid
