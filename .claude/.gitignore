@@ -1,0 +1,4 @@
+# Ephemeral working documents — only exist during active sprints
+tech-debt-session.md
+*.tmp
+*.log
