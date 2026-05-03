@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.26.7</title>
+<title>MLB Pulse v3.26.8</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -854,7 +854,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.26.7</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.26.8</div>
       </div>
     </div>
   </div>
@@ -1029,6 +1029,7 @@
         <span class="ptb-lens-label">MY TEAM</span>
         <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
       </button>
+      <button id="ptbRadioBtn" class="ptb-lens" onclick="toggleRadio()" title="Live Game Radio" style="padding:5px 10px;font-size:.85rem">📻</button>
       <button id="ptbSchemeBtn" class="ptb-lens" onclick="setPulseColorScheme(pulseColorScheme==='dark'?'light':'dark')" title="Toggle light/dark mode" style="padding:5px 10px;font-size:.85rem">
         <span id="ptbSchemeIcon">☀️</span>
       </button>
@@ -5462,16 +5463,19 @@ function handleRadioError(err){
 }
 function setRadioUI(on,pick){
   var t=document.getElementById('radioToggle'),k=document.getElementById('radioToggleKnob'),s=document.getElementById('radioStatusText');
-  if(!t)return;
-  if(on){
-    t.style.background='#22c55e';k.style.left='21px';
-    var label=pick&&pick.name?pick.name:'Radio';
-    if(pick&&pick.abbr) label=pick.abbr+' · '+label;
-    s.textContent='Playing · '+label;
-  }else{
-    t.style.background='var(--border)';k.style.left='3px';
-    s.textContent='Off · Auto-pairs to focus game';
+  if(t){
+    if(on){
+      t.style.background='#22c55e';k.style.left='21px';
+      var label=pick&&pick.name?pick.name:'Radio';
+      if(pick&&pick.abbr) label=pick.abbr+' · '+label;
+      s.textContent='Playing · '+label;
+    }else{
+      t.style.background='var(--border)';k.style.left='3px';
+      s.textContent='Off · Auto-pairs to focus game';
+    }
   }
+  var ptbRadio=document.getElementById('ptbRadioBtn');
+  if(ptbRadio) ptbRadio.classList.toggle('on',on);
 }
 function updateRadioForFocus(){
   if(!radioAudio||radioAudio.paused) return;
