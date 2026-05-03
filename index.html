@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.22.5</title>
+<title>MLB Pulse v3.22.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -799,9 +799,15 @@
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
           <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">⚡ Pulse Theme</div>
-          <div style="display:flex;gap:6px">
-            <button id="pulseSchemeLight" onclick="setPulseColorScheme('light')" style="flex:1;padding:6px 0;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.72rem;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s">☀️ Light</button>
-            <button id="pulseSchemeDark" onclick="setPulseColorScheme('dark')" style="flex:1;padding:6px 0;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.72rem;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s">🌙 Dark</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+            <button data-pulse-scheme="light"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">☀️ Light</button>
+            <button data-pulse-scheme="dark"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">⚾ Navy</button>
+            <button data-pulse-scheme="slate"     onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">🌃 Slate</button>
+            <button data-pulse-scheme="neutral"   onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">⬛ Neutral</button>
+            <button data-pulse-scheme="midnight"  onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">🌌 Midnight</button>
+            <button data-pulse-scheme="forest"    onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">🌲 Forest</button>
+            <button data-pulse-scheme="broadcast" onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">📺 Broadcast</button>
+            <button data-pulse-scheme="dusk"      onclick="setPulseColorScheme(this.dataset.pulseScheme)" style="padding:5px 4px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);font-size:.7rem;font-weight:600;cursor:pointer;transition:.15s">🌆 Dusk</button>
           </div>
         </div>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -852,7 +858,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.22.7</div>
       </div>
     </div>
   </div>
@@ -5752,6 +5758,7 @@ function applyTeamTheme(team){
 // ── Pulse color schemes ─────────────────────────────────────────────────────
 const PULSE_SCHEME = {
   dark: {
+    label:'Navy', emoji:'⚾',
     dark:'#0F1B2E', card:'#172B4D', card2:'#1E3A5F', border:'#2C4A7F',
     accent:'#cfd3dc', accentSoft:'rgba(255,255,255,0.08)', accentStrong:'#ffffff',
     text:'#e8eaf0', muted:'#9aa0a8',
@@ -5760,12 +5767,67 @@ const PULSE_SCHEME = {
     statusBg:'rgba(80,140,255,0.08)', statusBorder:'rgba(80,140,255,0.22)'
   },
   light: {
+    label:'Light', emoji:'☀️',
     dark:'#F1F5F9', card:'#FFFFFF', card2:'#E8EDF3', border:'#CBD5E1',
     accent:'#2563EB', accentSoft:'rgba(37,99,235,0.08)', accentStrong:'#1E40AF',
     text:'#0F172A', muted:'#64748B',
     scoringBg:'rgba(22,163,74,0.07)', scoringBorder:'rgba(22,163,74,0.32)',
     hrBg:'rgba(109,40,217,0.07)', hrBorder:'rgba(109,40,217,0.28)',
     statusBg:'rgba(37,99,235,0.06)', statusBorder:'rgba(37,99,235,0.22)'
+  },
+  slate: {
+    label:'Slate', emoji:'🌃',
+    dark:'#111318', card:'#1A1D24', card2:'#21252E', border:'#2D3347',
+    accent:'#38BDF8', accentSoft:'rgba(56,189,248,0.10)', accentStrong:'#0EA5E9',
+    text:'#F1F5F9', muted:'#8898AA',
+    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.30)',
+    hrBg:'rgba(167,139,250,0.10)', hrBorder:'rgba(167,139,250,0.35)',
+    statusBg:'rgba(56,189,248,0.08)', statusBorder:'rgba(56,189,248,0.22)'
+  },
+  neutral: {
+    label:'Neutral', emoji:'⬛',
+    dark:'#141414', card:'#1E1E1E', card2:'#262626', border:'#363636',
+    accent:'#D4D8DF', accentSoft:'rgba(212,216,223,0.08)', accentStrong:'#F1F5F9',
+    text:'#F0F0F0', muted:'#878787',
+    scoringBg:'rgba(34,197,94,0.10)', scoringBorder:'rgba(34,197,94,0.30)',
+    hrBg:'rgba(168,85,247,0.10)', hrBorder:'rgba(168,85,247,0.35)',
+    statusBg:'rgba(96,165,250,0.08)', statusBorder:'rgba(96,165,250,0.22)'
+  },
+  midnight: {
+    label:'Midnight', emoji:'🌌',
+    dark:'#0C0D14', card:'#131525', card2:'#1A1D30', border:'#252A42',
+    accent:'#818CF8', accentSoft:'rgba(129,140,248,0.10)', accentStrong:'#6366F1',
+    text:'#E2E8F0', muted:'#6B7A94',
+    scoringBg:'rgba(52,211,153,0.10)', scoringBorder:'rgba(52,211,153,0.28)',
+    hrBg:'rgba(244,114,182,0.10)', hrBorder:'rgba(244,114,182,0.30)',
+    statusBg:'rgba(129,140,248,0.08)', statusBorder:'rgba(129,140,248,0.22)'
+  },
+  forest: {
+    label:'Forest', emoji:'🌲',
+    dark:'#091209', card:'#111A10', card2:'#172216', border:'#213320',
+    accent:'#4ADE80', accentSoft:'rgba(74,222,128,0.10)', accentStrong:'#16A34A',
+    text:'#ECFDF5', muted:'#86A887',
+    scoringBg:'rgba(74,222,128,0.12)', scoringBorder:'rgba(74,222,128,0.35)',
+    hrBg:'rgba(251,191,36,0.10)', hrBorder:'rgba(251,191,36,0.35)',
+    statusBg:'rgba(34,211,238,0.07)', statusBorder:'rgba(34,211,238,0.22)'
+  },
+  broadcast: {
+    label:'Broadcast', emoji:'📺',
+    dark:'#100E07', card:'#1A1810', card2:'#232018', border:'#332F1A',
+    accent:'#FCD34D', accentSoft:'rgba(252,211,77,0.10)', accentStrong:'#F59E0B',
+    text:'#FFFBEB', muted:'#A89A60',
+    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
+    hrBg:'rgba(252,211,77,0.12)', hrBorder:'rgba(252,211,77,0.40)',
+    statusBg:'rgba(251,146,60,0.08)', statusBorder:'rgba(251,146,60,0.25)'
+  },
+  dusk: {
+    label:'Dusk', emoji:'🌆',
+    dark:'#0D0B12', card:'#15121D', card2:'#1D1927', border:'#2C2640',
+    accent:'#C4B5FD', accentSoft:'rgba(196,181,253,0.10)', accentStrong:'#7C3AED',
+    text:'#EDE9FE', muted:'#9083B8',
+    scoringBg:'rgba(74,222,128,0.10)', scoringBorder:'rgba(74,222,128,0.28)',
+    hrBg:'rgba(251,191,36,0.10)', hrBorder:'rgba(251,191,36,0.32)',
+    statusBg:'rgba(196,181,253,0.08)', statusBorder:'rgba(196,181,253,0.22)'
   }
 };
 let pulseColorScheme=(function(){try{return localStorage.getItem('mlb_pulse_scheme')||'dark';}catch(e){return'dark';}})();
@@ -5804,15 +5866,13 @@ function setPulseColorScheme(scheme){
   updatePulseSchemeButtons();
 }
 function updatePulseSchemeButtons(){
-  var light=document.getElementById('pulseSchemeLight'),dark=document.getElementById('pulseSchemeDark');
-  if(!light||!dark)return;
-  var isLight=pulseColorScheme==='light';
-  light.style.background=isLight?'var(--secondary)':'';
-  light.style.color=isLight?'var(--accent-text)':'';
-  light.style.borderColor=isLight?'var(--secondary)':'';
-  dark.style.background=!isLight?'var(--secondary)':'';
-  dark.style.color=!isLight?'var(--accent-text)':'';
-  dark.style.borderColor=!isLight?'var(--secondary)':'';
+  document.querySelectorAll('[data-pulse-scheme]').forEach(function(btn){
+    var active=btn.dataset.pulseScheme===pulseColorScheme;
+    btn.style.background=active?'var(--secondary)':'';
+    btn.style.color=active?'var(--accent-text)':'';
+    btn.style.borderColor=active?'var(--secondary)':'';
+    btn.style.fontWeight=active?'700':'600';
+  });
 }
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
 document.addEventListener('click',function(e){
