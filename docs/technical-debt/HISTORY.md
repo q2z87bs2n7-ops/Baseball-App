@@ -8,6 +8,36 @@ None. To start one, say **"Start tech debt sprint"** in conversation with Claude
 
 ## Completed Sprints
 
+### Sprint: 2026-05-04-baseball-app
+**Status:** ✅ COMPLETE
+**Branch:** `claude/tech-debt-audit-e5E4H`
+**Merged:** 2026-05-04
+
+**Issues fixed:**
+- HIGH: 1 (H3 — r.ok fetch validation at ~25 call sites)
+- MEDIUM: 4 (M1 targeted var→const, M2 CSS class extraction, M3 Dev Tools onclick→addEventListener, M4 timer leak + registry)
+- LOW: 4 (N5 console.log guards, N6 copy chain fix, L1 TIMING constants, L2 naming conventions)
+- Partially addressed: M1, M2, M3 (bulk work deferred)
+
+**Result:** 9 issues fixed, 0 regressions, 35/35 QA checks passed, UAT passed.
+
+**Code Changes:**
+- `index.html`: 9 fixes, v3.32.1 → v3.33
+- `sw.js`: cache mlb-v471 → mlb-v472
+
+**Reports:**
+- [Full Audit](./audits/audit-2026-05-04-baseball-app.md)
+- [Remediation & Code Changes](./remediation/remediation-2026-05-04-baseball-app.md)
+- [QA Test Results](./qa/qa-2026-05-04-baseball-app.md)
+- [Sprint Summary](./sprints/sprint-2026-05-04-baseball-app.md)
+
+**Known issues that remain open:**
+- M1: ~1,070 remaining `var` declarations — deferred to future sprint
+- M2: ~263 remaining inline style attrs — deferred to future sprint
+- M3: dynamic template-string onclick handlers (Radio Check rows, binder, ticker) — deferred to future sprint
+
+---
+
 ### Sprint: 2026-05-01-baseball-app
 **Status:** ✅ COMPLETE
 **Branch:** `claude/start-tech-debt-sprint-p9u8r`
