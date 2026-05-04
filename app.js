@@ -4021,36 +4021,36 @@ function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.
 // MLB Stats API teamId → primary flagship radio broadcast (extracted from radio.net)
 // `format`: 'hls' uses Hls.js (or native Safari); 'direct' is plain <audio> AAC/MP3
 const MLB_TEAM_RADIO={
-  108:{name:'KLAA Angels Radio',     url:'https://klaa.streamguys1.com/live',                                        format:'direct'},
-  109:{name:'KMVP Arizona Sports',   url:'https://bonneville.cdnstream1.com/2699_48.aac?kmvp',                       format:'direct'},
-  110:{name:'WJZ-FM 105.7 The Fan',  url:'https://live.amperwave.net/manifest/audacy-wjzfmaac-hlsc.m3u8',            format:'hls'},
-  111:{name:'WEEI 93.7 FM',          url:'https://live.amperwave.net/manifest/audacy-weeifmaac-hlsc.m3u8',           format:'hls'},
-  112:{name:'WSCR 670 The Score',    url:'https://live.amperwave.net/manifest/audacy-wscramaac-hlsc.m3u8',           format:'hls'},
-  113:{name:'700 WLW',               url:'https://stream.revma.ihrhls.com/zc1713/hls.m3u8',                          format:'hls'},
-  114:{name:'WTAM 1100 AM',          url:'https://stream.revma.ihrhls.com/zc1749/hls.m3u8',                          format:'hls'},
-  115:{name:'KOA 850 / 94.1',        url:'https://stream.revma.ihrhls.com/zc389',                                    format:'direct'},
-  116:{name:'WXYT 97.1 The Ticket',  url:'https://live.amperwave.net/manifest/audacy-wxytfmaac-hlsc.m3u8',           format:'hls'},
-  117:{name:'SportsTalk 790 AM',     url:'https://stream.revma.ihrhls.com/zc2257',                                   format:'direct'},
-  118:{name:'KCSP 610 Sports',       url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KCSPAMAAC.aac', format:'direct'},
-  119:{name:'KLAC AM 570 LA Sports', url:'https://stream.revma.ihrhls.com/zc189',                                    format:'direct'},
-  120:{name:'WJFK The Fan 106.7',    url:'https://live.amperwave.net/manifest/audacy-wjfkfmaac-hlsc.m3u8',           format:'hls'},
-  121:{name:'1010 WINS',             url:'https://live.amperwave.net/manifest/audacy-winsamaac-hlsc.m3u8',           format:'hls'},
-  133:{name:'WDGG The Dawg 93.7',    url:'https://ice23.securenetsystems.net/WDGG',                                  format:'direct'},
-  134:{name:'KDKA-FM 93.7 The Fan',  url:'https://live.amperwave.net/manifest/audacy-kdkafmaac-hlsc.m3u8',           format:'hls'},
-  135:{name:'KWFN 97.3 The Fan',     url:'https://live.amperwave.net/manifest/audacy-kwfnfmaac-llhlsc.m3u8',         format:'hls'},
-  136:{name:'KIRO 710 ESPN Seattle', url:'https://bonneville.cdnstream1.com/2642_48.aac',                            format:'direct'},
-  137:{name:'KNBR 104.5 / 680',      url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KNBRAMAAC.aac', format:'direct'},
-  138:{name:'KMOX NewsRadio 1120',   url:'https://live.amperwave.net/manifest/audacy-kmoxamaac-llhlsc.m3u8',         format:'hls'},
-  139:{name:'WYGM 96.9 The Game',    url:'https://stream.revma.ihrhls.com/zc601/64_1k1hau6k1qsq502/playlist.m3u8',   format:'hls'},
-  140:{name:'105.3 The Fan',         url:'https://live.amperwave.net/manifest/audacy-krldfmaac-hlsc.m3u8',           format:'hls'},
-  141:{name:'CJCL Sportsnet 590',    url:'https://rogers-hls.leanstream.co/rogers/tor590.stream/playlist.m3u8',      format:'hls'},
-  142:{name:'WCCO News Talk 830',    url:'https://live.amperwave.net/manifest/audacy-wccoamaac-llhlsc.m3u8',         format:'hls'},
-  143:{name:'94 WIP Sportsradio',    url:'https://live.amperwave.net/manifest/audacy-wipfmaac-hlsc.m3u8',            format:'hls'},
-  144:{name:'WCNN 680 The Fan',      url:'https://stream.zeno.fm/q9458433dm8uv',                                     format:'direct'},
-  145:{name:'WMVP ESPN 1000 AM',     url:'https://live.amperwave.net/manifest/goodkarma-wmvpamaac-hlsc1.m3u8',       format:'hls'},
-  146:{name:'WQAM 560 AM',           url:'https://live.amperwave.net/manifest/audacy-wqamamaac-hlsc.m3u8',           format:'hls'},
-  147:{name:'WFAN 66 / 101.9',       url:'https://live.amperwave.net/manifest/audacy-wfanamaac-hlsc.m3u8',           format:'hls'},
-  158:{name:'WTMJ Newsradio 620',    url:'https://live.amperwave.net/manifest/goodkarma-wtmjamaac-hlsc.m3u8',        format:'hls'}
+  108:{name:'KLAA Angels Radio',     url:'https://klaa.streamguys1.com/live',                                                              format:'direct'},
+  109:{name:'KTAR 620 AM',           url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KTARAMAAC.aac',               format:'direct'},
+  110:{name:'WBAL 1090 AM',          url:'https://playerservices.streamtheworld.com/api/livestream-redirect/WBALAMAAC.aac',               format:'direct'},
+  111:{name:'WEEI 850 AM',           url:'https://live.amperwave.net/manifest/audacy-weeifmaac-hlsc.m3u8',                               format:'hls'},
+  112:{name:'WSCR 670 The Score',    url:'https://live.amperwave.net/manifest/audacy-wscramaac-hlsc.m3u8',                               format:'hls'},
+  113:{name:'700 WLW',               url:'https://playerservices.streamtheworld.com/api/livestream-redirect/WLWAMAAC.aac',                format:'direct'},
+  114:{name:'WTAM 1100 AM',          url:'https://stream.revma.ihrhls.com/zc1749/hls.m3u8',                                              format:'hls'},
+  115:{name:'KOA 850 / 94.1',        url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KOAAMAAC.aac',                format:'direct'},
+  116:{name:'WXYT 97.1 The Ticket',  url:'https://live.amperwave.net/manifest/audacy-wxytfmaac-hlsc.m3u8',                               format:'hls'},
+  117:{name:'SportsTalk 790 AM',     url:'https://stream.revma.ihrhls.com/zc2257',                                                        format:'direct'},
+  118:{name:'96.5 The Fan KFNZ',     url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KFNZFMAAC.aac',               format:'direct'},
+  119:{name:'KLAC AM 570 LA Sports', url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KLACAMAAC.aac',               format:'direct'},
+  120:{name:'WJFK The Fan 106.7',    url:'https://live.amperwave.net/manifest/audacy-wjfkfmaac-hlsc.m3u8',                               format:'hls'},
+  121:{name:'WCBS 880 AM',           url:'https://live.amperwave.net/manifest/audacy-wcbsamaac-hlsc.m3u8',                               format:'hls'},
+  133:{name:'KSTE 650 AM Sacramento',url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KSTEAMAAC.aac',               format:'direct'},
+  134:{name:'KDKA-FM 93.7 The Fan',  url:'https://live.amperwave.net/manifest/audacy-kdkafmaac-hlsc.m3u8',                               format:'hls'},
+  135:{name:'KWFN 97.3 The Fan',     url:'https://live.amperwave.net/manifest/audacy-kwfnfmaac-llhlsc.m3u8',                             format:'hls'},
+  136:{name:'Seattle Sports 710 AM', url:'https://bonneville.cdnstream1.com/2642_48.aac',                                                format:'direct'},
+  137:{name:'KNBR 104.5 / 680',      url:'https://playerservices.streamtheworld.com/api/livestream-redirect/KNBRAMAAC.aac',               format:'direct'},
+  138:{name:'KMOX NewsRadio 1120',   url:'https://live.amperwave.net/manifest/audacy-kmoxamaac-llhlsc.m3u8',                             format:'hls'},
+  139:{name:'WDAE 95.3 FM / 620 AM', url:'https://playerservices.streamtheworld.com/api/livestream-redirect/WDAEAMAAC.aac',               format:'direct'},
+  140:{name:'105.3 The Fan KRLD',    url:'https://live.amperwave.net/manifest/audacy-krldfmaac-hlsc.m3u8',                               format:'hls'},
+  141:{name:'CJCL Sportsnet 590',    url:'https://rogers-hls.leanstream.co/rogers/tor590.stream/playlist.m3u8',                          format:'hls'},
+  142:{name:'WCCO News Talk 830',    url:'https://live.amperwave.net/manifest/audacy-wccoamaac-llhlsc.m3u8',                             format:'hls'},
+  143:{name:'94 WIP Sportsradio',    url:'https://live.amperwave.net/manifest/audacy-wipfmaac-hlsc.m3u8',                                format:'hls'},
+  144:{name:'680 The Fan / 93.7 FM', url:'https://stream.zeno.fm/q9458433dm8uv',                                                         format:'direct'},
+  145:{name:'WMVP ESPN 1000 AM',     url:'https://playerservices.streamtheworld.com/api/livestream-redirect/WMVPAMAAC.aac',               format:'direct'},
+  146:{name:'WQAM 560 AM',           url:'https://live.amperwave.net/manifest/audacy-wqamamaac-hlsc.m3u8',                               format:'hls'},
+  147:{name:'WFAN 66 / 101.9',       url:'https://live.amperwave.net/manifest/audacy-wfanamaac-hlsc.m3u8',                               format:'hls'},
+  158:{name:'WTMJ Newsradio 620',    url:'https://playerservices.streamtheworld.com/api/livestream-redirect/WTMJAMAAC.aac',               format:'direct'}
 };
 const FALLBACK_RADIO={name:'Fox Sports Radio',url:'https://ais-sa1.streamon.fm/7852_128k.aac',format:'direct'};
 // Approved team IDs whose flagship feeds verifiably play live game audio.
@@ -4133,9 +4133,47 @@ function updateRadioForFocus(){
 var radioCheckResults={}; // key: teamId or 'fallback' → 'yes'|'no' (absent = untested)
 var radioCheckNotes={};   // key: teamId or 'fallback' → free-text note
 var radioCheckPlayingKey=null;
+// Default notes seeded once (preserves user edits via mlb_radio_check_notes_seeded_v2 flag).
+// Approved/working stations verified 2026-05-02 sweep.
+// Untested per CLAUDE.md: 112 CHC, 137 SF.
+// URL updated in v3.34.1 (not yet confirmed): 109, 110, 113, 115, 118, 119, 121, 133, 139, 145, 158.
+var RADIO_CHECK_DEFAULT_NOTES={
+  '108':'Confirmed working — live game audio (verified 2026-05-02)',
+  '109':'URL updated v3.34.1 — not yet confirmed',
+  '110':'URL updated v3.34.1 — not yet confirmed',
+  '112':'Not yet confirmed — needs Radio Check sweep',
+  '113':'URL updated v3.34.1 — not yet confirmed',
+  '114':'Confirmed working — live game audio (verified 2026-05-02)',
+  '115':'URL updated v3.34.1 — not yet confirmed',
+  '116':'Confirmed working — live game audio (verified 2026-05-02)',
+  '117':'Confirmed working — live game audio (verified 2026-05-02)',
+  '118':'URL updated v3.34.1 — not yet confirmed',
+  '119':'URL updated v3.34.1 — not yet confirmed',
+  '121':'URL updated v3.34.1 — not yet confirmed',
+  '133':'URL updated v3.34.1 — not yet confirmed',
+  '137':'Not yet confirmed — needs Radio Check sweep',
+  '139':'URL updated v3.34.1 — not yet confirmed',
+  '140':'Confirmed working — live game audio (verified 2026-05-02)',
+  '142':'Confirmed working — live game audio (verified 2026-05-02)',
+  '144':'Confirmed working — live game audio (verified 2026-05-02)',
+  '145':'URL updated v3.34.1 — not yet confirmed',
+  '146':'Confirmed working — live game audio (verified 2026-05-02)',
+  '147':'Confirmed working — live game audio (verified 2026-05-02)',
+  '158':'URL updated v3.34.1 — not yet confirmed'
+};
 function loadRadioCheckResults(){
   try{var s=localStorage.getItem('mlb_radio_check');if(s)radioCheckResults=JSON.parse(s)||{};}catch(e){radioCheckResults={};}
   try{var n=localStorage.getItem('mlb_radio_check_notes');if(n)radioCheckNotes=JSON.parse(n)||{};}catch(e){radioCheckNotes={};}
+  // One-time seed of default notes (preserves user-entered notes — only fills empty keys).
+  try{
+    if(!localStorage.getItem('mlb_radio_check_notes_seeded_v2')){
+      Object.keys(RADIO_CHECK_DEFAULT_NOTES).forEach(function(k){
+        if(!radioCheckNotes[k]) radioCheckNotes[k]=RADIO_CHECK_DEFAULT_NOTES[k];
+      });
+      saveRadioCheckNotes();
+      localStorage.setItem('mlb_radio_check_notes_seeded_v2','1');
+    }
+  }catch(e){}
 }
 function saveRadioCheckResults(){
   try{localStorage.setItem('mlb_radio_check',JSON.stringify(radioCheckResults));}catch(e){}
