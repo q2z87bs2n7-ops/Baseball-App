@@ -1,0 +1,149 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * pulse-redesign.css
+ * Drop-in stylesheet that layers ON TOP of styles.css. Loads AFTER styles.css.
+ *
+ * Scope: every selector is scoped under #pulse so nothing leaks into Home,
+ * League, Schedule, Standings, Yesterday Recap, or any team-themed surface.
+ * Uses existing --p-* tokens; introduces no new global names.
+ *
+ * What this file changes (all CSS-only, no JS required):
+ *   1. Pulse hero zone — gives Focus + Story Carousel a real top-of-page slot
+ *   2. Right rail — tighter rhythm, group titles aligned, removes accent bleed
+ *   3. MY TEAM lens "dim" mode — faded-but-visible non-team rows (set via JS)
+ *   4. Feed item density + scoring/HR emphasis tuned for scanability
+ *   5. Top bar control grouping (visual only — no DOM changes)
+ *   6. Mobile (≤860px) collapse: hero strip, rail folds under feed
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ── 1. Pulse Hero zone ───────────────────────────────────────────────── */
+/* Wraps #focusCard + #storyCarousel into a single hero row above the feed.
+   Code creates <div id="pulseHero"> and moves these two children into it. */
+#pulse #pulseHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 0.875rem;
+  margin: 0 0 1rem 0;
+  align-items: stretch;
+}
+#pulse #pulseHero > #focusCard,
+#pulse #pulseHero > #storyCarousel {
+  margin: 0 !important;        /* override existing margin-bottom inline styles */
+  display: block !important;   /* hero always shows both; JS no longer toggles display:none on these inside hero */
+  min-height: 0;
+}
+#pulse #pulseHero #focusCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;                  /* focusCard.js renders its own internal padding */
+  overflow: hidden;
+}
+#pulse #pulseHero #storyCarousel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.5rem 0.5rem;
+}
+/* When neither focus nor story has content (post-slate, pre-game with nothing
+   to feature) the hero collapses gracefully */
+#pulse #pulseHero[data-empty="1"] { display: none; }
+
+/* ── 2. Right rail polish ─────────────────────────────────────────────── */
+#pulse #sideRail { padding-top: 0.25rem; }
+#pulse #sideRail > * + * { margin-top: 0.875rem; }
+#pulse #sideRail .side-rail-title {
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.5rem 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+/* Strip lingering accent fills that bleed team color into Pulse rail */
+#pulse #sideRail .game-count { color: var(--muted); }
+#pulse #sideRail .side-rail-game { border-bottom-color: var(--border); }
+
+/* News carousel — let it breathe inside the rail without its old card chrome */
+#pulse #sideRailNews #newsCarousel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* ── 3. MY TEAM lens "dim" mode ───────────────────────────────────────── */
+/* Today the lens HIDES non-team rows. New behavior: dim them so the user keeps
+   peripheral awareness. JS toggles `data-lens="team"` on #pulse. */
+#pulse[data-lens="team"] .feed-item:not(.lens-match) {
+  opacity: 0.35;
+  filter: saturate(0.6);
+}
+#pulse[data-lens="team"] .feed-item:not(.lens-match):hover {
+  opacity: 0.75;
+  filter: none;
+}
+#pulse[data-lens="team"] .feed-item.lens-match {
+  border-left: 3px solid var(--accent-strong);
+}
+#pulse[data-lens="team"] .ticker-chip:not(.lens-match) { opacity: 0.4; }
+
+/* ── 4. Feed density + emphasis ───────────────────────────────────────── */
+#pulse #feedWrap { padding: 0.5rem 0 0; border: 0; }
+#pulse .feed-item {
+  border-radius: 0;
+  padding: 0.625rem 0.75rem;
+  transition: background 0.15s ease;
+}
+#pulse .feed-item:hover { background: var(--card2); }
+#pulse .feed-item.homerun {
+  border-left-width: 3px;
+  border-left-color: rgba(160, 100, 255, 0.85);
+}
+#pulse .feed-item.scoring { box-shadow: inset 2px 0 0 0 rgba(60, 190, 100, 0.7); }
+
+/* ── 5. Top bar grouping ──────────────────────────────────────────────── */
+/* Visually groups the three icon controls (sound / radio / scheme) and pushes
+   MY TEAM + YESTERDAY RECAP into a primary group. No DOM changes. */
+#pulse #pulseTopBar > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#pulse #pulseTopBar #ptbSoundBtn,
+#pulse #pulseTopBar #ptbRadioBtn,
+#pulse #pulseTopBar #ptbSchemeBtn {
+  background: transparent;
+  border-color: transparent;
+}
+#pulse #pulseTopBar #ptbSoundBtn:hover,
+#pulse #pulseTopBar #ptbRadioBtn:hover,
+#pulse #pulseTopBar #ptbSchemeBtn:hover {
+  background: var(--card2);
+  border-color: var(--border);
+}
+
+/* ── 6. Mobile (≤860px) ───────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  #pulse #pulseHero {
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+  }
+  /* On mobile the focus card collapses to its existing #focusMiniBar treatment;
+     the hero just shows storyCarousel in that case. JS sets data-empty=1 if
+     focus is hidden on mobile so hero still occupies a single row cleanly. */
+  #pulse #sideRail { margin-top: 1rem; }
+}
+
+/* ── 7. Yesterday Recap entry, when present in top bar ────────────────── */
+#pulse #ptbYestBtn {
+  background: var(--accent-soft);
+  border-color: var(--border);
+  color: var(--text);
+}
+#pulse #ptbYestBtn:hover {
+  background: var(--card2);
+  border-color: var(--accent);
+}
