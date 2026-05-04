@@ -93,8 +93,7 @@ The overlay must not be interactive:
 
 The overlay must scale appropriately across:
 - **Mobile:** ≤480px
-- **Tablet:** 481–1024px
-- **Desktop:** ≥1025px
+- **iPad/Tablet:** 481–1024px
 
 No specific design mandated; designer determines appropriate sizes and spacing per breakpoint.
 
@@ -128,14 +127,11 @@ The overlay should respond to the Pulse theme preference (light/dark mode):
 
 ---
 
-## 5. Browser & Platform Support
+## 5. Platform Support
 
 Must work on:
-- iOS Safari 14+ (PWA)
-- Android Chrome 90+ (PWA)
-- Safari desktop 14+
-- Chrome desktop (dev/test)
-- Firefox desktop (dev/test)
+- iOS Safari 14+ (PWA installed to home screen)
+- Android Chrome 90+ (PWA installed to home screen)
 
 **Graceful degradation:** If the splash fails to render, the app still loads normally (no critical failures).
 
@@ -157,7 +153,8 @@ Must work on:
 - [ ] Animations run at 60fps (no jank, no frame drops)
 - [ ] Dismissal is smooth and immediate
 - [ ] Theme preference is respected
-- [ ] Works on iOS 14+, Android 10+
+- [ ] Works on iOS Safari 14+, Android Chrome 90+
+- [ ] Responsive on mobile (≤480px) and iPad (481–1024px)
 - [ ] WCAG AA accessibility compliance verified
 - [ ] No performance regression on app boot time
 
@@ -168,7 +165,7 @@ Must work on:
 Designer should provide:
 
 1. **Visual Design**
-   - Mockups for mobile, tablet, desktop (breakpoints per designer's choice)
+   - Mockups for mobile (≤480px) and iPad (481–1024px), portrait and landscape
    - Light and dark mode variants
    - Asset files (SVG, if applicable)
 
@@ -193,7 +190,8 @@ Designer should provide:
 
 ### For Designer
 - Design for the splash in isolation (doesn't interact with app)
-- Consider all three breakpoints and both theme modes
+- Consider both breakpoints (mobile ≤480px, iPad 481–1024px) and both theme modes (light/dark)
+- Test in portrait and landscape orientations
 - Ensure all assets are provided as inline SVG or CSS
 - Provide hex/RGB colors (not color names)
 
@@ -205,7 +203,7 @@ Designer should provide:
 - Update version: v3.34.3
 
 ### For QA
-- Test on iPhone 12+ (notch), iPhone SE (no notch)
+- Test on iPhone 12+ (notch), iPhone SE (no notch), iPad Air/Pro (landscape + portrait)
 - Test on Android 10+, 12, 13, 14+
 - Test dark mode vs light mode toggling
 - Verify no layout shift when splash dismisses
