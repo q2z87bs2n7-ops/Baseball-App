@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.32.2</title>
+<title>MLB Pulse v3.33</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -941,6 +941,13 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
   100% { transform:scale(1);    color:#34d399; }
 }
 .pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; background:var(--card); }
+/* Dev Tools panel utility classes (extracted from inline styles — M2 tech debt) */
+.dt-label-muted{font-size:.6rem;color:var(--muted)}
+.dt-input{width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem}
+.dt-label{font-weight:600;color:var(--text);margin-bottom:4px}
+.dt-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dt-box{padding:8px;background:var(--card2);border-radius:4px}
+.dt-color-input{width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px}
 </style>
 </head>
 <body>
@@ -1003,7 +1010,7 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.32.2</div>
+        <div class="settings-version">v3.33</div>
       </div>
     </div>
   </div>
@@ -1288,35 +1295,35 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
 <div id="devToolsPanel">
   <div class="dev-panel-hd">
     <span class="dev-panel-title">🛠️ Dev Tools</span>
-    <button class="debug-close" onclick="toggleDevTools()">✕</button>
+    <button class="debug-close" data-dt-action="close">✕</button>
   </div>
   <div class="dev-buttons">
-    <button class="dev-btn" onclick="toggleDemoMode();toggleDevTools()">
+    <button class="dev-btn" data-dt-action="demo">
       <div class="dev-btn-label" id="demoBtnLabel">▶ Try Demo</div>
       <div class="dev-btn-shortcut">Shift+H</div>
     </button>
-    <button class="dev-btn" onclick="replayHRCard();toggleDevTools()">
+    <button class="dev-btn" data-dt-action="replayHR">
       <div class="dev-btn-label">🎬 Replay HR</div>
       <div class="dev-btn-shortcut">Shift+R</div>
     </button>
-    <button class="dev-btn" onclick="replayRBICard();toggleDevTools()">
+    <button class="dev-btn" data-dt-action="replayRBI">
       <div class="dev-btn-label">💰 Replay RBI</div>
       <div class="dev-btn-shortcut">Shift+E</div>
     </button>
-    <button class="dev-btn" onclick="window.PulseCard.demo();toggleDevTools()">
+    <button class="dev-btn" data-dt-action="cardVariants">
       <div class="dev-btn-label">💫 Card Variants</div>
       <div class="dev-btn-shortcut">Shift+V</div>
     </button>
-    <button class="dev-btn" onclick="generateTestCard();toggleDevTools()">
+    <button class="dev-btn" data-dt-action="testCard">
       <div class="dev-btn-label">🎴 Test Card</div>
       <div class="dev-btn-shortcut">Shift+G</div>
     </button>
-    <button class="dev-btn" onclick="resetCollection()" style="border-color:var(--hr-border)">
+    <button class="dev-btn" data-dt-action="resetCollection" style="border-color:var(--hr-border)">
       <div class="dev-btn-label">🗑️ Reset Collection</div>
       <div class="dev-btn-shortcut">clears all</div>
     </button>
     <!-- TEMP — News source diagnostic. Remove after News tab QA. -->
-    <button class="dev-btn" onclick="openNewsSourceTest();toggleDevTools()">
+    <button class="dev-btn" data-dt-action="newsTest">
       <div class="dev-btn-label">🔬 News Source Test</div>
       <div class="dev-btn-shortcut">Shift+N</div>
     </button>
@@ -1327,22 +1334,22 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
       <div style="margin-top:0.625rem;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div>
-            <div style="font-weight:600;color:var(--text);margin-bottom:4px">Carousel Rotation (ms)</div>
+            <div class="dt-label">Carousel Rotation (ms)</div>
             <input type="number" id="tuneRotateMs" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
             <div style="font-size:.6rem;margin-top:3px">Carousel advance interval</div>
           </div>
           <div>
-            <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Card Threshold</div>
+            <div class="dt-label">RBI Card Threshold</div>
             <input type="number" id="tuneRbiThreshold" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
             <div style="font-size:.6rem;margin-top:3px">Min score to trigger RBI card</div>
           </div>
           <div>
-            <div style="font-weight:600;color:var(--text);margin-bottom:4px">RBI Cooldown (ms)</div>
+            <div class="dt-label">RBI Cooldown (ms)</div>
             <input type="number" id="tuneRbiCooldown" style="width:100%;padding:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px">
             <div style="font-size:.6rem;margin-top:3px">Per-game cooldown (90000 = 90s)</div>
           </div>
           <div style="display:flex;align-items:flex-end">
-            <button onclick="resetTuning()" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:6px;border-radius:4px;cursor:pointer;font-weight:600">Reset to Defaults</button>
+            <button data-dt-action="resetTuning" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:6px;border-radius:4px;cursor:pointer;font-weight:600">Reset to Defaults</button>
           </div>
         </div>
         <div id="rbiFormulaDisplay" style="background:var(--card);border:1px solid var(--border);border-radius:4px;padding:6px;font-size:.6rem;line-height:1.4;display:none">
@@ -1360,61 +1367,61 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
     <details style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">📖 Carousel Story Rules</summary>
       <div style="margin-top:0.625rem;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">💥 Home Run</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneHRPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Cooldown (ms)</div><input type="number" id="tuneHRCooldown" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+        <div class="dt-box">
+          <div class="dt-label">💥 Home Run</div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">Priority</div><input type="number" id="tuneHRPriority" class="dt-input"></div>
+            <div><div class="dt-label-muted">Cooldown (ms)</div><input type="number" id="tuneHRCooldown" class="dt-input"></div>
           </div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🔥 Big Inning</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneBigInningPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Runs Threshold</div><input type="number" id="tuneBigInningThreshold" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+        <div class="dt-box">
+          <div class="dt-label">🔥 Big Inning</div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">Priority</div><input type="number" id="tuneBigInningPriority" class="dt-input"></div>
+            <div><div class="dt-label-muted">Runs Threshold</div><input type="number" id="tuneBigInningThreshold" class="dt-input"></div>
           </div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🔔 Walk-Off Threat</div>
+        <div class="dt-box">
+          <div class="dt-label">🔔 Walk-Off Threat</div>
           <div style="display:grid;grid-template-columns:1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneWalkoffPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div class="dt-label-muted">Priority</div><input type="number" id="tuneWalkoffPriority" class="dt-input"></div>
           </div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🚫 No-Hitter Watch</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">Inning Floor</div><input type="number" id="tuneNohitterFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div style="opacity:.6"><div style="font-size:.6rem;color:var(--muted)">Priority (95)</div></div>
+        <div class="dt-box">
+          <div class="dt-label">🚫 No-Hitter Watch</div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">Inning Floor</div><input type="number" id="tuneNohitterFloor" class="dt-input"></div>
+            <div style="opacity:.6"><div class="dt-label-muted">Priority (95)</div></div>
           </div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">💎 Bases Loaded</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div class="dt-box">
+          <div class="dt-label">💎 Bases Loaded</div>
+          <div class="dt-grid-2">
             <div><div style="font-size:.6rem;color:var(--muted);margin-bottom:4px">Enable</div><input type="checkbox" id="tuneBasesLoadedEnable" style="width:16px;height:16px;cursor:pointer" onchange="updateTuning('basesloaded_enable',this.checked.toString())"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneBasesLoadedPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+            <div><div class="dt-label-muted">Priority</div><input type="number" id="tuneBasesLoadedPriority" class="dt-input"></div>
           </div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">📈 Hitting Streak</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">Min Games</div><input type="number" id="tuneHitstreakFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Priority</div><input type="number" id="tuneHitstreakPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+        <div class="dt-box">
+          <div class="dt-label">📈 Hitting Streak</div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">Min Games</div><input type="number" id="tuneHitstreakFloor" class="dt-input"></div>
+            <div><div class="dt-label-muted">Priority</div><input type="number" id="tuneHitstreakPriority" class="dt-input"></div>
           </div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">🏥 Roster Move</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">IL/DFA Priority</div><input type="number" id="tuneRosterPriorityIL" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Trade/Up Priority</div><input type="number" id="tuneRosterPriorityTrade" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+        <div class="dt-box">
+          <div class="dt-label">🏥 Roster Move</div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">IL/DFA Priority</div><input type="number" id="tuneRosterPriorityIL" class="dt-input"></div>
+            <div><div class="dt-label-muted">Trade/Up Priority</div><input type="number" id="tuneRosterPriorityTrade" class="dt-input"></div>
           </div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px">📊 Win Probability</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">Leverage Floor</div><input type="number" id="tuneWPLeverageFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Extreme WP %</div><input type="number" id="tuneWPExtremeFloor" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Live WP Priority</div><input type="number" id="tuneLiveWPPriority" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Live WP Refresh (ms)</div><input type="number" id="tuneLiveWPRefresh" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+        <div class="dt-box">
+          <div class="dt-label">📊 Win Probability</div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">Leverage Floor</div><input type="number" id="tuneWPLeverageFloor" class="dt-input"></div>
+            <div><div class="dt-label-muted">Extreme WP %</div><input type="number" id="tuneWPExtremeFloor" class="dt-input"></div>
+            <div><div class="dt-label-muted">Live WP Priority</div><input type="number" id="tuneLiveWPPriority" class="dt-input"></div>
+            <div><div class="dt-label-muted">Live WP Refresh (ms)</div><input type="number" id="tuneLiveWPRefresh" class="dt-input"></div>
           </div>
         </div>
       </div>
@@ -1424,19 +1431,19 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
     <details style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🎯 Focus Mode Tuning</summary>
       <div style="margin-top:0.625rem;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
+        <div class="dt-box">
           <div style="font-weight:600;color:var(--text);margin-bottom:6px">Badge Thresholds</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">CRITICAL score ≥</div><input type="number" id="tuneFocusCritical" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">HIGH score ≥</div><input type="number" id="tuneFocusHigh" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">CRITICAL score ≥</div><input type="number" id="tuneFocusCritical" class="dt-input"></div>
+            <div><div class="dt-label-muted">HIGH score ≥</div><input type="number" id="tuneFocusHigh" class="dt-input"></div>
           </div>
           <div style="font-size:.58rem;margin-top:4px;color:var(--muted)">Scores below HIGH threshold show NORMAL</div>
         </div>
-        <div style="padding:8px;background:var(--card2);border-radius:4px">
+        <div class="dt-box">
           <div style="font-weight:600;color:var(--text);margin-bottom:6px">Auto-Switch Alert</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><div style="font-size:.6rem;color:var(--muted)">Switch margin (pts)</div><input type="number" id="tuneFocusSwitchMargin" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
-            <div><div style="font-size:.6rem;color:var(--muted)">Alert cooldown (ms)</div><input type="number" id="tuneFocusAlertCooldown" style="width:100%;padding:3px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;font-size:.65rem"></div>
+          <div class="dt-grid-2">
+            <div><div class="dt-label-muted">Switch margin (pts)</div><input type="number" id="tuneFocusSwitchMargin" class="dt-input"></div>
+            <div><div class="dt-label-muted">Alert cooldown (ms)</div><input type="number" id="tuneFocusAlertCooldown" class="dt-input"></div>
           </div>
           <div style="font-size:.58rem;margin-top:4px;color:var(--muted)">Rival game must score this many pts higher to trigger a switch suggestion</div>
         </div>
@@ -1453,18 +1460,18 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
         </div>
         <div style="border-top:1px solid var(--border);padding-top:10px">
           <div style="font-weight:600;color:var(--text);margin-bottom:8px">📱 App Theme (Rest of App)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Primary</label><input type="color" id="colorAppPrimary" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','primary',this.value)"><button onclick="captureCurrentTheme('app')" style="width:100%;margin-top:3px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px;border-radius:2px;cursor:pointer">Copy</button></div>
-            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Secondary</label><input type="color" id="colorAppSecondary" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','secondary',this.value)"></div>
-            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Dark BG</label><input type="color" id="colorAppDark" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','dark',this.value)"></div>
-            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Card BG</label><input type="color" id="colorAppCard" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('app','card',this.value)"></div>
+          <div class="dt-grid-2">
+            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Primary</label><input type="color" id="colorAppPrimary" class="dt-color-input" onchange="updateColorOverride('app','primary',this.value)"><button data-dt-action="captureApp" style="width:100%;margin-top:3px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px;border-radius:2px;cursor:pointer">Copy</button></div>
+            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Secondary</label><input type="color" id="colorAppSecondary" class="dt-color-input" onchange="updateColorOverride('app','secondary',this.value)"></div>
+            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Dark BG</label><input type="color" id="colorAppDark" class="dt-color-input" onchange="updateColorOverride('app','dark',this.value)"></div>
+            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Card BG</label><input type="color" id="colorAppCard" class="dt-color-input" onchange="updateColorOverride('app','card',this.value)"></div>
           </div>
         </div>
         <div style="border-top:1px solid var(--border);padding-top:10px">
           <div style="font-weight:600;color:var(--text);margin-bottom:8px">⚡ Pulse Theme (Pulse Section)</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Dark BG</label><input type="color" id="colorPulseDark" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('pulse','dark',this.value)"><button onclick="captureCurrentTheme('pulse')" style="width:100%;margin-top:3px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px;border-radius:2px;cursor:pointer">Copy</button></div>
-            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Card BG</label><input type="color" id="colorPulseCard" style="width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px" onchange="updateColorOverride('pulse','card',this.value)"></div>
+          <div class="dt-grid-2">
+            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Dark BG</label><input type="color" id="colorPulseDark" class="dt-color-input" onchange="updateColorOverride('pulse','dark',this.value)"><button data-dt-action="capturePulse" style="width:100%;margin-top:3px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px;border-radius:2px;cursor:pointer">Copy</button></div>
+            <div><label style="font-size:.6rem;color:var(--muted);display:block;margin-bottom:3px">Card BG</label><input type="color" id="colorPulseCard" class="dt-color-input" onchange="updateColorOverride('pulse','card',this.value)"></div>
           </div>
         </div>
       </div>
@@ -1474,11 +1481,11 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
     <details style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
       <div id="debugPanel" style="margin-top:0.625rem;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
-      <button onclick="refreshDebugPanel()" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
+      <button data-dt-action="refreshDebug" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
     </details>
   </div>
   <div class="dev-confirm-footer">
-    <button class="dev-confirm-btn" id="devConfirmBtn" onclick="confirmDevToolsChanges()">Confirm Changes</button>
+    <button class="dev-confirm-btn" id="devConfirmBtn" data-dt-action="confirm">Confirm Changes</button>
   </div>
 </div>
 
@@ -1545,6 +1552,21 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
 
 <script>
 const DEBUG=false; // Set true locally to enable verbose console logging
+
+// ── Naming conventions ────────────────────────────────────────────────────────
+// load*()    — fetch + cache + render a full section (loadTodayGame, loadSchedule)
+// fetch*()   — async data fetch with session cache, returns data or null (fetchBoxscore, fetchCareerStats)
+// render*()  — pure DOM write from already-loaded data (renderCalendar, renderFeed)
+// poll*()    — recurring background fetch called on a timer (pollLeaguePulse, pollFocusLinescore)
+// gen*()     — story carousel generator, returns array of story objects (genHRStories, genStreakStories)
+// show*()    — opens an overlay or card into view (showPlayerCard, showLiveGame)
+// open/close*() — paired overlay lifecycle (openCollection/closeCollection, openYesterdayRecap/closeYesterdayRecap)
+// update*()  — partial DOM refresh without full re-render (updateFeedEmpty, updateCollectionUI)
+// toggle*()  — binary on/off for settings/UI (toggleRadio, toggleGame, toggleDevTools)
+// set*()     — sets a specific state value + triggers side-effects (setFocusGame, setRadioUI)
+// tcLookup(id) — canonical team lookup; prefer over inline TEAMS.find() at call sites
+// ─────────────────────────────────────────────────────────────────────────────
+
 const SEASON=2026,WC_SPOTS=3,MLB_BASE='https://statsapi.mlb.com/api/v1';
 const TEAMS=[
   {id:121,espnId:21,name:'New York Mets',short:'Mets',division:'National League East',league:'NL',primary:'#002D72',secondary:'#FF5910',youtubeUC:'UCgIMbGazP0uBDy9JVCqBUaA'},
@@ -1587,6 +1609,30 @@ let newsSourceFilter='all';
 let newsArticlesCache=[];
 const NEWS_SOURCE_LABELS={mlb:'MLB.com',espn:'ESPN',mlbtr:'MLB Trade Rumors',fangraphs:'FanGraphs',cbs:'CBS Sports'};
 const NEWS_SOURCE_ICONS={mlb:'⚾',espn:'📺',mlbtr:'💼',fangraphs:'📊',cbs:'🎙️'};
+
+// ── Timing constants ─────────────────────────────────────────────────────────
+const TIMING={
+  PULSE_POLL_MS:      15000,  // pollLeaguePulse interval
+  FOCUS_POLL_MS:       5000,  // pollFocusLinescore / focusFastTimer interval
+  LIVE_REFRESH_MS:    30000,  // live game view auto-refresh
+  HOME_LIVE_MS:       60000,  // home card live auto-refresh
+  LEAGUE_REFRESH_MS:  60000,  // around the league matchup auto-refresh
+  STORY_POOL_MS:      30000,  // buildStoryPool rebuild interval
+  YESTERDAY_REFRESH_MS: 3600000, // yesterday recap hourly refresh
+  CARD_DISMISS_MS:     5500,  // player/RBI card auto-dismiss
+  CARD_CLOSE_ANIM_MS:   280,  // card close animation duration
+  ALERT_DISMISS_MS:    8000,  // focus soft-alert auto-dismiss
+  SIGNIN_CTA_MS:       8000,  // sign-in CTA auto-dismiss
+  SYNC_INTERVAL_MS:   30000,  // background collection sync
+};
+
+// ── Timer registry — single audit point for all active timer handles ─────────
+const TIMERS={
+  _h:{},
+  set:function(key,handle){if(this._h[key])clearInterval(this._h[key]);this._h[key]=handle;},
+  clear:function(key){if(this._h[key]){clearInterval(this._h[key]);this._h[key]=null;}},
+  clearAll:function(){Object.keys(this._h).forEach(function(k){if(TIMERS._h[k]){clearInterval(TIMERS._h[k]);TIMERS._h[k]=null;}});}
+};
 
 // ── League Pulse globals ──────────────────────────────────────────────────────
 const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
@@ -1711,7 +1757,7 @@ const NEWS_ROTATE_MS=30000;
 function tcLookup(id){var t=TEAMS.find(function(t){return t.id===id;});return t?{primary:t.primary,abbr:t.short,name:t.name}:{primary:'#444',abbr:'???',name:'Unknown'};}
 async function fetchBoxscore(gamePk){
   if(!boxscoreCache[gamePk]){
-    try{boxscoreCache[gamePk]=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore').then(function(r){return r.json();});}
+    try{var bsR=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore');if(!bsR.ok)throw new Error(bsR.status);boxscoreCache[gamePk]=await bsR.json();}
     catch(e){return null;}
   }
   return boxscoreCache[gamePk];
@@ -1737,16 +1783,16 @@ function initReal() {
   document.removeEventListener('visibilitychange',onNewsVisibilityChange);
   document.addEventListener('visibilitychange',onNewsVisibilityChange);
   pollLeaguePulse().then(function(){buildStoryPool();setFocusGame(focusGamePk);});
-  pulseTimer=setInterval(pollLeaguePulse,15000);
+  pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
   if(storyPoolTimer){clearInterval(storyPoolTimer);storyPoolTimer=null;}
-  storyPoolTimer=setInterval(buildStoryPool,30000);
+  storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
   if(yesterdayRefreshTimer){clearInterval(yesterdayRefreshTimer);yesterdayRefreshTimer=null;}
   yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){
       var ydCard=document.getElementById('yesterdayCard');
       if(ydCard&&ydCard.offsetParent!==null) renderYesterdayRecap();
     });
-  },3600000);
+  },TIMING.YESTERDAY_REFRESH_MS);
 }
 
 async function pollLeaguePulse() {
@@ -1779,6 +1825,7 @@ async function pollLeaguePulse() {
   try {
     // Fetch from primary date
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher',{signal:sig});
+    if(!r.ok) throw new Error(r.status);
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
 
@@ -1789,6 +1836,7 @@ async function pollLeaguePulse() {
       yesterday.setDate(yesterday.getDate()-1);
       var yDateStr=localDateStr(yesterday);
       var yr=await fetch(MLB_BASE+'/schedule?sportId=1&date='+yDateStr+'&hydrate=linescore,team,probablePitcher',{signal:sig});
+      if(!yr.ok) throw new Error(yr.status);
       var yd=await yr.json();
       var yGames=(yd.dates||[]).flatMap(function(dt){return dt.games||[]});
       if (yGames.length) {
@@ -1886,11 +1934,13 @@ async function pollGamePlays(gamePk) {
   try {
     var g=gameStates[gamePk]; if (!g) return;
     var tsResp=await fetch(MLB_BASE_V1_1+'/game/'+gamePk+'/feed/live/timestamps');
+    if(!tsResp.ok) throw new Error(tsResp.status);
     var tsData=await tsResp.json();
     var latestTs=Array.isArray(tsData)?tsData[tsData.length-1]:null;
     if (latestTs&&latestTs===g.lastTimestamp) return;
     if (latestTs) g.lastTimestamp=latestTs;
     var r=await fetch(MLB_BASE+'/game/'+gamePk+'/playByPlay');
+    if(!r.ok) throw new Error(r.status);
     var data=await r.json();
     var plays=(data.allPlays||[]).filter(function(p){return p.about&&p.about.isComplete;});
     var lastCount=g.playCount||0, isHistory=(lastCount===0&&plays.length>0);
@@ -1986,7 +2036,7 @@ function exportPulseStateAsSnapshot(){
     +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px">📸 Pulse State Exported</div>'
     +'<textarea id="exportJson" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:12px;border-radius:8px;font-family:monospace;font-size:11px;resize:none;margin-bottom:12px">'+json+'</textarea>'
     +'<div style="display:flex;gap:10px">'
-    +'<button onclick="var el=document.getElementById(\'exportJson\');navigator.clipboard.writeText(el.value).catch(function(){el.select();document.execCommand(\'copy\');}).then(function(){alert(\'Copied!\');});this.parentElement.parentElement.parentElement.remove();" style="flex:1;background:var(--secondary);color:var(--accent-text);border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>'
+    +'<button onclick="var el=document.getElementById(\'exportJson\');navigator.clipboard.writeText(el.value).then(function(){alert(\'Copied!\');},function(){try{el.select();document.execCommand(\'copy\');alert(\'Copied!\');}catch(e){alert(\'Copy failed — please copy manually.\');}});this.parentElement.parentElement.parentElement.remove();" style="flex:1;background:var(--secondary);color:var(--accent-text);border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>'
     +'<button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);padding:10px;border-radius:6px;cursor:pointer;font-weight:600">Close</button>'
     +'</div>'
     +'</div>';
@@ -2463,7 +2513,7 @@ function exitDemo() {
     renderTicker();
     // Re-initialize real polling and story rotation
     if(pulseTimer) clearInterval(pulseTimer);
-    pulseTimer=setInterval(pollLeaguePulse,15000);
+    pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
     if(storyRotateTimer) clearInterval(storyRotateTimer);
     storyRotateTimer=setInterval(rotateStory,devTuning.rotateMs);
     // Fetch real data - pollLeaguePulse() will update with actual games/plays
@@ -2997,6 +3047,7 @@ async function fetchMissingHRBatterStats(){
   await Promise.all(unique.map(async function(id){
     try{
       var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group=hitting');
+      if(!r.ok) throw new Error(r.status);
       var d=await r.json();
       var stat=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;
       if(stat) hrBatterStatsCache[id]=stat;
@@ -3017,6 +3068,7 @@ async function loadProbablePitcherStats(){
   await Promise.all(ids.map(async function(id){
     try{
       var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group=pitching');
+      if(!r.ok) throw new Error(r.status);
       var d=await r.json();
       var stat=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;
       probablePitcherStatsCache[id]={wins:stat?stat.wins:0,losses:stat?stat.losses:0};
@@ -3154,6 +3206,7 @@ async function loadTransactionsCache(){
     start.setDate(start.getDate()-2);
     var fmt=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
     var r=await fetch(MLB_BASE+'/transactions?sportId=1&startDate='+fmt(start)+'&endDate='+fmt(today));
+    if(!r.ok) throw new Error(r.status);
     var d=await r.json();
     var notable=['Injured List','Designated for Assignment','Selected','Called Up','Trade','Activated From'];
     transactionsCache=(d.transactions||[]).filter(function(t){return notable.some(function(kw){return (t.typeDesc||'').indexOf(kw)!==-1;});});
@@ -3169,6 +3222,7 @@ async function loadHighLowCache(){
     for(var i=0;i<stats.length;i++){
       try{
         var r=await fetch(MLB_BASE+'/highLow/player?sortStat='+stats[i]+'&season='+SEASON+'&sportId=1&gameType=R&limit=3');
+        if(!r.ok) throw new Error(r.status);
         var d=await r.json();
         allResults[stats[i]]=d.results||[];
       }catch(e){allResults[stats[i]]=[];}
@@ -3225,6 +3279,7 @@ async function genWinProbabilityStories(){
   if(!g||g.status!=='Live'||g.detailedState!=='In Progress') return out;
   try{
     var r=await fetch(MLB_BASE+'/game/'+focusGamePk+'/contextMetrics');
+    if(!r.ok) throw new Error(r.status);
     var d=await r.json();
     var homeWP=d.homeWinProbability||50;
     var leverageIndex=d.leverageIndex||1;
@@ -3288,7 +3343,7 @@ async function loadLiveWPCache(){
   });
   if(!livePks.length){liveWPCache={};liveWPLastFetch=Date.now();return;}
   await Promise.all(livePks.map(function(pk){
-    return fetch(MLB_BASE+'/game/'+pk+'/contextMetrics').then(function(r){return r.json();}).then(function(d){
+    return fetch(MLB_BASE+'/game/'+pk+'/contextMetrics').then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
       liveWPCache[pk]={homeWP:d.homeWinProbability||50,leverageIndex:d.leverageIndex||1,ts:Date.now()};
     }).catch(function(){});
   }));
@@ -3472,6 +3527,7 @@ async function loadOnThisDayCache(){
     var yr=SEASON-i;
     try{
       var r=await fetch(MLB_BASE+'/schedule?date='+yr+'-'+mm+'-'+dd+'&sportId=1&hydrate=linescore,team');
+      if(!r.ok) throw new Error(r.status);
       var d=await r.json();
       var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){return g.status.abstractGameState==='Final';});
       for(var j=0;j<games.length;j++){
@@ -3522,7 +3578,9 @@ async function loadOnThisDayCache(){
           if(lines.length) playerHighlight=' · '+lines.join(' · ');
         }catch(e){}
         try{
-          var pb=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay').then(function(r){return r.json();});
+          var pbResp=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay');
+          if(!pbResp.ok) throw new Error(pbResp.status);
+          var pb=await pbResp.json();
           var plays=pb.allPlays||[];
           var lastPlay=plays[plays.length-1];
           if(lastPlay&&lastPlay.about&&lastPlay.about.isScoringPlay&&lastPlay.result){
@@ -3547,6 +3605,7 @@ async function loadYesterdayCache(){
   var dateStr=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
   try{
     var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1&hydrate=linescore,team');
+    if(!r.ok) throw new Error(r.status);
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];}).filter(function(g){
       if(g.status.abstractGameState!=='Final') return false;
@@ -3599,7 +3658,9 @@ async function loadYesterdayCache(){
         if(lines.length) playerHighlight=' · '+lines.join(' · ');
       }catch(e){}
       try{
-        var pb=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay').then(function(r){return r.json();});
+        var pbResp2=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay');
+        if(!pbResp2.ok) throw new Error(pbResp2.status);
+        var pb=await pbResp2.json();
         var plays=pb.allPlays||[];
         var lastPlay=plays[plays.length-1];
         if(lastPlay&&lastPlay.about&&lastPlay.about.isScoringPlay&&lastPlay.result){
@@ -3622,8 +3683,10 @@ async function loadDailyLeaders(){
   if(demoMode){if(DEBUG) console.log('Demo: Skipping loadDailyLeaders API call');return;}
   try{
     var rH=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=homeRuns,battingAverage,rbi,stolenBases&season='+SEASON+'&statGroup=hitting&limit=5');
+    if(!rH.ok) throw new Error(rH.status);
     var dH=await rH.json();
     var rP=await fetch(MLB_BASE+'/stats/leaders?leaderCategories=wins,saves&season='+SEASON+'&statGroup=pitching&limit=5');
+    if(!rP.ok) throw new Error(rP.status);
     var dP=await rP.json();
     dailyLeadersCache={};
     [(dH.leagueLeaders||[]),(dP.leagueLeaders||[])].forEach(function(list){
@@ -3753,7 +3816,7 @@ function setFocusGame(pk) {
   if(focusOverlayOpen) renderFocusOverlay();
   updateRadioForFocus();
   pollFocusLinescore();
-  focusFastTimer=setInterval(pollFocusLinescore,5000);
+  focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
 }
 function setFocusGameManual(pk) {
   focusIsManual=true;
@@ -3776,6 +3839,7 @@ async function pollFocusLinescore() {
   var focusSig=focusAbortCtrl.signal;
   try {
     var r=await fetch(MLB_BASE+'/game/'+focusGamePk+'/linescore',{signal:focusSig});
+    if(!r.ok) throw new Error(r.status);
     var ls=await r.json();
     var g=gameStates[focusGamePk]||{};
     var tension=getTensionInfo(calcFocusScore(g));
@@ -3811,6 +3875,7 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
   if(batterId&&!focusStatsCache[batterId]) {
     try {
       var r=await fetch(MLB_BASE+'/people/'+batterId+'/stats?stats=season&group=hitting&season='+SEASON);
+      if(!r.ok) throw new Error(r.status);
       var d=await r.json();
       var s=(d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat)||{};
       focusStatsCache[batterId]={avg:s.avg||'—',obp:s.obp||'—',ops:s.ops||'—',hr:s.homeRuns!=null?s.homeRuns:'—',rbi:s.rbi!=null?s.rbi:'—'};
@@ -3820,6 +3885,7 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
   if(pitcherId&&!focusStatsCache[pitcherId]) {
     try {
       var r2=await fetch(MLB_BASE+'/people/'+pitcherId+'/stats?stats=season&group=pitching&season='+SEASON);
+      if(!r2.ok) throw new Error(r2.status);
       var d2=await r2.json();
       var s2=(d2.stats&&d2.stats[0]&&d2.stats[0].splits&&d2.stats[0].splits[0]&&d2.stats[0].splits[0].stat)||{};
       focusStatsCache[pitcherId]={era:s2.era||'—',whip:s2.whip||'—',wins:s2.wins!=null?s2.wins:'—',losses:s2.losses!=null?s2.losses:'—'};
@@ -3839,16 +3905,19 @@ async function pollFocusRich(sig) {
     if(!focusLastTimecode) {
       // First call: full feed to seed state and get initial timecode
       var r=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live',sig?{signal:sig}:{});
+      if(!r.ok) throw new Error(r.status);
       data=await r.json();
       var tsList=data&&data.metaData&&data.metaData.timeStamp;
       if(tsList) focusLastTimecode=tsList;
     } else {
       // Subsequent calls: delta only (~1-5KB vs ~500KB)
       var tsResp=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live/timestamps',sig?{signal:sig}:{});
+      if(!tsResp.ok) throw new Error(tsResp.status);
       var tsArr=await tsResp.json();
       var latest=Array.isArray(tsArr)&&tsArr.length?tsArr[tsArr.length-1]:null;
       if(!latest||latest===focusLastTimecode) return; // nothing new
       var dResp=await fetch(MLB_BASE_V1_1+'/game/'+focusGamePk+'/feed/live/diffPatch?startTimecode='+encodeURIComponent(focusLastTimecode)+'&endTimecode='+encodeURIComponent(latest),sig?{signal:sig}:{});
+      if(!dResp.ok) throw new Error(dResp.status);
       var patch=await dResp.json();
       focusLastTimecode=latest;
       // diffPatch wraps currentPlay under liveData.plays.currentPlay same as full feed
@@ -4135,6 +4204,7 @@ async function fetchCareerStats(playerId, position) {
   var group = isPitcher ? 'pitching' : 'hitting';
   try {
     var r = await fetch(MLB_BASE + '/people/' + playerId + '/stats?stats=career&group=' + group);
+    if(!r.ok) throw new Error(r.status);
     var d = await r.json();
     var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
     if (!stat) return null;
@@ -5051,6 +5121,7 @@ async function fetchTomorrowPreview() {
     nextDate.setDate(nextDate.getDate()+1);
     var ts=localDateStr(nextDate);
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+ts+'&hydrate=team');
+    if(!r.ok) throw new Error(r.status);
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
     tomorrowPreview.dateStr=ts;
@@ -5245,6 +5316,7 @@ async function resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamI
     if (!stat) {
       try {
         var r = await fetch(MLB_BASE + '/people/' + batterId + '/stats?stats=season&season=' + SEASON + '&group=hitting');
+        if(!r.ok) throw new Error(r.status);
         var d = await r.json();
         stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
       } catch(e) { stat = null; }
@@ -5315,7 +5387,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
     }, 500);
   }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
-  window._playerCardTimer = setTimeout(dismissPlayerCard, 5500);
+  window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
   // COLLECTION HOOK — HR
   if (!demoMode) {
     var gs = gameStates[gamePk] || {};
@@ -5337,7 +5409,7 @@ function dismissPlayerCard() {
   flashCollectionRailMessage();
   if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
   overlay.classList.add('closing');
-  setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, 280);
+  setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, TIMING.CARD_CLOSE_ANIM_MS);
 }
 
 function getHRBadge(rbi, halfInning, inning, aScore, hScore) {
@@ -5410,6 +5482,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
   if (!stat) {
     try {
       var r = await fetch(MLB_BASE + '/people/' + batterId + '/stats?stats=season&season=' + SEASON + '&group=hitting');
+      if(!r.ok) throw new Error(r.status);
       var d = await r.json();
       stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
     } catch(e) { stat = null; }
@@ -5463,7 +5536,7 @@ async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInn
     }, 500);
   }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
-  window._playerCardTimer = setTimeout(dismissPlayerCard, 5500);
+  window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
   // COLLECTION HOOK — RBI
   if (!demoMode) {
     collectCard({
@@ -5826,6 +5899,30 @@ function copyNewsSourceTest(){
 // ── /News Source Test ─────────────────────────────────────────────────────
 function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;var tLP=document.getElementById('tuneLiveWPPriority');if(tLP)tLP.value=devTuning.livewp_priority||30;var tLR=document.getElementById('tuneLiveWPRefresh');if(tLR)tLR.value=devTuning.livewp_refresh_ms||90000;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
+// Delegated click handler for Dev Tools panel — replaces 11 inline onclick attributes (M3)
+document.addEventListener('DOMContentLoaded',function(){
+  var panel=document.getElementById('devToolsPanel');
+  if(!panel)return;
+  panel.addEventListener('click',function(e){
+    var btn=e.target.closest('[data-dt-action]');
+    if(!btn)return;
+    var action=btn.dataset.dtAction;
+    if(action==='close'){toggleDevTools();}
+    else if(action==='demo'){toggleDemoMode();toggleDevTools();}
+    else if(action==='replayHR'){replayHRCard();toggleDevTools();}
+    else if(action==='replayRBI'){replayRBICard();toggleDevTools();}
+    else if(action==='cardVariants'){window.PulseCard.demo();toggleDevTools();}
+    else if(action==='testCard'){generateTestCard();toggleDevTools();}
+    else if(action==='resetCollection'){resetCollection();}
+    else if(action==='newsTest'){openNewsSourceTest();toggleDevTools();}
+    else if(action==='resetTuning'){resetTuning();}
+    else if(action==='captureApp'){captureCurrentTheme('app');}
+    else if(action==='capturePulse'){captureCurrentTheme('pulse');}
+    else if(action==='refreshDebug'){refreshDebugPanel();}
+    else if(action==='confirm'){confirmDevToolsChanges();}
+  });
+});
+
 function updateTuning(param,val){
   if(param==='basesloaded_enable'){
     devTuning[param]=val==='true';
@@ -6070,8 +6167,8 @@ function toggleInvert(){
 
 // ── Session & Sync Functions ──────────────────────────────────────────────────
 function signInWithGitHub(){
-  var state=Math.random().toString(36).slice(2,15);
-  var githubAuthUrl='https://github.com/login/oauth/authorize?'+
+  const state=Math.random().toString(36).slice(2,15);
+  const githubAuthUrl='https://github.com/login/oauth/authorize?'+
     'client_id=Ov23lilv8CB5JzyvevZE&'+
     'redirect_uri='+encodeURIComponent(window.location.origin+'/api/auth/github')+'&'+
     'state='+state+'&'+
@@ -6102,13 +6199,13 @@ function updateSyncUI(){
 async function syncCollection(){
   if(!mlbSessionToken)return;
   try{
-    var local=loadCollection();
-    var r=await fetch((window.API_BASE||'')+'/api/collection-sync',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({localCollection:local})});
+    const local=loadCollection();
+    const r=await fetch((window.API_BASE||'')+'/api/collection-sync',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+mlbSessionToken},body:JSON.stringify({localCollection:local})});
     if(r.ok){
-      var data=await r.json();
+      const data=await r.json();
       if(data.collection){
         saveCollection(data.collection);
-        console.log('[Sync] Collection synced',Object.keys(data.collection).length,'cards');
+        if(DEBUG) console.log('[Sync] Collection synced',Object.keys(data.collection).length,'cards');
       }
     }
   }catch(e){console.error('[Sync] Collection error',e);}
@@ -6116,33 +6213,33 @@ async function syncCollection(){
 async function mergeCollectionOnSignIn(){
   if(!mlbSessionToken)return;
   try{
-    var r=await fetch((window.API_BASE||'')+'/api/collection/sync?token='+mlbSessionToken);
+    const r=await fetch((window.API_BASE||'')+'/api/collection/sync?token='+mlbSessionToken);
     if(r.ok){
-      var data=await r.json();
+      const data=await r.json();
       if(data.collection&&Object.keys(data.collection).length>0){
-        var local=loadCollection();
-        var merged=mergeCollectionSlots(local,data.collection);
+        const local=loadCollection();
+        const merged=mergeCollectionSlots(local,data.collection);
         saveCollection(merged);
         updateCollectionUI();
-        console.log('[Sync] Merged',Object.keys(merged).length,'cards from server');
+        if(DEBUG) console.log('[Sync] Merged',Object.keys(merged).length,'cards from server');
       }
     }
   }catch(e){console.error('[Sync] Merge error',e);}
 }
 function mergeCollectionSlots(local,remote){
-  function tierRank(t){var r={legendary:4,epic:3,rare:2,common:1};return r[t]||0;}
-  var merged={...local,...remote};
+  function tierRank(t){const ranks={legendary:4,epic:3,rare:2,common:1};return ranks[t]||0;}
+  const merged={...local,...remote};
   Object.keys(local).forEach(k=>{
     if(remote[k]){
-      var lr=tierRank(local[k].tier),rr=tierRank(remote[k].tier);
+      const lr=tierRank(local[k].tier),rr=tierRank(remote[k].tier);
       if(lr>rr){merged[k]=local[k];}
       else if(rr>lr){merged[k]=remote[k];}
       else{
-        var newer=local[k].collectedAt>=remote[k].collectedAt?local[k]:remote[k];
-        var em=new Map();
+        const newer=local[k].collectedAt>=remote[k].collectedAt?local[k]:remote[k];
+        const em=new Map();
         (local[k].events||[]).forEach(e=>em.set(e.date+':'+e.badge,e));
         (remote[k].events||[]).forEach(e=>em.set(e.date+':'+e.badge,e));
-        var events=Array.from(em.values()).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
+        const events=Array.from(em.values()).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
         merged[k]={...newer,events:events};
       }
     }
@@ -6153,7 +6250,7 @@ function startSyncInterval(){
   if(mlbSyncInterval)return;
   mlbSyncInterval=setInterval(async()=>{
     syncCollection();
-  },30000);
+  },TIMING.SYNC_INTERVAL_MS);
 }
 function showSignInCTA(){
   if(mlbSessionToken||shownSignInCTA)return;
@@ -6171,7 +6268,7 @@ function showSignInCTA(){
     var bar=document.getElementById('signInCTABar');
     if(bar){requestAnimationFrame(function(){bar.style.transform='scaleX(0)'});}
   });
-  signInCTATimer=setTimeout(closeSignInCTA,8000);
+  signInCTATimer=setTimeout(closeSignInCTA,TIMING.SIGNIN_CTA_MS);
 }
 function closeSignInCTA(){
   if(signInCTATimer){clearTimeout(signInCTATimer);signInCTATimer=null;}
@@ -6233,6 +6330,7 @@ function showSection(id,btn){
   if(demoMode)exitDemo();
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
   if(id!=='league'&&leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}
+  if(id!=='home'&&homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById(id).classList.add('active');btn.classList.add('active');
@@ -6340,7 +6438,7 @@ async function loadTodayGame(){
     var upcomingToday=todayGames.find(function(g){return g.status.abstractGameState==='Preview'||g.status.abstractGameState==='Scheduled'||(g.status.abstractGameState==='Live'&&(g.status.detailedState==='Warmup'||g.status.detailedState==='Pre-Game'));});
     var gameToRender=liveGame||upcomingToday;
     if(gameToRender&&!scheduleData.length){try{var gd=new Date(gameToRender.gameDate),s7=new Date(gd);s7.setDate(gd.getDate()-7);var e7=new Date(gd);e7.setDate(gd.getDate()+7);var fmtD=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};var sr=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+fmtD(s7)+'&endDate='+fmtD(e7)+'&teamId='+activeTeam.id+'&hydrate=team,linescore');var srd=await sr.json();(srd.dates||[]).forEach(function(dt){dt.games.forEach(function(g){scheduleData.push(g);});});}catch(e){}}
-    if(liveGame){document.getElementById('todayGame').innerHTML=renderNextGame(liveGame,'TODAY');homeLiveTimer=setInterval(loadTodayGame,60000);return;}
+    if(liveGame){document.getElementById('todayGame').innerHTML=renderNextGame(liveGame,'TODAY');homeLiveTimer=setInterval(loadTodayGame,TIMING.HOME_LIVE_MS);return;}
     if(upcomingToday){document.getElementById('todayGame').innerHTML=renderNextGame(upcomingToday,'TODAY');return;}
     var end=new Date();end.setDate(end.getDate()+14);
     var endStr=end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
@@ -6551,7 +6649,7 @@ function playHighlightVideo(el,url){
     video.innerHTML='<div style="color:#e03030;padding:20px;text-align:center">Video failed to load. Please try refreshing.</div>';
   });
   video.addEventListener('canplay',function(){
-    console.log('Video ready to play');
+    if(DEBUG) console.log('Video ready to play');
     video.play().catch(function(err){console.error('Autoplay blocked:',err);});
   },{once:true});
   var src=document.createElement('source');src.src=url;src.type='video/mp4';video.appendChild(src);
@@ -6845,7 +6943,7 @@ function switchNewsFeed(mode,btn){
 }
 
 var liveGamePk=null,liveInterval=null;
-function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,30000);}
+function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,TIMING.LIVE_REFRESH_MS);}
 function closeLiveView(){clearInterval(liveInterval);liveInterval=null;if(liveAbortCtrl){liveAbortCtrl.abort();liveAbortCtrl=null;}liveGamePk=null;document.getElementById('liveView').classList.remove('active');document.querySelector('.main').style.display='block';}
 async function fetchLiveGame(){
   if(liveAbortCtrl){liveAbortCtrl.abort();}
@@ -6873,8 +6971,8 @@ async function fetchLiveGame(){
     document.getElementById('base2').setAttribute('fill',offense.second?on:off);document.getElementById('base2').setAttribute('stroke',offense.second?on:offStroke);
     document.getElementById('base3').setAttribute('fill',offense.third?on:off);document.getElementById('base3').setAttribute('stroke',offense.third?on:offStroke);
     var batter=offense.batter||{},pitcher=ls.defense&&ls.defense.pitcher?ls.defense.pitcher:{},batterStats='',pitcherStats='';
-    if(batter.id){try{var br=await fetch(MLB_BASE+'/people/'+batter.id+'/stats?stats=season&season='+SEASON+'&group=hitting');var bd=await br.json();var bst=bd.stats&&bd.stats[0]&&bd.stats[0].splits&&bd.stats[0].splits[0]&&bd.stats[0].splits[0].stat;if(bst)batterStats='AVG '+fmtRate(bst.avg)+' · OBP '+fmtRate(bst.obp)+' · OPS '+fmtRate(bst.ops);}catch(e){}}
-    if(pitcher.id){try{var pr=await fetch(MLB_BASE+'/people/'+pitcher.id+'/stats?stats=season&season='+SEASON+'&group=pitching');var pd=await pr.json();var pst=pd.stats&&pd.stats[0]&&pd.stats[0].splits&&pd.stats[0].splits[0]&&pd.stats[0].splits[0].stat;if(pst)pitcherStats='ERA '+fmt(pst.era,2)+' · WHIP '+fmt(pst.whip,2);}catch(e){}}
+    if(batter.id){try{var br=await fetch(MLB_BASE+'/people/'+batter.id+'/stats?stats=season&season='+SEASON+'&group=hitting');if(!br.ok)throw new Error(br.status);var bd=await br.json();var bst=bd.stats&&bd.stats[0]&&bd.stats[0].splits&&bd.stats[0].splits[0]&&bd.stats[0].splits[0].stat;if(bst)batterStats='AVG '+fmtRate(bst.avg)+' · OBP '+fmtRate(bst.obp)+' · OPS '+fmtRate(bst.ops);}catch(e){}}
+    if(pitcher.id){try{var pr=await fetch(MLB_BASE+'/people/'+pitcher.id+'/stats?stats=season&season='+SEASON+'&group=pitching');if(!pr.ok)throw new Error(pr.status);var pd=await pr.json();var pst=pd.stats&&pd.stats[0]&&pd.stats[0].splits&&pd.stats[0].splits[0]&&pd.stats[0].splits[0].stat;if(pst)pitcherStats='ERA '+fmt(pst.era,2)+' · WHIP '+fmt(pst.whip,2);}catch(e){}}
     var pitcherGameLine='';
     if(pitcher.id){var allPl=Object.assign({},bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs.teams&&bs.teams.away&&bs.teams.away.players||{});var pitEntry=Object.values(allPl).find(function(p){return p.person&&p.person.id===pitcher.id;});if(pitEntry&&pitEntry.stats&&pitEntry.stats.pitching){var ps=pitEntry.stats.pitching;pitcherGameLine='Today: '+(ps.inningsPitched||'0.0')+' IP · '+(ps.hits||0)+' H · '+(ps.earnedRuns||0)+' ER · '+(ps.strikeOuts||0)+' K'+(ps.numberOfPitches?' · '+ps.numberOfPitches+' PC':'');}}
     document.getElementById('liveMatchup').innerHTML='<div class="matchup-player"><div class="matchup-role">🏏 Batting</div><div class="matchup-name">'+(batter.fullName||'—')+'</div><div class="matchup-stats">'+batterStats+'</div></div><div class="matchup-player"><div class="matchup-role">⚾ Pitching</div><div class="matchup-name">'+(pitcher.fullName||'—')+'</div><div class="matchup-stats">'+pitcherStats+'</div>'+(pitcherGameLine?'<div class="matchup-stats is-strong">'+pitcherGameLine+'</div>':'')+'</div>';
@@ -6954,7 +7052,7 @@ function selectMediaVideo(videoId){stopAllMedia('youtube');selectedVideoId=video
 var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={},leagueMatchupOffset=0;
 let homeLiveTimer=null;
 let leagueRefreshTimer=null;
-async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,60000);}
+async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,TIMING.LEAGUE_REFRESH_MS);}
 async function loadLeagueStandings(){try{var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team');var d=await r.json();leagueStandingsMap={};(d.records||[]).forEach(function(rec){(rec.teamRecords||[]).forEach(function(t){leagueStandingsMap[t.team.id]={w:t.wins,l:t.losses};});});}catch(e){}}
 async function loadLeagueMatchups(){
   var el=document.getElementById('leagueMatchups');
@@ -7050,8 +7148,8 @@ function togglePush(){
   // Restore session token
   mlbSessionToken=sv('mlb_session_token');mlbAuthUser=sv('mlb_auth_user');
   // Handle auth from OAuth redirect
-  var params=new URLSearchParams(window.location.search);
-  var authToken=params.get('auth_token'),authMethod=params.get('auth_method');
+  const params=new URLSearchParams(window.location.search);
+  const authToken=params.get('auth_token'),authMethod=params.get('auth_method');
   if(authToken&&authMethod){
     mlbSessionToken=authToken;
     localStorage.setItem('mlb_session_token',authToken);
