@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.30.10</title>
+<title>MLB Pulse v3.30.11</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,7 +17,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--radius-sm:6px;--radius-lg:14px;--radius-pill:999px;--eyebrow-sz:.68rem;--eyebrow-ls:.1em;--eyebrow-fw:700;--score-hero:38px;--score-md:1.4rem;--score-sm:1.1rem;--name-hero:26px;--name-md:.95rem;--tint-primary:color-mix(in srgb,var(--primary) 10%,transparent);--tint-primary-strong:color-mix(in srgb,var(--primary) 14%,transparent);--accent-line:2px solid var(--primary);--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(160,100,255,0.10);--hr-border:rgba(160,100,255,0.40);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
   body{background:var(--dark);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
-  header{background:linear-gradient(135deg,var(--primary) 0%,var(--dark) 100%);border-bottom:1px solid rgba(255,255,255,.08);padding:0 20px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100}
+  header{background:var(--primary);border-bottom:2px solid var(--secondary);padding:0 20px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100}
   .logo{display:flex;align-items:center;gap:10px;font-size:1.2rem;font-weight:700;color:var(--header-text)}
   .logo span{color:var(--accent)}
   .logo img{filter:drop-shadow(0 0 3px rgba(255,255,255,.4))}
@@ -28,8 +28,19 @@
   .team-chip{display:none;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.1);padding:6px 12px;border-radius:20px;color:var(--header-text);font-size:.75rem;font-weight:600;letter-spacing:.04em;white-space:nowrap}
   .settings-wrap{position:relative;margin-left:4px}
   .settings-btn{background:none;border:1px solid rgba(255,255,255,.2);color:color-mix(in srgb,var(--header-text) 80%,transparent);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:1rem}
-  .settings-panel{display:none;position:absolute;top:44px;right:0;background:#0a0f1e;border:1px solid var(--border);border-radius:0 0 12px 12px;padding:16px;width:260px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+  .settings-panel{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--dark);border:1px solid var(--border);border-radius:var(--radius);padding:4px 16px 12px;width:280px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
   .settings-panel.open{display:block}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+  .settings-row:first-child{border-top:none}
+  .settings-row--block{flex-direction:column;align-items:stretch;gap:8px}
+  .settings-row__label{font-size:.78rem;font-weight:700;color:var(--text);min-width:0;overflow-wrap:break-word}
+  .settings-section-label{font-size:var(--eyebrow-sz);font-weight:var(--eyebrow-fw);text-transform:uppercase;letter-spacing:var(--eyebrow-ls);color:var(--muted)}
+  .settings-select{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius-sm);font-size:.85rem;cursor:pointer}
+  .settings-action{background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;flex-shrink:0;transition:border-color .15s,color .15s}
+  .settings-action:hover,.settings-action:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+  .settings-toggle{width:42px;height:24px;border-radius:var(--radius-pill);background:var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+  .settings-toggle-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s}
+  .settings-version{font-size:.68rem;color:var(--muted);text-align:center;padding-top:12px;border-top:1px solid var(--border);margin-top:6px}
   .main{padding:20px;max-width:1360px;margin:0 auto}
   .section{display:none}.section.active{display:block}
   .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
@@ -917,59 +928,51 @@
   <div class="settings-wrap">
     <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
       <div class="settings-panel" id="settingsPanel">
-        <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div style="font-size:.75rem;font-weight:700;color:var(--text)">📚 Cards Collected: <span id="collectionCountLabel">0</span></div>
-          <button onclick="openCollection();toggleSettings()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
+        <div class="settings-row">
+          <div class="settings-row__label">📚 Cards Collected: <span id="collectionCountLabel">0</span></div>
+          <button class="settings-action" onclick="openCollection();toggleSettings()">Open</button>
         </div>
-        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Select Team</div>
-        <select id="teamSelect" onchange="switchTeam(this.value)" style="width:100%"></select>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">Color Theme</div>
-          <select id="themeSelect" onchange="switchTheme(this.value)" style="width:100%"></select>
+        <div class="settings-row settings-row--block">
+          <div class="settings-section-label">Select Team</div>
+          <select id="teamSelect" class="settings-select" onchange="switchTeam(this.value)"></select>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔄 Invert Colours</div>
-          </div>
-          <div onclick="toggleInvert()" id="invertToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
-            <div id="invertToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
-          </div>
+        <div class="settings-row settings-row--block">
+          <div class="settings-section-label">Color Theme</div>
+          <select id="themeSelect" class="settings-select" onchange="switchTheme(this.value)"></select>
         </div>
-        <div id="pushRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔔 Game Start Alerts</div>
-            <div style="display:none" id="pushStatusText">Off</div>
-          </div>
-          <div onclick="togglePush()" id="pushToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
-            <div id="pushToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
+        <div class="settings-row">
+          <div class="settings-row__label">🔄 Invert Colours</div>
+          <div onclick="toggleInvert()" id="invertToggle" class="settings-toggle">
+            <div id="invertToggleKnob" class="settings-toggle-knob"></div>
           </div>
         </div>
-        <div id="radioRow" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">📻 Live Game Radio</div>
-            <div style="display:none" id="radioStatusText">Off · Auto-pairs to focus game</div>
+        <div id="pushRow" class="settings-row">
+          <div class="settings-row__label">🔔 Game Start Alerts</div>
+          <div onclick="togglePush()" id="pushToggle" class="settings-toggle">
+            <div id="pushToggleKnob" class="settings-toggle-knob"></div>
           </div>
-          <div onclick="toggleRadio()" id="radioToggle" style="width:42px;height:24px;border-radius:12px;background:var(--border);cursor:pointer;position:relative;transition:.2s;flex-shrink:0">
-            <div id="radioToggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:.2s"></div>
-          </div>
+          <div style="display:none" id="pushStatusText">Off</div>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🔍 Radio Check</div>
+        <div id="radioRow" class="settings-row">
+          <div class="settings-row__label">📻 Live Game Radio</div>
+          <div onclick="toggleRadio()" id="radioToggle" class="settings-toggle">
+            <div id="radioToggleKnob" class="settings-toggle-knob"></div>
           </div>
-          <button onclick="openRadioCheck()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
+          <div style="display:none" id="radioStatusText">Off · Auto-pairs to focus game</div>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-size:.75rem;font-weight:700;color:var(--text)">🛠️ Dev Tools</div>
-            <button id="btnDevTools" onclick="toggleDevTools()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer;flex-shrink:0">Open</button>
-          </div>
+        <div class="settings-row">
+          <div class="settings-row__label">🔍 Radio Check</div>
+          <button class="settings-action" onclick="openRadioCheck()">Open</button>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
+        <div class="settings-row">
+          <div class="settings-row__label">🛠️ Dev Tools</div>
+          <button id="btnDevTools" class="settings-action" onclick="toggleDevTools()">Open</button>
+        </div>
+        <div class="settings-row settings-row--block">
+          <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.30.10</div>
+        <div class="settings-version">v3.30.11</div>
       </div>
     </div>
   </div>
@@ -6199,21 +6202,6 @@ function showSection(id,btn){
   if(id==='news')loadNews();
 }
 
-function gameGradient(g){
-  var aD=TEAMS.find(t=>t.id===g.teams.away.team.id),hD=TEAMS.find(t=>t.id===g.teams.home.team.id);
-  var ap=aD?aD.primary:activeTeam.primary,hp=hD?hD.primary:activeTeam.primary;
-  return'background:linear-gradient(to right,'+ap+' 0%,#111827 50%,'+hp+' 100%);border:1px solid rgba(255,255,255,.1)';
-}
-
-function renderGameBig(g,label){
-  var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===activeTeam.id,opp=teamHome?away:home,myTeam=teamHome?home:away;
-  var status=g.status.abstractGameState,detailed=g.status.detailedState,style=gameGradient(g),badge='',scoreHtml='',metaHtml='';
-  if(status==='Final'){var mW=myTeam.isWinner;badge='<span class="badge badge-final">FINAL</span> <span class="badge '+(mW?'badge-w':'badge-l')+'">'+(mW?'W':'L')+'</span>';scoreHtml='<div class="teams"><div><div class="team-name">'+away.team.teamName+'</div><div class="score">'+(away.score!=null?away.score:'-')+'</div></div><div class="vs">—</div><div><div class="team-name">'+home.team.teamName+'</div><div class="score">'+(home.score!=null?home.score:'-')+'</div></div></div>';}
-  else if(status==='Live'){badge='<span class="badge badge-live">● LIVE '+detailed+'</span>';scoreHtml='<div class="teams"><div><div class="team-name">'+away.team.teamName+'</div><div class="score">'+(away.score!=null?away.score:0)+'</div></div><div class="vs">—</div><div><div class="team-name">'+home.team.teamName+'</div><div class="score">'+(home.score!=null?home.score:0)+'</div></div></div>';metaHtml='<div style="margin-top:8px"><button onclick="showLiveGame('+g.gamePk+')" style="background:'+activeTeam.secondary+';border:none;color:'+(activeTeam.secondary==='#ffffff'?'#000000':'#ffffff')+';padding:8px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem">▶ Watch Live</button></div>';}
-  else{badge=(label&&/TODAY/i.test(label))?'':'<span class="badge badge-upcoming">UPCOMING</span>';scoreHtml='<div class="teams"><div><div class="team-name" style="font-size:1.05rem;color:rgba(255,255,255,.82);font-weight:700;letter-spacing:.04em">'+(teamHome?'vs':'@')+'</div><div class="team-name" style="font-size:1.6rem">'+opp.team.teamName+'</div></div></div>';metaHtml='<div class="game-meta">'+(teamHome?'🏟️ Home':'✈️ Away')+' &nbsp;|&nbsp; '+fmtDateTime(g.gameDate)+'</div>';}
-  return'<div class="game-big" style="'+style+'"><div class="card-title" style="color:rgba(255,255,255,.8)">'+label+' '+badge+'</div>'+scoreHtml+metaHtml+'</div>';
-}
-
 // --- NEXT GAME CARD ---
 function getSeriesInfo(g){
   var sn=g.seriesGameNumber||(g.seriesSummary&&g.seriesSummary.seriesGameNumber);
@@ -6819,7 +6807,7 @@ var selectedVideoId=null,mediaVideos=[];
 function loadHomeYoutubeWidget(){
   var uc=activeTeam.youtubeUC||MLB_FALLBACK_UC,teamName=activeTeam.youtubeUC?activeTeam.name:'MLB',channelUrl='https://www.youtube.com/channel/'+uc;
   var themeTeam=themeOverride||activeTeam,bannerColor=themeInvert?themeTeam.secondary:themeTeam.primary;
-  var grad='background:linear-gradient(135deg,'+bannerColor+' 0%,#001233 100%)';
+  var grad='background:linear-gradient(135deg,'+bannerColor+' 0%,var(--dark) 100%)';
   document.getElementById('homeYoutubeHeader').innerHTML='<div style="'+grad+';border-radius:12px 12px 0 0;padding:16px 20px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:2px">📺 Official Channel</div><div style="font-size:1.1rem;font-weight:800;color:#fff">'+teamName+'</div></div><a href="'+channelUrl+'" target="_blank" style="font-size:.78rem;color:rgba(255,255,255,.7);text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px">Open in YouTube ↗</a></div>';
   loadMediaFeed(uc);
 }
