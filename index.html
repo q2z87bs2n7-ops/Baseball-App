@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.30.3</title>
+<title>MLB Pulse v3.30.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -81,9 +81,11 @@
   .standings-table{width:100%;border-collapse:collapse;font-size:.85rem}
   .standings-table th{color:var(--accent);font-size:var(--eyebrow-sz);font-weight:var(--eyebrow-fw);letter-spacing:var(--eyebrow-ls);text-transform:uppercase;padding:0.5rem 0.625rem;text-align:left;border-bottom:1px solid var(--border)}
   .standings-table td{padding:9px 10px;border-bottom:1px solid rgba(30,45,74,.5)}
-  .standings-table tr.active-row td{background:color-mix(in srgb,var(--accent) 15%,transparent);font-weight:600}
-  .standings-table tr.active-row td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  .standings-table tr.active-row td{background:color-mix(in srgb,var(--primary) 14%,transparent);font-weight:600}
+  .standings-table tr.active-row td:first-child{box-shadow:inset 2px 0 0 var(--primary)}
+  .standings-table tr.wc-cutoff-row td{border-bottom:var(--accent-line)}
   .standings-table tr:last-child td{border-bottom:none}
+  .wc-cutoff-label{font-size:var(--eyebrow-sz);font-weight:var(--eyebrow-fw);letter-spacing:var(--eyebrow-ls);text-transform:uppercase;color:var(--accent);margin-top:6px}
   .div-header{background:transparent;color:var(--accent);font-weight:var(--eyebrow-fw);font-size:var(--eyebrow-sz);text-transform:uppercase;letter-spacing:var(--eyebrow-ls);padding:14px 0 6px;border-bottom:1px solid var(--border);margin-top:16px}
   .player-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center}
   .player-item:hover{background:rgba(255,255,255,.04)}
@@ -886,7 +888,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.30.3</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.30.4</div>
       </div>
     </div>
   </div>
@@ -6543,8 +6545,8 @@ function renderNLWC(divMap){
   var wc=allLeague.filter(function(t){return!leaders.has(t.team.id);}).sort(function(a,b){return parseFloat(b.winningPercentage)-parseFloat(a.winningPercentage);}).slice(0,9);
   var top=wc[0],topW=top?top.wins:0,topL=top?top.losses:0;
   var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
-  wc.forEach(function(t,i){var isActive=t.team.id===activeTeam.id,gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--accent)':'';html+='<tr class="'+(isActive?'active-row':'')+'" style="'+cutoff+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
-  html+='</tbody></table><div style="font-size:.72rem;color:var(--accent);margin-top:6px">── Wild Card cutoff line</div>';
+  wc.forEach(function(t,i){var isActive=t.team.id===activeTeam.id,gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cls=(isActive?'active-row':'')+(i===WC_SPOTS-1?' wc-cutoff-row':'');html+='<tr class="'+cls.trim()+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
+  html+='</tbody></table><div class="wc-cutoff-label">Wild Card cutoff</div>';
   document.getElementById('nlWC').innerHTML=html;
 }
 function renderOtherDivWC(divMap){
@@ -6555,8 +6557,8 @@ function renderOtherDivWC(divMap){
   teams.sort(function(a,b){return parseFloat(b.winningPercentage)-parseFloat(a.winningPercentage);});
   var top=teams[0],topW=top?top.wins:0,topL=top?top.losses:0;
   var html='<table class="standings-table"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th></tr></thead><tbody>';
-  teams.slice(0,9).forEach(function(t,i){var gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cutoff=i===WC_SPOTS-1?'border-bottom:2px solid var(--accent)':'';html+='<tr style="'+cutoff+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
-  html+='</tbody></table><div style="font-size:.72rem;color:var(--accent);margin-top:6px">── Wild Card cutoff line</div>';
+  teams.slice(0,9).forEach(function(t,i){var gb=i===0?'—':(((topW-t.wins)+(t.losses-topL))/2).toFixed(1),cls=i===WC_SPOTS-1?'wc-cutoff-row':'';html+='<tr class="'+cls+'"><td>'+(i+1)+'</td><td><strong>'+t.team.teamName+'</strong></td><td>'+t.wins+'</td><td>'+t.losses+'</td><td>'+t.winningPercentage+'</td><td>'+gb+'</td></tr>';});
+  html+='</tbody></table><div class="wc-cutoff-label">Wild Card cutoff</div>';
   document.getElementById('otherDivWC').innerHTML=html;
 }
 function renderFullStandings(divMap){
