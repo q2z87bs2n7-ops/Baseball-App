@@ -64,9 +64,56 @@
       // Clear any previously stamped match flags so feed renders normally
       var matches = pulse.querySelectorAll('.lens-match');
       for (var i = 0; i < matches.length; i++) matches[i].classList.remove('lens-match');
-      return;
+    } else {
+      stampMatches();
     }
-    stampMatches();
+    // Reflect lens state on the YOUR GAME callout
+    var yg = $('ptbYourGame');
+    if (yg) yg.classList.toggle('lens-on', on);
+    var ygState = $('ptbYourGameState');
+    if (ygState) ygState.textContent = on ? '● LENS ON' : '○';
+  }
+
+  /* ── Top bar status counters + YOUR GAME callout ────────────────────── */
+  function updateTopBarStats() {
+    var states = window.gameStates || {};
+    var live = 0, final = 0, preview = 0;
+    var team = window.activeTeam;
+    var myTeamId = team ? team.id : null;
+    var myLiveGame = null;
+    for (var pk in states) {
+      if (!Object.prototype.hasOwnProperty.call(states, pk)) continue;
+      var g = states[pk];
+      if (g.status === 'Live' && g.detailedState === 'In Progress') {
+        live++;
+        if (myTeamId && (g.awayId === myTeamId || g.homeId === myTeamId)) myLiveGame = g;
+      } else if (g.status === 'Final') {
+        final++;
+      } else if (g.status === 'Preview' || g.status === 'Scheduled') {
+        preview++;
+      }
+    }
+    var elLive = $('ptbCountLive'); if (elLive) elLive.textContent = live;
+    var elFinal = $('ptbCountFinal'); if (elFinal) elFinal.textContent = final;
+    var elPrev = $('ptbCountPreview'); if (elPrev) elPrev.textContent = preview;
+
+    // YOUR GAME callout — visible only when active team has a live in-progress game
+    var yg = $('ptbYourGame');
+    if (!yg) return;
+    if (myLiveGame) {
+      var abbr = (myLiveGame.awayId === myTeamId) ? myLiveGame.awayAbbr : myLiveGame.homeAbbr;
+      var half = myLiveGame.halfInning === 'top' ? 'T' : 'B';
+      var meta = '· ' + (abbr || '') + ' ' + half + (myLiveGame.inning || '');
+      var metaEl = $('ptbYourGameMeta');
+      if (metaEl) metaEl.textContent = meta;
+      yg.style.display = '';
+    } else {
+      yg.style.display = 'none';
+      // Escape valve — if lens is on but no UI to turn it off, auto-clear it.
+      if (window.myTeamLens && typeof window.applyMyTeamLens === 'function') {
+        window.applyMyTeamLens(false);
+      }
+    }
   }
 
   function stampMatches() {
@@ -108,6 +155,7 @@
     if (ticker) {
       new MutationObserver(function () {
         if (window.myTeamLens) stampMatches();
+        updateTopBarStats();
       }).observe(ticker, { childList: true });
     }
     var focus = $('focusCard');
@@ -122,6 +170,7 @@
     buildHero();
     observe();
     applyLensState();
+    updateTopBarStats();
   }
 
   if (document.readyState === 'loading') {
@@ -134,6 +183,7 @@
   window.PulseRedesign = {
     applyLensState: applyLensState,
     refreshHeroEmptyState: refreshHeroEmptyState,
-    rebuildHero: buildHero
+    rebuildHero: buildHero,
+    updateTopBarStats: updateTopBarStats
   };
 })();

@@ -104,13 +104,137 @@
 }
 #pulse .feed-item.scoring { box-shadow: inset 2px 0 0 0 rgba(60, 190, 100, 0.7); }
 
-/* ── 5. Top bar grouping ──────────────────────────────────────────────── */
-/* Visually groups the three icon controls (sound / radio / scheme) and pushes
-   MY TEAM + YESTERDAY RECAP into a primary group. No DOM changes. */
-#pulse #pulseTopBar > div:last-child {
+/* ── 5. Top bar restructure (Phase 2 / Step 3) ────────────────────────── */
+/* Three-zone layout: brand (left) → status counters + YOUR GAME callout
+   (middle, flex:1) → controls (right). Stretches to fill height; inner
+   sections handle their own padding. */
+#pulse #pulseTopBar {
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+}
+#pulse #pulseTopBar .ptb-kicker {
+  background: rgba(255, 170, 60, 0.06);
+  padding: 0.625rem 1.125rem;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#pulse #pulseTopBar .ptb-bolt { font-size: .95rem; }
+#pulse #pulseTopBar .ptb-brand { font-size: .82rem; letter-spacing: .22em; }
+
+/* Middle status zone */
+#pulse #ptbStatus {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+  padding: 0 1.25rem;
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+}
+#pulse .ptb-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+#pulse .ptb-counter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+  flex-shrink: 0;
+}
+#pulse .ptb-counter-label {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+#pulse .ptb-counter-val {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  line-height: 1;
+}
+#pulse .ptb-counter-live .ptb-counter-val { color: #22c55e; }
+#pulse .ptb-counter-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+#pulse .ptb-status-spacer { flex: 1; min-width: 0; }
+
+/* YOUR GAME callout — only shown when active team has a live game */
+#pulse #ptbYourGame {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3125rem 0.6875rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--secondary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--secondary) 55%, transparent);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+  font-family: inherit;
+}
+#pulse #ptbYourGame:hover {
+  background: color-mix(in srgb, var(--secondary) 16%, transparent);
+}
+#pulse #ptbYourGame.lens-on {
+  background: color-mix(in srgb, var(--secondary) 18%, transparent);
+}
+#pulse .ptb-yg-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--secondary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--secondary) 22%, transparent);
+  flex-shrink: 0;
+}
+#pulse .ptb-yg-label {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--secondary);
+  text-transform: uppercase;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+}
+#pulse .ptb-yg-meta {
+  font-size: .65rem;
+  font-weight: 700;
+  color: var(--secondary);
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  letter-spacing: .04em;
+}
+#pulse .ptb-yg-state {
+  font-size: .65rem;
+  font-weight: 700;
+  color: var(--secondary);
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  letter-spacing: .12em;
+  margin-left: 0.125rem;
+}
+
+/* Right controls zone */
+#pulse #pulseTopBar .ptb-controls {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 0 0.875rem;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#pulse .ptb-controls-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 0.25rem;
 }
 #pulse #pulseTopBar #ptbSoundBtn,
 #pulse #pulseTopBar #ptbRadioBtn,
@@ -124,6 +248,8 @@
   background: var(--card2);
   border-color: var(--border);
 }
+/* Legacy MY TEAM toggle — replaced by #ptbYourGame, kept hidden as state mirror */
+#pulse #myTeamLensBtn { display: none !important; }
 
 /* ── 6. Mobile (≤860px) ───────────────────────────────────────────────── */
 @media (max-width: 860px) {
@@ -135,6 +261,16 @@
      the hero just shows storyCarousel in that case. JS sets data-empty=1 if
      focus is hidden on mobile so hero still occupies a single row cleanly. */
   #pulse #sideRail { margin-top: 1rem; }
+  /* Compact top bar — drop UP NEXT counter, tighten gaps */
+  #pulse #pulseTopBar .ptb-kicker { padding: 0.5rem 0.75rem; }
+  #pulse #pulseTopBar .ptb-brand { letter-spacing: .18em; }
+  #pulse #ptbStatus { gap: 0.625rem; padding: 0 0.625rem; }
+  #pulse #ptbStatus .ptb-counter:nth-of-type(3),
+  #pulse #ptbStatus .ptb-counter-sep:nth-of-type(4) { display: none; }
+  #pulse #pulseTopBar .ptb-controls { padding: 0 0.5rem; gap: 4px; }
+  #pulse .ptb-controls-divider { display: none; }
+  /* Hide YOUR GAME meta + state on tight viewports — keep dot + label */
+  #pulse .ptb-yg-meta, #pulse .ptb-yg-state { display: none; }
 }
 
 /* ── 7. Yesterday Recap entry, when present in top bar ────────────────── */

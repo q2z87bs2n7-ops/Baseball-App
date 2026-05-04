@@ -3497,7 +3497,7 @@ function updateFeedEmpty() {
   var showHype=(!hasVisible&&!(myTeamLens&&hasLiveInProgress))||(!hasAnyGames)||postSlate||intermission;
   if (showHype) renderEmptyState(postSlate, intermission);
   document.getElementById('feedEmpty').style.display=showHype?'':'none';
-  var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames','myTeamLensBtn'];
+  var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames','ptbStatus'];
   document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || showHype);
   hideWhenEmpty.forEach(function(id){
     var el=document.getElementById(id);
