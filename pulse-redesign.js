@@ -79,7 +79,7 @@
     // If they don't yet, fall back to className inspection of team abbrs.
     var feedItems = document.querySelectorAll('#feed .feed-item');
     for (var i = 0; i < feedItems.length; i++) {
-      var pk = feedItems[i].dataset.gamePk;
+      var pk = feedItems[i].dataset.gamepk;
       var gs = pk ? states[pk] : null;
       var match = gs && (gs.awayId === teamId || gs.homeId === teamId);
       feedItems[i].classList.toggle('lens-match', !!match);
@@ -87,7 +87,7 @@
     // Ticker chips
     var chips = document.querySelectorAll('#gameTicker .ticker-chip');
     for (var j = 0; j < chips.length; j++) {
-      var cpk = chips[j].dataset.gamePk;
+      var cpk = chips[j].dataset.gamepk;
       var cgs = cpk ? states[cpk] : null;
       var cmatch = cgs && (cgs.awayId === teamId || cgs.homeId === teamId);
       chips[j].classList.toggle('lens-match', !!cmatch);

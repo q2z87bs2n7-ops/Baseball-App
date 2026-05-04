@@ -51,6 +51,7 @@ const TEAMS=[
 const MLB_THEME={id:-1,name:'MLB (Neutral)',short:'MLB',primary:'#003087',secondary:'#FFB81C'};
 
 let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false,savedThemeForPulse=null;
+window.activeTeam=activeTeam;
 let newsFeedMode='mlb';
 let newsSourceFilter='all';
 let newsArticlesCache=[];
@@ -86,7 +87,9 @@ const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
 let pulseInitialized=false;
 let rbiCardCooldowns={}; // gamePk → ms timestamp of last key RBI card shown
 let gameStates={},feedItems=[],enabledGames=new Set();
+window.gameStates=gameStates;
 let myTeamLens=(localStorage.getItem('mlb_my_team_lens')==='1');
+window.myTeamLens=myTeamLens;
 let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
@@ -320,7 +323,7 @@ async function pollLeaguePulse() {
           venueName:g.venue?g.venue.name:null,
           onFirst:!!(ls.offense&&ls.offense.first), onSecond:!!(ls.offense&&ls.offense.second), onThird:!!(ls.offense&&ls.offense.third),
         };
-        if (!myTeamLens || gameStates[pk].awayId===activeTeam.id || gameStates[pk].homeId===activeTeam.id) enabledGames.add(pk);
+        enabledGames.add(pk);
         // Synthesise historical status items so they appear on first load (no sounds/alerts)
         var g0=gameStates[pk], ts0=gameDateMs?new Date(gameDateMs):new Date();
         if (newStatus==='Final') {
@@ -1010,7 +1013,7 @@ function renderTicker() {
     var outsHtml='';
     if(isLive){outsHtml='<span class="ticker-outs">'+[0,1,2].map(function(i){return '<span class="out-dot'+(i<g.outs?' out-on':'')+'"></span>';}).join('')+'</span>';}
     if (hasRunners) {
-      html+='<div class="ticker-game '+sc+fc+rc+'" onclick="toggleGame('+g.gamePk+')">'
+      html+='<div class="ticker-game '+sc+fc+rc+'" data-gamepk="'+g.gamePk+'" onclick="toggleGame('+g.gamePk+')">'
         +'<div class="ticker-top">'+dot
         +'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span>'
         +'<span class="ticker-divider">·</span>'
@@ -1019,7 +1022,7 @@ function renderTicker() {
         +'<span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div></div>';
     } else {
       var spacer=isLive?'<div class="ticker-dot-spacer"></div>':'';
-      html+='<div class="ticker-game '+sc+fc+'" onclick="toggleGame('+g.gamePk+')">'
+      html+='<div class="ticker-game '+sc+fc+'" data-gamepk="'+g.gamePk+'" onclick="toggleGame('+g.gamePk+')">'
         +'<div class="ticker-row">'+dot+'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span></div>'
         +'<div class="ticker-row">'+spacer+'<span class="ticker-score">'+g.homeAbbr+'&nbsp;<strong>'+g.homeScore+'</strong></span></div>'
         +'<div class="ticker-row"><span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div></div>';
@@ -3474,23 +3477,12 @@ function myTeamGamePks() {
 }
 function applyMyTeamLens(on) {
   myTeamLens=!!on;
+  window.myTeamLens=myTeamLens;
   localStorage.setItem('mlb_my_team_lens', myTeamLens?'1':'0');
   var btn=document.getElementById('myTeamLensBtn'),knob=document.getElementById('myTeamLensKnob');
   if (btn) btn.classList.toggle('on', myTeamLens);
   if (knob) knob.style.left=myTeamLens?'21px':'2px';
-  if (myTeamLens) {
-    var keep=myTeamGamePks();
-    enabledGames=new Set();
-    keep.forEach(function(pk){ enabledGames.add(pk); });
-    document.querySelectorAll('[data-gamepk]').forEach(function(el){
-      var pk=+el.getAttribute('data-gamepk');
-      el.classList.toggle('feed-hidden', !keep.has(pk));
-    });
-  } else {
-    Object.keys(gameStates).forEach(function(pk){ enabledGames.add(+pk); });
-    document.querySelectorAll('[data-gamepk]').forEach(function(el){ el.classList.remove('feed-hidden'); });
-  }
-  if (typeof renderTicker==='function') renderTicker();
+  if (window.PulseRedesign) window.PulseRedesign.applyLensState();
   updateFeedEmpty();
 }
 function toggleMyTeamLens(){ applyMyTeamLens(!myTeamLens); }
@@ -4775,7 +4767,7 @@ function buildTeamSelect(){
 
 function switchTeam(teamId){
   if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
-  activeTeam=TEAMS.find(t=>t.id===parseInt(teamId));localStorage.setItem('mlb_team',teamId);applyTeamTheme(activeTeam);
+  activeTeam=TEAMS.find(t=>t.id===parseInt(teamId));window.activeTeam=activeTeam;localStorage.setItem('mlb_team',teamId);applyTeamTheme(activeTeam);
   document.getElementById('settingsPanel').classList.remove('open');
   scheduleData=[];scheduleLoaded=false;rosterData={hitting:[],pitching:[],fielding:[]};statsCache={hitting:[],pitching:[]};selectedPlayer=null;
   document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center">Select a player to view stats</div>';
