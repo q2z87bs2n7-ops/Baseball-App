@@ -4576,7 +4576,7 @@ const PULSE_SCHEME = {
     statusBg:'rgba(37,99,235,0.06)', statusBorder:'rgba(37,99,235,0.22)'
   }
 };
-let pulseColorScheme=(function(){try{return localStorage.getItem('mlb_pulse_scheme')||'light';}catch(e){return'light';}})();
+let pulseColorScheme=(function(){try{return localStorage.getItem('mlb_pulse_scheme')||'dark';}catch(e){return'dark';}})();
 
 function applyPulseMLBTheme(){
   if(devColorLocked&&devColorOverrides.pulse.primary){
