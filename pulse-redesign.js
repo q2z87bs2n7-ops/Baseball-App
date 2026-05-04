@@ -71,7 +71,7 @@
     var yg = $('ptbYourGame');
     if (yg) yg.classList.toggle('lens-on', on);
     var ygState = $('ptbYourGameState');
-    if (ygState) ygState.textContent = on ? '● LENS ON' : '○';
+    if (ygState) ygState.textContent = on ? 'LENS ON' : 'LENS OFF';
   }
 
   /* ── Top bar status counters + YOUR GAME callout ────────────────────── */
@@ -102,7 +102,7 @@
     if (yg) {
       if (myLiveGame) {
         var abbr = (myLiveGame.awayId === myTeamId) ? myLiveGame.awayAbbr : myLiveGame.homeAbbr;
-        var half = myLiveGame.halfInning === 'top' ? 'T' : 'B';
+        var half = myLiveGame.halfInning === 'top' ? '▲' : '▼';  // ▲ / ▼
         var meta = '· ' + (abbr || '') + ' ' + half + (myLiveGame.inning || '');
         var metaEl = $('ptbYourGameMeta');
         if (metaEl) metaEl.textContent = meta;

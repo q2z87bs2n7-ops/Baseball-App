@@ -43,7 +43,30 @@
   border: 0;
   border-radius: 0;
   padding: 0;
+  /* Stretch to match focusCard height in hero grid */
+  display: flex !important;
+  flex-direction: column;
+  max-width: none;            /* override styles.css 700px cap inside hero */
+  margin: 0;                  /* override styles.css auto margin inside hero */
 }
+#pulse #pulseHero #storyCarousel .story-card-wrap {
+  flex: 1;
+  margin: 0;                  /* override styles.css 0 20px inside hero */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+#pulse #pulseHero #storyCarousel .story-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;    /* center text vertically in stretched card */
+}
+#pulse #pulseHero #storyCarousel .story-dots-row {
+  flex-shrink: 0;
+}
+#pulse #pulseHero #storyCarousel .story-nav-prev { left: -8px; }
+#pulse #pulseHero #storyCarousel .story-nav-next { right: -8px; }
 /* When neither focus nor story has content (post-slate, pre-game with nothing
    to feature) the hero collapses gracefully */
 #pulse #pulseHero[data-empty="1"] { display: none; }
@@ -246,16 +269,20 @@
   color: var(--secondary);
   font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
   letter-spacing: .12em;
-  margin-left: 0.125rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid color-mix(in srgb, var(--secondary) 35%, transparent);
+  opacity: 0.55;              /* muted when OFF */
+  transition: opacity .15s;
 }
+#pulse #ptbYourGame.lens-on .ptb-yg-state { opacity: 1; }
 
-/* Right controls zone */
+/* Right controls zone — no border-left (relies on padding + ptb-controls-divider
+   for grouping). The previous border-left visually crowded the YOUR GAME pill. */
 #pulse #pulseTopBar .ptb-controls {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 0.875rem;
-  border-left: 1px solid var(--border);
+  padding: 0 0.875rem 0 1.25rem;
   flex-shrink: 0;
 }
 #pulse .ptb-controls-divider {
