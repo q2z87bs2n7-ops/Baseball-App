@@ -9,7 +9,11 @@ webpush.setVapidDetails(
 );
 
 export default async function handler(req, res) {
-  if (req.headers['x-notify-token'] !== process.env.NOTIFY_TOKEN) {
+  // Accept either: Vercel Cron (x-vercel-cron: true) or GitHub Actions token (x-notify-token)
+  const isVercelCron = req.headers['x-vercel-cron'] === 'true';
+  const hasValidToken = req.headers['x-notify-token'] === process.env.NOTIFY_TOKEN;
+
+  if (!isVercelCron && !hasValidToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

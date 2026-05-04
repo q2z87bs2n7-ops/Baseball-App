@@ -1,5 +1,11 @@
 {
   "functions": {
     "api/*.js": { "maxDuration": 10 }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/notify",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }
