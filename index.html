@@ -6536,19 +6536,34 @@ async function selectCalGame(gamePk,evt){
   }catch(e){detail.innerHTML='<div class="error">Could not load game details</div>';}
 }
 
-function playHighlightVideo(el,url){
-  var video=document.createElement('video');
-  video.controls=true;video.style.cssText='width:100%;display:block;background:#000';
-  video.addEventListener('error',function(e){
-    console.error('Video load error:',e,video.error);
-    video.innerHTML='<div style="color:#e03030;padding:20px;text-align:center">Video failed to load. Please try refreshing.</div>';
-  });
-  video.addEventListener('canplay',function(){
-    console.log('Video ready to play');
-    video.play().catch(function(err){console.error('Autoplay blocked:',err);});
-  },{once:true});
-  var src=document.createElement('source');src.src=url;src.type='video/mp4';video.appendChild(src);
-  el.replaceWith(video);
+function playHighlightVideo(el){
+  console.log('playHighlightVideo called',el);
+  var url=el.getAttribute('data-video-url');
+  console.log('Video URL from data attribute:',url);
+  if(!url){console.error('No video URL found on element',el);return;}
+  try{
+    var video=document.createElement('video');
+    video.controls=true;video.style.cssText='width:100%;height:100%;display:block;background:#000';video.preload='metadata';
+    video.addEventListener('error',function(e){
+      console.error('Video load error:',e,video.error);
+      video.innerHTML='<div style="color:#e03030;padding:20px;text-align:center">Video failed to load. Please try refreshing.</div>';
+    });
+    video.addEventListener('loadedmetadata',function(){
+      console.log('Video metadata loaded');
+    });
+    video.addEventListener('canplay',function(){
+      console.log('Video canplay event fired');
+      video.play().catch(function(err){console.error('Autoplay blocked:',err);});
+    },{once:true});
+    var src=document.createElement('source');src.src=url;src.type='video/mp4';video.appendChild(src);
+    console.log('Created video element and source',video,src);
+    var wrapper=document.createElement('div');wrapper.className='detail-highlight-video';wrapper.appendChild(video);
+    console.log('Created wrapper div, replacing element',wrapper);
+    el.replaceWith(wrapper);
+    console.log('replaceWith completed, element replaced');
+  }catch(err){
+    console.error('Error in playHighlightVideo:',err);
+  }
 }
 async function buildGameDetailPanel(g,gameNum){
   var home=g.teams.home,away=g.teams.away,gameDate=new Date(g.gameDate);
@@ -6602,10 +6617,9 @@ async function buildGameDetailPanel(g,gameNum){
   // Video below linescore
   if(highlightUrl){
     var highlightHeadline=highlight.headline||'Full Game Highlight';
-    var safeUrl=highlightUrl.replace(/'/g,"\\'");
     html+='<div class="detail-highlight">';
     if(thumbUrl){
-      html+='<div onclick="playHighlightVideo(this,\''+safeUrl+'\')" class="detail-highlight-thumb">';
+      html+='<div onclick="playHighlightVideo(this)" data-video-url="'+highlightUrl.replace(/"/g,'&quot;')+'" class="detail-highlight-thumb">';
       html+='<img src="'+thumbUrl+'" loading="lazy">';
       html+='<div class="detail-highlight-overlay">';
       html+='<div class="detail-highlight-play">';
