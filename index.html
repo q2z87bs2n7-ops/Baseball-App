@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.30.6</title>
+<title>MLB Pulse v3.30.7</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -81,6 +81,11 @@
   .linescore-table .rhe-start{border-left:2px solid var(--border)}
   .watch-live-btn{margin-top:0.625rem;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 18px;border-radius:var(--radius-pill);cursor:pointer;font-size:.85rem;font-weight:700;transition:filter .15s}
   .watch-live-btn:hover,.watch-live-btn:focus-visible{filter:brightness(1.08);outline:none}
+  .player-chevron{color:var(--muted);font-size:.8rem;flex-shrink:0}
+  .headshot-frame{width:100px;height:130px;margin:0 auto 10px;border-radius:var(--radius);background:var(--card2);position:relative;overflow:hidden}
+  .headshot-frame img{width:100%;height:100%;object-fit:contain;object-position:top;display:block}
+  .headshot-jersey-pill{position:absolute;bottom:4px;right:4px;background:var(--accent);color:var(--accent-text);font-size:.72rem;font-weight:800;padding:2px 7px;border-radius:var(--radius);line-height:1.2}
+  @media(min-width:481px){.stat-grid.stat-grid--cols-3{grid-template-columns:repeat(3,1fr)}.stat-grid.stat-grid--cols-4{grid-template-columns:repeat(4,1fr)}}
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
   .card-title{font-size:var(--eyebrow-sz);font-weight:var(--eyebrow-fw);text-transform:uppercase;letter-spacing:var(--eyebrow-ls);color:var(--accent);margin-bottom:12px}
   .loading{color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center}
@@ -932,7 +937,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.30.6</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.30.7</div>
       </div>
     </div>
   </div>
@@ -6662,27 +6667,27 @@ async function loadRoster(){
 function renderPlayerList(){
   var players=rosterData[currentRosterTab]||[];if(!players.length){document.getElementById('playerList').innerHTML='<div class="loading">No players found</div>';return;}
   var html='';
-  players.forEach(function(p){var sel=selectedPlayer&&selectedPlayer.person&&selectedPlayer.person.id===p.person.id;html+='<div class="player-item'+(sel?' selected':'')+'" onclick="selectPlayer('+p.person.id+',\''+currentRosterTab+'\')">'+'<div><div class="player-name">'+p.person.fullName+'</div><div class="player-pos">#'+(p.jerseyNumber||'—')+' · '+(p.position&&p.position.name?p.position.name:'—')+'</div></div><span style="color:var(--muted);font-size:.8rem">›</span></div>';});
+  players.forEach(function(p){var sel=selectedPlayer&&selectedPlayer.person&&selectedPlayer.person.id===p.person.id;html+='<div class="player-item'+(sel?' selected':'')+'" onclick="selectPlayer('+p.person.id+',\''+currentRosterTab+'\')">'+'<div><div class="player-name">'+p.person.fullName+'</div><div class="player-pos">#'+(p.jerseyNumber||'—')+' · '+(p.position&&p.position.name?p.position.name:'—')+'</div></div><span class="player-chevron">›</span></div>';});
   document.getElementById('playerList').innerHTML=html;
 }
-function switchRosterTab(tab,btn){currentRosterTab=tab;selectedPlayer=null;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');var players=rosterData[tab]||[];if(players.length)selectPlayer(players[0].person.id,tab);else{renderPlayerList();document.getElementById('playerStatsTitle').textContent='Player Stats';document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center">No players available</div>';}}
+function switchRosterTab(tab,btn){currentRosterTab=tab;selectedPlayer=null;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');var players=rosterData[tab]||[];if(players.length)selectPlayer(players[0].person.id,tab);else{renderPlayerList();document.getElementById('playerStatsTitle').textContent='Player Stats';document.getElementById('playerStats').innerHTML='<div class="empty-state">No players available</div>';}}
 async function selectPlayer(id,type){
   var playerObj=(rosterData[type]||[]).find(function(p){return p.person.id===id;})||{person:{id:id}};
   selectedPlayer=playerObj;renderPlayerList();
   document.getElementById('playerStatsTitle').textContent=playerObj.person&&playerObj.person.fullName?playerObj.person.fullName:'Player Stats';
   document.getElementById('playerStats').innerHTML='<div class="loading">Loading stats...</div>';
-  try{var group=type==='pitching'?'pitching':type==='fielding'?'fielding':'hitting';var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group);var d=await r.json();var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;if(!stats){document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);padding:20px 0;text-align:center">No '+SEASON+' stats available yet</div>';if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}return;}renderPlayerStats(stats,group);if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}}catch(e){document.getElementById('playerStats').innerHTML='<div class="error">Could not load stats</div>';}
+  try{var group=type==='pitching'?'pitching':type==='fielding'?'fielding':'hitting';var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group);var d=await r.json();var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;if(!stats){document.getElementById('playerStats').innerHTML='<div class="empty-state">No '+SEASON+' stats available yet</div>';if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}return;}renderPlayerStats(stats,group);if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}}catch(e){document.getElementById('playerStats').innerHTML='<div class="error">Could not load stats</div>';}
 }
 function renderPlayerStats(s,group){
   var pid=selectedPlayer&&selectedPlayer.person&&selectedPlayer.person.id;
-  var jerseyOverlay=(selectedPlayer&&selectedPlayer.jerseyNumber)?'<div style="position:absolute;bottom:4px;right:4px;background:var(--accent);color:var(--accent-text);font-size:.72rem;font-weight:800;padding:2px 7px;border-radius:10px;line-height:1.2">#'+selectedPlayer.jerseyNumber+'</div>':'';
-  var html=pid?'<div style="width:100px;height:130px;margin:0 auto 10px;border-radius:8px;background:var(--card2);position:relative"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current" style="width:100%;height:100%;object-fit:contain;object-position:top;display:block">'+jerseyOverlay+'</div>':'';
+  var jerseyOverlay=(selectedPlayer&&selectedPlayer.jerseyNumber)?'<div class="headshot-jersey-pill">#'+selectedPlayer.jerseyNumber+'</div>':'';
+  var html=pid?'<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current">'+jerseyOverlay+'</div>':'';
   var boxes=[];
   if(group==='hitting')boxes=[{v:fmtRate(s.avg),l:'AVG'},{v:s.homeRuns,l:'HR'},{v:s.rbi,l:'RBI'},{v:fmtRate(s.ops),l:'OPS'},{v:s.hits,l:'H'},{v:s.doubles,l:'2B'},{v:s.triples,l:'3B'},{v:s.strikeOuts,l:'K'},{v:s.baseOnBalls,l:'BB'},{v:s.runs,l:'R'},{v:s.stolenBases,l:'SB'},{v:s.plateAppearances,l:'PA'}];
   else if(group==='pitching')boxes=[{v:fmt(s.era,2),l:'ERA'},{v:fmt(s.whip,2),l:'WHIP'},{v:s.strikeOuts,l:'K'},{v:s.wins+'-'+s.losses,l:'W-L'},{v:fmt(s.inningsPitched,1),l:'IP'},{v:s.hits,l:'H'},{v:s.baseOnBalls,l:'BB'},{v:s.homeRuns,l:'HR'},{v:fmt(s.strikeoutWalkRatio,2),l:'K/BB'},{v:fmt(s.strikeoutsPer9Inn,2),l:'K/9'},{v:fmt(s.walksPer9Inn,2),l:'BB/9'},{v:s.saves,l:'SV'}];
   else boxes=[{v:fmtRate(s.fielding),l:'FPCT'},{v:s.putOuts,l:'PO'},{v:s.assists,l:'A'},{v:s.errors,l:'E'},{v:s.chances,l:'TC'},{v:s.doublePlays,l:'DP'}];
   var cols=group==='fielding'?3:4;
-  html+='<div class="stat-grid" style="grid-template-columns:repeat('+cols+',1fr)">';
+  html+='<div class="stat-grid stat-grid--cols-'+cols+'">';
   boxes.forEach(function(b,i){html+='<div class="stat-box'+(i===0?' hero':'')+'"><div class="stat-val">'+(b.v!=null?b.v:'—')+'</div><div class="stat-lbl">'+b.l+'</div></div>';});
   document.getElementById('playerStats').innerHTML=html+'</div>';
 }
