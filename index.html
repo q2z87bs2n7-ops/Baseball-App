@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.29.1</title>
+<title>MLB Pulse v3.29.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -866,7 +866,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.29.1</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.29.2</div>
       </div>
     </div>
   </div>
@@ -2494,7 +2494,7 @@ function renderMLBNewsFeed() {
     html+='<div class="news-card-item'+active+'">'
       +imgHtml
       +'<div class="news-card-title">'+item.title+'</div>'
-      +'<a class="news-card-link" href="'+item.link+'" target="_blank">Read on MLB.com →</a>'
+      +'<a class="news-card-link" href="'+item.link+'" target="_blank">Read more →</a>'
       +'</div>';
   });
   container.innerHTML=html;
