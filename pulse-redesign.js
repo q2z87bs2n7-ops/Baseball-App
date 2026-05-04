@@ -93,7 +93,7 @@
         preview++;
       }
     }
-    var elLive = $('ptbCountLive'); if (elLive) elLive.textContent = live;
+    var elLive = $('ptbCountLive'); if (elLive) { elLive.parentElement.classList.toggle('ptb-counter-live', live > 0); elLive.textContent = live; }
     var elFinal = $('ptbCountFinal'); if (elFinal) elFinal.textContent = final;
     var elPrev = $('ptbCountPreview'); if (elPrev) elPrev.textContent = preview;
 

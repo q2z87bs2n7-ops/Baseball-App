@@ -158,6 +158,7 @@
   flex: 1;
   min-width: 0;
   font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  background: linear-gradient(180deg, rgba(255,170,60,0.04), transparent);
 }
 #pulse .ptb-counter {
   display: inline-flex;
@@ -278,6 +279,15 @@
 /* Legacy MY TEAM toggle — replaced by #ptbYourGame, kept hidden as state mirror */
 #pulse #myTeamLensBtn { display: none !important; }
 
+/* Counter-dot pulse animation for live indicator */
+@keyframes p-counter-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18); }
+  50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.06); }
+}
+#pulse .ptb-counter-live .ptb-counter-dot {
+  animation: p-counter-pulse 2s ease-in-out infinite;
+}
+
 /* ── 6. Mobile (≤860px) ───────────────────────────────────────────────── */
 @media (max-width: 860px) {
   #pulse #pulseHero {
@@ -332,5 +342,5 @@
 }
 #pulse #ptbYestBtn:hover {
   background: var(--card2);
-  border-color: var(--accent);
+  border-color: var(--border);
 }
