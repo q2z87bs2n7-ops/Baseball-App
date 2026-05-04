@@ -6540,7 +6540,7 @@ function playHighlightVideo(el){
   var url=el.getAttribute('data-video-url');
   if(!url){console.error('No video URL found');return;}
   var video=document.createElement('video');
-  video.controls=true;video.style.cssText='width:100%;display:block;background:#000';
+  video.controls=true;video.style.cssText='width:100%;height:100%;display:block;background:#000';
   video.addEventListener('error',function(e){
     console.error('Video load error:',e,video.error);
     video.innerHTML='<div style="color:#e03030;padding:20px;text-align:center">Video failed to load. Please try refreshing.</div>';
@@ -6550,7 +6550,8 @@ function playHighlightVideo(el){
     video.play().catch(function(err){console.error('Autoplay blocked:',err);});
   },{once:true});
   var src=document.createElement('source');src.src=url;src.type='video/mp4';video.appendChild(src);
-  el.replaceWith(video);
+  var wrapper=document.createElement('div');wrapper.className='detail-highlight-video';wrapper.appendChild(video);
+  el.replaceWith(wrapper);
 }
 async function buildGameDetailPanel(g,gameNum){
   var home=g.teams.home,away=g.teams.away,gameDate=new Date(g.gameDate);
