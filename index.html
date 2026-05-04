@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.30</title>
+<title>MLB Pulse v3.30.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.light.min.js" async></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(160,100,255,0.10);--hr-border:rgba(160,100,255,0.40);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
+  :root{--primary:#002D72;--secondary:#FF5910;--accent:#FF5910;--header-text:#ffffff;--dark:#0a0f1e;--card:#111827;--card2:#1a2236;--text:#e8eaf0;--muted:#9aa0a8;--border:#1e2d4a;--header-h:60px;--ticker-h:50px;--mockbar-h:48px;--radius:10px;--radius-sm:6px;--radius-lg:14px;--radius-pill:999px;--eyebrow-sz:.68rem;--eyebrow-ls:.1em;--eyebrow-fw:700;--score-hero:38px;--score-md:1.4rem;--score-sm:1.1rem;--name-hero:26px;--name-md:.95rem;--tint-primary:color-mix(in srgb,var(--primary) 10%,transparent);--tint-primary-strong:color-mix(in srgb,var(--primary) 14%,transparent);--accent-line:2px solid var(--primary);--scoring-bg:rgba(60,190,100,0.10);--scoring-border:rgba(60,190,100,0.28);--hr-bg:rgba(160,100,255,0.10);--hr-border:rgba(160,100,255,0.40);--risp-accent:rgba(255,200,0,0.55);--status-bg:rgba(80,140,255,0.08);--status-border:rgba(80,140,255,0.22)}
   body{background:var(--dark);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;min-height:100vh}
   header{background:linear-gradient(135deg,var(--primary) 0%,#001a4a 100%);border-bottom:1px solid rgba(255,255,255,.08);padding:0 20px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100}
   .logo{display:flex;align-items:center;gap:10px;font-size:1.2rem;font-weight:700;color:var(--header-text)}
@@ -41,6 +41,23 @@
   .card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:12px}
   .loading{color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center}
   .sub-kicker{font-size:.68rem;font-weight:700;letter-spacing:.08em; text-transform:uppercase}
+  .eyebrow{font-size:var(--eyebrow-sz);font-weight:var(--eyebrow-fw);letter-spacing:var(--eyebrow-ls);text-transform:uppercase;color:var(--muted)}
+  .eyebrow--accent{color:var(--accent)}
+  .surface{background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+  .surface-hero{background:var(--card);background-image:linear-gradient(180deg,var(--tint-primary-strong),transparent 60%);border:1px solid var(--border);border-top:var(--accent-line);border-radius:var(--radius-lg)}
+  .surface-tinted{background:var(--card);background-image:linear-gradient(180deg,var(--tint-primary),transparent 70%);border:1px solid var(--border);border-radius:var(--radius)}
+  .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:var(--radius-pill);padding:.375rem .75rem;font-size:var(--eyebrow-sz);font-weight:600;letter-spacing:.09em;color:var(--muted);background:transparent;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+  .pill:hover,.pill:focus-visible{border-color:var(--accent);color:var(--text);outline:none}
+  .pill.is-active{background:var(--secondary);color:var(--accent-text);border-color:var(--secondary)}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.375rem .75rem;border-radius:var(--radius-sm);cursor:pointer;font-size:.78rem;font-weight:600;transition:border-color .15s,color .15s}
+  .btn-ghost:hover,.btn-ghost:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+  .btn-primary{background:var(--secondary);color:var(--accent-text);border:none;padding:.5rem 1.125rem;border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;font-weight:700;transition:filter .15s}
+  .btn-primary:hover,.btn-primary:focus-visible{filter:brightness(1.08);outline:none}
+  .score-hero{font-size:var(--score-hero);font-weight:800;line-height:1;color:var(--header-text)}
+  .score-md{font-size:var(--score-md);font-weight:800;line-height:1}
+  .score-sm{font-size:var(--score-sm);font-weight:800;line-height:1}
+  .name-hero{font-size:var(--name-hero);font-weight:800;line-height:1.05}
+  .name-md{font-size:var(--name-md);font-weight:700;line-height:1.2}
   .error{color:#ff6b6b;font-size:.85rem;padding:10px}
   .game-big{border-radius:14px;padding:24px;text-align:center;min-height:224px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center}
   .card-cap{width:56px;height:56px;flex-shrink:0;object-fit:contain}
@@ -866,7 +883,7 @@
           <div style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.30</div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);text-align:center">v3.30.1</div>
       </div>
     </div>
   </div>
