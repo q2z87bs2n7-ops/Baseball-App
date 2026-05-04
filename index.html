@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.31</title>
+<title>MLB Pulse v3.31.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -204,6 +204,15 @@
   .news-meta{font-size:.75rem;color:var(--muted);margin-top:4px}
   .news-title a{color:inherit;text-decoration:none}
   .news-title a:hover{color:var(--accent)}
+  .news-source-kicker{font-size:.6rem;letter-spacing:.12em;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px}
+  .news-thumb{width:80px;aspect-ratio:16/9;flex-shrink:0;border-radius:var(--radius-sm);overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center}
+  .news-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .news-thumb-placeholder{color:var(--muted);font-size:1.4rem}
+  .news-body{flex:1;min-width:0}
+  @media(max-width:480px){
+    .news-thumb{width:64px}
+    .news-source-kicker{font-size:.55rem}
+  }
   .refresh-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:var(--radius-sm);cursor:pointer;font-size:.75rem;float:right;transition:border-color .15s,color .15s}
   .refresh-btn:hover,.refresh-btn:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
   .wc-note{font-size:.75rem;color:var(--muted);margin-bottom:8px}
@@ -972,7 +981,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.31</div>
+        <div class="settings-version">v3.31.1</div>
       </div>
     </div>
   </div>
@@ -1132,6 +1141,14 @@
         </div>
         <button class="refresh-btn" onclick="loadNews()">↻ Refresh</button>
       </div>
+    </div>
+    <div id="newsSourcePills" class="stat-tabs" style="margin:0 0 12px;display:flex;flex-wrap:wrap;gap:6px">
+      <button class="stat-tab active" data-source="all" onclick="selectNewsSource('all',this)">All</button>
+      <button class="stat-tab" data-source="mlb" onclick="selectNewsSource('mlb',this)">MLB</button>
+      <button class="stat-tab" data-source="espn" onclick="selectNewsSource('espn',this)">ESPN</button>
+      <button class="stat-tab" data-source="mlbtr" onclick="selectNewsSource('mlbtr',this)">Rumors</button>
+      <button class="stat-tab" data-source="fangraphs" onclick="selectNewsSource('fangraphs',this)">Analysis</button>
+      <button class="stat-tab" data-source="cbs" onclick="selectNewsSource('cbs',this)">Headlines</button>
     </div>
     <div id="newsFull"><div class="loading">Loading news...</div></div>
   </div>
@@ -1544,6 +1561,9 @@ const MLB_THEME={id:-1,name:'MLB (Neutral)',short:'MLB',primary:'#003087',second
 
 let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false,savedThemeForPulse=null;
 let newsFeedMode='mlb';
+let newsSourceFilter='all';
+let newsArticlesCache=[];
+const NEWS_SOURCE_LABELS={mlb:'MLB.com',espn:'ESPN',mlbtr:'MLB Trade Rumors',fangraphs:'FanGraphs',cbs:'CBS Sports'};
 
 // ── League Pulse globals ──────────────────────────────────────────────────────
 const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
@@ -6722,23 +6742,75 @@ function renderPlayerStats(s,group){
   document.getElementById('playerStats').innerHTML=html+'</div>';
 }
 
+function escapeNewsHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function fmtNewsDate(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
+function mkProxyNewsRow(item){
+  var thumb=item.image
+    ? '<div class="news-thumb"><img src="'+escapeNewsHtml(item.image)+'" alt="" onerror="this.parentNode.innerHTML=\'<span class=&quot;news-thumb-placeholder&quot;>📰</span>\'"></div>'
+    : '<div class="news-thumb"><span class="news-thumb-placeholder">📰</span></div>';
+  var src=NEWS_SOURCE_LABELS[item.source]||item.source||'';
+  var kicker=src?'<div class="news-source-kicker">VIA '+escapeNewsHtml(src)+'</div>':'';
+  var date=fmtNewsDate(item.pubDate);
+  var link=item.link||'#';
+  return '<div class="news-item">'+thumb+'<div class="news-body">'+kicker+'<div class="news-title"><a href="'+escapeNewsHtml(link)+'" target="_blank" rel="noopener">'+escapeNewsHtml(item.title)+'</a></div>'+(date?'<div class="news-meta">'+date+'</div>':'')+'</div></div>';
+}
+function renderNewsList(){
+  var el=document.getElementById('newsFull');if(!el)return;
+  var items=newsSourceFilter==='all'?newsArticlesCache:newsArticlesCache.filter(function(a){return a.source===newsSourceFilter;});
+  if(!items.length){el.innerHTML='<div class="loading">No articles for this source.</div>';return;}
+  el.innerHTML=items.map(mkProxyNewsRow).join('');
+}
+function selectNewsSource(key,btn){
+  newsSourceFilter=key;
+  var pills=document.querySelectorAll('#newsSourcePills .stat-tab');
+  pills.forEach(function(p){p.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  else{var match=document.querySelector('#newsSourcePills .stat-tab[data-source="'+key+'"]');if(match)match.classList.add('active');}
+  renderNewsList();
+}
 async function loadNews(){
   var fullEl=document.getElementById('newsFull'),homeEl=document.getElementById('homeNews');
   var teamBtn=document.getElementById('newsTeamBtn');if(teamBtn)teamBtn.textContent=activeTeam.short;
   if(fullEl)fullEl.innerHTML='<div class="loading">Loading news...</div>';if(homeEl)homeEl.innerHTML='<div class="loading">Loading news...</div>';
   var teamUrl='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?team='+activeTeam.espnId+'&limit=20';
-  var fullUrl=newsFeedMode==='mlb'?'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20':teamUrl;
+  if(newsFeedMode==='team'){
+    // Team mode: ESPN-only (unchanged path)
+    try{
+      var resp=await fetch(teamUrl);
+      var d=await resp.json();
+      var arts=(d.articles||[]).filter(function(a){return a.headline;});
+      if(!arts.length)throw new Error('No articles');
+      if(fullEl)fullEl.innerHTML=arts.map(mkEspnRow).join('');
+      if(homeEl)homeEl.innerHTML=arts.slice(0,5).map(mkEspnRow).join('');
+    }catch(e){var msg='<div class="error">News unavailable (ESPN API may be blocked by browser).</div>';if(fullEl)fullEl.innerHTML=msg;if(homeEl)homeEl.innerHTML=msg;}
+    return;
+  }
+  // MLB mode: multi-source via /api/proxy-news for full list, ESPN team for home card
   try{
-    var fetches=[fetch(fullUrl)];if(newsFeedMode==='mlb')fetches.push(fetch(teamUrl));
-    var responses=await Promise.all(fetches);
-    var fullD=await responses[0].json(),fullArticles=(fullD.articles||[]).filter(function(a){return a.headline;});
-    if(!fullArticles.length)throw new Error('No articles');
-    function mkRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';return '<div class="news-item"><div class="news-dot"></div><div><div class="news-title"><a href="'+link+'" target="_blank">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
-    if(fullEl)fullEl.innerHTML=fullArticles.map(mkRow).join('');
-    if(homeEl){var homeArts=fullArticles;if(newsFeedMode==='mlb'){var hD=await responses[1].json();homeArts=(hD.articles||[]).filter(function(a){return a.headline;});}homeEl.innerHTML=homeArts.slice(0,5).map(mkRow).join('')||'<div class="loading">No news available</div>';}
-  }catch(e){var msg='<div class="error">News unavailable (ESPN API may be blocked by browser).</div>';if(fullEl)fullEl.innerHTML=msg;if(homeEl)homeEl.innerHTML=msg;}
+    var responses=await Promise.all([fetch(API_BASE+'/api/proxy-news'),fetch(teamUrl)]);
+    var d=await responses[0].json();
+    newsArticlesCache=Array.isArray(d.articles)?d.articles:[];
+    if(!newsArticlesCache.length)throw new Error('No articles');
+    renderNewsList();
+    if(homeEl){var hD=await responses[1].json();var hArts=(hD.articles||[]).filter(function(a){return a.headline;});homeEl.innerHTML=hArts.slice(0,5).map(mkEspnRow).join('')||'<div class="loading">No news available</div>';}
+  }catch(e){
+    // Fallback: ESPN MLB feed direct (legacy behaviour) so the page never goes empty
+    try{
+      var fb=await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20');
+      var fbD=await fb.json();var fbArts=(fbD.articles||[]).filter(function(a){return a.headline;});
+      if(fullEl)fullEl.innerHTML=fbArts.map(mkEspnRow).join('');
+      if(homeEl){var hResp=await fetch(teamUrl);var hJ=await hResp.json();homeEl.innerHTML=(hJ.articles||[]).filter(function(a){return a.headline;}).slice(0,5).map(mkEspnRow).join('')||'<div class="loading">No news available</div>';}
+    }catch(e2){var msg='<div class="error">News unavailable (proxy and ESPN both failed).</div>';if(fullEl)fullEl.innerHTML=msg;if(homeEl)homeEl.innerHTML=msg;}
+  }
 }
-function switchNewsFeed(mode,btn){newsFeedMode=mode;['newsMlbBtn','newsTeamBtn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});if(btn)btn.classList.add('active');loadNews();}
+function switchNewsFeed(mode,btn){
+  newsFeedMode=mode;
+  ['newsMlbBtn','newsTeamBtn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  var pills=document.getElementById('newsSourcePills');if(pills)pills.style.display=(mode==='mlb')?'flex':'none';
+  loadNews();
+}
 
 var liveGamePk=null,liveInterval=null;
 function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,30000);}
