@@ -183,6 +183,7 @@ let focusStatsCache={};
 let focusLastTimecode=null;
 let focusAlertShown={};   // gamePk → ms timestamp of last soft alert (90s cooldown)
 let focusOverlayOpen=false;
+let tabHiddenAt=null;     // ms timestamp when tab went hidden; null when visible
 let collectionFilter='all';         // 'all' | 'HR' | 'RBI'
 let collectionSort='newest';        // 'newest' | 'rarity' | 'team'
 let collectionPage=0;               // 0-indexed page for binder display
@@ -390,7 +391,7 @@ async function pollGamePlays(gamePk) {
     if(!r.ok) throw new Error(r.status);
     var data=await r.json();
     var plays=(data.allPlays||[]).filter(function(p){return p.about&&p.about.isComplete;});
-    var lastCount=g.playCount||0, isHistory=(lastCount===0&&plays.length>0);
+    var lastCount=g.playCount||0, isHistory=(lastCount===0&&plays.length>0)||tabHiddenAt!==null;
     plays.slice(lastCount).forEach(function(play) {
       var event=(play.result&&play.result.event)||'';
       var isScoringP=(play.about&&play.about.isScoringPlay)||false;
@@ -5671,7 +5672,23 @@ function togglePush(){
 
 document.addEventListener('visibilitychange',function(){
   if(document.hidden){
+    tabHiddenAt=Date.now();
     releaseScreenWakeLock();
+    // Pause data polling while tab is hidden
+    if(pulseTimer){clearInterval(pulseTimer);pulseTimer=null;}
+    if(storyPoolTimer){clearInterval(storyPoolTimer);storyPoolTimer=null;}
+    if(focusFastTimer){clearInterval(focusFastTimer);focusFastTimer=null;}
+    if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
+    if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}
+  } else {
+    tabHiddenAt=null;
+    if(pulseInitialized&&!demoMode){
+      // Immediate catch-up poll, then resume normal intervals
+      pollLeaguePulse();
+      pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
+      storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
+      if(focusGamePk) focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
+    }
   }
 });
 
