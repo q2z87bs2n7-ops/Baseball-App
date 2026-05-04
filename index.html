@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.31.5</title>
+<title>MLB Pulse v3.32</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -597,13 +597,20 @@
   --text: var(--p-text, #e8eaf0);
   --muted: var(--p-muted, #9aa0a8);
 }
-/* Floating panels (settings, sound) follow Pulse theme when Pulse or Yesterday Recap
-   is the active section, so they don't clash with Pulse light/dark mode. Chrome tokens
-   re-map to --p-*; --primary/--secondary stay team-themed for on-state toggle feedback. */
+/* Floating panels (settings, sound, dev tools, radio check, news source test) follow
+   Pulse theme when Pulse or Yesterday Recap is the active section, so they don't clash
+   with Pulse light/dark mode. Chrome tokens re-map to --p-*; --primary/--secondary stay
+   team-themed for on-state toggle feedback. */
 body:has(#pulse.active) .settings-panel,
 body:has(#yesterday.active) .settings-panel,
 body:has(#pulse.active) #soundPanel,
-body:has(#yesterday.active) #soundPanel {
+body:has(#yesterday.active) #soundPanel,
+body:has(#pulse.active) #devToolsPanel,
+body:has(#yesterday.active) #devToolsPanel,
+body:has(#pulse.active) #radioCheckOverlay,
+body:has(#yesterday.active) #radioCheckOverlay,
+body:has(#pulse.active) #newsSourceTestOverlay,
+body:has(#yesterday.active) #newsSourceTestOverlay {
   --dark: var(--p-dark);
   --card: var(--p-card);
   --card2: var(--p-card2);
@@ -996,7 +1003,7 @@ body:has(#yesterday.active) #soundPanel {
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.31.5</div>
+        <div class="settings-version">v3.32</div>
       </div>
     </div>
   </div>
