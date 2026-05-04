@@ -1,6 +1,6 @@
 # MLB Tracker
 
-A real-time pitch-by-pitch tracker that auto-focuses on the most exciting MLB game in progress — built as a single HTML file, no build step, no dependencies.
+A real-time pitch-by-pitch tracker that auto-focuses on the most exciting MLB game in progress — no build step, no dependencies.
 
 **[▶ Live demo](https://q2z87bs2n7-ops.github.io/Baseball-App/)** &nbsp;·&nbsp; **[Source](https://github.com/q2z87bs2n7-ops/Baseball-App)** &nbsp;·&nbsp; **[Project handoff doc](./CLAUDE.md)**
 
@@ -74,8 +74,8 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 
 | Layer | Technology |
 |---|---|
-| Frontend | Vanilla HTML/CSS/JS — single `index.html` (~395KB), all inline |
-| Sidecar JS | `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` (IIFE modules loaded via `<script src>`) |
+| Frontend | Vanilla HTML/CSS/JS — `index.html` (structure) + `styles.css` (all CSS) + `app.js` (all JS, `defer`) |
+| Sidecar JS | `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` (IIFE modules, all `defer` in `<head>`) |
 | Streaming | [Hls.js](https://github.com/video-dev/hls.js) (light build, CDN, ~50KB) for HLS radio streams |
 | Data | [MLB Stats API](https://statsapi.mlb.com/api/v1/) — public, no auth |
 | News | ESPN news endpoint + MLB RSS via Vercel proxy |
@@ -85,7 +85,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 | Hosting | GitHub Pages (static app) + Vercel (serverless API) |
 | Cron | GitHub Actions scheduled workflow |
 
-**No build system.** No bundler, no transpiler, no npm install for the app itself. Edit, push to `main`, GitHub Pages serves it.
+**No build system.** No bundler, no transpiler, no npm install for the app itself. Edit the right file, push to `main`, GitHub Pages serves it.
 
 ---
 
@@ -136,7 +136,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 - `feedItems` capped at 600 entries (oldest trimmed)
 - GUMBO `diffPatch` after initial seed — first call ~500KB, subsequent ~1–5KB
 - Boxscore cache shared across story generators
-- Service worker caches app shell + sidecar JS for offline boot
+- Service worker caches app shell (`index.html`, `styles.css`, `app.js`, sidecar JS) for offline boot
 - Theme variables persisted to localStorage and applied via inline `<script>` in `<head>` to prevent flash-of-wrong-theme on reload
 
 ---
@@ -158,7 +158,9 @@ Open `http://localhost:8000`. That's the whole setup — no npm, no env vars req
 ## Project structure
 
 ```
-index.html                — main app (HTML + CSS + JS, all inline)
+index.html                — HTML structure only (no CSS, no JS)
+styles.css                — all CSS
+app.js                    — all JavaScript
 focusCard.js              — At-Bat Focus Mode visual templates
 pulse-card-templates.js   — HR/RBI player card variants (4 templates)
 collectionCard.js         — Card Collection binder visuals
@@ -185,7 +187,7 @@ For the full breakdown of architecture, every API endpoint, every CSS variable, 
 
 ## Status & roadmap
 
-**Current version:** v3.15 (May 2026).
+**Current version:** v3.34 (May 2026).
 
 The app is feature-complete for personal use and stable in daily operation. Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh.
 
