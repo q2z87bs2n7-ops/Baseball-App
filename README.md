@@ -19,10 +19,14 @@ It's a personal project, not a product. There's no business model, no sign-up ga
 ## Feature highlights
 
 ### ⚡ Pulse — league-wide live feed
-Every scoring play, home run, and runner-in-scoring-position moment across all simultaneous games, in one chronological stream. Two-column desktop layout with a side rail for upcoming/completed games and MLB news. Sound alerts (HR bat crack, run chime, RISP heartbeat, etc.) are synthesised live with the Web Audio API — no audio files. A sticky ticker at the top shows every game as a chip with team scores, inning, base diamond, and out indicators.
+The app's landing section. Every scoring play, home run, and runner-in-scoring-position moment across all simultaneous games in one chronological stream. Two-column desktop layout: ~700px left column (ticker, Story Carousel, feed) + 320px right rail (upcoming/completed games, news carousel, At-Bat Focus card).
 
-### 📖 Story Carousel — 21 narrative generators
-A rotating digest layer that surfaces story-level moments alongside the play feed. Generators cover home runs, walk-off threats, no-hitter watches, perfect game tracking, big innings, bases-loaded situations, stolen bases, end-of-inning recaps, multi-hit days, daily MLB leaders, hitting streaks, roster moves, win probability swings, award winners, season highs, on-this-day, yesterday's highlights, and probable pitchers. Stories rotate via a priority × decay scoring algorithm with per-story cooldowns:
+A ⚡ MLB PULSE top bar carries icon-only buttons for Sound Alerts (🔊), Live Game Radio (📻), and a Pulse light/dark theme toggle (☀️/🌙). A **MY TEAM** lens pill filters the feed and ticker to the active team's game only — useful when you want team-specific focus inside the league-wide stream.
+
+The feed is state-aware across the day: a pre-game hype card shows a countdown to first pitch; mid-day intermissions between games show a countdown to the next game rather than the hype state; once every game is final a post-slate screen shows "Slate complete" with a countdown to tomorrow's first pitch. Sound alerts (HR bat crack, run chime, RISP heartbeat, etc.) are synthesised live with the Web Audio API — no audio files. A sticky ticker shows every game as a chip with team scores, inning, base diamond, and out indicators.
+
+### 📖 Story Carousel — 22 narrative generators
+A rotating digest layer that surfaces story-level moments alongside the play feed. Generators cover home runs, walk-off threats, no-hitter watches, perfect game tracking, big innings, bases-loaded situations, stolen bases, end-of-inning recaps, multi-hit days, daily MLB leaders, hitting streaks, roster moves, win probability swings, award winners, season highs, on-this-day, yesterday's highlights, probable pitchers, and pre-game editorial matchup cards. Stories rotate via a priority × decay scoring algorithm with per-story cooldowns:
 
 ```javascript
 // Each tick, eligible stories are scored by priority weighted with time decay
@@ -40,7 +44,10 @@ score = (closeness + situation + countBonus) * inningMultiplier
 // 9th-inning, bases loaded, full count, tied = ~2× extras-multiplier territory
 ```
 
-Polls linescore (~5KB) every 5s for B/S/O and runners; pitches come from the GUMBO v1.1 feed using `diffPatch` deltas (~5KB instead of ~500KB) once seeded. A compact card sits in the side rail on desktop, a slim mini-bar appears on phone/iPad portrait, and a full overlay with pitch sequence, count pips, base diamond, and matchup stats is one tap away. Manual game switcher chips with a green `↩ AUTO` pill let you override the auto-pick.
+Polls linescore (~5KB) every 5s for B/S/O and runners; pitches come from the GUMBO v1.1 feed using `diffPatch` deltas (~5KB instead of ~500KB) once seeded. A compact card sits in the side rail on desktop, a slim mini-bar appears on phone/iPad portrait, and a full overlay with pitch sequence, count pips, base diamond, and matchup stats is one tap away. Manual game switcher chips with a sky-blue `↩ AUTO` pill let you override the auto-pick.
+
+### 📼 Yesterday's Recap
+A dedicated full-screen section (accessible from the ⚡ top bar when yesterday's data is ready) that replays the previous day's slate as a media-rich digest. Features a shared video player with a scrollable playlist of official MLB highlight clips per game, a heroes strip (top batter and W/L pitcher per game), and per-game recap tiles with linescore and headline. Video content is sourced from the MLB `/game/{pk}/content` endpoint. The section shares the Pulse navy theme and uses the same top bar for visual consistency.
 
 ### 📚 Card Collection
 Every HR or key RBI event auto-collects a player card. Four rarity tiers derived from situation:
@@ -60,13 +67,13 @@ Optional cross-device sync via GitHub OAuth or email magic-link, backed by Upsta
 Auto-pairs the focused game's flagship terrestrial radio station to a `<audio>` element, with Hls.js for HLS streams and native audio for direct AAC/MP3. Currently 9 verified teams: LAA, CLE, DET, HOU, TEX, MIN, ATL, MIA, NYY. The remaining 21 stations are in the codebase but excluded from auto-pairing — most are Audacy-owned flagships that hold OTA simulcast rights but not MLB streaming rights, so their digital streams play alternate content (talk shows, ads) during games. A built-in **Radio Check** sweep tool lets me test, mark ✅/❌, take notes per station, and copy categorised markdown to update the approved list.
 
 ### 🎬 Demo Mode
-Full-day replay of 8 games and 619 plays from a static `daily-events.json` snapshot. No API calls — works fully offline. Speeds 1×/10×/100×, pause/resume, and a "Next HR" button to fast-forward. Story Carousel filters stories temporally so future events don't appear before the replay reaches them.
+Full-day replay of 23 games (8 with full play-by-play) and 619 plays from a static `daily-events.json` snapshot. No API calls — works fully offline. Speeds 1×/10×/100×, pause/resume, and a "Next HR" button to fast-forward. Story Carousel filters stories temporally so future events don't appear before the replay reaches them.
 
 ### 🔔 PWA + Push Notifications
 Installable as a native app on iOS and Android. Game-start alerts via Web Push, with subscriptions stored in Upstash Redis. A GitHub Actions cron pings the `/api/notify` Vercel function every 5 minutes, which checks the MLB schedule and fires VAPID-signed push messages to subscribers, deduplicating per-game with a 24h TTL key.
 
 ### 🎨 30-team theming
-Switching teams swaps nine CSS variables computed from the team's primary colour (page background, card surfaces, borders, accents, header text contrast). Pulse stays in a neutral navy palette regardless of selected team to keep the league-wide feed visually consistent. Theme overrides and a colour-invert toggle live in Settings. Every team has verified ESPN IDs (for news) and YouTube channel IDs (for media).
+Switching teams swaps nine CSS variables computed from the team's primary colour (page background, card surfaces, borders, accents, header text contrast). Pulse uses its own independent palette — dark navy by default, switchable to a light mode via the ☀️/🌙 toggle in the Pulse top bar — so the league-wide feed stays visually consistent regardless of which team is selected. Theme overrides and a colour-invert toggle live in Settings. Every team has verified ESPN IDs (for news) and YouTube channel IDs (for media).
 
 ---
 
@@ -196,7 +203,6 @@ Open backlog items live at the bottom of [CLAUDE.md → Feature Backlog](./CLAUD
 - Career stats expansion on player cards (last 10-game average, hot streak context)
 - Replacement radio URLs for Audacy-affected stations (rights gap)
 - Sound system upgrade from Web Audio synthesis to CC0 MP3 samples (infrastructure already in place)
-- Real-MP3 sound samples to replace synthesised tones
 - Dynamic season year (currently `SEASON = 2026` is hardcoded)
 - News fallback source (MLB RSS) when ESPN endpoint is CORS-blocked
 
