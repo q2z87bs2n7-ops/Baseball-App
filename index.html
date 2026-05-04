@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.30.11</title>
+<title>MLB Pulse v3.30.12</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -139,7 +139,7 @@
   .ng-score{font-size:var(--score-hero);font-weight:800;margin-top:4px;line-height:1}
   .ng-team-right{text-align:right}
   .ng-team-left{text-align:left}
-  .surface-hero.has-opp-tint{background-image:linear-gradient(180deg,var(--tint-primary-strong),transparent 60%),linear-gradient(90deg,color-mix(in srgb,var(--opp-primary,var(--primary)) 18%,transparent) 0%,transparent 38%)}
+  .surface-hero.has-opp-tint{background-image:linear-gradient(180deg,var(--tint-primary-strong),transparent 60%),linear-gradient(90deg,color-mix(in srgb,var(--opp-primary,var(--primary)) 36%,transparent) 0%,transparent 42%)}
   .hero-content{position:relative;z-index:1}
   .hero-top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px}
   .hero-meta-right{font-size:11px;color:color-mix(in srgb,var(--text) 70%,transparent);letter-spacing:.1em}
@@ -972,7 +972,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.30.11</div>
+        <div class="settings-version">v3.30.12</div>
       </div>
     </div>
   </div>
@@ -6203,6 +6203,21 @@ function showSection(id,btn){
 }
 
 // --- NEXT GAME CARD ---
+// Returns the opp color most distinct from myPrimary. Falls back to oppSecondary
+// when oppPrimary is too close (RGB Euclidean distance < 60), or to oppPrimary
+// unchanged when both opp colors are too similar (e.g., Yankees navy/navy vs Mets blue).
+function pickOppColor(oppPrimary,oppSecondary,myPrimary){
+  function rgbDist(a,b){
+    a=(a||'').replace('#','');b=(b||'').replace('#','');
+    if(a.length<6||b.length<6)return 999;
+    var ar=parseInt(a.substr(0,2),16),ag=parseInt(a.substr(2,2),16),ab=parseInt(a.substr(4,2),16);
+    var br=parseInt(b.substr(0,2),16),bg=parseInt(b.substr(2,2),16),bb=parseInt(b.substr(4,2),16);
+    return Math.sqrt(Math.pow(ar-br,2)+Math.pow(ag-bg,2)+Math.pow(ab-bb,2));
+  }
+  if(rgbDist(oppPrimary,myPrimary)>=60)return oppPrimary;
+  if(oppSecondary&&rgbDist(oppSecondary,myPrimary)>=60)return oppSecondary;
+  return oppPrimary;
+}
 function getSeriesInfo(g){
   var sn=g.seriesGameNumber||(g.seriesSummary&&g.seriesSummary.seriesGameNumber);
   var total=g.gamesInSeries||(g.seriesSummary&&g.seriesSummary.gamesInSeries);
@@ -6244,7 +6259,9 @@ function renderNextGame(g,label){
   var bottomRight='';
   if(status==='Live'){bottomRight='<button onclick="showLiveGame('+g.gamePk+')" class="btn-primary">▶ Watch Live</button>';}
   else if(status!=='Final'){bottomRight='<div class="hero-meta-strong">'+(teamHome?'🏟️ Home':'✈️ Away')+' · '+fmtDateTime(g.gameDate)+'</div>';}
-  var oppPrimary=oppD.primary||'#333';
+  var themeTeamMy=themeOverride||myD;
+  var myPrimaryForClash=themeInvert?(themeTeamMy.secondary||activeTeam.primary):(themeTeamMy.primary||activeTeam.primary);
+  var oppPrimary=pickOppColor(oppD.primary||'#333',oppD.secondary,myPrimaryForClash);
   var html='<div class="game-big surface-hero has-opp-tint" style="--opp-primary:'+oppPrimary+'">';
   html+='<div class="hero-kicker-row"><span class="eyebrow eyebrow--accent">'+label+'</span>';
   if(topBadge)html+=' '+topBadge;
