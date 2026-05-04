@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.31.1</title>
+<title>MLB Pulse v3.31.2</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -981,7 +981,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.31.1</div>
+        <div class="settings-version">v3.31.2</div>
       </div>
     </div>
   </div>
@@ -1564,6 +1564,7 @@ let newsFeedMode='mlb';
 let newsSourceFilter='all';
 let newsArticlesCache=[];
 const NEWS_SOURCE_LABELS={mlb:'MLB.com',espn:'ESPN',mlbtr:'MLB Trade Rumors',fangraphs:'FanGraphs',cbs:'CBS Sports'};
+const NEWS_SOURCE_ICONS={mlb:'⚾',espn:'📺',mlbtr:'💼',fangraphs:'📊',cbs:'🎙️'};
 
 // ── League Pulse globals ──────────────────────────────────────────────────────
 const MLB_BASE_V1_1='https://statsapi.mlb.com/api/v1.1';
@@ -6746,9 +6747,11 @@ function escapeNewsHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,functi
 function fmtNewsDate(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+a.headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
 function mkProxyNewsRow(item){
+  var icon=NEWS_SOURCE_ICONS[item.source]||'📰';
+  var sourceClass=item.source?' news-thumb--'+item.source:'';
   var thumb=item.image
-    ? '<div class="news-thumb"><img src="'+escapeNewsHtml(item.image)+'" alt="" onerror="this.parentNode.innerHTML=\'<span class=&quot;news-thumb-placeholder&quot;>📰</span>\'"></div>'
-    : '<div class="news-thumb"><span class="news-thumb-placeholder">📰</span></div>';
+    ? '<div class="news-thumb'+sourceClass+'"><img src="'+escapeNewsHtml(item.image)+'" alt="" onerror="this.parentNode.innerHTML=\'<span class=&quot;news-thumb-placeholder&quot;>'+icon+'</span>\'"></div>'
+    : '<div class="news-thumb'+sourceClass+'"><span class="news-thumb-placeholder">'+icon+'</span></div>';
   var src=NEWS_SOURCE_LABELS[item.source]||item.source||'';
   var kicker=src?'<div class="news-source-kicker">VIA '+escapeNewsHtml(src)+'</div>':'';
   var date=fmtNewsDate(item.pubDate);

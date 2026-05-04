@@ -69,26 +69,52 @@ export function parseRssItems(xml, sourceKey) {
     let contentEncoded = contentMatch ? contentMatch[1] : '';
     contentEncoded = contentEncoded.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim();
 
-    // Image precedence
+    // Image precedence — try increasingly permissive patterns. Quoted attrs
+    // can be double or single quotes (some WordPress themes emit single).
     let image = '';
-    const mediaContentMatch = /<media:content[^>]+url="([^"]+)"/.exec(itemXml);
-    if (mediaContentMatch) image = mediaContentMatch[1];
+    const ATTR = `(?:"([^"]+)"|'([^']+)')`;
+    const pickAttr = (m) => m && (m[1] || m[2] || '');
+
+    // 1. <media:content url="...">
+    let m = new RegExp(`<media:content\\b[^>]+url=${ATTR}`).exec(itemXml);
+    if (m) image = pickAttr(m);
+
+    // 2. <media:thumbnail url="...">
     if (!image) {
-      const mediaThumbMatch = /<media:thumbnail[^>]+url="([^"]+)"/.exec(itemXml);
-      if (mediaThumbMatch) image = mediaThumbMatch[1];
+      m = new RegExp(`<media:thumbnail\\b[^>]+url=${ATTR}`).exec(itemXml);
+      if (m) image = pickAttr(m);
     }
+
+    // 3. <itunes:image href="..."> — MLB.com news feeds use this
+    if (!image) {
+      m = new RegExp(`<itunes:image\\b[^>]+href=${ATTR}`).exec(itemXml);
+      if (m) image = pickAttr(m);
+    }
+
+    // 4. <img src="..."> in description
     if (!image && description) {
-      const imgMatch = /<img[^>]+src="([^"]+)"/.exec(description);
-      if (imgMatch) image = imgMatch[1];
+      m = new RegExp(`<img\\b[^>]+src=${ATTR}`).exec(description);
+      if (m) image = pickAttr(m);
     }
+
+    // 5. <img src="..."> in content:encoded — WordPress (FanGraphs, MLBTR)
     if (!image && contentEncoded) {
-      const imgMatch = /<img[^>]+src="([^"]+)"/.exec(contentEncoded);
-      if (imgMatch) image = imgMatch[1];
+      m = new RegExp(`<img\\b[^>]+src=${ATTR}`).exec(contentEncoded);
+      if (m) image = pickAttr(m);
     }
+
+    // 6. <enclosure url="..." type="image/...">
     if (!image) {
-      const enclosureMatch = /<enclosure[^>]+url="([^"]+)"[^>]+type="image\/[^"]+"/.exec(itemXml);
-      if (enclosureMatch) image = enclosureMatch[1];
+      m = new RegExp(`<enclosure\\b[^>]+url=${ATTR}[^>]+type=["']image/`).exec(itemXml);
+      if (m) image = pickAttr(m);
     }
+
+    // 7. Last resort: scan the full item for any image-extension URL
+    if (!image) {
+      m = /https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s"'<>]*)?/i.exec(itemXml);
+      if (m) image = m[0];
+    }
+
 
     // pubDate (RFC 2822 → ISO 8601)
     const pubMatch = /<pubDate>([\s\S]*?)<\/pubDate>/.exec(itemXml);
