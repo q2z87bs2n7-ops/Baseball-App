@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.32</title>
+<title>MLB Pulse v3.32.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1003,7 +1003,7 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.32</div>
+        <div class="settings-version">v3.32.1</div>
       </div>
     </div>
   </div>
@@ -6583,7 +6583,7 @@ async function buildGameDetailPanel(g,gameNum){
   var responses=await Promise.all([fetch(MLB_BASE+'/game/'+g.gamePk+'/linescore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/content')]);
   var ls=await responses[0].json(),bs=await responses[1].json(),content=await responses[2].json();
   var highlight=content.highlights&&content.highlights.highlights&&content.highlights.highlights.items&&content.highlights.highlights.items[0]?content.highlights.highlights.items[0]:null;
-  var highlightUrl=highlight?highlight.playbacks&&highlight.playbacks.find(function(p){return p.name==='FLASH_2500K_1280X720';})?highlight.playbacks.find(function(p){return p.name==='FLASH_2500K_1280X720';}).url:highlight.playbacks&&highlight.playbacks.length>0?highlight.playbacks[highlight.playbacks.length-1].url:null:null;
+  var highlightUrl=highlight?pickPlayback(highlight.playbacks):null;
   var thumbCuts=highlight&&highlight.image&&highlight.image.cuts?highlight.image.cuts:[];
   var thumbCut=thumbCuts.find(function(c){return c.width>=640&&c.width<=960;})||thumbCuts[thumbCuts.length-1]||null;
   var thumbUrl=thumbCut?thumbCut.src:null;
