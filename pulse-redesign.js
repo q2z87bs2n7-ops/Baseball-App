@@ -99,20 +99,34 @@
 
     // YOUR GAME callout — visible only when active team has a live in-progress game
     var yg = $('ptbYourGame');
-    if (!yg) return;
-    if (myLiveGame) {
-      var abbr = (myLiveGame.awayId === myTeamId) ? myLiveGame.awayAbbr : myLiveGame.homeAbbr;
-      var half = myLiveGame.halfInning === 'top' ? 'T' : 'B';
-      var meta = '· ' + (abbr || '') + ' ' + half + (myLiveGame.inning || '');
-      var metaEl = $('ptbYourGameMeta');
-      if (metaEl) metaEl.textContent = meta;
-      yg.style.display = '';
-    } else {
-      yg.style.display = 'none';
-      // Escape valve — if lens is on but no UI to turn it off, auto-clear it.
-      if (window.myTeamLens && typeof window.applyMyTeamLens === 'function') {
-        window.applyMyTeamLens(false);
+    if (yg) {
+      if (myLiveGame) {
+        var abbr = (myLiveGame.awayId === myTeamId) ? myLiveGame.awayAbbr : myLiveGame.homeAbbr;
+        var half = myLiveGame.halfInning === 'top' ? 'T' : 'B';
+        var meta = '· ' + (abbr || '') + ' ' + half + (myLiveGame.inning || '');
+        var metaEl = $('ptbYourGameMeta');
+        if (metaEl) metaEl.textContent = meta;
+        yg.style.display = '';
+      } else {
+        yg.style.display = 'none';
+        // Escape valve — if lens is on but no UI to turn it off, auto-clear it.
+        if (window.myTeamLens && typeof window.applyMyTeamLens === 'function') {
+          window.applyMyTeamLens(false);
+        }
       }
+    }
+
+    // Mobile sticky focus strip — toggle data-myteam-focus when the focused
+    // game belongs to the active team. CSS uses this attribute to paint a
+    // 3px team-color left border on #focusMiniBar (mobile only, gated by
+    // the ≤860px media query in pulse-redesign.css Section 6).
+    var miniBar = $('focusMiniBar');
+    if (miniBar) {
+      var fpk = window.focusGamePk;
+      var fg = fpk && states[fpk];
+      var focusIsMyTeam = !!(fg && myTeamId && (fg.awayId === myTeamId || fg.homeId === myTeamId));
+      if (focusIsMyTeam) miniBar.dataset.myteamFocus = '1';
+      else delete miniBar.dataset.myteamFocus;
     }
   }
 

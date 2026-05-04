@@ -90,19 +90,46 @@
 }
 #pulse[data-lens="team"] .ticker-chip:not(.lens-match) { opacity: 0.4; }
 
-/* ── 4. Feed density + emphasis ───────────────────────────────────────── */
+/* ── 4. Feed density + emphasis (Phase 2 / Step 6) ────────────────────── */
+/* Consolidated tier hierarchy: HR > scoring > RISP > status-change.
+   Every tier uses left-border accent for consistent visual rhythm so the
+   eye can scan tier strength in a single column. */
 #pulse #feedWrap { padding: 0.5rem 0 0; border: 0; }
 #pulse .feed-item {
   border-radius: 0;
   padding: 0.625rem 0.75rem;
+  border-left: 3px solid transparent;   /* reservation — keeps non-tier rows aligned */
   transition: background 0.15s ease;
 }
 #pulse .feed-item:hover { background: var(--card2); }
+
+/* Tier 1 — Home runs (violet, strongest visual weight) */
 #pulse .feed-item.homerun {
-  border-left-width: 3px;
   border-left-color: rgba(160, 100, 255, 0.85);
 }
-#pulse .feed-item.scoring { box-shadow: inset 2px 0 0 0 rgba(60, 190, 100, 0.7); }
+#pulse .feed-item.homerun .feed-play { font-weight: 700; }
+
+/* Tier 2 — Scoring plays (green) */
+#pulse .feed-item.scoring {
+  border-left-color: rgba(60, 190, 100, 0.7);
+}
+
+/* Tier 3 — RISP (yellow) — was previously badge-only, now gets thin accent */
+#pulse .feed-item.risp:not(.scoring):not(.homerun) {
+  border-left-color: rgba(255, 200, 0, 0.45);
+}
+
+/* Tier 4 — Status changes (blue, dimmer than scoring tiers) */
+#pulse .feed-item.status-change {
+  border-left-color: rgba(80, 140, 220, 0.45);
+  text-align: center;     /* preserve existing centered status row */
+}
+
+/* Lens-match override — when MY TEAM lens is on, matched rows use the
+   team-color accent instead of the tier color. Subtle but unmistakable. */
+#pulse[data-lens="team"] .feed-item.lens-match {
+  border-left-color: var(--accent-strong, var(--secondary, #f59e0b));
+}
 
 /* ── 5. Top bar restructure (Phase 2 / Step 3) ────────────────────────── */
 /* Three-zone layout: brand (left) → status counters + YOUR GAME callout
@@ -271,6 +298,30 @@
   #pulse .ptb-controls-divider { display: none; }
   /* Hide YOUR GAME meta + state on tight viewports — keep dot + label */
   #pulse .ptb-yg-meta, #pulse .ptb-yg-state { display: none; }
+
+  /* Sticky Focus strip below ticker (Phase 2 / Step 7).
+     Layers an amber gradient overlay onto #focusMiniBar's first row so the
+     existing JS-rendered chrome doesn't have to be rewritten. Sticks under
+     the ticker on scroll so live game context stays visible. */
+  #pulse #focusMiniBar {
+    position: sticky;
+    top: var(--ticker-h, 50px);
+    z-index: 70;
+    background: linear-gradient(90deg,
+      rgba(255, 170, 60, 0.12),
+      rgba(255, 170, 60, 0.02) 60%,
+      transparent
+    );
+    backdrop-filter: saturate(1.2) blur(2px);
+    -webkit-backdrop-filter: saturate(1.2) blur(2px);
+    box-shadow: 0 1px 0 0 var(--p-border, var(--border, #1e2d4a));
+  }
+  /* When MY TEAM lens is on AND the focused game belongs to active team,
+     paint the 3px team-color left border on the strip (mock spec). JS
+     toggles `data-myteam-focus="1"` on #focusMiniBar in updateTopBarStats. */
+  #pulse #focusMiniBar[data-myteam-focus="1"] {
+    border-left: 3px solid var(--secondary, #f59e0b);
+  }
 }
 
 /* ── 7. Yesterday Recap entry, when present in top bar ────────────────── */
