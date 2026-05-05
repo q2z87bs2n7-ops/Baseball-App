@@ -193,7 +193,6 @@ let collectionSlotsDisplay=[];      // sorted slot array set by renderCollection
 
 // ── Yesterday Recap globals (v3.19.1) ─────────────────────────────────────────
 let yesterdayContentCache={};      // gamePk → content API response (session-only)
-let pendingVideoQueue=[];          // {gamePk,batterId,batterName,feedItemTs,playTs} — awaiting clip match
 let liveContentCache={};           // gamePk → {items:[],fetchedAt:ms} — re-fetched if >5min stale
 let lastVideoClip=null;            // most recent matched live clip — used by dev tool
 let videoClipPollTimer=null;
@@ -441,7 +440,6 @@ async function pollGamePlays(gamePk) {
       if(isHitEvt) perfectGameTracker[gamePk]=false;
       if (isHitEvt&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
       if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;dailyPitcherKs[kkey]=ke;}
-      if((event==='Home Run'||isScoringP)&&batterId) pendingVideoQueue.push({gamePk:gamePk,batterId:batterId,batterName:batterName||'',feedItemTs:playTime?playTime.getTime():Date.now(),playTs:playTime?playTime.getTime():Date.now()});
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
@@ -2867,16 +2865,21 @@ async function devTestVideoClip() {
 }
 
 async function pollPendingVideoClips() {
-  if(!pendingVideoQueue.length) return;
-  // Expire entries older than 2 hours — MLB won't publish a clip that late
+  // Scan feedItems for scoring plays whose feed element hasn't been patched with a clip yet.
+  // feedItems is the source of truth — no separate queue needed.
   var cutoff=Date.now()-2*60*60*1000;
-  pendingVideoQueue=pendingVideoQueue.filter(function(e){return e.playTs>cutoff;});
-  if(!pendingVideoQueue.length) return;
-  var byGame={};
-  pendingVideoQueue.forEach(function(entry){
-    (byGame[entry.gamePk]=byGame[entry.gamePk]||[]).push(entry);
+  var feed=document.getElementById('feed');
+  if(!feed) return;
+  var pending=feedItems.filter(function(item){
+    if(!item.data||!item.data.batterId) return false;
+    if(item.data.event!=='Home Run'&&!item.data.scoring) return false;
+    if(!item.ts||item.ts.getTime()<cutoff) return false;
+    var el=feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
+    return el&&!el.dataset.clipPatched;
   });
-  var resolved=[];
+  if(!pending.length) return;
+  var byGame={};
+  pending.forEach(function(item){(byGame[item.gamePk]=byGame[item.gamePk]||[]).push(item);});
   for(var pk in byGame){
     var gpk=+pk;
     var cached=liveContentCache[gpk];
@@ -2891,30 +2894,22 @@ async function pollPendingVideoClips() {
     }
     var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
     if(!clips.length) continue;
-    byGame[pk].forEach(function(entry){
-      // Find the clip whose publish timestamp is nearest to the play time.
-      // A batter can't bat again for a full lineup cycle (~20+ min) so nearest
-      // timestamp is unambiguous — no keyword scanning needed.
-      var best=null, bestDiff=Infinity;
+    byGame[pk].forEach(function(item){
+      var playTs=item.ts.getTime();
+      var best=null,bestDiff=Infinity;
       clips.forEach(function(clip){
         var clipTs=clip.date?new Date(clip.date).getTime():null;
         if(!clipTs) return;
-        var diff=Math.abs(clipTs-entry.playTs);
+        var diff=Math.abs(clipTs-playTs);
         if(diff<bestDiff){bestDiff=diff;best=clip;}
       });
-      // Accept if the nearest clip is within 90 minutes of the play
       if(best&&bestDiff<90*60*1000){
         lastVideoClip=best;
-        patchFeedItemWithClip(entry.feedItemTs,gpk,best);
-        patchStoryWithClip(gpk,entry.batterId,entry.batterName,best);
-        resolved.push(entry);
+        patchFeedItemWithClip(playTs,gpk,best);
+        patchStoryWithClip(gpk,item.data.batterId,item.data.batterName,best);
       }
     });
   }
-  resolved.forEach(function(e){
-    var idx=pendingVideoQueue.indexOf(e);
-    if(idx!==-1) pendingVideoQueue.splice(idx,1);
-  });
 }
 
 function patchFeedItemWithClip(feedItemTs,gamePk,clip){
