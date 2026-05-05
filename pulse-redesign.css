@@ -235,6 +235,12 @@
   gap: 0.4rem;
   flex-shrink: 0;
 }
+#pulse .ptb-counter.ptb-counter-hidden {
+  display: none;
+}
+#pulse .ptb-counter-sep.ptb-sep-hidden {
+  display: none;
+}
 #pulse .ptb-counter-dot {
   width: 6px;
   height: 6px;

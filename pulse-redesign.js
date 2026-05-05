@@ -95,7 +95,16 @@
     }
     var elLive = $('ptbCountLive'); if (elLive) { elLive.parentElement.classList.toggle('ptb-counter-live', live > 0); elLive.textContent = live; }
     var elFinal = $('ptbCountFinal'); if (elFinal) elFinal.textContent = final;
-    var elPrev = $('ptbCountPreview'); if (elPrev) elPrev.textContent = preview;
+    var elPrev = $('ptbCountPreview'); if (elPrev) {
+      var previewCounter = elPrev.parentElement;
+      previewCounter.classList.toggle('ptb-counter-hidden', preview === 0);
+      // Also hide the separator before this counter
+      var sep = previewCounter.previousElementSibling;
+      if (sep && sep.classList.contains('ptb-counter-sep')) {
+        sep.classList.toggle('ptb-sep-hidden', preview === 0);
+      }
+      elPrev.textContent = preview;
+    }
 
     // YOUR GAME callout — visible only when active team has a live in-progress game
     var yg = $('ptbYourGame');
