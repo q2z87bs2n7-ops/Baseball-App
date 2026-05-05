@@ -2921,7 +2921,7 @@ function patchFeedItemWithClip(feedItemTs,gamePk,clip){
   if(!el||el.dataset.clipPatched) return;
   el.dataset.clipPatched='1';
   var wrap=document.createElement('div');
-  wrap.style.cssText='margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;max-width:320px';
+  wrap.style.cssText='margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto';
   wrap.innerHTML=(thumb?'<img src="'+thumb+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">':'<div style="width:100%;aspect-ratio:16/9;background:#111"></div>')
     +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'
     +'<div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">▶</div>'
