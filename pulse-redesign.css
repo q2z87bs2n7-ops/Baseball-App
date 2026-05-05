@@ -372,9 +372,9 @@
      focus is hidden on mobile so hero still occupies a single row cleanly. */
   #pulse #sideRail { margin-top: 1rem; }
   /* Compact top bar — drop UP NEXT counter, tighten gaps */
-  #pulse #pulseTopBar .ptb-kicker { padding: 0.5rem 0.75rem; }
-  #pulse #pulseTopBar .ptb-bolt { font-size: 0.85rem; }
-  #pulse #pulseTopBar .ptb-brand { letter-spacing: .18em; font-size: 0.7rem; }
+  #pulse #pulseTopBar .ptb-kicker { display: none !important; }
+  #pulse #pulseTopBar .ptb-bolt { display: none; }
+  #pulse #pulseTopBar .ptb-brand { display: none; }
   #pulse #ptbStatus {
     gap: 0.5rem;
     padding: 0 0.625rem;
