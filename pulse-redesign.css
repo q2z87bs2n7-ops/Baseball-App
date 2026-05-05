@@ -369,6 +369,10 @@
 
 /* ── 6. Mobile (≤860px) ───────────────────────────────────────────────── */
 @media (max-width: 860px) {
+  /* Add spacing below ticker so it breathes away from hero below */
+  #pulse #gameTicker {
+    margin-bottom: 0.75rem;
+  }
   #pulse #pulseHero {
     grid-template-columns: 1fr;
     gap: 0.625rem;
