@@ -1870,7 +1870,7 @@ async function buildStoryPool(){
   if(now-transactionsLastFetch>120*60000){loadTransactionsCache();}
   if(now-highLowLastFetch>6*60*60000){loadHighLowCache();}
   if(now-liveWPLastFetch>(devTuning.livewp_refresh_ms||90000)){loadLiveWPCache();}
-  loadProbablePitcherStats();
+  await loadProbablePitcherStats();
   fetchMissingHRBatterStats();
   var multiHitStories=await genMultiHitDay();
   var wpStories=await genWinProbabilityStories();
