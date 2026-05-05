@@ -48,7 +48,7 @@ const TEAMS=[
   {id:140,espnId:13,name:'Texas Rangers',short:'Rangers',division:'American League West',league:'AL',primary:'#003278',secondary:'#C0111F',youtubeUC:'UCZjXWMvOrhc91chSDPDUspA'},
 ];
 
-const MLB_THEME={id:-1,name:'MLB (Neutral)',short:'MLB',primary:'#003087',secondary:'#FFB81C'};
+const MLB_THEME={id:-1,name:'Default',short:'MLB',primary:'#0E3386',secondary:'#CC3433'};
 
 let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false,savedThemeForPulse=null,themeScope='full';
 let newsFeedMode='mlb';
@@ -3635,7 +3635,7 @@ function renderEmptyState(postSlate, intermission) {
   }
   el.className='has-upcoming';
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
-  var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,#003087 0%,#111827 45%,#003087 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
+  var heroGrad=themeOverride===MLB_THEME?'linear-gradient(90deg,'+MLB_THEME.primary+' 0%,#111827 45%,'+MLB_THEME.primary+' 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
   var greeting=pulseGreeting();
   var labelText=intermission
     ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
@@ -4662,7 +4662,7 @@ document.addEventListener('click',function(e){
 });
 
 function buildThemeSelect(){
-  var sel=document.getElementById('themeSelect');sel.innerHTML='<option value="0">Default (Follow Team)</option><option value="-1">MLB (Neutral)</option>';var lastDiv='';
+  var sel=document.getElementById('themeSelect');sel.innerHTML='<option value="-1">Default</option><option value="0">Follow Team</option>';var lastDiv='';
   TEAMS.forEach(function(t){
     if(t.division!==lastDiv){var og=document.createElement('optgroup');og.label=t.division;sel.appendChild(og);lastDiv=t.division;}
     var opt=document.createElement('option');opt.value=t.id;opt.textContent=t.name;sel.lastChild.appendChild(opt);
@@ -5692,14 +5692,14 @@ function togglePush(){
     startSyncInterval();
   }
   if(sv('mlb_team'))activeTeam=TEAMS.find(t=>t.id===parseInt(sv('mlb_team')))||activeTeam;
-  if(sv('mlb_theme')&&sv('mlb_theme')!=='0'){
-    if(sv('mlb_theme')==='-1'){themeOverride=MLB_THEME;}
-    else{themeOverride=TEAMS.find(t=>t.id===parseInt(sv('mlb_theme')))||null;}
-  }
+  var storedTheme=sv('mlb_theme');
+  if(!storedTheme||storedTheme==='-1'){themeOverride=MLB_THEME;}
+  else if(storedTheme==='0'){themeOverride=null;}
+  else{themeOverride=TEAMS.find(t=>t.id===parseInt(storedTheme))||null;}
   if(sv('mlb_invert')==='true')themeInvert=true;
   if(sv('mlb_theme_scope')==='nav')themeScope='nav';
   buildTeamSelect();buildThemeSelect();updatePulseToggle();
-  if(sv('mlb_theme'))document.getElementById('themeSelect').value=sv('mlb_theme');
+  document.getElementById('themeSelect').value=storedTheme||'-1';
   if(sv('mlb_theme_scope'))document.getElementById('themeScopeSelect').value=sv('mlb_theme_scope');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
