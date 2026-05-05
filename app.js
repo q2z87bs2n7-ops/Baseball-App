@@ -1166,7 +1166,7 @@ function renderMLBNewsFeed() {
   var html='';
   mlbNewsFeed.forEach(function(item,idx){
     var active=idx===0?' active':'';
-    var imgHtml=item.image?'<img class="news-card-image" src="'+item.image+'" onerror="this.style.display=\'none\'" alt="news">'
+    var imgHtml=item.image?'<img class="news-card-image" src="'+forceHttps(item.image)+'" onerror="this.style.display=\'none\'" alt="news">'
       :'<div class="news-card-image" style="background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);">📰</div>';
     html+='<div class="news-card-item'+active+'">'
       +imgHtml
@@ -5450,6 +5450,7 @@ function renderPlayerStats(s,group){
 }
 
 function escapeNewsHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function forceHttps(url){return url?url.replace(/^http:/,'https:'):url;}
 function normalizeNewsText(s){return String(s||'').replace(/&!(\d+);/g,'&#$1;');}
 function fmtNewsDate(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var headline=normalizeNewsText(a.headline||'');return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
@@ -5457,7 +5458,7 @@ function mkProxyNewsRow(item){
   var icon=NEWS_SOURCE_ICONS[item.source]||'📰';
   var sourceClass=item.source?' news-thumb--'+item.source:'';
   var thumb=item.image
-    ? '<div class="news-thumb'+sourceClass+'"><img src="'+escapeNewsHtml(item.image)+'" alt="" onerror="this.parentNode.innerHTML=\'<span class=&quot;news-thumb-placeholder&quot;>'+icon+'</span>\'"></div>'
+    ? '<div class="news-thumb'+sourceClass+'"><img src="'+escapeNewsHtml(forceHttps(item.image))+'" alt="" onerror="this.parentNode.innerHTML=\'<span class=&quot;news-thumb-placeholder&quot;>'+icon+'</span>\'"></div>'
     : '<div class="news-thumb'+sourceClass+'"><span class="news-thumb-placeholder">'+icon+'</span></div>';
   var src=NEWS_SOURCE_LABELS[item.source]||item.source||'';
   var kicker=src?'<div class="news-source-kicker">VIA '+escapeNewsHtml(src)+'</div>':'';
@@ -5618,13 +5619,12 @@ function togglePushOnDesktop(){devShowPushOnDesktop=!devShowPushOnDesktop;var to
 async function loadMediaFeed(uc){
   var listEl=document.getElementById('homeYoutubeList');
   try{
-    var feedUrl=encodeURIComponent('https://www.youtube.com/feeds/videos.xml?channel_id='+uc),txt=null;
-    for(var attempt=0;attempt<3;attempt++){try{var r=await fetch('https://api.allorigins.win/get?url='+feedUrl);var json=await r.json();if(json.contents){txt=json.contents;break;}}catch(e){}await new Promise(function(res){setTimeout(res,1000);});}
-    if(!txt)throw new Error('Failed after retries');
-    var parser=new DOMParser(),xml=parser.parseFromString(txt,'application/xml'),entries=xml.querySelectorAll('entry');
-    mediaVideos=[];
-    entries.forEach(function(e){var videoIdEl=e.getElementsByTagNameNS('http://www.youtube.com/xml/schemas/2015','videoId')[0],videoId=videoIdEl?videoIdEl.textContent:null,title=e.querySelector('title')?e.querySelector('title').textContent:'Untitled',published=e.querySelector('published')?e.querySelector('published').textContent:'',thumb='https://img.youtube.com/vi/'+videoId+'/mqdefault.jpg',date=published?new Date(published).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';if(videoId)mediaVideos.push({videoId:videoId,title:title,thumb:thumb,date:date});});
-    if(!mediaVideos.length)throw new Error('No videos');renderMediaList();selectMediaVideo(mediaVideos[0].videoId);
+    var r=await fetch(API_BASE+'/api/proxy-youtube?channel='+encodeURIComponent(uc));
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var json=await r.json();
+    if(!json.success||!json.videos||!json.videos.length)throw new Error(json.message||'No videos');
+    mediaVideos=json.videos;
+    renderMediaList();selectMediaVideo(mediaVideos[0].videoId);
   }catch(e){if(listEl)listEl.innerHTML='<div class="error" style="padding:12px;color:var(--muted);font-size:.9rem">Could not load videos: '+e.message+'</div>';}
 }
 function renderMediaList(){var listEl=document.getElementById('homeYoutubeList');if(!listEl)return;var html='';mediaVideos.forEach(function(v){var sel=v.videoId===selectedVideoId;html+='<div onclick="selectMediaVideo(\''+v.videoId+'\')" style="cursor:pointer;padding:10px;border-bottom:1px solid var(--border);background:'+(sel?'color-mix(in srgb,var(--accent) 12%,transparent)':'transparent')+';'+(sel?'border-left:3px solid var(--accent)':'border-left:3px solid transparent')+'"><img src="'+v.thumb+'" style="width:100%;border-radius:4px;margin-bottom:6px;display:block" loading="lazy"/><div style="font-size:.72rem;font-weight:600;color:'+(sel?'var(--accent)':'var(--text)')+';line-height:1.3;margin-bottom:3px">'+v.title+'</div><div style="font-size:.65rem;color:var(--muted)">'+v.date+'</div></div>';});listEl.innerHTML=html;}
