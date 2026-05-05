@@ -30,8 +30,10 @@ export default async function handler(req, res) {
       const title = titleMatch ? titleMatch[1].trim() : '';
 
       // Extract video ID from namespaced element: <yt:videoId>
+      // The yt: namespace is declared on the root <feed> element, not inline on each entry element,
+      // so within the <entry> block it appears as plain <yt:videoId> without the xmlns attribute.
       let videoId = '';
-      const videoIdMatch = /<yt:videoId xmlns:yt="http:\/\/www\.youtube\.com\/xml\/schemas\/2015">([\s\S]*?)<\/yt:videoId>/.exec(entryXml);
+      const videoIdMatch = /<yt:videoId>([\s\S]*?)<\/yt:videoId>/.exec(entryXml);
       if (videoIdMatch) {
         videoId = videoIdMatch[1].trim();
       }
