@@ -2894,10 +2894,18 @@ async function pollPendingVideoClips() {
     }
     var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
     if(!clips.length) continue;
+    // Pre-filter to scoring/HR clips only so non-play editorial videos (challenges,
+    // interviews, features) can never win a nearest-timestamp match.
+    var scoringClips=clips.filter(function(clip){
+      return (clip.keywordsAll||[]).some(function(kw){
+        var v=kw.value||kw.slug||'';
+        return v==='home_run'||v==='scoring_play'||v==='walk_off';
+      });
+    });
     byGame[pk].forEach(function(item){
       var playTs=item.ts.getTime();
       var best=null,bestDiff=Infinity;
-      clips.forEach(function(clip){
+      scoringClips.forEach(function(clip){
         var clipTs=clip.date?new Date(clip.date).getTime():null;
         if(!clipTs) return;
         var diff=Math.abs(clipTs-playTs);
