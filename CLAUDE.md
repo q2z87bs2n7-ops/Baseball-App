@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.34.8
+**Current version:** v3.34.11
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -27,6 +27,9 @@ An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pull
 - **v3.34.6** — end-of-session CLAUDE.md + version/cache housekeeping
 - **v3.34.7** — Yesterday's Highlights date picker: `‹ date ›` nav in `#ydSectionBar`; `ydChangeDate()` fetches any past date via `loadYdForDate()`; `ydDisplayCache` holds non-yesterday results without polluting `yesterdayCache` used by story carousel; empty state shows "No games played on [date]."
 - **v3.34.8** — end-of-session CLAUDE.md + version/cache housekeeping
+- **v3.34.9** — (reverted version label; no functional changes)
+- **v3.34.10** — fix mixed-content console errors: `forceHttps()` helper upgrades `http://` news image URLs to `https://` in Pulse side-rail carousel and News tab; switch Media tab `loadMediaFeed` from unreliable `api.allorigins.win` proxy to `/api/proxy-youtube` Vercel backend
+- **v3.34.11** — end-of-session CLAUDE.md + version/cache housekeeping
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
@@ -886,6 +889,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `hslLighten(hex, targetL)` | Keep hue/sat, push L to targetL (0–1) |
 | `fmt(v, d)` | Formats a numeric stat to `d` decimal places (default 3); returns `—` for null/empty |
 | `fmtRate(v, d)` | Like `fmt` but strips the leading zero for values between 0 and 1 — e.g. `.312` not `0.312`. Use for AVG, OBP, OPS, FPCT. |
+| `forceHttps(url)` | Replaces `http:` with `https:` on a URL string; returns the original value unchanged if falsy. Applied to all news image URLs before rendering to prevent mixed-content browser warnings. |
 | `pickAccent(secondaryHex, cardHex)` | Returns contrast-safe `--accent` value for a team |
 | `pickHeaderText(primaryHex)` | Returns `#0a0f1e` or `#ffffff` for header text |
 | `pickOppColor(oppPrimary, oppSecondary, myPrimary)` | Added v3.30.12. Returns the opp color most distinct from the user's effective primary so the opp tint on Next Game card always reads as "different team". RGB Euclidean distance threshold 60 — falls back to opp secondary when oppPrimary too close (e.g., Cubs blue vs Mets blue). When both opp colors are too close (e.g., Yankees navy/navy vs Mets blue), keeps oppPrimary unchanged for graceful degrade. |
