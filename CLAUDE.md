@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.34.6
+**Current version:** v3.34.8
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -25,6 +25,8 @@ An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pull
 - **v3.34.4** — Theme Scope setting: "Full App" (existing behavior) vs "Nav Only" (team vars scoped to `<header>` element; rest of app uses Default neutral theme); Theme Scope dropdown added to Settings; `themeScope` global + `switchThemeScope()` function; persisted to `localStorage('mlb_theme_scope')`
 - **v3.34.5** — theme system overhaul: `MLB_THEME` updated to Cubs colors (`#0E3386`/`#CC3433`) and renamed "Default"; Color Theme dropdown order swapped (Default first, Follow Team second); new users default to Default theme on first load; hero gradient in `renderEmptyState` uses dynamic `MLB_THEME.primary`
 - **v3.34.6** — end-of-session CLAUDE.md + version/cache housekeeping
+- **v3.34.7** — Yesterday's Highlights date picker: `‹ date ›` nav in `#ydSectionBar`; `ydChangeDate()` fetches any past date via `loadYdForDate()`; `ydDisplayCache` holds non-yesterday results without polluting `yesterdayCache` used by story carousel; empty state shows "No games played on [date]."
+- **v3.34.8** — end-of-session CLAUDE.md + version/cache housekeeping
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
@@ -165,7 +167,9 @@ let storyShownId     = null             // id of currently displayed story
 let storyRotateTimer = null             // setInterval handle from initReal()
 let storyPoolTimer   = null             // setInterval handle (30s) for buildStoryPool() — decoupled from 15s pollLeaguePulse()
 let onThisDayCache   = null             // cached stories from 3 years ago (same date)
-let yesterdayCache   = null             // cached stories from yesterday's games
+let yesterdayCache   = null             // cached stories from yesterday's games — populated by loadYesterdayCache() at Pulse init; used by genYesterdayHighlights() story carousel; never modified by date picker
+let ydDateOffset     = -1               // days relative to today shown in Yesterday Recap; -1=yesterday (default); updated by ydChangeDate()
+let ydDisplayCache   = null             // non-null when user has navigated to a date other than yesterday via date picker; avoids polluting yesterdayCache used by story carousel; cleared on each openYesterdayRecap()
 let dailyLeadersCache= null             // cached top 3 leaders per stat category
 let dailyLeadersLastFetch=0             // timestamp of last leaders fetch
 let dailyHitsTracker = {}               // batterId → hit count (reset daily)
@@ -509,7 +513,7 @@ Global live MLB play-by-play feed — aggregates every scoring play, home run, a
 - `#alertStack` — `position:fixed` toast stack for run/triple-play alerts (HR events do NOT fire a toast — the player card replaces it)
 - `#playerCardOverlay` — `position:fixed` full-screen semi-transparent overlay; contains `#playerCard`; shown on HR events in both real and mock mode (v2.7)
 - `#pulseTopBar` — brand strip above `#gameTicker`; shares CSS rule with `#ydSectionBar` (Yesterday Recap heading) so both render identically. Contains: ⚡ MLB PULSE wordmark (`.ptb-kicker` / `.ptb-bolt` / `.ptb-brand`) on the left; right side wraps `#ptbYestBtn` ("YESTERDAY'S RECAP" pill — `display:none` until `loadYesterdayCache()` resolves AND live feed is active; visibility exclusively controlled by `updateFeedEmpty()` — race-proof) + `#myTeamLensBtn` (MY TEAM toggle — hidden during hype/post-slate/intermission states via `hideWhenEmpty` in `updateFeedEmpty()`) + `#ptbSoundBtn` (🔊 icon-only pill; calls `toggleSoundPanel()`) + `#ptbRadioBtn` (📻 icon-only pill; calls `toggleRadio()`; synced by `setRadioUI()` via `.on` class) + `#ptbSchemeBtn` (☀️/🌙 icon-only pill; calls `setPulseColorScheme()`; `#ptbSchemeIcon` text driven by `updatePulseToggle()`).
-- `#yesterday` — `class="section"` inside `.main` (sibling to `#pulse`) — normal section, not an overlay. Opened via `openYesterdayRecap()` (called from `#ptbYestBtn` or any future entry point); closed via `closeYesterdayRecap()` which restores `ydPrevSection` (defaults to `'pulse'`). Contains `#ydSectionBar` (same CSS as `#pulseTopBar` + `position:sticky; top:var(--header-h); z-index:80; margin-bottom:16px`; shows ⚡ MLB PULSE · [date] on left + ← BACK pill on right using `.ptb-lens` class) + `#yesterdayCard` (content injected by `renderYesterdayRecap()`).
+- `#yesterday` — `class="section"` inside `.main` (sibling to `#pulse`) — normal section, not an overlay. Opened via `openYesterdayRecap()` (called from `#ptbYestBtn` or any future entry point); closed via `closeYesterdayRecap()` which restores `ydPrevSection` (defaults to `'pulse'`). Contains `#ydSectionBar` (same CSS as `#pulseTopBar` + `position:sticky; top:var(--header-h); z-index:80; margin-bottom:16px`; shows ⚡ MLB PULSE · ‹ [date] › on left — the `.yd-date-btn` chevron buttons call `ydChangeDate(-1/+1)`; `#ydNextDateBtn` starts disabled (can't go past yesterday); ← BACK pill on right using `.ptb-lens` class) + `#yesterdayCard` (content injected by `renderYesterdayRecap()`).
 - `#gameTicker` — `position:sticky` below header; horizontal scrollable chip bar
 - `#mockBar` — inline (not fixed); shown only when `pulseMockMode` is true
 - `#feedWrap > #feedEmpty + #feed` — empty/upcoming state and live play items
@@ -985,6 +989,9 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `radioCheckReset()` | Clears both `radioCheckResults` and `radioCheckNotes` + saves both + re-renders. |
 | `radioCheckCopy()` | Builds categorised markdown (✅ Works / ❌ Broken / ⏳ Untested) with per-station notes interleaved as `📝 …` indented lines; writes to clipboard via `navigator.clipboard.writeText()`, falls back to `fallbackCopy()`. Flashes "✓ Copied!" on the button for 1.8s. |
 | `fallbackCopy(text)` | Hidden `<textarea>` + `document.execCommand('copy')` clipboard fallback for browsers without `navigator.clipboard`. |
+| `getYdActiveCache()` | Returns `ydDisplayCache` when non-null (user has navigated to a non-yesterday date), otherwise `yesterdayCache`. All Yesterday Recap rendering functions route through this so they always show data for the currently-selected date. |
+| `loadYdForDate(dateStr)` | Async — fetches schedule + boxscore + playByPlay for `dateStr` (YYYY-MM-DD), builds and returns an array of cache items (same shape as `yesterdayCache` entries but without "Yesterday: " headline prefix). Used by both `loadYesterdayCache()` and `ydChangeDate()`. |
+| `ydChangeDate(dir)` | Increments/decrements `ydDateOffset` by `dir` (-1 or +1). Guards: blocks navigation to today/future (offset ≥ 0) and > 365 days back. Updates `#ydDateLabel`, toggles `#ydNextDateBtn` disabled state, shows loading state, calls `loadYdForDate()` into `ydDisplayCache` (or clears it when returning to -1), then calls `renderYesterdayRecap()`. |
 
 ---
 
