@@ -243,7 +243,7 @@ function initReal() {
   if(storyPoolTimer){clearInterval(storyPoolTimer);storyPoolTimer=null;}
   storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
   if(videoClipPollTimer){clearInterval(videoClipPollTimer);videoClipPollTimer=null;}
-  videoClipPollTimer=setInterval(pollPendingVideoClips,2*60*1000);
+  videoClipPollTimer=setInterval(pollPendingVideoClips,30*1000);
   if(yesterdayRefreshTimer){clearInterval(yesterdayRefreshTimer);yesterdayRefreshTimer=null;}
   yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){
@@ -440,11 +440,11 @@ async function pollGamePlays(gamePk) {
       if(isHitEvt) perfectGameTracker[gamePk]=false;
       if (isHitEvt&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
       if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;dailyPitcherKs[kkey]=ke;}
+      if(event==='Home Run'&&batterId) pendingVideoQueue.push({gamePk:gamePk,batterId:batterId,batterName:batterName||'',feedItemTs:playTime?playTime.getTime():Date.now(),playTs:playTime?playTime.getTime():Date.now()});
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
-        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}
-          if(batterId) pendingVideoQueue.push({gamePk:gamePk,batterId:batterId,batterName:batterName||'',feedItemTs:playTime?playTime.getTime():Date.now(),playTs:Date.now()});}
+        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}}
         else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=devTuning.rbiCooldown;
 if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning,gamePk);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
@@ -2890,9 +2890,14 @@ async function pollPendingVideoClips() {
       for(var ci=0;ci<clips.length;ci++){
         var clip=clips[ci];
         var kws=clip.keywordsAll||[];
-        var hasPlayer=kws.some(function(kw){return kw.type==='player_id'&&String(kw.value)===String(entry.batterId);});
+        var _bid=String(entry.batterId);
+        var hasPlayer=kws.some(function(kw){
+          if(kw.type==='player_id') return String(kw.value||'')===_bid;
+          if(kw.slug&&kw.slug.startsWith('player_id-')) return kw.slug.split('-')[1]===_bid;
+          return false;
+        });
         var clipTs=clip.date?new Date(clip.date).getTime():0;
-        if(hasPlayer&&clipTs>=entry.playTs-60000&&pickPlayback(clip.playbacks)){match=clip;break;}
+        if(hasPlayer&&(clipTs===0||clipTs>=entry.playTs-60000)&&pickPlayback(clip.playbacks)){match=clip;break;}
       }
       if(match){
         lastVideoClip=match;
