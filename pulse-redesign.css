@@ -48,6 +48,7 @@
   flex-direction: column;
   max-width: none;            /* override styles.css 700px cap inside hero */
   margin: 0;                  /* override styles.css auto margin inside hero */
+  gap: 0.5rem;                /* spacing between card and dots row */
 }
 #pulse #pulseHero #storyCarousel .story-card-wrap {
   flex: 1;
@@ -55,15 +56,42 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
 }
 #pulse #pulseHero #storyCarousel .story-card {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;    /* center text vertically in stretched card */
+  padding: 1rem;
+}
+#pulse #pulseHero #storyCarousel .story-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  opacity: 0.45;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  padding: 8px 6px;
+  font-size: 1.5rem;
+  line-height: 1;
+  z-index: 10;
+}
+#pulse #pulseHero #storyCarousel .story-nav:hover {
+  opacity: 1;
+}
+#pulse #pulseHero #storyCarousel .story-card-wrap {
+  position: relative;
 }
 #pulse #pulseHero #storyCarousel .story-dots-row {
   flex-shrink: 0;
+  padding: 0.5rem 0 0;
 }
 #pulse #pulseHero #storyCarousel .story-nav-prev { left: -8px; }
 #pulse #pulseHero #storyCarousel .story-nav-next { right: -8px; }
