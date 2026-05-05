@@ -107,7 +107,7 @@
   flex-shrink: 0;
   padding: 0.75rem 1rem 0.875rem;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   border-top: 0;
   margin-top: 0;
 }
@@ -374,10 +374,10 @@
   /* Compact top bar — drop UP NEXT counter, tighten gaps */
   #pulse #pulseTopBar .ptb-kicker { padding: 0.5rem 0.75rem; }
   #pulse #pulseTopBar .ptb-brand { letter-spacing: .18em; }
-  #pulse #ptbStatus { gap: 0.625rem; padding: 0 0.625rem; }
+  #pulse #ptbStatus { gap: 0.75rem; padding: 0 0.75rem; margin-right: 0.5rem; }
   #pulse #ptbStatus .ptb-counter:nth-of-type(3),
   #pulse #ptbStatus .ptb-counter-sep:nth-of-type(4) { display: none; }
-  #pulse #pulseTopBar .ptb-controls { padding: 0 0.5rem; gap: 4px; }
+  #pulse #pulseTopBar .ptb-controls { padding: 0 0.625rem; gap: 6px; }
   #pulse .ptb-controls-divider { display: none; }
   /* Hide YOUR GAME meta + state on tight viewports — keep dot + label */
   #pulse .ptb-yg-meta, #pulse .ptb-yg-state { display: none; }
