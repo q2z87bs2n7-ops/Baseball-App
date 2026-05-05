@@ -1698,6 +1698,7 @@ document.addEventListener('keydown', function(e) {
 7. **Date strings use local time** — all `startDate`/`endDate` params in `index.html` are built from `getFullYear`/`getMonth`/`getDate` (local). Avoid `toISOString().split('T')[0]` for date params — it returns UTC and will be one day ahead after ~8 PM ET, causing games to be skipped (fixed v1.45.5). `api/notify.js` intentionally uses UTC since it runs on Vercel servers and compares timestamps, not dates. **Calendar `gameByDate` key also uses local timezone conversion (fixed v1.61)** — previously used `gameDate.split('T')[0]` (UTC), which placed evening US games on the wrong calendar cell.
 8. **Audacy radio rights gap** — ~14 MLB market flagships hosted by Audacy (URLs `live.amperwave.net/manifest/audacy-*`) play alternate content during games (talk shows / ads) instead of the OTA simulcast, because Audacy holds OTA rights but not MLB streaming rights. The radio.net-published URL is correct for the station but useless for game audio. Affected teams default to Fox Sports fallback via `APPROVED_RADIO_TEAM_IDS`. Fix requires sourcing replacement URLs from non-Audacy CDNs (iHeartRadio / StreamTheWorld / Bonneville / station apps). See "📻 Live Game Radio System" → "Audacy rights gap".
 9. **Hls.js CDN dependency** — `hls.light.min.js@1.5.18` loaded from `cdn.jsdelivr.net` (not stored in repo, not in `sw.js` SHELL cache). If the CDN goes down, all `format:'hls'` radio streams break in non-Safari browsers; Safari users keep working via native HLS. Worth bundling locally if the CDN ever becomes unreliable.
+10. **News image allowlist (`NEWS_IMAGE_HOSTS`)** — added v3.34.17 to prevent browser requests to unexpected RSS thumbnail domains (e.g. `jotcast.com` podcast avatars) triggering corporate firewalls (Check Point UserCheck). Side effect: if a legitimate news source (CBS, FanGraphs, MLB Trade Rumors) serves images from a CDN domain not in the allowlist, those thumbnails silently show the source icon placeholder instead. Allowlist is in `app.js` alongside `isSafeNewsImage()`. If thumbnails go missing after a source changes CDN, add the new hostname to `NEWS_IMAGE_HOSTS`.
 
 ---
 
@@ -1718,6 +1719,7 @@ document.addEventListener('keydown', function(e) {
 | `MLB_TEAM_RADIO` URLs | radio.net-sourced; stations may change CDNs or drop streams | Re-run 🔍 Radio Check sweep periodically; replace broken URLs |
 | `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated from Radio Check sweep — last updated 2026-05-02 | Update Set when sweep results change; comment date should match |
 | Hls.js CDN URL | `cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.light.min.js` — pinned version, free CDN, no SLA | Bundle locally if CDN unreliable; pinned version avoids surprise upgrades |
+| `NEWS_IMAGE_HOSTS` allowlist (`app.js`) | Hand-curated CDN domain list — if a news source migrates image CDN, their thumbnails silently fall back to placeholder icon with no visible error | If thumbnails go missing after source change, add new hostname to `NEWS_IMAGE_HOSTS` regex in `app.js` |
 
 ---
 
