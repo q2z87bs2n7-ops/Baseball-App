@@ -382,28 +382,10 @@
   /* Hide YOUR GAME meta + state on tight viewports — keep dot + label */
   #pulse .ptb-yg-meta, #pulse .ptb-yg-state { display: none; }
 
-  /* Sticky Focus strip below ticker (Phase 2 / Step 7).
-     Layers an amber gradient overlay onto #focusMiniBar's first row so the
-     existing JS-rendered chrome doesn't have to be rewritten. Sticks under
-     the ticker on scroll so live game context stays visible. */
+  /* Focus mini bar hidden on mobile/iPad portrait since #focusCard is now
+     prominently displayed in the main layout. Element has no remaining value. */
   #pulse #focusMiniBar {
-    position: sticky;
-    top: var(--ticker-h, 50px);
-    z-index: 70;
-    background: linear-gradient(90deg,
-      rgba(255, 170, 60, 0.12),
-      rgba(255, 170, 60, 0.02) 60%,
-      transparent
-    );
-    backdrop-filter: saturate(1.2) blur(2px);
-    -webkit-backdrop-filter: saturate(1.2) blur(2px);
-    box-shadow: 0 1px 0 0 var(--p-border, var(--border, #1e2d4a));
-  }
-  /* When MY TEAM lens is on AND the focused game belongs to active team,
-     paint the 3px team-color left border on the strip (mock spec). JS
-     toggles `data-myteam-focus="1"` on #focusMiniBar in updateTopBarStats. */
-  #pulse #focusMiniBar[data-myteam-focus="1"] {
-    border-left: 3px solid var(--secondary, #f59e0b);
+    display: none !important;
   }
 }
 
