@@ -2894,20 +2894,18 @@ async function pollPendingVideoClips() {
     }
     var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
     if(!clips.length) continue;
-    // Pre-filter to scoring/HR clips only so non-play editorial videos (challenges,
-    // interviews, features) can never win a nearest-timestamp match.
+    // Prefer clips tagged as scoring plays; fall back to all playable clips if
+    // the taxonomy keywords aren't present on this game's content.
     var scoringClips=clips.filter(function(clip){
       return (clip.keywordsAll||[]).some(function(kw){
         var v=kw.value||kw.slug||'';
         return v==='home_run'||v==='scoring_play'||v==='walk_off';
       });
     });
+    var candidatePool=scoringClips.length?scoringClips:clips;
     byGame[pk].forEach(function(item){
       var playTs=item.ts.getTime();
       var bid=String(item.data.batterId);
-      // Prefer clips that carry a player_id keyword matching this batter — handles
-      // big innings where multiple batters score in quick succession. Fall back to
-      // nearest-timestamp across all scoring clips if none match by player.
       function hasPlayer(clip){
         return (clip.keywordsAll||[]).some(function(kw){
           if(kw.type==='player_id') return String(kw.value||'')===bid;
@@ -2915,8 +2913,9 @@ async function pollPendingVideoClips() {
           return false;
         });
       }
-      var playerClips=scoringClips.filter(hasPlayer);
-      var pool=playerClips.length?playerClips:scoringClips;
+      // Narrow to player_id-matched clips first; fall back to full candidate pool.
+      var playerClips=candidatePool.filter(hasPlayer);
+      var pool=playerClips.length?playerClips:candidatePool;
       var best=null,bestDiff=Infinity;
       pool.forEach(function(clip){
         var clipTs=clip.date?new Date(clip.date).getTime():null;
@@ -2924,7 +2923,9 @@ async function pollPendingVideoClips() {
         var diff=Math.abs(clipTs-playTs);
         if(diff<bestDiff){bestDiff=diff;best=clip;}
       });
-      if(best&&bestDiff<90*60*1000){
+      // No time cap when player_id matched — we're confident; 90-min cap for fallback.
+      var limit=playerClips.length?Infinity:90*60*1000;
+      if(best&&bestDiff<limit){
         lastVideoClip=best;
         patchFeedItemWithClip(playTs,gpk,best);
         patchStoryWithClip(gpk,item.data.batterId,item.data.batterName,best);
