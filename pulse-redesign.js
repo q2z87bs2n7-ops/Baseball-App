@@ -75,70 +75,6 @@
   }
 
   /* ── Top bar status counters + YOUR GAME callout ────────────────────── */
-  function updateTopBarStats() {
-    var states = window.gameStates || {};
-    var live = 0, final = 0, preview = 0;
-    var team = window.activeTeam;
-    var myTeamId = team ? team.id : null;
-    var myLiveGame = null;
-    for (var pk in states) {
-      if (!Object.prototype.hasOwnProperty.call(states, pk)) continue;
-      var g = states[pk];
-      if (g.status === 'Live' && g.detailedState === 'In Progress') {
-        live++;
-        if (myTeamId && (g.awayId === myTeamId || g.homeId === myTeamId)) myLiveGame = g;
-      } else if (g.status === 'Final') {
-        final++;
-      } else if (g.status === 'Preview' || g.status === 'Scheduled') {
-        preview++;
-      }
-    }
-    var elLive = $('ptbCountLive'); if (elLive) { elLive.parentElement.classList.toggle('ptb-counter-live', live > 0); elLive.textContent = live; }
-    var elFinal = $('ptbCountFinal'); if (elFinal) elFinal.textContent = final;
-    var elPrev = $('ptbCountPreview'); if (elPrev) {
-      var previewCounter = elPrev.parentElement;
-      previewCounter.classList.toggle('ptb-counter-hidden', preview === 0);
-      // Also hide the separator before this counter
-      var sep = previewCounter.previousElementSibling;
-      if (sep && sep.classList.contains('ptb-counter-sep')) {
-        sep.classList.toggle('ptb-sep-hidden', preview === 0);
-      }
-      elPrev.textContent = preview;
-    }
-
-    // YOUR GAME callout — visible only when active team has a live in-progress game
-    var yg = $('ptbYourGame');
-    if (yg) {
-      if (myLiveGame) {
-        var abbr = (myLiveGame.awayId === myTeamId) ? myLiveGame.awayAbbr : myLiveGame.homeAbbr;
-        var half = myLiveGame.halfInning === 'top' ? '▲' : '▼';  // ▲ / ▼
-        var meta = '· ' + (abbr || '') + ' ' + half + (myLiveGame.inning || '');
-        var metaEl = $('ptbYourGameMeta');
-        if (metaEl) metaEl.textContent = meta;
-        yg.style.display = '';
-      } else {
-        yg.style.display = 'none';
-        // Escape valve — if lens is on but no UI to turn it off, auto-clear it.
-        if (window.myTeamLens && typeof window.applyMyTeamLens === 'function') {
-          window.applyMyTeamLens(false);
-        }
-      }
-    }
-
-    // Mobile sticky focus strip — toggle data-myteam-focus when the focused
-    // game belongs to the active team. CSS uses this attribute to paint a
-    // 3px team-color left border on #focusMiniBar (mobile only, gated by
-    // the ≤860px media query in pulse-redesign.css Section 6).
-    var miniBar = $('focusMiniBar');
-    if (miniBar) {
-      var fpk = window.focusGamePk;
-      var fg = fpk && states[fpk];
-      var focusIsMyTeam = !!(fg && myTeamId && (fg.awayId === myTeamId || fg.homeId === myTeamId));
-      if (focusIsMyTeam) miniBar.dataset.myteamFocus = '1';
-      else delete miniBar.dataset.myteamFocus;
-    }
-  }
-
   function stampMatches() {
     var team = window.activeTeam;
     if (!team) return;
@@ -178,7 +114,7 @@
     if (ticker) {
       new MutationObserver(function () {
         if (window.myTeamLens) stampMatches();
-        updateTopBarStats();
+        if (typeof updateTopBarStats === 'function') updateTopBarStats();
       }).observe(ticker, { childList: true });
     }
     var focus = $('focusCard');
@@ -193,7 +129,7 @@
     buildHero();
     observe();
     applyLensState();
-    updateTopBarStats();
+    if (typeof updateTopBarStats === 'function') updateTopBarStats();
   }
 
   if (document.readyState === 'loading') {
@@ -207,6 +143,6 @@
     applyLensState: applyLensState,
     refreshHeroEmptyState: refreshHeroEmptyState,
     rebuildHero: buildHero,
-    updateTopBarStats: updateTopBarStats
+    updateTopBarStats: function() { if (typeof updateTopBarStats === 'function') updateTopBarStats(); }
   };
 })();
