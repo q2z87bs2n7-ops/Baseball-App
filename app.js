@@ -2124,7 +2124,16 @@ async function loadYdForDate(dateStr){
         if(allHits.away===0||allHits.home===0) {sigPlay=' · No-hitter!';}
       }catch(e){}
       var headline=winner+' beat '+loser+' '+ws+'-'+ls+playerHighlight+sigPlay;
-      result.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
+      var videoTitle=null;
+      try{
+        var cr=await fetch(MLB_BASE+'/game/'+g.gamePk+'/content');
+        if(cr.ok){
+          var cd=await cr.json();
+          var items=(cd.highlights&&cd.highlights.highlights&&cd.highlights.highlights.items)||[];
+          if(items.length&&items[0].headline) videoTitle=items[0].headline;
+        }
+      }catch(e){}
+      result.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:videoTitle||headline,sub:videoTitle?headline:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
     }
   }catch(e){}
   return result;
