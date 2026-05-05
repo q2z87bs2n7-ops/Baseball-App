@@ -287,93 +287,10 @@ let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by r
 | `/game/{pk}/playByPlay` | ✅ | Completed at-bat log for live/finished games. Returns `allPlays[]`, `scoringPlays[]`, `playsByInning[]`. Use this for play-by-play display — lighter than feed/live. |
 | `/game/{pk}/feed/live` | ⚠️ | **v1 path 404s.** Use `v1.1` (`statsapi.mlb.com/api/v1.1/game/{pk}/feed/live`) — returns full GUMBO object (plays + linescore + boxscore in one call). Large payload (~500KB). Companion endpoints: `/feed/live/timestamps` and `/feed/live/diffPatch` for efficient polling. |
 | `/api/v1.1/game/{pk}/feed/live/timestamps` | ✅ | **Pulse only.** Returns array of timestamp strings; last element = most recent state change. Compare to stored `g.lastTimestamp` — if unchanged, skip the playByPlay fetch. **Must use `MLB_BASE_V1_1` — v1 path returns 404.** |
-| `/game/{pk}/content` | ✅ | Per-game media content. See **`/game/{pk}/content` deep-dive** section below for full schema. Summary: top-level keys are `copyright`, `link`, `editorial`, `highlights`, `media`, `summary`. Main data lives at `highlights.highlights.items[]` (double-nesting is intentional). Filter `type === "video"` — items mix video, photo, and other types. Playback names: prefer `mp4Avc`; fall back to last entry in `playbacks[]`. Item index convention: `[0]` = full recap, `[1]` = condensed game, `[2+]` = individual play highlights. Works for live games but `items[]` is sparse/empty until production uploads clips (minutes-to-tens-of-minutes latency). CORS-restricted — requires server-side fetch. Optional param: `highlightLimit` (integer). |
+| `/game/{pk}/content` | ✅ | Per-game media content. Returns `highlights.highlights.items[]` — each item has `headline`, `blurb`, `playbacks[]` (video URLs by bitrate/format, use `FLASH_2500K_1280X720` or last playback entry for best quality), `image.cuts[]` (thumbnail at various resolutions). Used by Yesterday Recap to display official MLB highlight clips per game. First item (`items[0]`) is typically the full game highlight reel. |
 | `/game/{pk}/feed/color` | ❌ | Documented in MLB Stats API spec (`default: "v1"`) but returns 404 for all 2026 games. Confirmed dead across gamePks 824203, 824527, 824934. Do not use. |
 | ESPN News API | ⚠️ | Unofficial, may be CORS-blocked in some browsers |
 | YouTube RSS via allorigins.win | ⚠️ | Public proxy, no SLA. 3-attempt retry in place. Media tab only. |
-
-### `/game/{pk}/content` deep-dive
-
-**Optional query param:** `highlightLimit` (integer) — caps number of items returned. No other documented params beyond `language` (e.g. `en`, observed in the wild).
-
-**Top-level response keys:**
-
-| Key | Notes |
-|---|---|
-| `copyright` | MLB copyright string |
-| `link` | Self-referential API link |
-| `editorial` | Written editorial — recaps, previews, game notes. Sub-keys: `editorial.recap.mlb`, `editorial.preview.mlb`, `editorial.articles.mlb.items[]`. Each article has `headline`, `subHeadline`, `body` (HTML), `seoTitle`, `image`, `contributor`. MLB is migrating editorial to a separate GraphQL API ("Midfield") so this section may become sparser over time. |
-| `highlights` | Video highlight clips — see below |
-| `media` | Broadcast/EPG data. `media.epg[]` = live TV/radio streams. `media.epgAlternate[]` = condensed game + recap video (posted 30–90 min post-game); items have a direct `.mp4` URL and `mediaType` (`"Extended Highlights"` / `"Recap"`) but NOT the full `playbacks[]` structure. |
-| `summary` | Game summary text |
-
-**`highlights.highlights.items[]` — the double-nesting is intentional, not a bug.**
-
-Filter for `type === "video"` — the items array mixes video clips, photos, and other content types.
-
-**Fields per highlight item:**
-
-| Field | Notes |
-|---|---|
-| `type` | `"video"`, `"photo"`, etc. — always filter for `"video"` |
-| `id` | Item identifier |
-| `title` | Display title — check before `headline` |
-| `headline` | Fallback title |
-| `subHeadline` | Secondary headline / kicker |
-| `blurb` | Short description |
-| `description` | Longer description |
-| `duration` | String `"00:01:23"` |
-| `date` | ISO timestamp — sort order |
-| `image.cuts[]` | Thumbnail array — entries have `{aspectRatio, width, height, src, at2x, at3x}`. Typically 6–10 entries (320×180 through 2048×1152). Select by `width`, not by array index — no guaranteed entry at a specific resolution. |
-| `playbacks[]` | Video sources — `{name, url, width?, height?}`. Iterate and take last entry, or prefer `mp4Avc` by name. |
-| `keywordsAll[]` | Tag objects `{type, value, displayName}`. `type` values: `"team_id"`, `"player_id"`, `"game_pk"`, `"sport"`, `"league"`, `"season"`, `"mlbam_tag"`. Useful for filtering clips to a specific team or player without parsing titles. |
-| `keywordsDisplay[]` | Subset of `keywordsAll` intended for display |
-| `mediaPlaybackId` | String ID for MLB Film Room |
-| `mediaPlaybackUrl` | Direct URL to MLB.com media player page for this clip |
-| `slug` | URL-friendly slug |
-| `guid` | Unique identifier |
-| `noIndex` | Boolean — exclude from search indexing |
-
-**Item index convention (empirically observed):**
-
-| Index | Typically contains |
-|---|---|
-| `items[0]` | Full game recap / highlight reel |
-| `items[1]` | Condensed game |
-| `items[2]` | First individual play highlight |
-| `items[3–4]` | More individual play highlights |
-
-The app uses `items[0].headline` for carousel card titles and starts at `items[2]` for the Yesterday video carousel (skipping recap and condensed game).
-
-**`playbacks[]` name values:**
-
-| Name | Description |
-|---|---|
-| `mp4Avc` | Modern MP4/H.264 — **preferred** |
-| `FLASH_2500K_1280X720` | Legacy Flash-era label, now serves H.264 at 2500 kbps / 720p |
-| `FLASH_1200K_960X540` | ~1200 kbps / 540p |
-| `FLASH_450K_400X224` | ~450 kbps / 224p (mobile) |
-| `HTTP_CLOUD_WIRED` | Cloud-hosted, wired/desktop quality |
-| `HTTP_CLOUD_WIRED_60` | Cloud-hosted, 60fps variant |
-| `HTTP_CLOUD_TABLET` | Cloud-hosted, tablet-optimized |
-| `HTTP_CLOUD_TABLET_60` | Cloud-hosted, tablet 60fps |
-| `HTTP_CLOUD_MOBILE` | Cloud-hosted, mobile-optimized |
-
-Not all clips have all formats. Older clips may only have `FLASH_*`; newer ones may only have `mp4Avc`. **Safest approach: iterate `playbacks[]` and take the last entry, OR prefer `mp4Avc` by name.** The `FLASH_*` names are historical artifacts from the Flash Video era — they now serve H.264 content.
-
-**Live game behaviour:** The endpoint responds for in-progress games but `items[]` is sparse or empty until MLB production uploads clips. Individual play highlights appear with latency of several minutes to tens of minutes. `media.epgAlternate` condensed game and recap are not available until 30–90 min post-game.
-
-**Known quirks:**
-- CORS-restricted — cannot `fetch()` directly from a browser; requires server-side proxy
-- `image.cuts[]` is sometimes returned as an array, sometimes as an object keyed by `"WxH"` — guard with `Array.isArray(raw) ? raw : Object.values(raw)` (already implemented in `pickHeroImage`)
-- No published rate limit; community consensus is the API tolerates reasonable polling (every few minutes). Rapid hammering during games has occasionally returned 429s
-- A GraphQL API ("Midfield") is MLB's stated future direction (disclosed via Apollo GraphQL blog 2023). REST endpoint expected to remain for the foreseeable future but editorial content may migrate first
-
-**`highlightLimit` scheduling strategy used in this app:** The app fetches the full response (no limit) and selects by index — `items[0]` for titles, `items[2–4]` for video clips.
-
-**Community documentation sources:** toddrob99/MLB-StatsAPI GitHub wiki + `endpoints.py` (best maintained). Official docs at `docs.statsapi.mlb.com` are login-gated (licensed partners only). No public OpenAPI/Swagger spec exists for this endpoint.
-
----
 
 **Game state strings:**
 - `abstractGameState`: `"Live"`, `"Final"`, `"Preview"`, `"Scheduled"` — both `Preview` and `Scheduled` mean upcoming; both are checked
