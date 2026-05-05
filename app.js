@@ -5778,13 +5778,16 @@ document.addEventListener('visibilitychange',function(){
     if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
     if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}
   } else {
-    tabHiddenAt=null;
     if(pulseInitialized&&!demoMode){
-      // Immediate catch-up poll, then resume normal intervals
-      pollLeaguePulse();
+      // Keep tabHiddenAt set during catch-up so pollGamePlays treats missed plays as history
+      // (suppresses HR/RBI cards and sounds for plays that fired while tab was hidden).
+      // Clear it only after the catch-up poll completes.
+      pollLeaguePulse().finally(function(){tabHiddenAt=null;});
       pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
       storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
       if(focusGamePk) focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
+    } else {
+      tabHiddenAt=null;
     }
   }
 });
