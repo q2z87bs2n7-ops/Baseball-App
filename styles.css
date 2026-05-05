@@ -538,7 +538,7 @@
 .ticker-game.status-final { opacity: 0.55; }
 .ticker-game.status-preview { opacity: 0.75; }
 .ticker-game.feed-disabled { opacity: 0.32; filter: grayscale(0.4); }
-.ticker-game.has-risp { align-items: stretch; gap: 4px; padding: 0.375rem 0.625rem 0.4375rem; white-space: normal; }
+.ticker-game.has-risp { align-items: center; gap: 4px; padding: 0.375rem 0.625rem 0.4375rem; white-space: normal; }
 .ticker-row { display: flex; align-items: center; gap: 5px; }
 .ticker-top { display: flex; align-items: center; gap: 7px; }
 .ticker-bottom { display: flex; align-items: center; gap: 6px; }
