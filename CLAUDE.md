@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.34.2
+**Current version:** v3.34.6
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -21,6 +21,10 @@ An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pull
 - **v3.34** — monolith split: `index.html` → `index.html` + `styles.css` + `app.js`
 - **v3.34.1** — `MLB_TEAM_RADIO` station corrections (7 stations repointed; StreamTheWorld URL pattern for CIN/COL/LAD/MIL/CWS)
 - **v3.34.2** — tab visibility pause: 5 poll timers cleared on hide, immediate catch-up poll on return; `pollGamePlays` `isHistory` extended (`||tabHiddenAt!==null`) to suppress sounds/popups during catch-up sweep
+- **v3.34.3** — Pulse dark mode set as default color scheme
+- **v3.34.4** — Theme Scope setting: "Full App" (existing behavior) vs "Nav Only" (team vars scoped to `<header>` element; rest of app uses Default neutral theme); Theme Scope dropdown added to Settings; `themeScope` global + `switchThemeScope()` function; persisted to `localStorage('mlb_theme_scope')`
+- **v3.34.5** — theme system overhaul: `MLB_THEME` updated to Cubs colors (`#0E3386`/`#CC3433`) and renamed "Default"; Color Theme dropdown order swapped (Default first, Follow Team second); new users default to Default theme on first load; hero gradient in `renderEmptyState` uses dynamic `MLB_THEME.primary`
+- **v3.34.6** — end-of-session CLAUDE.md + version/cache housekeeping
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
@@ -138,6 +142,7 @@ let rosterData = { hitting, pitching, fielding }
 let statsCache = { hitting, pitching }
 let selectedPlayer = null              // full roster object — includes person, position, jerseyNumber (jerseyNumber is null when loaded from team stats endpoint)
 let newsFeedMode = 'mlb'               // 'mlb' (no team filter) | 'team' (activeTeam.espnId filter); home card always shows team news
+let themeScope = 'full'               // 'full' = team theme applied to whole app | 'nav' = team vars scoped to <header> only, rest of app uses MLB_THEME neutral colors; persisted to localStorage('mlb_theme_scope')
 
 // ── ⚡ Pulse globals ──────────────────────────────────────────────────────────
 let pulseInitialized = false           // lazy-init guard — set true on first Pulse nav
@@ -837,7 +842,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `applyPulseMLBTheme()` | Sets `--p-dark`, `--p-card`, `--p-card2`, `--p-border`, `--p-accent*`, `--p-text`, `--p-muted`, `--p-scoring/hr/status-*` globals from active `PULSE_SCHEME` entry. `#pulse`/`#yesterday` CSS blocks remap them to `--dark`/`--card` etc. via `var(--p-*)` scoping. Also sets `--dark` globally for body background. Respects `devColorLocked`. |
 | `setPulseColorScheme(scheme)` | Sets `pulseColorScheme`, persists to `localStorage('mlb_pulse_scheme')`, calls `applyPulseMLBTheme()` + `updatePulseToggle()`. |
 | `updatePulseToggle()` | Updates `#ptbSchemeBtn` (toggles `.on` CSS class) and `#ptbSchemeIcon` text (☀️ for light, 🌙 for dark) to reflect current `pulseColorScheme`. Settings slide-toggle elements (`#pulseSchemeToggle`/`#pulseSchemeKnob`) removed in v3.26. |
-| `applyTeamTheme(team)` | Sets 9 CSS vars (--primary, --secondary, --accent, --header-text, --accent-text, --dark, --card, --card2, --border), persists to localStorage.mlb_theme_vars, updates logo, page title, theme-color meta, and `.team-chip` text |
+| `applyTeamTheme(team)` | Sets 9 CSS vars (--primary, --secondary, --accent, --header-text, --accent-text, --dark, --card, --card2, --border), persists to localStorage.mlb_theme_vars, updates logo, page title, theme-color meta, and `.team-chip` text. In `themeScope==='nav'` mode, sets body/page vars from `MLB_THEME` neutral colors and scopes team vars to `<header>` element only. |
+| `switchThemeScope(val)` | Sets `themeScope` ('full'\|'nav'), persists to `localStorage('mlb_theme_scope')`, calls `applyTeamTheme(activeTeam)`. Wired to Theme Scope dropdown in Settings. |
 | `switchTeam(teamId)` | Resets all state and reloads all data for new team |
 | `loadTodayGame()` | Left home card — fetches ±7 day window on cold load for series record |
 | `getSeriesInfo(g)` | Returns series string e.g. `"Game 2 of 3 · Mets lead 1-0"`. API desc first, scheduleData fallback |
