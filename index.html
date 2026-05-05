@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.35.2</title>
+<title>MLB Pulse v3.35.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -86,7 +86,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.35.2</div>
+        <div class="settings-version">v3.35.3</div>
       </div>
     </div>
   </div>
@@ -360,6 +360,15 @@
   <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
 </div>
 <div id="cardCollectedToast" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:450;pointer-events:none;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:.81rem;color:var(--text);white-space:nowrap"></div>
+<div id="videoOverlay" onclick="if(event.target===this)closeVideoOverlay()" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.94);flex-direction:column;align-items:center;justify-content:center;padding:20px">
+  <div style="position:relative;width:100%;max-width:900px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div id="videoOverlayTitle" style="color:#e8eaf0;font-size:.85rem;font-weight:600;line-height:1.35;flex:1;padding-right:12px"></div>
+      <button onclick="closeVideoOverlay()" style="background:none;border:none;color:#9aa0a8;font-size:1.4rem;cursor:pointer;line-height:1;flex-shrink:0">✕</button>
+    </div>
+    <video id="videoOverlayPlayer" controls playsinline style="width:100%;border-radius:8px;background:#000;max-height:78vh;display:block"></video>
+  </div>
+</div>
 
 <div id="signInCTA" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);z-index:950;max-width:320px;width:calc(100% - 32px);background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none">
   <div style="display:flex;align-items:center;gap:10px">
@@ -395,6 +404,10 @@
     <button class="dev-btn" data-dt-action="testCard">
       <div class="dev-btn-label">🎴 Test Card</div>
       <div class="dev-btn-shortcut">Shift+G</div>
+    </button>
+    <button class="dev-btn" data-dt-action="testClip">
+      <div class="dev-btn-label">📽️ Test Clip</div>
+      <div class="dev-btn-shortcut">Shift+W</div>
     </button>
     <button class="dev-btn" data-dt-action="resetCollection" style="border-color:var(--hr-border)">
       <div class="dev-btn-label">🗑️ Reset Collection</div>

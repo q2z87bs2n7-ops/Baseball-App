@@ -193,6 +193,10 @@ let collectionSlotsDisplay=[];      // sorted slot array set by renderCollection
 
 // ── Yesterday Recap globals (v3.19.1) ─────────────────────────────────────────
 let yesterdayContentCache={};      // gamePk → content API response (session-only)
+let pendingVideoQueue=[];          // {gamePk,batterId,batterName,feedItemTs,playTs} — awaiting clip match
+let liveContentCache={};           // gamePk → {items:[],fetchedAt:ms} — re-fetched if >5min stale
+let lastVideoClip=null;            // most recent matched live clip — used by dev tool
+let videoClipPollTimer=null;
 let yesterdayOverlayOpen=false;
 let ydHighlightClips=[];           // top-5 editorial clips for the carousel (session)
 let ydDateOffset=-1;               // days relative to today shown in recap; -1=yesterday (default)
@@ -238,6 +242,8 @@ function initReal() {
   pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
   if(storyPoolTimer){clearInterval(storyPoolTimer);storyPoolTimer=null;}
   storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
+  if(videoClipPollTimer){clearInterval(videoClipPollTimer);videoClipPollTimer=null;}
+  videoClipPollTimer=setInterval(pollPendingVideoClips,2*60*1000);
   if(yesterdayRefreshTimer){clearInterval(yesterdayRefreshTimer);yesterdayRefreshTimer=null;}
   yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){
@@ -437,7 +443,8 @@ async function pollGamePlays(gamePk) {
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
-        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}}
+        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}
+          if(batterId) pendingVideoQueue.push({gamePk:gamePk,batterId:batterId,batterName:batterName||'',feedItemTs:playTime?playTime.getTime():Date.now(),playTs:Date.now()});}
         else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(rbiCardCooldowns[gamePk]||0))>=devTuning.rbiCooldown;
 if(_rbi>0&&_rs>=devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning,gamePk);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
         else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
@@ -1931,11 +1938,15 @@ function renderStoryCard(story){
   var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',leaders:'LEADERS',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT',inning_recap:'INNING RECAP',hot:'HOT',cold:'COLD',streak:'HITTING STREAK',roster:'ROSTER MOVE',award:'AWARD',record:'SEASON HIGH'};
   var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
   el.className='story-card tier'+story.tier+(story.id.indexOf('biginning')===0?' story-biginning':'')+(story.id.indexOf('leader_')===0?' story-leaders':'');
+  var videoBtn=story.videoUrl
+    ?'<div style="margin-top:10px"><button onclick="openVideoOverlay(\''+story.videoUrl.replace(/'/g,"\\'")+'\',(\''+( (story.videoTitle||story.headline).replace(/'/g,"\\'") )+'\')" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;font-size:.72rem;font-weight:700;padding:5px 13px;cursor:pointer;letter-spacing:.04em">▶ WATCH</button></div>'
+    :'';
   el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
     +'<div style="display:flex;align-items:flex-start;gap:6px;margin-top:2px">'
     +'<span class="story-icon">'+story.icon+'</span>'
     +'<div><div class="story-headline">'+story.headline+'</div>'
     +(story.sub?'<div class="story-sub">'+story.sub+'</div>':'')
+    +videoBtn
     +'</div></div>';
 }
 
@@ -2793,6 +2804,143 @@ async function fetchGameContent(gamePk) {
     return d;
   } catch(e){ yesterdayContentCache[gamePk]=null; return null; }
 }
+
+// ── 📽️ Video clip overlay ────────────────────────────────────────────────────
+
+function openVideoOverlay(url, title) {
+  var ov=document.getElementById('videoOverlay');
+  var vid=document.getElementById('videoOverlayPlayer');
+  var ttl=document.getElementById('videoOverlayTitle');
+  if(!ov||!vid) return;
+  if(ttl) ttl.textContent=title||'';
+  vid.src=url;
+  vid.load();
+  vid.play().catch(function(){});
+  ov.style.display='flex';
+}
+
+function closeVideoOverlay() {
+  var ov=document.getElementById('videoOverlay');
+  var vid=document.getElementById('videoOverlayPlayer');
+  if(vid){vid.pause();vid.src='';}
+  if(ov) ov.style.display='none';
+}
+
+async function devTestVideoClip() {
+  // 1. Use most recent matched live clip
+  if(lastVideoClip&&pickPlayback(lastVideoClip.playbacks)){
+    openVideoOverlay(pickPlayback(lastVideoClip.playbacks),lastVideoClip.headline||lastVideoClip.blurb||'Highlight');
+    return;
+  }
+  // 2. Use any cached yesterday content
+  var keys=Object.keys(yesterdayContentCache);
+  for(var i=0;i<keys.length;i++){
+    var c=yesterdayContentCache[keys[i]];
+    if(!c) continue;
+    var items=(c.highlights&&c.highlights.highlights&&c.highlights.highlights.items)||[];
+    var playable=items.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);});
+    if(playable.length){
+      var clip=playable[2]||playable[0];
+      lastVideoClip=clip;
+      openVideoOverlay(pickPlayback(clip.playbacks),clip.headline||clip.blurb||'Highlight');
+      return;
+    }
+  }
+  // 3. Fetch yesterday's first game as fallback
+  try{
+    var yd=new Date(); yd.setDate(yd.getDate()-1);
+    var ds=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+    var r=await fetch(MLB_BASE+'/schedule?date='+ds+'&sportId=1&hydrate=team');
+    if(!r.ok) throw new Error(r.status);
+    var d=await r.json();
+    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    if(!games.length){alert('No clip available — open Yesterday Recap first');return;}
+    var content=await fetchGameContent(games[0].gamePk);
+    if(!content) throw new Error('no content');
+    var items2=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    var playable2=items2.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);});
+    if(!playable2.length){alert('No playable clip found for yesterday');return;}
+    lastVideoClip=playable2[0];
+    openVideoOverlay(pickPlayback(playable2[0].playbacks),playable2[0].headline||playable2[0].blurb||'Highlight');
+  }catch(e){alert('Could not load clip: '+(e&&e.message||e));}
+}
+
+async function pollPendingVideoClips() {
+  if(!pendingVideoQueue.length) return;
+  var byGame={};
+  pendingVideoQueue.forEach(function(entry){
+    (byGame[entry.gamePk]=byGame[entry.gamePk]||[]).push(entry);
+  });
+  var resolved=[];
+  for(var pk in byGame){
+    var gpk=+pk;
+    var cached=liveContentCache[gpk];
+    if(!cached||(Date.now()-cached.fetchedAt)>5*60*1000){
+      try{
+        var r=await fetch(MLB_BASE+'/game/'+gpk+'/content');
+        if(!r.ok) continue;
+        var d=await r.json();
+        var all=(d.highlights&&d.highlights.highlights&&d.highlights.highlights.items)||[];
+        liveContentCache[gpk]={items:all.filter(function(it){return it.type==='video';}),fetchedAt:Date.now()};
+      }catch(e){continue;}
+    }
+    var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
+    byGame[pk].forEach(function(entry){
+      var match=null;
+      for(var ci=0;ci<clips.length;ci++){
+        var clip=clips[ci];
+        var kws=clip.keywordsAll||[];
+        var hasPlayer=kws.some(function(kw){return kw.type==='player_id'&&String(kw.value)===String(entry.batterId);});
+        var clipTs=clip.date?new Date(clip.date).getTime():0;
+        if(hasPlayer&&clipTs>=entry.playTs-60000&&pickPlayback(clip.playbacks)){match=clip;break;}
+      }
+      if(match){
+        lastVideoClip=match;
+        patchFeedItemWithClip(entry.feedItemTs,gpk,match);
+        patchStoryWithClip(gpk,entry.batterId,entry.batterName,match);
+        resolved.push(entry);
+      }
+    });
+  }
+  resolved.forEach(function(e){
+    var idx=pendingVideoQueue.indexOf(e);
+    if(idx!==-1) pendingVideoQueue.splice(idx,1);
+  });
+}
+
+function patchFeedItemWithClip(feedItemTs,gamePk,clip){
+  var url=pickPlayback(clip.playbacks);
+  var thumb=pickHeroImage(clip);
+  var title=clip.headline||clip.blurb||'Watch Highlight';
+  if(!url) return;
+  var el=document.querySelector('#feed [data-ts="'+feedItemTs+'"][data-gamepk="'+gamePk+'"]');
+  if(!el||el.dataset.clipPatched) return;
+  el.dataset.clipPatched='1';
+  var wrap=document.createElement('div');
+  wrap.style.cssText='margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0';
+  wrap.innerHTML=(thumb?'<img src="'+thumb+'" style="width:100%;height:90px;object-fit:cover;display:block">':'')
+    +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'
+    +'<div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">▶</div>'
+    +'</div>';
+  wrap.onclick=function(e){e.stopPropagation();openVideoOverlay(url,title);};
+  el.appendChild(wrap);
+}
+
+function patchStoryWithClip(gamePk,batterId,batterName,clip){
+  var url=pickPlayback(clip.playbacks);
+  if(!url) return;
+  var lastName=(batterName||'').split(' ').pop();
+  var story=storyPool.find(function(s){
+    return s.gamePk===gamePk&&s.id.indexOf('hr_')===0&&lastName&&s.headline.indexOf(lastName)!==-1;
+  });
+  if(!story) return;
+  story.videoUrl=url;
+  story.videoThumb=pickHeroImage(clip)||null;
+  story.videoTitle=clip.headline||clip.blurb||'';
+  if(storyShownId===story.id) renderStoryCard(story);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function pickPlayback(playbacks) {
   if(!playbacks||!playbacks.length) return null;
@@ -4459,6 +4607,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='replayRBI'){replayRBICard();toggleDevTools();}
     else if(action==='cardVariants'){window.PulseCard.demo();toggleDevTools();}
     else if(action==='testCard'){generateTestCard();toggleDevTools();}
+    else if(action==='testClip'){devTestVideoClip();toggleDevTools();}
     else if(action==='resetCollection'){resetCollection();}
     else if(action==='newsTest'){openNewsSourceTest();toggleDevTools();}
     else if(action==='resetTuning'){resetTuning();}
@@ -5815,6 +5964,7 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
   if(e.shiftKey && e.key === 'G') { generateTestCard(); }
   if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
+  if(e.shiftKey && e.key === 'W') { devTestVideoClip(); }
   if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
 });
 
