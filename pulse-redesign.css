@@ -65,8 +65,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;    /* center text vertically in stretched card */
-  padding: 1rem;
+  justify-content: center;
+  padding: 1.5rem 1rem 0;
 }
 #pulse #pulseHero #storyCarousel .story-nav {
   position: absolute;
@@ -91,9 +91,11 @@
 }
 #pulse #pulseHero #storyCarousel .story-dots-row {
   flex-shrink: 0;
-  padding: 0.5rem 0 0.75rem;
+  padding: 1rem;
   display: flex;
   justify-content: center;
+  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;
 }
 #pulse #pulseHero #storyCarousel .story-nav-prev { left: -8px; }
 #pulse #pulseHero #storyCarousel .story-nav-next { right: -8px; }
