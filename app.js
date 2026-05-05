@@ -1166,7 +1166,7 @@ function renderMLBNewsFeed() {
   var html='';
   mlbNewsFeed.forEach(function(item,idx){
     var active=idx===0?' active':'';
-    var imgHtml=item.image?'<img class="news-card-image" src="'+forceHttps(item.image)+'" onerror="this.style.display=\'none\'" alt="news">'
+    var imgHtml=isSafeNewsImage(item.image)?'<img class="news-card-image" src="'+forceHttps(item.image)+'" onerror="this.style.display=\'none\'" alt="news">'
       :'<div class="news-card-image" style="background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);">📰</div>';
     html+='<div class="news-card-item'+active+'">'
       +imgHtml
@@ -5451,13 +5451,17 @@ function renderPlayerStats(s,group){
 
 function escapeNewsHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function forceHttps(url){return url?url.replace(/^http:/,'https:'):url;}
+// Only load images from known news CDN domains — prevents browser requests to unexpected
+// third-party hosts (e.g. podcast avatars in RSS feeds) which can trigger corporate firewalls.
+var NEWS_IMAGE_HOSTS=/\.(mlb\.com|mlbstatic\.com|espn\.com|espncdn\.com|cbssports\.com|cbsi\.com|fangraphs\.com|mlbtraderumors\.com|wp\.com|wordpress\.com|cloudfront\.net|fastly\.net|akamaized\.net|amazonaws\.com|imgix\.net|twimg\.com)$/;
+function isSafeNewsImage(url){if(!url)return false;try{return NEWS_IMAGE_HOSTS.test(new URL(url).hostname);}catch(e){return false;}}
 function decodeNewsHtml(s){var map={'&quot;':'"','&amp;':'&','&lt;':'<','&gt;':'>','&#39;':"'",'&apos;':"'"};return String(s||'').replace(/&(?:#\d+|#x[0-9a-f]+|quot|amp|lt|gt|apos?);/gi,function(e){return map[e.toLowerCase()]||e;}).replace(/&#(\d+);/g,function(m,code){return String.fromCharCode(parseInt(code,10));}).replace(/&#x([0-9a-f]+);/gi,function(m,code){return String.fromCharCode(parseInt(code,16));}); }
 function fmtNewsDate(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var headline=escapeNewsHtml(decodeNewsHtml(a.headline||''));return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
 function mkProxyNewsRow(item){
   var icon=NEWS_SOURCE_ICONS[item.source]||'📰';
   var sourceClass=item.source?' news-thumb--'+item.source:'';
-  var thumb=item.image
+  var thumb=isSafeNewsImage(item.image)
     ? '<div class="news-thumb'+sourceClass+'"><img src="'+escapeNewsHtml(forceHttps(item.image))+'" alt="" onerror="this.parentNode.innerHTML=\'<span class=&quot;news-thumb-placeholder&quot;>'+icon+'</span>\'"></div>'
     : '<div class="news-thumb'+sourceClass+'"><span class="news-thumb-placeholder">'+icon+'</span></div>';
   var src=NEWS_SOURCE_LABELS[item.source]||item.source||'';
