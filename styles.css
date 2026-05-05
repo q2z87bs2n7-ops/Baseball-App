@@ -318,7 +318,7 @@
     nav button{padding:0.5rem 0.625rem;font-size:1.1rem}
     nav button .nav-label{display:none}
     .settings-wrap{flex-shrink:0}
-    #pulse { flex-direction: column; }
+    #pulse { display: flex; flex-direction: column; }
     #pulseLeft { flex: 0 0 auto; max-width: 700px; margin: 0 auto; width: 100%; }
     #sideRail { display: none !important; }
     #pulseFeedHeader { margin-bottom: 0; }
@@ -370,7 +370,7 @@
     .matchup-day-controls .refresh-btn{padding:6px 10px;min-width:36px;flex-shrink:0}
     #feedWrap{padding-bottom:calc(72px + env(safe-area-inset-bottom) + 24px)}
     .mock-bar-label{display:none}
-    #pulse { flex-direction: column; }
+    #pulse { display: flex; flex-direction: column; }
     #pulseLeft { flex: 0 0 auto; }
     #sideRail { display: none !important; }
     #pulseFeedHeader { display: none; }
@@ -556,7 +556,7 @@
 .out-dot.out-on { background: #e03030; border-color: #e03030; }
 .ticker-empty { color: var(--muted); font-size: .75rem; padding: 0 4px; }
 
-#pulse { display: flex; gap: 0.75rem; }
+#pulse { gap: 0.75rem; }
 #pulse:not(.active) { display: none !important; }
 #pulse .pulse-left { flex: 0 0 700px; }
 #pulseFeedHeader { margin: 0 0 24px 0; padding: 8px 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
