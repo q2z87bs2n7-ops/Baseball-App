@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.34.11
+**Current version:** v3.35
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -18,18 +18,8 @@ An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pull
 - **v3.31** — multi-source news aggregator; team color updates (Rockies/Tigers/Royals/Mariners/Brewers per 2026 brand)
 - **v3.32** — floating panels (Settings/Sound/DevTools/RadioCheck) follow Pulse light/dark theme via `:has()` CSS scoping
 - **v3.33** — tech-debt sprint (see `docs/technical-debt/sprints/`)
-- **v3.34** — monolith split: `index.html` → `index.html` + `styles.css` + `app.js`
-- **v3.34.1** — `MLB_TEAM_RADIO` station corrections (7 stations repointed; StreamTheWorld URL pattern for CIN/COL/LAD/MIL/CWS)
-- **v3.34.2** — tab visibility pause: 5 poll timers cleared on hide, immediate catch-up poll on return; `pollGamePlays` `isHistory` extended (`||tabHiddenAt!==null`) to suppress sounds/popups during catch-up sweep
-- **v3.34.3** — Pulse dark mode set as default color scheme
-- **v3.34.4** — Theme Scope setting: "Full App" (existing behavior) vs "Nav Only" (team vars scoped to `<header>` element; rest of app uses Default neutral theme); Theme Scope dropdown added to Settings; `themeScope` global + `switchThemeScope()` function; persisted to `localStorage('mlb_theme_scope')`
-- **v3.34.5** — theme system overhaul: `MLB_THEME` updated to Cubs colors (`#0E3386`/`#CC3433`) and renamed "Default"; Color Theme dropdown order swapped (Default first, Follow Team second); new users default to Default theme on first load; hero gradient in `renderEmptyState` uses dynamic `MLB_THEME.primary`
-- **v3.34.6** — end-of-session CLAUDE.md + version/cache housekeeping
-- **v3.34.7** — Yesterday's Highlights date picker: `‹ date ›` nav in `#ydSectionBar`; `ydChangeDate()` fetches any past date via `loadYdForDate()`; `ydDisplayCache` holds non-yesterday results without polluting `yesterdayCache` used by story carousel; empty state shows "No games played on [date]."
-- **v3.34.8** — end-of-session CLAUDE.md + version/cache housekeeping
-- **v3.34.9** — (reverted version label; no functional changes)
-- **v3.34.10** — fix mixed-content console errors: `forceHttps()` helper upgrades `http://` news image URLs to `https://` in Pulse side-rail carousel and News tab; switch Media tab `loadMediaFeed` from unreliable `api.allorigins.win` proxy to `/api/proxy-youtube` Vercel backend
-- **v3.34.11** — end-of-session CLAUDE.md + version/cache housekeeping
+- **v3.34** — monolith split: `index.html` → `index.html` + `styles.css` + `app.js`; bug fixes: YouTube proxy regex, HR/RBI card flood on tab return, news image allowlist (corporate firewall), YouTube media layout swap (player left, list right 260px)
+- **v3.35** — version bump to main; consolidates v3.34.x patch series
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
