@@ -373,19 +373,35 @@
   #pulse #sideRail { margin-top: 1rem; }
   /* Compact top bar — drop UP NEXT counter, tighten gaps */
   #pulse #pulseTopBar .ptb-kicker { padding: 0.5rem 0.75rem; }
-  #pulse #pulseTopBar .ptb-brand { letter-spacing: .18em; }
-  #pulse #ptbStatus { gap: 0.75rem; padding: 0 0.75rem; margin-right: 0.5rem; }
+  #pulse #pulseTopBar .ptb-bolt { font-size: 0.85rem; }
+  #pulse #pulseTopBar .ptb-brand { letter-spacing: .18em; font-size: 0.7rem; }
+  #pulse #ptbStatus {
+    gap: 0.5rem;
+    padding: 0 0.625rem;
+    margin-right: 0.375rem;
+    font-size: 0.6rem;
+  }
+  #pulse .ptb-counter {
+    gap: 0.3rem;
+  }
+  #pulse #ptbStatus .ptb-counter:nth-of-type(1) {
+    display: none;
+  }
   #pulse #ptbStatus .ptb-counter:nth-of-type(3),
   #pulse #ptbStatus .ptb-counter-sep:nth-of-type(4) { display: none; }
-  #pulse #pulseTopBar .ptb-controls { padding: 0 0.625rem; gap: 6px; }
+  #pulse #pulseTopBar .ptb-controls { padding: 0 0.5rem; gap: 4px; }
   #pulse .ptb-controls-divider { display: none; }
   /* Hide YOUR GAME meta + state on tight viewports — keep dot + label */
   #pulse .ptb-yg-meta, #pulse .ptb-yg-state { display: none; }
 
   /* Focus mini bar hidden on mobile/iPad portrait since #focusCard is now
-     prominently displayed in the main layout. Element has no remaining value. */
+     prominently displayed in the main layout. Add spacing to #feedWrap to
+     prevent cramped feeling where sticky bar used to be. */
   #pulse #focusMiniBar {
     display: none !important;
+  }
+  #pulse #feedWrap {
+    margin-top: 1rem;
   }
 }
 
