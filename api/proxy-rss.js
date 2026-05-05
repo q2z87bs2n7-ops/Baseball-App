@@ -149,7 +149,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(feedUrl);
+    const response = await fetch(feedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; BaseballAppNews/1.0; +https://baseball-app-sigma.vercel.app)',
+        'Accept': '*/*'
+      }
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
