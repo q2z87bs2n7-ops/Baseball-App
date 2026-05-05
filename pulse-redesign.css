@@ -91,7 +91,31 @@
 }
 #pulse #pulseHero #storyCarousel .story-dots-row {
   flex-shrink: 0;
-  padding: 0.5rem 0 0;
+  padding: 0.75rem 0 0;
+  display: flex;
+  justify-content: center;
+}
+#pulse #pulseHero #storyCarousel .story-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+#pulse #pulseHero #storyCarousel .story-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.45;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+#pulse #pulseHero #storyCarousel .story-dot:hover {
+  opacity: 0.8;
+}
+#pulse #pulseHero #storyCarousel .story-dot.active {
+  background: var(--accent);
+  opacity: 1;
+  transform: scale(1.2);
 }
 #pulse #pulseHero #storyCarousel .story-nav-prev { left: -8px; }
 #pulse #pulseHero #storyCarousel .story-nav-next { right: -8px; }
