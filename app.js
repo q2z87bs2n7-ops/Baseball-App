@@ -195,6 +195,10 @@ let collectionSlotsDisplay=[];      // sorted slot array set by renderCollection
 let yesterdayContentCache={};      // gamePk → content API response (session-only)
 let yesterdayOverlayOpen=false;
 let ydHighlightClips=[];           // top-5 editorial clips for the carousel (session)
+let ydDateOffset=-1;               // days relative to today shown in recap; -1=yesterday (default)
+let ydDisplayCache=null;           // non-null when showing a date other than yesterday; avoids polluting yesterdayCache used by story carousel
+
+function getYdActiveCache(){return ydDisplayCache!==null?ydDisplayCache:(yesterdayCache||[]);}
 
 // ── Demo Mode globals ──────────────────────────────────────────────────────────
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
@@ -2047,10 +2051,10 @@ async function loadOnThisDayCache(){
   }
 }
 
-async function loadYesterdayCache(){
-  yesterdayCache=[];
-  var yd=new Date(); yd.setDate(yd.getDate()-1);
-  var dateStr=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+async function loadYdForDate(dateStr){
+  // Fetches games for dateStr (YYYY-MM-DD) and returns an array of cache items.
+  // Used by both loadYesterdayCache() (yesterday) and ydChangeDate() (any date).
+  var result=[];
   try{
     var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1&hydrate=linescore,team');
     if(!r.ok) throw new Error(r.status);
@@ -2092,7 +2096,6 @@ async function loadYesterdayCache(){
           }
           if(parseFloat(pit.inningsPitched||0)>0) allPitchers.push({p:p,stats:pit});
         });
-        // Fallback: if gameStatus flags not available, use pitchers with most innings
         if(!winPitcher||!losePitcher){
           allPitchers.sort(function(a,b){return parseFloat(b.stats.inningsPitched||0)-parseFloat(a.stats.inningsPitched||0);});
           if(!winPitcher&&allPitchers.length) {winPitcher=allPitchers[0].p;winPitcherStats=allPitchers[0].stats;}
@@ -2120,10 +2123,20 @@ async function loadYesterdayCache(){
         plays.forEach(function(p){if(p.result&&['Single','Double','Triple','Home Run'].indexOf(p.result.event)!==-1){var half=(p.about.halfInning||'Top').toLowerCase();allHits[half==='top'?'away':'home']++;}});
         if(allHits.away===0||allHits.home===0) {sigPlay=' · No-hitter!';}
       }catch(e){}
-      var headline='Yesterday: '+winner+' beat '+loser+' '+ws+'-'+ls+playerHighlight+sigPlay;
-      yesterdayCache.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
+      var headline=winner+' beat '+loser+' '+ws+'-'+ls+playerHighlight+sigPlay;
+      result.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
     }
   }catch(e){}
+  return result;
+}
+
+async function loadYesterdayCache(){
+  yesterdayCache=[];
+  var yd=new Date(); yd.setDate(yd.getDate()-1);
+  var dateStr=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+  yesterdayCache=await loadYdForDate(dateStr);
+  // Prepend "Yesterday: " prefix so genYesterdayHighlights() story carousel reads it correctly
+  yesterdayCache.forEach(function(item){item.headline='Yesterday: '+item.headline;});
   updateFeedEmpty();
 }
 
@@ -2681,6 +2694,9 @@ function closeCollection() {
 var ydPrevSection=null; // section to return to on close
 function openYesterdayRecap() {
   yesterdayOverlayOpen=true;
+  // reset to yesterday on every open so the date picker starts fresh
+  ydDateOffset=-1;
+  ydDisplayCache=null;
   // remember where we came from
   var active=document.querySelector('.section.active');
   ydPrevSection=active?active.id:null;
@@ -2691,8 +2707,36 @@ function openYesterdayRecap() {
   window.scrollTo(0,0); // reset scroll before render so bar starts at top
   var lbl=document.getElementById('ydDateLabel');
   if(lbl) lbl.textContent=getYesterdayDisplayStr();
+  var nextBtn=document.getElementById('ydNextDateBtn');
+  if(nextBtn) nextBtn.disabled=true; // can't go forward from yesterday
   renderYesterdayRecap();
   requestAnimationFrame(function(){ window.scrollTo(0,0); }); // safety net for iOS Safari
+}
+
+async function ydChangeDate(dir){
+  var newOffset=ydDateOffset+dir;
+  if(newOffset>=0) return; // block today and future
+  if(newOffset<-365) return; // reasonable floor
+  ydDateOffset=newOffset;
+  // update label and button states
+  var lbl=document.getElementById('ydDateLabel');
+  if(lbl) lbl.textContent=getYesterdayDisplayStr();
+  var nextBtn=document.getElementById('ydNextDateBtn');
+  if(nextBtn) nextBtn.disabled=(ydDateOffset>=-1);
+  // show loading state while fetching
+  var card=document.getElementById('yesterdayCard');
+  if(card) card.innerHTML='<div style="padding:48px;text-align:center;color:var(--muted);font-size:.88rem">Loading…</div>';
+  // clear any existing hero player to avoid stale video showing
+  var heroRegion=document.getElementById('ydHeroRegion');
+  if(heroRegion){heroRegion.dataset.mounted='';heroRegion.innerHTML='';}
+  // load data for the selected date (or reuse yesterdayCache for -1)
+  if(ydDateOffset===-1){
+    ydDisplayCache=null;
+  }else{
+    ydDisplayCache=await loadYdForDate(getYesterdayDateStr());
+  }
+  renderYesterdayRecap();
+  window.scrollTo(0,0);
 }
 
 function closeYesterdayRecap() {
@@ -2709,14 +2753,14 @@ function closeYesterdayRecap() {
 }
 
 function getYesterdayDateStr() {
-  var yd=new Date(); yd.setDate(yd.getDate()-1);
-  return yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+  var d=new Date(); d.setDate(d.getDate()+ydDateOffset);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
 function getYesterdayDisplayStr() {
-  var yd=new Date(); yd.setDate(yd.getDate()-1);
+  var d=new Date(); d.setDate(d.getDate()+ydDateOffset);
   var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return months[yd.getMonth()]+' '+yd.getDate()+', '+yd.getFullYear();
+  return months[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
 }
 
 function getYesterdayCollectedCards() {
@@ -2766,8 +2810,10 @@ function pickHeroImage(item) {
 async function renderYesterdayRecap() {
   var card=document.getElementById('yesterdayCard');
   if(!card) return;
-  if(!yesterdayCache||!yesterdayCache.length){
-    card.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted)">No yesterday data available.</div>';
+  var activeCache=getYdActiveCache();
+  if(!activeCache||!activeCache.length){
+    var noGamesMsg=ydDateOffset===-1?'No games yesterday.':'No games played on '+getYesterdayDisplayStr()+'.';
+    card.innerHTML='<div class="empty-state" style="padding:48px 24px">'+noGamesMsg+'</div>';
     return;
   }
 
@@ -2788,13 +2834,14 @@ async function renderYesterdayRecap() {
       // inject click handler onto the <article tag
       return cardHtml.replace('<article ','<article onclick="openCardFromKey(\''+key+'\')" style="cursor:pointer" ');
     }).join('');
+    var cardsLabel='🎴 CARDS — '+getYesterdayDisplayStr().toUpperCase();
     cardsHtml='<div style="padding:16px 20px;border-top:1px solid var(--border)">'
-      +'<div style="font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px">🎴 CARDS COLLECTED YESTERDAY</div>'
+      +'<div style="font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px">'+cardsLabel+'</div>'
       +'<div class="yd-clip-strip" style="display:flex;gap:0.75rem;overflow-x:auto;padding-bottom:8px">'+miniCards+'</div>'
       +'</div>';
   }
 
-  var tilesHtml=yesterdayCache.map(function(item){
+  var tilesHtml=activeCache.map(function(item){
     var g=gameStates[item.gamePk];
     // Parse teams from headline: "Yesterday: WIN beat LOS W-L · ..."
     var awayId=null,homeId=null;
@@ -2845,13 +2892,13 @@ async function renderYesterdayRecap() {
         if(pk) { loadYesterdayVideoStrip(+pk); obs.unobserve(tile); }
       });
     },{root:null,rootMargin:'200px'});
-    yesterdayCache.forEach(function(item){
+    activeCache.forEach(function(item){
       var tile=document.getElementById('ydtile_'+item.gamePk);
       if(tile){ tile.dataset.gamepk=item.gamePk; obs.observe(tile); }
     });
   } else {
     // Fallback: load all immediately
-    yesterdayCache.forEach(function(item){ loadYesterdayVideoStrip(item.gamePk); });
+    activeCache.forEach(function(item){ loadYesterdayVideoStrip(item.gamePk); });
   }
   // Eagerly load hero for the marquee game, then prefetch all game content
   // (prefetch resolves → buildTopHighlightsCarousel() builds the full clip carousel)
@@ -2860,14 +2907,14 @@ async function renderYesterdayRecap() {
 }
 
 function pickMarqueeGame() {
-  if(!yesterdayCache||!yesterdayCache.length) return null;
+  var cache=getYdActiveCache();
+  if(!cache||!cache.length) return null;
   // Priority: walk-off > no-hitter > first game in cache (most notable by position)
-  var walkoff=yesterdayCache.find(function(item){return item.headline&&(item.headline.indexOf('Walk-off')!==-1||item.headline.indexOf('walk-off')!==-1);});
+  var walkoff=cache.find(function(item){return item.headline&&(item.headline.indexOf('Walk-off')!==-1||item.headline.indexOf('walk-off')!==-1);});
   if(walkoff) return walkoff;
-  var nohit=yesterdayCache.find(function(item){return item.headline&&item.headline.indexOf('No-hitter')!==-1;});
+  var nohit=cache.find(function(item){return item.headline&&item.headline.indexOf('No-hitter')!==-1;});
   if(nohit) return nohit;
-  // Fall back to the first game (usually most notable by league schedule ordering)
-  return yesterdayCache[0];
+  return cache[0];
 }
 
 
@@ -2911,9 +2958,10 @@ function buildTopHighlightsCarousel() {
   // Collects items[2..4] (actual play highlights, skipping recap at 0 + condensed at 1)
   // from each game — marquee first. Builds vertical playlist on desktop, horizontal strip on mobile.
   var heroRegion=document.getElementById('ydHeroRegion');
-  if(!heroRegion||!yesterdayCache||!yesterdayCache.length) return;
+  var ydCache=getYdActiveCache();
+  if(!heroRegion||!ydCache||!ydCache.length) return;
   var marquee=pickMarqueeGame();
-  var ordered=yesterdayCache.slice().sort(function(a,b){
+  var ordered=ydCache.slice().sort(function(a,b){
     if(marquee){
       if(a.gamePk===marquee.gamePk) return -1;
       if(b.gamePk===marquee.gamePk) return 1;
@@ -2993,8 +3041,9 @@ function loadClipIntoSharedPlayer(url, poster, title, blurb, kicker) {
 }
 
 async function prefetchAllYesterdayContent() {
-  if(!yesterdayCache||!yesterdayCache.length) return;
-  await Promise.all(yesterdayCache.map(function(item){return fetchGameContent(item.gamePk);}));
+  var cache=getYdActiveCache();
+  if(!cache||!cache.length) return;
+  await Promise.all(cache.map(function(item){return fetchGameContent(item.gamePk);}));
   buildAndRenderYesterdayHeroes();
   buildTopHighlightsCarousel();
 }
@@ -3003,8 +3052,9 @@ function buildYesterdayHeroes() {
   // Returns array of hero objects derived purely from yesterdayContentCache — no new fetches
   var heroes=[];
   var seenPlayers={};
-  if(!yesterdayCache) return heroes;
-  yesterdayCache.forEach(function(cacheItem){
+  var ydCache=getYdActiveCache();
+  if(!ydCache.length) return heroes;
+  ydCache.forEach(function(cacheItem){
     var content=yesterdayContentCache[cacheItem.gamePk];
     if(!content) return;
     var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
@@ -3069,8 +3119,9 @@ function buildAndRenderYesterdayHeroes() {
       +'</div>'
       +'</div>';
   }).join('');
+  var heroesLabel=ydDateOffset===-1?'YESTERDAY\'S HEROES':'HEROES · '+getYesterdayDisplayStr().toUpperCase();
   stripEl.innerHTML='<div style="padding:10px 16px 0;border-top:1px solid var(--border)">'
-    +'<div style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">YESTERDAY\'S HEROES</div>'
+    +'<div style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">'+heroesLabel+'</div>'
     +'<div class="yd-clip-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px">'+tiles+'</div>'
     +'</div>';
 }
