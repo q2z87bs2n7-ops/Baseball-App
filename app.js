@@ -441,7 +441,7 @@ async function pollGamePlays(gamePk) {
       if(isHitEvt) perfectGameTracker[gamePk]=false;
       if (isHitEvt&&batterId){var dh=dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;dailyHitsTracker[batterId]=dh;}
       if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;dailyPitcherKs[kkey]=ke;}
-      if(event==='Home Run'&&batterId) pendingVideoQueue.push({gamePk:gamePk,batterId:batterId,batterName:batterName||'',feedItemTs:playTime?playTime.getTime():Date.now(),playTs:playTime?playTime.getTime():Date.now()});
+      if((event==='Home Run'||isScoringP)&&batterId) pendingVideoQueue.push({gamePk:gamePk,batterId:batterId,batterName:batterName||'',feedItemTs:playTime?playTime.getTime():Date.now(),playTs:playTime?playTime.getTime():Date.now()});
       if (!isHistory) {
         var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
         var gameVisible=enabledGames.has(gamePk);
@@ -2868,6 +2868,10 @@ async function devTestVideoClip() {
 
 async function pollPendingVideoClips() {
   if(!pendingVideoQueue.length) return;
+  // Expire entries older than 2 hours — MLB won't publish a clip that late
+  var cutoff=Date.now()-2*60*60*1000;
+  pendingVideoQueue=pendingVideoQueue.filter(function(e){return e.playTs>cutoff;});
+  if(!pendingVideoQueue.length) return;
   var byGame={};
   pendingVideoQueue.forEach(function(entry){
     (byGame[entry.gamePk]=byGame[entry.gamePk]||[]).push(entry);
@@ -2882,28 +2886,27 @@ async function pollPendingVideoClips() {
         if(!r.ok) continue;
         var d=await r.json();
         var all=(d.highlights&&d.highlights.highlights&&d.highlights.highlights.items)||[];
-        liveContentCache[gpk]={items:all.filter(function(it){return it.type==='video';}),fetchedAt:Date.now()};
+        liveContentCache[gpk]={items:all.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);}),fetchedAt:Date.now()};
       }catch(e){continue;}
     }
     var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
+    if(!clips.length) continue;
     byGame[pk].forEach(function(entry){
-      var match=null;
-      for(var ci=0;ci<clips.length;ci++){
-        var clip=clips[ci];
-        var kws=clip.keywordsAll||[];
-        var _bid=String(entry.batterId);
-        var hasPlayer=kws.some(function(kw){
-          if(kw.type==='player_id') return String(kw.value||'')===_bid;
-          if(kw.slug&&kw.slug.startsWith('player_id-')) return kw.slug.split('-')[1]===_bid;
-          return false;
-        });
-        var clipTs=clip.date?new Date(clip.date).getTime():0;
-        if(hasPlayer&&(clipTs===0||clipTs>=entry.playTs-60000)&&pickPlayback(clip.playbacks)){match=clip;break;}
-      }
-      if(match){
-        lastVideoClip=match;
-        patchFeedItemWithClip(entry.feedItemTs,gpk,match);
-        patchStoryWithClip(gpk,entry.batterId,entry.batterName,match);
+      // Find the clip whose publish timestamp is nearest to the play time.
+      // A batter can't bat again for a full lineup cycle (~20+ min) so nearest
+      // timestamp is unambiguous — no keyword scanning needed.
+      var best=null, bestDiff=Infinity;
+      clips.forEach(function(clip){
+        var clipTs=clip.date?new Date(clip.date).getTime():null;
+        if(!clipTs) return;
+        var diff=Math.abs(clipTs-entry.playTs);
+        if(diff<bestDiff){bestDiff=diff;best=clip;}
+      });
+      // Accept if the nearest clip is within 90 minutes of the play
+      if(best&&bestDiff<90*60*1000){
+        lastVideoClip=best;
+        patchFeedItemWithClip(entry.feedItemTs,gpk,best);
+        patchStoryWithClip(gpk,entry.batterId,entry.batterName,best);
         resolved.push(entry);
       }
     });
