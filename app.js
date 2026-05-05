@@ -2904,8 +2904,21 @@ async function pollPendingVideoClips() {
     });
     byGame[pk].forEach(function(item){
       var playTs=item.ts.getTime();
+      var bid=String(item.data.batterId);
+      // Prefer clips that carry a player_id keyword matching this batter — handles
+      // big innings where multiple batters score in quick succession. Fall back to
+      // nearest-timestamp across all scoring clips if none match by player.
+      function hasPlayer(clip){
+        return (clip.keywordsAll||[]).some(function(kw){
+          if(kw.type==='player_id') return String(kw.value||'')===bid;
+          if(kw.slug&&kw.slug.startsWith('player_id-')) return kw.slug.split('-')[1]===bid;
+          return false;
+        });
+      }
+      var playerClips=scoringClips.filter(hasPlayer);
+      var pool=playerClips.length?playerClips:scoringClips;
       var best=null,bestDiff=Infinity;
-      scoringClips.forEach(function(clip){
+      pool.forEach(function(clip){
         var clipTs=clip.date?new Date(clip.date).getTime():null;
         if(!clipTs) return;
         var diff=Math.abs(clipTs-playTs);
