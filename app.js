@@ -50,7 +50,7 @@ const TEAMS=[
 
 const MLB_THEME={id:-1,name:'MLB (Neutral)',short:'MLB',primary:'#003087',secondary:'#FFB81C'};
 
-let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false,savedThemeForPulse=null;
+let activeTeam=TEAMS.find(t=>t.id===121),scheduleData=[],scheduleLoaded=false,rosterData={hitting:[],pitching:[],fielding:[]},statsCache={hitting:[],pitching:[]},currentRosterTab='hitting',currentLeaderTab='hitting',selectedPlayer=null,themeOverride=null,themeInvert=false,savedThemeForPulse=null,themeScope='full';
 let newsFeedMode='mlb';
 let newsSourceFilter='all';
 let newsArticlesCache=[];
@@ -4531,6 +4531,9 @@ function applyTeamTheme(team){
     document.documentElement.style.setProperty('--header-text',devColorOverrides.app.headerText);
     return;
   }
+  // Clear any previously header-scoped vars so switching nav→full doesn't leave stale overrides
+  var hdr=document.querySelector('header');
+  if(hdr){['--primary','--secondary','--accent','--accent-text','--header-text'].forEach(function(v){hdr.style.removeProperty(v);});}
   var ct=themeOverride||team;
   var cp=themeInvert?ct.secondary:ct.primary,cs=themeInvert?ct.primary:ct.secondary;
   var l1=relLuminance(cp),l2=relLuminance(cs),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?cs:'#ffffff',accentLum=relLuminance(accent);
@@ -4538,6 +4541,40 @@ function applyTeamTheme(team){
   var accentText=accentLum>0.4?'#111827':'#ffffff';
   var hueOf=function(hex){hex=hex.replace('#','');var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
   var h=hueOf(cp),cardHex=hslHex(h,45,22);
+  var safeAccent=pickAccent(accent,cardHex),headerText=pickHeaderText(cp);
+  if(themeScope==='nav'){
+    // Global: always MLB_THEME (neutral) — rest of app is unaffected by team switching
+    var dp=MLB_THEME.primary,ds=MLB_THEME.secondary;
+    var dl1=relLuminance(dp),dl2=relLuminance(ds),dr=(Math.max(dl1,dl2)+0.05)/(Math.min(dl1,dl2)+0.05);
+    var dacc=dr>=3?ds:'#ffffff',daccLum=relLuminance(dacc);
+    if(daccLum<0.05){dacc='#ffffff';daccLum=1;}
+    var daccText=daccLum>0.4?'#111827':'#ffffff';
+    var dh=hueOf(dp),dcard=hslHex(dh,45,22);
+    var dSafeAcc=pickAccent(dacc,dcard),dHdrText=pickHeaderText(dp);
+    document.documentElement.style.setProperty('--dark',hslHex(dh,50,18));
+    document.documentElement.style.setProperty('--card',dcard);
+    document.documentElement.style.setProperty('--card2',hslHex(dh,40,26));
+    document.documentElement.style.setProperty('--border',hslHex(dh,35,30));
+    document.documentElement.style.setProperty('--primary',dp);
+    document.documentElement.style.setProperty('--secondary',dacc);
+    document.documentElement.style.setProperty('--accent-text',daccText);
+    document.documentElement.style.setProperty('--accent',dSafeAcc);
+    document.documentElement.style.setProperty('--header-text',dHdrText);
+    try{localStorage.setItem('mlb_theme_vars',JSON.stringify({'--dark':hslHex(dh,50,18),'--card':dcard,'--card2':hslHex(dh,40,26),'--border':hslHex(dh,35,30),'--primary':dp,'--secondary':dacc,'--accent-text':daccText,'--accent':dSafeAcc,'--header-text':dHdrText}));}catch(e){}
+    // <header> element: team vars scoped here only — logo, team name, nav strip, bottom border
+    if(hdr){
+      hdr.style.setProperty('--primary',cp);
+      hdr.style.setProperty('--secondary',accent);
+      hdr.style.setProperty('--accent-text',accentText);
+      hdr.style.setProperty('--accent',safeAccent);
+      hdr.style.setProperty('--header-text',headerText);
+    }
+    document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
+    document.title=team.short+' Tracker';
+    var tcmN=document.getElementById('themeColorMeta');if(tcmN)tcmN.setAttribute('content',cp);
+    var chipN=document.getElementById('teamChip');if(chipN)chipN.textContent=team.name.toUpperCase();
+    return;
+  }
   document.documentElement.style.setProperty('--dark',hslHex(h,50,18));
   document.documentElement.style.setProperty('--card',cardHex);
   document.documentElement.style.setProperty('--card2',hslHex(h,40,26));
@@ -4545,7 +4582,6 @@ function applyTeamTheme(team){
   document.documentElement.style.setProperty('--primary',cp);
   document.documentElement.style.setProperty('--secondary',accent);
   document.documentElement.style.setProperty('--accent-text',accentText);
-  var safeAccent=pickAccent(accent,cardHex),headerText=pickHeaderText(cp);
   document.documentElement.style.setProperty('--accent',safeAccent);
   document.documentElement.style.setProperty('--header-text',headerText);
   try{localStorage.setItem('mlb_theme_vars',JSON.stringify({'--dark':hslHex(h,50,18),'--card':cardHex,'--card2':hslHex(h,40,26),'--border':hslHex(h,35,30),'--primary':cp,'--secondary':accent,'--accent-text':accentText,'--accent':safeAccent,'--header-text':headerText}));}catch(e){}
@@ -4638,6 +4674,12 @@ function switchTheme(val){
   else if(val==='-1'){themeOverride=MLB_THEME;}
   else{themeOverride=TEAMS.find(t=>t.id===parseInt(val));}
   localStorage.setItem('mlb_theme',val);
+  applyTeamTheme(activeTeam);
+}
+
+function switchThemeScope(val){
+  themeScope=val;
+  try{localStorage.setItem('mlb_theme_scope',val);}catch(e){}
   applyTeamTheme(activeTeam);
 }
 
@@ -5655,8 +5697,10 @@ function togglePush(){
     else{themeOverride=TEAMS.find(t=>t.id===parseInt(sv('mlb_theme')))||null;}
   }
   if(sv('mlb_invert')==='true')themeInvert=true;
+  if(sv('mlb_theme_scope')==='nav')themeScope='nav';
   buildTeamSelect();buildThemeSelect();updatePulseToggle();
   if(sv('mlb_theme'))document.getElementById('themeSelect').value=sv('mlb_theme');
+  if(sv('mlb_theme_scope'))document.getElementById('themeScopeSelect').value=sv('mlb_theme_scope');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
   applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
