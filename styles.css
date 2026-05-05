@@ -240,7 +240,7 @@
   .hl-card-right{position:sticky;top:calc(var(--header-h) + 16px);height:fit-content}
   .final-game-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .game-notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:12px}
-  .media-layout{display:grid;grid-template-columns:40% 60%;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px}
+  .media-layout{display:grid;grid-template-columns:1fr 200px;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px}
   #homeYoutubeList::-webkit-scrollbar { width: 4px; }
   #homeYoutubeList::-webkit-scrollbar-track { background: transparent; }
   #homeYoutubeList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
