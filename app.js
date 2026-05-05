@@ -382,7 +382,7 @@ async function pollLeaguePulse() {
     updateInningStates();
     renderTicker(); updateFeedEmpty();
     renderSideRailGames();
-    if(pendingVideoQueue.length) pollPendingVideoClips();
+    pollPendingVideoClips();
     selectFocusGame();
     refreshDebugPanel();
   } catch(e){if(e.name!=='AbortError')console.error('poll error',e);}
