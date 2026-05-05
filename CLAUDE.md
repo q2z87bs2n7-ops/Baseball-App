@@ -153,6 +153,10 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
                          dp:true, tp:true, gameStart:true, gameEnd:true, error:true }
 let rbiCardCooldowns = {}              // gamePk → ms timestamp of last key RBI card shown (90s cooldown)
 let pulseColorScheme = (...)           // 'dark' | 'light' — active Pulse color scheme; persisted to localStorage('mlb_pulse_scheme'); defaults 'light'
+let pendingVideoQueue= []              // {gamePk, batterId, batterName, feedItemTs, playTs} — HR plays awaiting a matched clip from /game/{pk}/content
+let liveContentCache = {}             // gamePk → {items:[], fetchedAt:ms} — re-fetched if >5min stale; separate from yesterdayContentCache
+let lastVideoClip    = null           // most recent matched live clip object — used by devTestVideoClip() as first fallback
+let videoClipPollTimer = null         // setInterval handle (2min) for pollPendingVideoClips()
 
 // ── 📖 Story Carousel globals (v2.7.1+) ──────────────────────────────────────
 let storyPool        = []               // array of story objects ready to rotate
@@ -651,7 +655,7 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 12. **`genOnThisDay()`** — Source: `/schedule?date={MM/DD, 3-year lookback}&season={year}&hydrate=linescore,boxscore,playByPlay` (fetched once at Pulse init, cached). Extracts top batter (by avg), starting pitcher stats (W/L/IP/K/ER), multi-HR hitters, walk-offs, grand slams, no-hitters. ID: `otd_{year}_{gamePk}`. Headline: "On this day 2024: Mets beat PHI 5-2 · deGrom 12K". Priority: 20 (low, contextual only). Cooldown: 60 min.
 
-13. **`genYesterdayHighlights()`** — Source: `/schedule?date={yesterday}&hydrate=linescore,boxscore` (fetched once at Pulse init, cached). Filters for Final games (excludes PPD/Cancelled/Suspended). Extracts: W/L pitcher (by `gameStatus.isWinningPitcher` / `isLosingPitcher` flags) with IP/K/ER stats, save pitcher (if exists), top batter (by batting avg), multi-HR hitters. ID: `yday_{gamePk}_{type}`. Headline: "Yesterday: NYM 5, PHI 2 · W: deGrom 7IP, 10K · L: Wheeler 6IP, 2ER". Priority: 45. Cooldown: 30 min. Shown prominently when <2 live games.
+13. **`genYesterdayHighlights()`** — Source: `/schedule?date={yesterday}&hydrate=linescore,boxscore` (fetched once at Pulse init, cached). Filters for Final games (excludes PPD/Cancelled/Suspended). Extracts: W/L pitcher (by `gameStatus.isWinningPitcher` / `isLosingPitcher` flags) with IP/K/ER stats, save pitcher (if exists), top batter (by batting avg), multi-HR hitters. ID: `yday_{gamePk}_{type}`. **Headline:** uses MLB video title from `/game/{pk}/content` `items[0].headline` when available (e.g. "Aaron Judge's homer leads Yankees over Red Sox"); stats line moves to `sub`. Falls back to generated "Yesterday: NYM 5, PHI 2 · W: deGrom…" when content endpoint returns nothing. Priority: 45. Cooldown: 30 min. Shown prominently when <2 live games.
 
 14. **`genProbablePitchers()`** — Source: `scheduleData` (today only) OR `gameStates` fallback. Hydrate param: `probablePitcher`. Filters: `abstractGameState !== 'Final'` AND `localDate === today`. Extracts pitcher names from `g.teams.away/home.probablePitcher.fullName` or "TBD". ID: `probable_{gamePk}`. Headline: "Scherzer [NYM] vs Kershaw [LAD] · 7:05 PM". Priority: 40. Cooldown: 60 min.
 
@@ -809,6 +813,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **💰 Replay RBI** (`Shift+E`) — calls `replayRBICard()` to replay most recent non-HR RBI card from live feed; bypasses cooldown
 - **💫 Card Variants** (`Shift+V`) — calls `window.PulseCard.demo()` to cycle through all four HR card template variants
 - **🎴 Test Card** (`Shift+G`) — calls `generateTestCard()` to inject one random player card into the collection; bypasses demo mode guard via `force=true`; pool is `rosterData.hitting` (no pitchers) + hitting leaders from `leagueLeadersCache.hitting` and `dailyLeadersCache` (deduplicated, cross-team colors resolved via TEAMS); falls back to active team roster if leader caches are empty
+- **📽️ Test Clip** (`Shift+W`) — calls `devTestVideoClip()`; opens `#videoOverlay` with a real MLB clip. Fallback chain: `lastVideoClip` (most recent live match) → `yesterdayContentCache` (populated when Yesterday Recap is opened) → fetches yesterday's first game content on the fly
 - **Media Tab → Show in Navigation** — slide toggle; calls `toggleMedia()`; shows/hides the Media nav button and section
 - ~~Push Alerts → Show on Desktop~~ — removed; desktop hide is now CSS-only (`#pushRow { display:none }` at ≥1025px)
 - **⚡ Pulse Tuning** (`<details>` collapsible) — numeric inputs for `devTuning` (do **not** apply on keystroke — require Confirm Changes):
@@ -931,6 +936,12 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `updateInningStates()` | Called post-poll; placeholder for inning transition detection (logic in `genInningRecapStories`) |
 | `genInningRecapStories()` | Generates one-shot end-of-inning recap cards. **Primary path (v2.59):** processes `inningRecapsPending{}` keys queued by `pollGamePlays()` at `outs===3` — fires immediately when the inning ends with feedItems fully populated. **Fallback path:** `lastInningState` linescore transition detection for edge cases (zero-play innings, isHistory catch-up). Inner `genRecap(g, recapInning, recapHalf, recapKey)` closure shared by both paths. `inningRecapsFired` Set deduplicates across paths. 19 templates with priorities 0–100. Tier-2, no cooldown/decay. |
 | `replayRBICard(itemIndex)` | Dev tool — scans `feedItems` for most recent non-HR scoring play, calls `showRBICard()` directly (bypasses cooldown). `itemIndex` optional (0 = most recent). Callable from console or `Shift+E`. |
+| `openVideoOverlay(url, title)` | Shows `#videoOverlay` (z-index 800) with the given MP4 URL and title string. Sets `<video src>`, calls `play()`. Backdrop click or ✕ button calls `closeVideoOverlay()`. |
+| `closeVideoOverlay()` | Pauses and clears `#videoOverlayPlayer` src, hides `#videoOverlay`. |
+| `devTestVideoClip()` | Dev tool — opens video overlay using fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game. Wired to `Shift+W` and Dev Tools panel. |
+| `pollPendingVideoClips()` | Background poll (every 2min, started by `initReal()`). Groups `pendingVideoQueue` by gamePk, fetches `/game/{pk}/content` (cached in `liveContentCache`, re-fetched if >5min stale), matches clips via `keywordsAll[player_id]` + clip date ≥ play timestamp. On match: sets `lastVideoClip`, calls `patchFeedItemWithClip` + `patchStoryWithClip`, removes from queue. |
+| `patchFeedItemWithClip(feedItemTs, gamePk, clip)` | Finds the HR feed item DOM node via `data-ts` + `data-gamepk`, appends a thumbnail + ▶ overlay div. Clicking opens `openVideoOverlay()`. Guards against double-patching via `el.dataset.clipPatched`. |
+| `patchStoryWithClip(gamePk, batterId, batterName, clip)` | Finds the matching HR story in `storyPool` by gamePk + batter last name in headline. Sets `story.videoUrl`, `story.videoThumb`, `story.videoTitle`. If that story is currently displayed (`storyShownId === story.id`), calls `renderStoryCard()` immediately to show the ▶ WATCH pill. |
 | `calcFocusScore(g)` | Returns a numeric tension score for a live game object from `gameStates`. Formula: closeness (0–60) + situation bonus (runners/RISP/bases-loaded/walk-off/no-hitter) + count bonus (full count +20, 2-strike +12, 2-out +8) × inning multiplier (0.6 early → 2.0 extras). Higher = more exciting. Used by `selectFocusGame()` to auto-pick the best game. |
 | `selectFocusGame()` | Evaluates all live games via `calcFocusScore()`. If a non-focused game scores ≥20pts higher, fires a soft alert via `showFocusAlert()`. On first call with no focused game, calls `setFocusGame()` with the top scorer. Hooked into end of `pollLeaguePulse()`. |
 | `setFocusGame(pk)` | Switches focus to `gamePk pk`. Resets `focusPitchSequence`, `focusCurrentAbIdx`, player stats, dismisses any open alert. If overlay is open, re-renders it. Starts `pollFocusLinescore()` immediately and schedules it every 5s via `focusFastTimer`. Does not modify `focusIsManual` — callers control that flag. |
@@ -1255,6 +1266,8 @@ if (!demoMode) {
 ### Critical DOM Placement Rule
 
 **`#playerCardOverlay` must remain at top-level DOM** (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`, `#soundPanel`) — never nested inside `#pulse` or any other section. Sections create stacking contexts and can be `display:none`, which either traps the overlay's z-index or hides it entirely when the collection is opened from non-Pulse sections. This is the same established pattern as `#soundPanel` (moved in v2.57.6). Current z-index: 600 (above binder's 500).
+
+**`#videoOverlay`** — top-level sibling of all other overlays. z-index: 800 (above `#playerCardOverlay` 600, `#focusOverlay` 700 — intentionally highest non-modal overlay so it covers the feed when open). Contains `#videoOverlayTitle` (clip headline) and `#videoOverlayPlayer` (`<video controls>`). Opened by `openVideoOverlay(url, title)`, closed by `closeVideoOverlay()` or backdrop click. Never auto-opens — always user-initiated via ▶ button on feed item or ▶ WATCH pill on story card.
 
 ### demo.html
 
@@ -1637,6 +1650,7 @@ On every commit that changes app content, bump **three** things:
 | `Shift+D` | `toggleDevTools()` | Toggle Dev Tools panel open/closed |
 | `Shift+F` | `window.FocusCard.demo()` | Open Focus Mode demo overlay with sample data |
 | `Shift+G` | `generateTestCard()` | Inject one random card into the collection (bypasses demo mode guard) |
+| `Shift+W` | `devTestVideoClip()` | Open video overlay with most recent live clip → yesterdayContentCache fallback → fetches yesterday's first game |
 
 ### Demo Mode (Shift+H)
 
