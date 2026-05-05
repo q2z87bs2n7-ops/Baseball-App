@@ -289,11 +289,19 @@
   @media(min-width:1025px) {
     html { zoom: 0.8; }
     #pushRow { display: none !important; }
-    #pulse { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; }
-    #pulseLeft { flex: 0 0 auto; width: 100%; max-width: 700px; }
-    #sideRail { flex: 0 0 auto; width: 100%; max-width: 700px; display: flex !important; flex-direction: column; gap: 0.875rem; }
+    #pulse { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; width: 100%; max-width: 1280px; margin: 0 auto; }
+    #pulseLeft { display: contents; }
+    #pulseLeft > #alertStack,
+    #pulseLeft > #pulseTopBar,
+    #pulseLeft > #gameTicker,
+    #pulseLeft > #focusMiniBar,
+    #pulseLeft > #focusAlertBanner,
+    #pulseLeft > #pulseHero,
+    #pulseLeft > #mockBar { grid-column: 1 / -1; }
+    #pulseLeft > #feedWrap { grid-column: 1; }
+    #sideRail { grid-column: 2; display: block !important; width: auto; }
     #focusMiniBar { display: none !important; }
-    #pulse.pulse-empty #pulseLeft { flex: 1 1 auto; max-width: 900px; margin: 0 auto; }
+    #pulse.pulse-empty #pulseLeft > #feedWrap { grid-column: 1 / -1; }
     #pulse.pulse-empty #sideRail { display: none !important; }
     #sideRailGames { margin-top: 0; }
   }
