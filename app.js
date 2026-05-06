@@ -5755,6 +5755,47 @@ function copyNewsSourceTest(){
   }
 }
 // ── /News Source Test ─────────────────────────────────────────────────────
+
+// RSS Feed Debugger — tests each MLB.com RSS feed individually to find failures
+async function debugRSSFeeds(){
+  console.log('[📰 RSS Debug] Starting feed diagnostics…');
+  var rssFeeds={mlb:'https://www.mlb.com/feeds/rss.xml',yankees:'https://www.mlb.com/yankees/feeds/rss.xml',mets:'https://www.mlb.com/mets/feeds/rss.xml',redsox:'https://www.mlb.com/redsox/feeds/rss.xml',orioles:'https://www.mlb.com/orioles/feeds/rss.xml',blueJays:'https://www.mlb.com/bluejays/feeds/rss.xml',rays:'https://www.mlb.com/rays/feeds/rss.xml',whiteSox:'https://www.mlb.com/whitesox/feeds/rss.xml',indians:'https://www.mlb.com/guardians/feeds/rss.xml',tigers:'https://www.mlb.com/tigers/feeds/rss.xml',royals:'https://www.mlb.com/royals/feeds/rss.xml',twins:'https://www.mlb.com/twins/feeds/rss.xml',athletics:'https://www.mlb.com/athletics/feeds/rss.xml',mariners:'https://www.mlb.com/mariners/feeds/rss.xml',rangers:'https://www.mlb.com/rangers/feeds/rss.xml',astros:'https://www.mlb.com/astros/feeds/rss.xml',angels:'https://www.mlb.com/angels/feeds/rss.xml',dodgers:'https://www.mlb.com/dodgers/feeds/rss.xml',padres:'https://www.mlb.com/padres/feeds/rss.xml',giants:'https://www.mlb.com/giants/feeds/rss.xml',rockies:'https://www.mlb.com/rockies/feeds/rss.xml',dbacks:'https://www.mlb.com/dbacks/feeds/rss.xml',braves:'https://www.mlb.com/braves/feeds/rss.xml',marlins:'https://www.mlb.com/marlins/feeds/rss.xml',nationals:'https://www.mlb.com/nationals/feeds/rss.xml',phillies:'https://www.mlb.com/phillies/feeds/rss.xml',cardinals:'https://www.mlb.com/cardinals/feeds/rss.xml',pirates:'https://www.mlb.com/pirates/feeds/rss.xml',cubs:'https://www.mlb.com/cubs/feeds/rss.xml',reds:'https://www.mlb.com/reds/feeds/rss.xml',brewers:'https://www.mlb.com/brewers/feeds/rss.xml'};
+  var results={ok:[],blocked:[],timeout:[],error:[]};
+  for(var feed in rssFeeds){
+    var url=rssFeeds[feed];var startMs=Date.now();var result={feed:feed,url:url,status:null,ok:false,byteLength:0,elapsedMs:0,itemCount:0,error:null};
+    try{
+      var r=await fetch(url,{mode:'cors',timeout:8000});
+      result.elapsedMs=Date.now()-startMs;result.status=r.status;result.ok=r.ok;
+      if(!r.ok){
+        if(r.status===403||r.status===401){result.error='Blocked (HTTP '+r.status+')';results.blocked.push(result);}
+        else{result.error='HTTP '+r.status;results.error.push(result);}
+      }else{
+        var xml=await r.text();result.byteLength=xml.length;
+        var itemMatch=xml.match(/<item>/g);result.itemCount=itemMatch?itemMatch.length:0;
+        if(result.itemCount===0){result.error='No <item> tags found';results.error.push(result);}
+        else{console.log('✅',feed,'·',result.elapsedMs+'ms ·',result.byteLength+'b ·',result.itemCount,'items');results.ok.push(result);}
+      }
+    }catch(e){
+      result.elapsedMs=Date.now()-startMs;
+      if(e.name==='AbortError'||result.elapsedMs>8000){result.error='Timeout (>8s)';results.timeout.push(result);}
+      else{result.error=e.message||String(e);results.error.push(result);}
+      console.log('❌',feed,'·',result.error);
+    }
+  }
+  console.group('📰 RSS Feed Debug Summary');
+  console.log('✅ OK:',results.ok.length,'feeds ·',results.ok.reduce(function(s,r){return s+r.itemCount;},0),'total items');
+  console.log('🚫 Blocked (403/401):',results.blocked.length,'feeds');
+  console.log('⏱ Timeout:',results.timeout.length,'feeds');
+  console.log('❌ Error:',results.error.length,'feeds');
+  if(results.ok.length){console.log('');console.table(results.ok.map(function(r){return{feed:r.feed,status:r.status,ms:r.elapsedMs,bytes:r.byteLength,items:r.itemCount};}));}
+  if(results.blocked.length){console.log('');console.log('BLOCKED (403/401):');results.blocked.forEach(function(r){console.log('  ·',r.feed,'·',r.url);});}
+  if(results.timeout.length){console.log('');console.log('TIMEOUT:');results.timeout.forEach(function(r){console.log('  ·',r.feed,'·',r.elapsedMs+'ms');});}
+  if(results.error.length){console.log('');console.log('ERRORS:');results.error.forEach(function(r){console.log('  ·',r.feed,'·',r.error);});}
+  console.groupEnd();
+  return results;
+}
+
+// ── /RSS Debug ─────────────────────────────────────────────────────────────
 function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;var tLP=document.getElementById('tuneLiveWPPriority');if(tLP)tLP.value=devTuning.livewp_priority||30;var tLR=document.getElementById('tuneLiveWPRefresh');if(tLR)tLR.value=devTuning.livewp_refresh_ms||90000;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 // Delegated click handler for Dev Tools panel — replaces 11 inline onclick attributes (M3)
