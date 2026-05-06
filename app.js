@@ -1,5 +1,92 @@
 const DEBUG=false; // Set true locally to enable verbose console logging
 
+// ── 🔍 Dev log ring buffer ───────────────────────────────────────────────────
+// In-memory capture of console output + uncaught errors so Dev Tools → Log Capture
+// can surface them on iPad/phone where the browser console isn't reachable. Cap
+// is intentionally small — this is "what just happened?" not durable telemetry.
+const DEV_LOG_CAP = 500;
+var devLog = []; // {ts:number, level:'log'|'warn'|'error'|'info', src:string, msg:string}
+function pushDevLog(level, src, args){
+  try{
+    var msg = Array.prototype.map.call(args, function(a){
+      if (a == null) return String(a);
+      if (typeof a === 'string') return a;
+      if (a instanceof Error) return (a.stack || (a.name + ': ' + a.message));
+      try { return JSON.stringify(a); } catch(e) { return String(a); }
+    }).join(' ');
+    if (msg.length > 600) msg = msg.slice(0, 600) + '…';
+    devLog.push({ts: Date.now(), level: level, src: src || '', msg: msg});
+    if (devLog.length > DEV_LOG_CAP) devLog.splice(0, devLog.length - DEV_LOG_CAP);
+  }catch(e){ /* swallow — logging must never throw */ }
+}
+(function wrapConsole(){
+  ['log','info','warn','error'].forEach(function(lvl){
+    var orig = console[lvl];
+    console[lvl] = function(){
+      pushDevLog(lvl === 'info' ? 'log' : lvl, '', arguments);
+      try { orig.apply(console, arguments); } catch(e) {}
+    };
+  });
+})();
+window.addEventListener('error', function(e){
+  pushDevLog('error', 'window', [e && e.message ? e.message : 'error', e && e.filename ? (e.filename + ':' + e.lineno) : '']);
+});
+window.addEventListener('unhandledrejection', function(e){
+  var r = e && e.reason;
+  pushDevLog('error', 'promise', [r && r.stack ? r.stack : (r && r.message ? r.message : String(r))]);
+});
+// Always-on event trace — feeds Log Capture regardless of DEBUG flag. Use at major
+// event boundaries (boot, navigation, polls, focus changes, theme apply, collection
+// adds, radio start/stop, etc.) so the buffer is useful in production where
+// DEBUG=false and console.log calls are otherwise gated out.
+function devTrace(src){
+  var args=Array.prototype.slice.call(arguments,1);
+  pushDevLog('log', src||'app', args);
+  if(typeof DEBUG!=='undefined' && DEBUG){
+    try{ console.log.apply(console, ['['+(src||'app')+']'].concat(args)); }catch(e){}
+  }
+}
+devTrace('boot','app.js loaded · '+new Date().toISOString());
+
+// ── 🌐 Network trace ─────────────────────────────────────────────────────────
+// Wraps fetch() to capture {ts, method, url, status, ok, ms, sizeBytes, errorMsg}
+// into a small ring buffer. Pure metadata — never reads the response body, so
+// downstream consumers see an unmodified Response. Surfaced in Dev Tools →
+// Network. Service worker (sw.js) and any pre-app.js scripts are not affected.
+const DEV_NET_CAP = 50;
+var devNetLog = [];
+(function wrapFetch(){
+  if(typeof window==='undefined' || !window.fetch) return;
+  var origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    var t0 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+    var url = (typeof input==='string') ? input : (input && input.url) || '';
+    var method = (init && init.method) || (input && input.method) || 'GET';
+    var entry = {ts: Date.now(), method: method.toUpperCase(), url: url, status: null, ok: null, ms: null, sizeBytes: null, errorMsg: null};
+    devNetLog.push(entry);
+    if(devNetLog.length > DEV_NET_CAP) devNetLog.splice(0, devNetLog.length - DEV_NET_CAP);
+    return origFetch(input, init).then(function(res){
+      var t1 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      entry.ms = Math.round(t1 - t0);
+      entry.status = res.status;
+      entry.ok = res.ok;
+      try{
+        var cl = res.headers && res.headers.get && res.headers.get('content-length');
+        if(cl) entry.sizeBytes = parseInt(cl,10);
+      }catch(e){}
+      if(!res.ok) pushDevLog('warn','net', [method.toUpperCase()+' '+res.status+' · '+url+' · '+entry.ms+'ms']);
+      return res;
+    }, function(err){
+      var t1 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      entry.ms = Math.round(t1 - t0);
+      entry.ok = false;
+      entry.errorMsg = (err && err.message) ? err.message : String(err);
+      pushDevLog('error','net', [method.toUpperCase()+' FAILED · '+url+' · '+entry.errorMsg]);
+      throw err;
+    });
+  };
+})();
+
 // ── Naming conventions ────────────────────────────────────────────────────────
 // load*()    — fetch + cache + render a full section (loadTodayGame, loadSchedule)
 // fetch*()   — async data fetch with session cache, returns data or null (fetchBoxscore, fetchCareerStats)
@@ -220,6 +307,7 @@ async function fetchBoxscore(gamePk){
 
 // ── League Pulse functions ────────────────────────────────────────────────────
 function initLeaguePulse() {
+  devTrace('pulse','initLeaguePulse · first nav to Pulse');
   initReal();
 }
 function initReal() {
@@ -548,6 +636,7 @@ function updateDemoBtnLabel(){
 }
 
 function toggleDemoMode() {
+  devTrace('demo', demoMode ? 'exit' : 'init');
   if(demoMode) exitDemo();
   else initDemo();
   updateDemoBtnLabel();
@@ -2308,6 +2397,7 @@ function setFocusGame(pk) {
   focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
 }
 function setFocusGameManual(pk) {
+  devTrace('focus','manual pick · gamePk='+pk);
   focusIsManual=true;
   setFocusGame(pk);
 }
@@ -2525,7 +2615,7 @@ function dismissFocusAlert() {
 
 // ── End Focus Mode functions ──────────────────────────────────────────────────
 
-// DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+R)
+// DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+H)
 function replayHRCard(itemIndex) {
   var hrs = feedItems.filter(function(item) { return item.data && item.data.event === 'Home Run'; });
   if (!hrs.length) { alert('No home runs in feed yet'); return; }
@@ -2549,7 +2639,7 @@ function replayHRCard(itemIndex) {
   if(DEBUG) console.log('Replaying HR:', batterName, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
-// DEBUG: Replay most recent RBI card from live feed (press Shift+E)
+// DEBUG: Replay most recent RBI card from live feed (press Shift+B)
 function replayRBICard(itemIndex) {
   var rbis = feedItems.filter(function(item) { return item.data && item.data.scoring && item.data.event !== 'Home Run' && item.data.batterId; });
   if (!rbis.length) { alert('No RBI plays in feed yet'); return; }
@@ -2628,6 +2718,7 @@ function collectCard(data, force) {
   var eventType = data.eventType, badge = data.badge || '', rbi = data.rbi || 0;
   var key = playerId + '_' + eventType;
   var tier = getCardTier(badge, eventType, rbi);
+  devTrace('collect',(playerName||'?')+' · '+eventType+' · tier='+tier+(rbi?' · rbi='+rbi:'')+(force?' [forced]':''));
 
   if (demoMode && !force) {
     // Simulate the collection outcome so the rail flash message works during demo playback
@@ -4464,7 +4555,7 @@ function stopAllMedia(except){
   if(except!=='highlight'){document.querySelectorAll('video').forEach(function(v){if(!v.paused)v.pause();});}
 }
 function toggleRadio(){if(radioAudio&&!radioAudio.paused){stopRadio();}else{startRadio();}}
-function startRadio(){stopAllMedia('radio');loadRadioStream(pickRadioForFocus());}
+function startRadio(){devTrace('radio','startRadio');stopAllMedia('radio');loadRadioStream(pickRadioForFocus());}
 function loadRadioStream(pick){
   if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
   if(!radioAudio){radioAudio=new Audio();radioAudio.preload='none';}
@@ -4487,6 +4578,7 @@ function loadRadioStream(pick){
   }
 }
 function stopRadio(){
+  devTrace('radio','stopRadio · was teamId='+radioCurrentTeamId);
   if(radioAudio){radioAudio.pause();}
   if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
   radioCurrentTeamId=null;
@@ -4637,10 +4729,204 @@ function radioCheckPlay(key){
   loadRadioStream(pick);
   renderRadioCheckList();
 }
+// 🧪 Custom URL — paste any stream URL and play through the existing radio engine.
+// Overrides whatever's currently playing. Format auto-detected from extension if 'auto'.
+function radioCheckTryCustom(){
+  var url=(document.getElementById('radioCustomUrl')||{}).value||'';
+  url=url.trim();
+  var status=document.getElementById('radioCustomStatus');
+  if(!url){if(status)status.textContent='Paste a URL first.';return;}
+  if(!/^https?:\/\//i.test(url)){if(status)status.textContent='URL must start with http:// or https://';return;}
+  var fmtSel=(document.getElementById('radioCustomFmt')||{}).value||'auto';
+  var fmt=fmtSel;
+  if(fmt==='auto') fmt=/\.m3u8(\?|$)/i.test(url)?'hls':'mp3';
+  if(status)status.innerHTML='<span style="color:var(--text)">Loading · format='+fmt+'…</span>';
+  var pick={teamId:null,abbr:'TEST',name:'Custom · '+(fmt==='hls'?'HLS':'MP3'),url:url,format:fmt};
+  radioCheckPlayingKey=null; // not a known entry
+  devTrace('radio','custom URL · fmt='+fmt+' · '+url);
+  // Briefly hook into the audio element to surface play/error to the dev panel
+  try{
+    var audio=radioAudio||new Audio();
+    var onPlay=function(){if(status)status.innerHTML='<span style="color:#22c55e">✅ Playing · '+fmt.toUpperCase()+' · '+escapeHtml(url.length>80?url.slice(0,80)+'…':url)+'</span>';audio.removeEventListener('playing',onPlay);};
+    var onErr=function(e){if(status)status.innerHTML='<span style="color:#ff6b6b">❌ Failed · '+(e&&e.message||'audio error')+'</span>';audio.removeEventListener('error',onErr);};
+    audio.addEventListener('playing',onPlay,{once:true});
+    audio.addEventListener('error',onErr,{once:true});
+  }catch(e){}
+  loadRadioStream(pick);
+  renderRadioCheckList();
+}
 function radioCheckStop(){
   radioCheckPlayingKey=null;
   if(radioAudio&&!radioAudio.paused)stopRadio();
   if(document.getElementById('radioCheckOverlay').style.display!=='none')renderRadioCheckList();
+  var st=document.getElementById('radioCustomStatus');
+  if(st) st.textContent='Stopped.';
+}
+
+// ── 📺 YouTube Channel Test ──────────────────────────────────────────────────
+// Two modes in one overlay:
+//  1. Try a custom channel — paste UC id or channel URL, fetch via /api/proxy-youtube,
+//     preview videos, optionally apply to activeTeam.youtubeUC (session-only override
+//     so the home YouTube widget reloads with the new channel for testing).
+//  2. Sweep all 30 — bulk test every team's youtubeUC + the MLB fallback.
+//     Ported from claude/debug-youtube-api-SYBtV branch (Anthropic, May 2026).
+var ytDebugResults={};
+function openYoutubeDebug(){
+  document.getElementById('ytDebugOverlay').style.display='flex';
+  renderYoutubeDebugList();
+  // Pre-fill custom input with active team's current UC for easy edit/replace
+  var inp=document.getElementById('ytCustomInput');
+  if(inp && !inp.value && activeTeam && activeTeam.youtubeUC) inp.value=activeTeam.youtubeUC;
+}
+function closeYoutubeDebug(){
+  document.getElementById('ytDebugOverlay').style.display='none';
+}
+function parseYTChannelInput(s){
+  s=(s||'').trim();
+  if(!s) return {error:'Empty.'};
+  if(/^UC[A-Za-z0-9_-]{20,30}$/.test(s)) return {uc:s};
+  var m=s.match(/youtube\.com\/channel\/(UC[A-Za-z0-9_-]{20,30})/);
+  if(m) return {uc:m[1]};
+  if(/youtube\.com\/(@|user\/|c\/)/i.test(s) || /^@/.test(s)){
+    return {error:"@handle / /user / /c can't be resolved client-side. Visit the channel → ⋯ → Share Channel → Copy Channel ID (UCxxx…)."};
+  }
+  return {error:'Not recognised. Paste a UC channel id or a youtube.com/channel/UCxxx URL.'};
+}
+function ytDebugFetchCustom(){
+  var raw=(document.getElementById('ytCustomInput')||{}).value||'';
+  var out=document.getElementById('ytCustomResult');
+  var p=parseYTChannelInput(raw);
+  if(p.error){if(out)out.innerHTML='<span style="color:#ff6b6b">'+escapeHtml(p.error)+'</span>';return;}
+  var uc=p.uc;
+  if(out) out.innerHTML='<span style="color:var(--text)">⏳ Fetching '+escapeHtml(uc)+'…</span>';
+  var t0=Date.now();
+  fetch(API_BASE+'/api/proxy-youtube?channel='+encodeURIComponent(uc))
+    .then(function(r){return r.json().then(function(j){return {res:r,j:j};});})
+    .then(function(o){
+      var ms=Date.now()-t0;
+      if(!o.res.ok || !o.j.success || !o.j.videos || !o.j.videos.length){
+        var msg='HTTP '+o.res.status+(o.j&&o.j.error?' · '+o.j.error:o.j&&o.j.message?' · '+o.j.message:'');
+        if(out) out.innerHTML='<span style="color:#ff6b6b">❌ '+escapeHtml(msg)+' · '+ms+'ms</span>';
+        return;
+      }
+      var v=o.j.videos.slice(0,5);
+      var teamLbl=activeTeam?activeTeam.short:'team';
+      var html='<div style="color:#22c55e;font-weight:700">✅ HTTP '+o.res.status+' · '+o.j.count+' videos · '+ms+'ms</div>';
+      html+='<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
+      v.forEach(function(vid){
+        html+='<div style="display:flex;gap:8px;align-items:flex-start"><img src="'+escapeHtml(vid.thumb||'')+'" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">'+escapeHtml(vid.title||'?')+'</div><div style="font-size:.6rem;color:var(--muted)">'+escapeHtml(vid.date||'')+'</div></div></div>';
+      });
+      html+='</div>';
+      html+='<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam(\''+escapeHtml(uc)+'\')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">⚙ Apply to '+escapeHtml(teamLbl)+'</button><a href="https://www.youtube.com/channel/'+escapeHtml(uc)+'" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open ↗</a></div>';
+      if(out) out.innerHTML=html;
+    })
+    .catch(function(err){
+      var ms=Date.now()-t0;
+      if(out) out.innerHTML='<span style="color:#ff6b6b">❌ Network: '+escapeHtml((err&&err.message)||'failed')+' · '+ms+'ms</span>';
+    });
+}
+function ytDebugApplyToTeam(uc){
+  if(!activeTeam){alert('No active team.');return;}
+  var prev=activeTeam.youtubeUC;
+  activeTeam.youtubeUC=uc;
+  devTrace('yt','custom UC applied · '+activeTeam.short+' · was '+prev+' · now '+uc);
+  if(typeof loadHomeYoutubeWidget==='function') loadHomeYoutubeWidget();
+  var out=document.getElementById('ytCustomResult');
+  if(out){
+    var note=document.createElement('div');
+    note.style.cssText='margin-top:6px;padding:6px 8px;background:var(--card2);border:1px solid #22c55e;border-radius:4px;color:var(--text);font-size:.62rem';
+    note.textContent='✅ Applied to '+activeTeam.short+'. Open Home → YouTube widget to verify. Switching teams or reloading reverts to '+(prev||'(none)')+'.';
+    out.appendChild(note);
+  }
+}
+function ytDebugEntries(){
+  var entries=TEAMS.map(function(t){
+    return {key:t.id,teamId:t.id,teamName:t.name,abbr:t.short,channelId:t.youtubeUC||''};
+  });
+  entries.sort(function(a,b){return a.teamName.localeCompare(b.teamName);});
+  if(typeof MLB_FALLBACK_UC!=='undefined' && MLB_FALLBACK_UC) entries.push({key:'mlb_fallback',teamId:null,teamName:'MLB (Fallback)',abbr:'MLB',channelId:MLB_FALLBACK_UC});
+  return entries;
+}
+function renderYoutubeDebugList(){
+  var list=document.getElementById('ytDebugList');
+  if(!list)return;
+  var entries=ytDebugEntries();
+  var anyTested=Object.keys(ytDebugResults).length>0;
+  if(!anyTested){
+    list.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Click "▶ Run All" to sweep all '+entries.length+' channels.</div>';
+    return;
+  }
+  var done=Object.values(ytDebugResults).filter(function(r){return r&&!r.pending;}).length;
+  var summary='<div style="padding:6px 10px;font-size:.7rem;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">'+done+' of '+entries.length+' tested</div>';
+  var html=entries.map(function(e){
+    var r=ytDebugResults[e.key];
+    var icon,statusLine,extra='';
+    if(!r){icon='⬜';statusLine='<span style="color:var(--muted)">untested</span>';}
+    else if(r.pending){icon='⏳';statusLine='<span style="color:var(--muted)">testing…</span>';}
+    else if(r.ok){icon='✅';statusLine='<span style="color:#22c55e;font-weight:700">HTTP '+r.status+' · '+r.count+' videos</span><span style="color:var(--muted);font-size:.66rem"> · '+r.ms+'ms</span>';}
+    else{
+      icon='❌';
+      statusLine='<span style="color:#e03030;font-weight:700">HTTP '+(r.status||0)+'</span><span style="color:var(--muted);font-size:.66rem"> · '+r.ms+'ms</span>';
+      if(r.error) extra='<div style="margin-top:2px;font-size:.66rem;color:#e03030">'+escapeHtml(r.error)+'</div>';
+    }
+    return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">'+icon+'</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text)">'+escapeHtml(e.teamName)+'</span><span style="font-size:.66rem;color:var(--muted)">'+escapeHtml(e.abbr)+'</span></div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px"><span style="font-size:.63rem;color:var(--muted);font-family:monospace">'+escapeHtml(e.channelId)+'</span><span style="color:var(--muted)">·</span>'+statusLine+'</div>'+extra+'</div><button onclick="runYoutubeDebugOne(\''+e.key+'\')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">▶</button></div>';
+  }).join('');
+  list.innerHTML=summary+html;
+}
+function runYoutubeDebugAll(){
+  var btn=document.getElementById('ytDebugRunBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Running…';}
+  var entries=ytDebugEntries();
+  ytDebugResults={};
+  entries.forEach(function(e){ytDebugResults[e.key]={pending:true};});
+  renderYoutubeDebugList();
+  var promises=entries.map(function(e){return runYoutubeDebugOne(e.key);});
+  Promise.all(promises).then(function(){
+    if(btn){btn.disabled=false;btn.textContent='▶ Run All';}
+  });
+}
+function runYoutubeDebugOne(key){
+  var entries=ytDebugEntries();
+  var e=entries.find(function(x){return String(x.key)===String(key);});
+  if(!e)return Promise.resolve();
+  ytDebugResults[e.key]={pending:true};
+  renderYoutubeDebugList();
+  var t0=Date.now();
+  return fetch(API_BASE+'/api/proxy-youtube?channel='+encodeURIComponent(e.channelId))
+    .then(function(res){
+      var ms=Date.now()-t0;
+      return res.json().then(function(j){
+        ytDebugResults[e.key]={ok:res.ok&&!!j.success,status:res.status,count:j.count||0,ms:ms,error:j.error||null};
+        renderYoutubeDebugList();
+      },function(){
+        ytDebugResults[e.key]={ok:false,status:res.status,count:0,ms:ms,error:'JSON parse error'};
+        renderYoutubeDebugList();
+      });
+    })
+    .catch(function(err){
+      var ms=Date.now()-t0;
+      ytDebugResults[e.key]={ok:false,status:0,count:0,ms:ms,error:'Network: '+(err&&err.message||'failed')};
+      renderYoutubeDebugList();
+    });
+}
+function ytDebugReset(){
+  ytDebugResults={};
+  renderYoutubeDebugList();
+}
+function ytDebugCopy(){
+  var entries=ytDebugEntries();
+  var works=[],broken=[],untested=[];
+  entries.forEach(function(e){
+    var r=ytDebugResults[e.key];
+    if(!r||r.pending){untested.push('• '+e.teamName+' ('+e.abbr+') — '+e.channelId);}
+    else if(r.ok){works.push('• '+e.teamName+' ('+e.abbr+') — '+e.channelId+' — '+r.count+' videos · '+r.ms+'ms');}
+    else{var detail='HTTP '+(r.status||0)+(r.error?' · '+r.error:'');broken.push('• '+e.teamName+' ('+e.abbr+') — '+e.channelId+' — '+detail+' · '+r.ms+'ms');}
+  });
+  var lines=['YouTube Channel Test','Date: '+new Date().toISOString().slice(0,10),'Proxy: '+API_BASE+'/api/proxy-youtube',''];
+  lines.push('✅ WORKS ('+works.length+'):');lines.push.apply(lines,works.length?works:['  (none)']);lines.push('');
+  lines.push('❌ BROKEN/ERROR ('+broken.length+'):');lines.push.apply(lines,broken.length?broken:['  (none)']);lines.push('');
+  if(untested.length){lines.push('⏳ UNTESTED ('+untested.length+'):');lines.push.apply(lines,untested);}
+  _copyToClipboard(lines.join('\n'),'ytDebugCopyBtn');
 }
 function radioCheckSet(key,val){
   if(radioCheckResults[key]===val) delete radioCheckResults[key];
@@ -4692,6 +4978,703 @@ function fallbackCopy(text){
   try{document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);
 }
+
+// ── 🔍 Log Capture (Dev Tools) ───────────────────────────────────────────────
+// Renders/filters/copies the in-memory devLog buffer populated at the top of app.js.
+function _logLevelRank(lvl){return lvl==='error'?3:lvl==='warn'?2:1;}
+function _fmtLogTs(ts){
+  var d=new Date(ts);
+  var pad=function(n){return n<10?'0'+n:''+n;};
+  return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0');
+}
+function _filteredDevLog(){
+  var levelSel=(document.getElementById('logCaptureLevel')||{}).value||'all';
+  var filter=((document.getElementById('logCaptureFilter')||{}).value||'').trim().toLowerCase();
+  var minRank=levelSel==='all'?0:_logLevelRank(levelSel);
+  return devLog.filter(function(e){
+    if(minRank&&_logLevelRank(e.level)<minRank)return false;
+    if(filter){
+      var hay=(e.msg+' '+e.src+' '+e.level).toLowerCase();
+      if(hay.indexOf(filter)===-1)return false;
+    }
+    return true;
+  });
+}
+function renderLogCapture(){
+  var list=document.getElementById('logCaptureList');
+  var count=document.getElementById('logCaptureCount');
+  if(!list)return;
+  if(count) count.textContent='('+devLog.length+')';
+  var rows=_filteredDevLog().slice(-200); // newest 200 of filtered
+  if(!rows.length){
+    list.innerHTML='<div class="dt-label-muted" style="padding:4px 0">No log entries match.</div>';
+    return;
+  }
+  // Render newest at top for easier scanning
+  list.innerHTML=rows.slice().reverse().map(function(e){
+    var cls='dt-log-row'+(e.level==='error'?' lv-error':e.level==='warn'?' lv-warn':'');
+    var tag=e.src?'<span class="lv-tag">['+escapeHtml(e.src)+']</span>':'';
+    return '<div class="'+cls+'"><span class="lv-ts">'+_fmtLogTs(e.ts)+'</span>'+tag+escapeHtml(e.msg)+'</div>';
+  }).join('');
+}
+function copyLogAsMarkdown(){
+  var rows=_filteredDevLog();
+  var lines=['# MLB Pulse — Log Capture','Captured: '+new Date().toISOString(),'Total entries: '+devLog.length+' (showing '+rows.length+' after filter)',''];
+  if(!rows.length){lines.push('_(empty)_');}
+  else{
+    lines.push('| time | level | src | message |');
+    lines.push('|---|---|---|---|');
+    rows.forEach(function(e){
+      var msg=e.msg.replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+      lines.push('| '+_fmtLogTs(e.ts)+' | '+e.level+' | '+(e.src||'-')+' | '+msg+' |');
+    });
+  }
+  var text=lines.join('\n');
+  var btn=document.getElementById('logCaptureCopyBtn');
+  function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;btn.style.background='#1f7a3a';setTimeout(function(){btn.textContent=orig;btn.style.background='';},1500);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');},function(){fallbackCopy(text);flash('✓ Copied (fallback)');});
+  }else{
+    fallbackCopy(text);flash('✓ Copied (fallback)');
+  }
+}
+function clearDevLog(){
+  devLog.length=0;
+  renderLogCapture();
+}
+
+// ── 📊 App State Inspector (Dev Tools) ──────────────────────────────────────
+// Read-only views over the major in-memory state globals: gameStates, feedItems,
+// focusState, storyPool, plus a flat "context" row. Each subsection has its own
+// 📋 button; the parent has a "Copy All State" that bundles everything as
+// Markdown for pasting to Claude.
+function _stateGameRow(g){
+  if(!g)return '—';
+  var matchup=(g.awayAbbr||'?')+' '+g.awayScore+' @ '+(g.homeAbbr||'?')+' '+g.homeScore;
+  var inn=g.status==='Live' ? ' · '+(g.halfInning||'')+' '+(g.inning||'?')+' ('+g.outs+'o)' : '';
+  var bases=(g.onFirst||g.onSecond||g.onThird) ? ' · 🏃'+(g.onFirst?'1':'·')+(g.onSecond?'2':'·')+(g.onThird?'3':'·') : '';
+  return matchup+' · '+g.status+(g.detailedState&&g.detailedState!==g.status?' ('+g.detailedState+')':'')+inn+bases;
+}
+function _stateContext(){
+  var t=(typeof activeTeam!=='undefined'&&activeTeam)||{};
+  var section='?';
+  try{var s=document.querySelector('.section.active');if(s) section=s.id;}catch(e){}
+  return {
+    version: (function(){try{return (document.title.match(/v[\d.]+/)||['?'])[0];}catch(e){return '?';}})(),
+    timestamp: new Date().toISOString(),
+    activeTeam: t.id ? (t.short+' (id:'+t.id+')') : '?',
+    section: section,
+    demoMode: typeof demoMode!=='undefined' ? !!demoMode : '?',
+    pulseInitialized: typeof pulseInitialized!=='undefined' ? !!pulseInitialized : '?',
+    pulseColorScheme: typeof pulseColorScheme!=='undefined' ? pulseColorScheme : '?',
+    themeScope: typeof themeScope!=='undefined' ? themeScope : '?',
+    themeOverride: typeof themeOverride!=='undefined' && themeOverride ? (themeOverride.short||'set') : null,
+    themeInvert: typeof themeInvert!=='undefined' ? !!themeInvert : '?',
+    devColorLocked: typeof devColorLocked!=='undefined' ? !!devColorLocked : '?',
+    radioCurrentTeamId: typeof radioCurrentTeamId!=='undefined' ? radioCurrentTeamId : null,
+    focusGamePk: typeof focusGamePk!=='undefined' ? focusGamePk : null,
+    focusIsManual: typeof focusIsManual!=='undefined' ? !!focusIsManual : '?',
+    counts: {
+      gameStates: typeof gameStates!=='undefined' ? Object.keys(gameStates).length : 0,
+      feedItems: typeof feedItems!=='undefined' ? feedItems.length : 0,
+      storyPool: typeof storyPool!=='undefined' ? storyPool.length : 0,
+      enabledGames: typeof enabledGames!=='undefined' ? enabledGames.size : 0,
+      devLog: devLog.length,
+    },
+    viewport: window.innerWidth+'×'+window.innerHeight,
+    userAgent: navigator.userAgent,
+  };
+}
+function _stateGameStatesArr(){
+  if(typeof gameStates==='undefined') return [];
+  return Object.keys(gameStates).map(function(pk){
+    var g=gameStates[pk];
+    return {
+      gamePk:+pk, status:g.status, detailedState:g.detailedState,
+      matchup:(g.awayAbbr||'?')+'@'+(g.homeAbbr||'?'),
+      score:(g.awayScore||0)+'-'+(g.homeScore||0),
+      inning:(g.halfInning||'')+(g.inning||''), outs:g.outs,
+      bases:(g.onFirst?'1':'')+(g.onSecond?'2':'')+(g.onThird?'3':''),
+      hits:(g.awayHits||0)+'-'+(g.homeHits||0),
+      enabled: typeof enabledGames!=='undefined' ? enabledGames.has(+pk) : null,
+    };
+  }).sort(function(a,b){
+    var rank=function(s){return s==='Live'?0:s==='Preview'||s==='Scheduled'?1:2;};
+    return rank(a.status)-rank(b.status);
+  });
+}
+function _stateFeedItemsArr(limit){
+  if(typeof feedItems==='undefined') return [];
+  return feedItems.slice(0, limit||50).map(function(fi){
+    var d=fi.data||{};
+    return {
+      ts: fi.ts ? fi.ts.toISOString() : null,
+      gamePk: fi.gamePk,
+      type: d.type,
+      label: d.label || d.event || '',
+      desc: (d.desc||d.sub||'').slice(0, 200),
+      scoring: !!d.scoring,
+      score: (d.awayScore!=null?d.awayScore:'')+(d.homeScore!=null?'-'+d.homeScore:''),
+      inning: d.halfInning ? (d.halfInning+' '+(d.inning||'')) : null,
+    };
+  });
+}
+function _stateStoryPoolArr(){
+  if(typeof storyPool==='undefined') return [];
+  return storyPool.map(function(s){
+    var cdRem=null;
+    if(s.lastShown && s.cooldownMs){
+      var rem=s.cooldownMs-(Date.now()-s.lastShown);
+      cdRem=rem>0?Math.round(rem/1000)+'s':'ready';
+    }
+    return {
+      id:s.id, type:s.type, tier:s.tier, priority:s.priority,
+      headline:s.headline, gamePk:s.gamePk, cooldownRem:cdRem,
+      lastShownAgo: s.lastShown ? Math.round((Date.now()-s.lastShown)/1000)+'s' : null,
+      isShown: s.id===storyShownId,
+    };
+  }).sort(function(a,b){return (b.priority||0)-(a.priority||0);});
+}
+function _stateFocusObj(){
+  return {
+    focusGamePk: typeof focusGamePk!=='undefined' ? focusGamePk : null,
+    focusIsManual: typeof focusIsManual!=='undefined' ? !!focusIsManual : '?',
+    focusedGame: (typeof focusGamePk!=='undefined' && focusGamePk && typeof gameStates!=='undefined' && gameStates[focusGamePk])
+      ? _stateGameRow(gameStates[focusGamePk]) : null,
+  };
+}
+function _kvList(obj){
+  return Object.keys(obj).map(function(k){
+    var v=obj[k];
+    var disp=(v==null)?'—':(typeof v==='object')?JSON.stringify(v):String(v);
+    if(disp.length>200) disp=disp.slice(0,200)+'…';
+    return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">'+escapeHtml(k)+'</span><span>'+escapeHtml(disp)+'</span></div>';
+  }).join('');
+}
+function _miniCopyBtn(action){
+  return '<button data-dt-action="'+action+'" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer;font-weight:600">📋</button>';
+}
+function _section(title, action, body){
+  return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="dt-label">'+title+'</span>'+_miniCopyBtn(action)+'</div>'+body+'</div>';
+}
+function renderAppState(){
+  var body=document.getElementById('appStateBody');
+  if(!body) return;
+  var ctx=_stateContext();
+  var c=document.getElementById('appStateCounts');
+  if(c) c.textContent='('+ctx.counts.gameStates+'g · '+ctx.counts.feedItems+'f · '+ctx.counts.storyPool+'s)';
+
+  var gs=_stateGameStatesArr();
+  var gsBody=gs.length
+    ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">'+gs.map(function(g){
+        return '<div class="dt-log-row">'+escapeHtml(g.matchup)+' · '+escapeHtml(g.status)+' · '+escapeHtml(g.score)+(g.inning?' · '+escapeHtml(g.inning)+' ('+g.outs+'o)':'')+(g.bases?' · 🏃'+escapeHtml(g.bases):'')+(g.enabled===false?' <span class="lv-tag">[hidden]</span>':'')+'</div>';
+      }).join('')+'</div>'
+    : '<div class="dt-label-muted">No games loaded.</div>';
+
+  var fi=_stateFeedItemsArr(30);
+  var fiBody=fi.length
+    ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">'+fi.map(function(f){
+        var ts=f.ts?f.ts.slice(11,19):'';
+        return '<div class="dt-log-row"><span class="lv-ts">'+escapeHtml(ts)+'</span><span class="lv-tag">['+escapeHtml(String(f.type||'?'))+']</span>'+escapeHtml(f.label||f.desc||'')+(f.scoring?' ⭐':'')+'</div>';
+      }).join('')+'</div>'
+    : '<div class="dt-label-muted">Feed empty.</div>';
+
+  var sp=_stateStoryPoolArr();
+  var spBody=sp.length
+    ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">'+sp.map(function(s){
+        return '<div class="dt-log-row'+(s.isShown?' lv-warn':'')+'"><span class="lv-tag">p'+(s.priority||0)+'</span><span class="lv-tag">['+escapeHtml(String(s.type||'?'))+']</span>'+escapeHtml(s.headline||'')+(s.cooldownRem?' <span class="lv-ts">('+escapeHtml(s.cooldownRem)+')</span>':'')+(s.isShown?' ◀ shown':'')+'</div>';
+      }).join('')+'</div>'
+    : '<div class="dt-label-muted">Story pool empty.</div>';
+
+  var ctxBody='<div style="font-size:.65rem">'+_kvList({
+    version: ctx.version, section: ctx.section, activeTeam: ctx.activeTeam,
+    demoMode: ctx.demoMode, pulseInitialized: ctx.pulseInitialized,
+    pulseColorScheme: ctx.pulseColorScheme, themeScope: ctx.themeScope,
+    themeOverride: ctx.themeOverride, themeInvert: ctx.themeInvert,
+    devColorLocked: ctx.devColorLocked, radioCurrentTeamId: ctx.radioCurrentTeamId,
+    focusGamePk: ctx.focusGamePk, focusIsManual: ctx.focusIsManual,
+    viewport: ctx.viewport,
+  })+'</div>';
+
+  var focusBody='<div style="font-size:.65rem">'+_kvList(_stateFocusObj())+'</div>';
+
+  body.innerHTML =
+    _section('Context','copyStateContext', ctxBody) +
+    _section('🎯 Focus','copyStateFocus', focusBody) +
+    _section('🎮 gameStates ('+gs.length+')','copyStateGames', gsBody) +
+    _section('📰 feedItems (showing '+fi.length+' of '+ctx.counts.feedItems+')','copyStateFeed', fiBody) +
+    _section('📖 storyPool ('+sp.length+')','copyStateStories', spBody);
+}
+function _copyToClipboard(text, btnId){
+  var btn=btnId?document.getElementById(btnId):null;
+  function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;btn.style.background='#1f7a3a';setTimeout(function(){btn.textContent=orig;btn.style.background='';},1500);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');},function(){fallbackCopy(text);flash('✓ Copied (fb)');});
+  }else{
+    fallbackCopy(text);flash('✓ Copied (fb)');
+  }
+}
+function _stateAsMarkdownContext(){
+  var c=_stateContext();
+  return '## Context\n\n```json\n'+JSON.stringify(c,null,2)+'\n```\n';
+}
+function _stateAsMarkdownGames(){
+  var gs=_stateGameStatesArr();
+  if(!gs.length) return '## gameStates\n\n_(empty)_\n';
+  var lines=['## gameStates ('+gs.length+')','','| gamePk | matchup | status | score | inning | bases | hits | enabled |','|---|---|---|---|---|---|---|---|'];
+  gs.forEach(function(g){
+    lines.push('| '+g.gamePk+' | '+g.matchup+' | '+g.status+(g.detailedState&&g.detailedState!==g.status?' ('+g.detailedState+')':'')+' | '+g.score+' | '+(g.inning||'-')+(g.outs!=null?' '+g.outs+'o':'')+' | '+(g.bases||'-')+' | '+g.hits+' | '+(g.enabled==null?'-':g.enabled?'y':'n')+' |');
+  });
+  return lines.join('\n')+'\n';
+}
+function _stateAsMarkdownFeed(limit){
+  var fi=_stateFeedItemsArr(limit||50);
+  if(!fi.length) return '## feedItems\n\n_(empty)_\n';
+  var lines=['## feedItems ('+fi.length+(typeof feedItems!=='undefined'&&feedItems.length>fi.length?' of '+feedItems.length:'')+')','','| time | gamePk | type | label/desc | scoring |','|---|---|---|---|---|'];
+  fi.forEach(function(f){
+    var ts=f.ts?f.ts.slice(11,19):'-';
+    var msg=(f.label||f.desc||'').replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+    lines.push('| '+ts+' | '+f.gamePk+' | '+(f.type||'-')+' | '+msg+' | '+(f.scoring?'y':'')+' |');
+  });
+  return lines.join('\n')+'\n';
+}
+function _stateAsMarkdownStories(){
+  var sp=_stateStoryPoolArr();
+  if(!sp.length) return '## storyPool\n\n_(empty)_\n';
+  var lines=['## storyPool ('+sp.length+')','','| priority | type | tier | headline | cooldown | shown |','|---|---|---|---|---|---|'];
+  sp.forEach(function(s){
+    lines.push('| '+(s.priority||0)+' | '+(s.type||'-')+' | '+(s.tier||'-')+' | '+(s.headline||'').replace(/\|/g,'\\|')+' | '+(s.cooldownRem||'-')+' | '+(s.isShown?'◀':'')+' |');
+  });
+  return lines.join('\n')+'\n';
+}
+function _stateAsMarkdownFocus(){
+  return '## Focus\n\n```json\n'+JSON.stringify(_stateFocusObj(),null,2)+'\n```\n';
+}
+function copyAppStateAsMarkdown(){
+  var parts=[
+    '# MLB Pulse — App State Snapshot',
+    'Captured: '+new Date().toISOString(),
+    '',
+    _stateAsMarkdownContext(),
+    _stateAsMarkdownFocus(),
+    _stateAsMarkdownGames(),
+    _stateAsMarkdownFeed(50),
+    _stateAsMarkdownStories(),
+  ];
+  _copyToClipboard(parts.join('\n'),'appStateCopyBtn');
+}
+
+// ── 🌐 Network Trace (Dev Tools) ────────────────────────────────────────────
+function _shortUrl(u){
+  if(!u) return '?';
+  try{
+    var parsed=new URL(u, window.location.href);
+    var host=parsed.host || '';
+    // Trim known noisy bases for readability — full URL still visible on hover/copy
+    var path=parsed.pathname.replace(/^\/api\/v1(\.1)?/, '/v1$1');
+    var q=parsed.search ? (parsed.search.length>40?parsed.search.slice(0,40)+'…':parsed.search) : '';
+    return (host?host+' ':'')+path+q;
+  }catch(e){
+    return u.length>120 ? u.slice(0,120)+'…' : u;
+  }
+}
+function _fmtBytes(n){
+  if(n==null) return '-';
+  if(n<1024) return n+'b';
+  if(n<1048576) return (n/1024).toFixed(1)+'k';
+  return (n/1048576).toFixed(2)+'M';
+}
+function renderNetTrace(){
+  var list=document.getElementById('netTraceList');
+  var count=document.getElementById('netTraceCount');
+  if(!list) return;
+  if(count) count.textContent='('+devNetLog.length+')';
+  if(!devNetLog.length){
+    list.innerHTML='<div class="dt-label-muted" style="padding:4px 0">No fetches captured yet.</div>';
+    return;
+  }
+  // Newest first
+  list.innerHTML = devNetLog.slice().reverse().map(function(e){
+    var ts=_fmtLogTs(e.ts);
+    var st=(e.status==null)?(e.ok===false?'ERR':'…'):e.status;
+    var cls='dt-log-row';
+    if(e.ok===false) cls+=' lv-error';
+    else if(e.status>=400) cls+=' lv-error';
+    else if(e.status>=300) cls+=' lv-warn';
+    var ms=e.ms!=null?e.ms+'ms':'-';
+    var size=_fmtBytes(e.sizeBytes);
+    var err=e.errorMsg?'<div style="margin-left:24px;color:#ff6b6b">'+escapeHtml(e.errorMsg)+'</div>':'';
+    return '<div class="'+cls+'" title="'+escapeHtml(e.url||'')+'"><span class="lv-ts">'+ts+'</span><span class="lv-tag">'+escapeHtml(e.method)+' '+st+'</span><span class="lv-ts">'+ms+' · '+size+'</span> '+escapeHtml(_shortUrl(e.url))+err+'</div>';
+  }).join('');
+}
+function copyNetTraceAsMarkdown(){
+  var lines=['# MLB Pulse — Network Trace','Captured: '+new Date().toISOString(),'Total entries: '+devNetLog.length+' (cap '+DEV_NET_CAP+')',''];
+  if(!devNetLog.length){lines.push('_(empty)_');}
+  else{
+    lines.push('| time | method | status | ms | size | url |');
+    lines.push('|---|---|---|---|---|---|');
+    devNetLog.forEach(function(e){
+      var url=(e.url||'').replace(/\|/g,'\\|');
+      var status=(e.status==null)?(e.ok===false?'ERR':'-'):e.status;
+      var ms=e.ms!=null?e.ms:'-';
+      var size=_fmtBytes(e.sizeBytes);
+      lines.push('| '+_fmtLogTs(e.ts)+' | '+e.method+' | '+status+' | '+ms+' | '+size+' | '+url+' |');
+    });
+    var failed=devNetLog.filter(function(e){return e.ok===false;});
+    if(failed.length){
+      lines.push('','## Failed requests ('+failed.length+')','');
+      failed.forEach(function(e){lines.push('- `'+e.method+' '+(e.status||'ERR')+'` '+e.url+(e.errorMsg?' — '+e.errorMsg:''));});
+    }
+  }
+  _copyToClipboard(lines.join('\n'),'netTraceCopyBtn');
+}
+function clearNetTrace(){
+  devNetLog.length=0;
+  renderNetTrace();
+}
+
+// ── 💾 localStorage Inspector (Dev Tools) ───────────────────────────────────
+function _lsKeys(){
+  var keys=[];
+  try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf('mlb_')===0) keys.push(k); } }catch(e){}
+  keys.sort();
+  return keys;
+}
+function _lsEntry(k){
+  var raw=null, parsed=null, isJson=false, bytes=0;
+  try{ raw=localStorage.getItem(k); }catch(e){ raw=null; }
+  if(raw!=null){
+    bytes=raw.length;
+    try{ parsed=JSON.parse(raw); isJson=(parsed!==null && typeof parsed==='object'); }catch(e){}
+  }
+  return {key:k, raw:raw, parsed:parsed, isJson:isJson, bytes:bytes};
+}
+function renderStorageInspector(){
+  var list=document.getElementById('storageList');
+  var count=document.getElementById('storageCount');
+  if(!list) return;
+  var keys=_lsKeys();
+  if(count) count.textContent='('+keys.length+')';
+  if(!keys.length){ list.innerHTML='<div class="dt-label-muted">No mlb_* keys present.</div>'; return; }
+  list.innerHTML=keys.map(function(k){
+    var e=_lsEntry(k);
+    var preview;
+    if(e.isJson){ preview='<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">'+escapeHtml(JSON.stringify(e.parsed,null,2))+'</pre></details>'; }
+    else if(e.raw!=null){ var disp=e.raw.length>140?e.raw.slice(0,140)+'…':e.raw; preview='<div style="margin-top:2px;color:var(--muted);font-size:.6rem">'+escapeHtml(disp)+'</div>'; }
+    else preview='<div style="margin-top:2px;color:var(--muted);font-size:.6rem">(null)</div>';
+    return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">'+escapeHtml(k)+'</span><span class="dt-label-muted">'+_fmtBytes(e.bytes)+'</span><button data-dt-action="clearLsKey" data-ls-key="'+escapeHtml(k)+'" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">🗑</button></div>'+preview+'</div>';
+  }).join('');
+}
+function clearLsKey(key){
+  if(!key) return;
+  if(!confirm('Remove localStorage key "'+key+'"? This may log you out / reset settings depending on the key.')) return;
+  try{ localStorage.removeItem(key); pushDevLog('warn','storage',['removed key: '+key]); }catch(e){}
+  renderStorageInspector();
+}
+function copyStorageAsMarkdown(){
+  var keys=_lsKeys();
+  var lines=['# MLB Pulse — localStorage Snapshot','Captured: '+new Date().toISOString(),'Keys: '+keys.length,''];
+  if(!keys.length) lines.push('_(no mlb_* keys)_');
+  else{
+    lines.push('| key | bytes | json | preview |');
+    lines.push('|---|---|---|---|');
+    keys.forEach(function(k){
+      var e=_lsEntry(k);
+      var prev=(e.raw||'').replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+      if(prev.length>120) prev=prev.slice(0,120)+'…';
+      lines.push('| `'+k+'` | '+_fmtBytes(e.bytes)+' | '+(e.isJson?'y':'')+' | '+prev+' |');
+    });
+    lines.push('','## Full values','');
+    keys.forEach(function(k){
+      var e=_lsEntry(k);
+      lines.push('### `'+k+'` ('+_fmtBytes(e.bytes)+')');
+      if(e.isJson) lines.push('```json',JSON.stringify(e.parsed,null,2),'```','');
+      else lines.push('```',(e.raw==null?'(null)':e.raw),'```','');
+    });
+  }
+  _copyToClipboard(lines.join('\n'),'storageCopyBtn');
+}
+
+// ── ⚙️ Service Worker Inspector (Dev Tools) ─────────────────────────────────
+var _swState = {scope:null, scriptURL:null, controller:null, hasUpdate:false, lastUpdated:null, error:null};
+function _refreshSWState(){
+  if(!('serviceWorker' in navigator)){ _swState.error='Service Worker API not supported.'; return Promise.resolve(); }
+  return navigator.serviceWorker.getRegistration().then(function(reg){
+    if(!reg){ _swState.error='No registration found.'; return; }
+    _swState.scope=reg.scope;
+    _swState.scriptURL=(reg.active && reg.active.scriptURL) || (reg.installing && reg.installing.scriptURL) || (reg.waiting && reg.waiting.scriptURL) || null;
+    _swState.controller=navigator.serviceWorker.controller ? navigator.serviceWorker.controller.scriptURL : null;
+    _swState.hasUpdate=!!reg.waiting;
+    _swState.error=null;
+  }, function(err){ _swState.error=(err&&err.message)||String(err); });
+}
+function renderSWInspector(){
+  var info=document.getElementById('swInfo');
+  if(!info) return;
+  info.innerHTML='<div class="dt-label-muted">Loading…</div>';
+  _refreshSWState().then(function(){
+    var rows={
+      'Supported': ('serviceWorker' in navigator),
+      'Scope': _swState.scope || '—',
+      'Active script': _swState.scriptURL || '—',
+      'Controller': _swState.controller || '(uncontrolled)',
+      'Update waiting': _swState.hasUpdate ? 'YES — reload to activate' : 'no',
+      'Error': _swState.error || '—',
+    };
+    info.innerHTML=_kvList(rows);
+  });
+}
+function copySWStateAsMarkdown(){
+  _refreshSWState().then(function(){
+    var lines=['# MLB Pulse — Service Worker','Captured: '+new Date().toISOString(),''];
+    lines.push('- Supported: '+('serviceWorker' in navigator));
+    lines.push('- Scope: '+(_swState.scope||'-'));
+    lines.push('- Active script: '+(_swState.scriptURL||'-'));
+    lines.push('- Controller: '+(_swState.controller||'(uncontrolled)'));
+    lines.push('- Update waiting: '+(_swState.hasUpdate?'YES':'no'));
+    if(_swState.error) lines.push('- Error: '+_swState.error);
+    _copyToClipboard(lines.join('\n'),'swCopyBtn');
+  });
+}
+function swForceUpdate(){
+  if(!('serviceWorker' in navigator)){ alert('Service Worker not supported.'); return; }
+  navigator.serviceWorker.getRegistration().then(function(reg){
+    if(!reg){ alert('No SW registration found.'); return; }
+    pushDevLog('log','sw',['Force update requested']);
+    reg.update().then(function(){
+      pushDevLog('log','sw',['update() resolved · waiting='+!!reg.waiting]);
+      if(reg.waiting){
+        try{ reg.waiting.postMessage({type:'SKIP_WAITING'}); }catch(e){}
+        alert('Update found. Reload the page to activate the new version.');
+      }else{
+        alert('No new update available — already on latest.');
+      }
+      renderSWInspector();
+    }, function(err){
+      pushDevLog('error','sw',['update() failed: '+(err&&err.message||err)]);
+      alert('Update failed: '+(err&&err.message||err));
+    });
+  });
+}
+function swUnregisterAndReload(){
+  if(!confirm('Unregister the service worker and reload? This forces a fresh load (clears cached app shell).')) return;
+  if(!('serviceWorker' in navigator)){ location.reload(); return; }
+  navigator.serviceWorker.getRegistration().then(function(reg){
+    var done=function(){ try{ if(window.caches){ caches.keys().then(function(keys){ keys.forEach(function(k){ caches.delete(k); }); location.reload(true); }); } else location.reload(true); }catch(e){ location.reload(true); } };
+    if(reg){ reg.unregister().then(done, done); } else done();
+  });
+}
+
+// ── 🔔 Test Notification (local) ─────────────────────────────────────────────
+// Calls registration.showNotification() directly — proves the on-device notification
+// path works (permission, SW active, OS-level surfaces), bypassing the Vercel +
+// Upstash + VAPID pipeline. End-to-end server push tests still live in
+// .github/workflows/test-push.yml since /api/test-push.js requires a server secret.
+function testLocalNotification(){
+  if(!('Notification' in window)){ alert('Notifications not supported on this device.'); return; }
+  function show(){
+    if(!('serviceWorker' in navigator)){ alert('Service Worker not supported.'); return; }
+    navigator.serviceWorker.getRegistration().then(function(reg){
+      if(!reg){ alert('No SW registered yet — reload and try again.'); return; }
+      reg.showNotification('MLB Pulse · Dev test', {
+        body: 'Local test fired '+new Date().toLocaleTimeString()+' · server pipeline NOT exercised',
+        icon: './icons/icon-192.png',
+        badge: './icons/icon-192.png',
+        tag: 'mlb-dev-test',
+        renotify: true,
+      }).then(
+        function(){ pushDevLog('log','notif',['local test notification fired']); },
+        function(err){ pushDevLog('error','notif',['showNotification failed: '+(err&&err.message||err)]); alert('showNotification failed: '+(err&&err.message||err)); }
+      );
+    });
+  }
+  if(Notification.permission==='granted') show();
+  else if(Notification.permission==='denied') alert('Notifications are blocked. Re-enable in browser/site settings.');
+  else Notification.requestPermission().then(function(p){ if(p==='granted') show(); else alert('Permission not granted ('+p+').'); });
+}
+
+// ── 🎯 Live Controls: Force Focus + Force Recap ─────────────────────────────
+function _liveGamesForControls(){
+  if(typeof gameStates==='undefined') return [];
+  return Object.keys(gameStates).map(function(pk){return {pk:+pk, g:gameStates[pk]};})
+    .filter(function(x){return x.g.status==='Live';})
+    .sort(function(a,b){return (b.g.inning||0)-(a.g.inning||0);});
+}
+function renderLiveControls(){
+  var body=document.getElementById('liveControlsBody');
+  if(!body) return;
+  var live=_liveGamesForControls();
+  if(!live.length){
+    body.innerHTML='<div class="dt-label-muted">No live games right now. Try Demo Mode (Shift+M) to populate gameStates with sample data.</div>';
+    return;
+  }
+  var opts=live.map(function(x){return '<option value="'+x.pk+'">'+escapeHtml(x.g.awayAbbr+' @ '+x.g.homeAbbr+' · '+(x.g.halfInning||'')+' '+(x.g.inning||'?')+' · '+x.g.awayScore+'-'+x.g.homeScore)+'</option>';}).join('');
+  var curFocus = (typeof focusGamePk!=='undefined'&&focusGamePk) ? focusGamePk : '';
+  body.innerHTML =
+    '<div class="dt-box">'+
+      '<div class="dt-label" style="margin-bottom:6px">🎯 Force Focus</div>'+
+      '<div class="dt-label-muted" style="margin-bottom:6px">Override auto-scoring and pin Focus Mode to a specific live game. Resets via the ↩ AUTO pill in the focus card.</div>'+
+      '<div style="display:flex;gap:6px;align-items:center">'+
+        '<select id="forceFocusSel" class="dt-input" style="flex:1">'+opts+'</select>'+
+        '<button data-dt-action="forceFocusGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Apply</button>'+
+      '</div>'+
+      (curFocus?'<div class="dt-label-muted" style="margin-top:4px">Current focus: gamePk '+curFocus+'</div>':'')+
+    '</div>'+
+    '<div class="dt-box">'+
+      '<div class="dt-label" style="margin-bottom:6px">📖 Force Inning Recap</div>'+
+      '<div class="dt-label-muted" style="margin-bottom:6px">Queues an inning_recap story so it surfaces in the next pool build. Replaces the manual <code>inningRecapsPending[…]</code> + <code>buildStoryPool()</code> console workflow.</div>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+        '<select id="forceRecapGame" class="dt-input" style="flex:2;min-width:140px">'+opts+'</select>'+
+        '<select id="forceRecapHalf" class="dt-input" style="flex:1;min-width:60px"><option value="top">Top</option><option value="bottom">Bottom</option></select>'+
+        '<input id="forceRecapInning" type="number" min="1" max="20" placeholder="Inn" class="dt-input" style="flex:0 0 60px">'+
+        '<button data-dt-action="forceRecapGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Queue</button>'+
+      '</div>'+
+    '</div>';
+  // Pre-fill recap inning from the selected game's current inning when game changes
+  var sel=document.getElementById('forceRecapGame'), inn=document.getElementById('forceRecapInning'), half=document.getElementById('forceRecapHalf');
+  function sync(){
+    if(!sel||!inn||!half) return;
+    var g=gameStates[+sel.value];
+    if(g){ inn.value=g.inning||1; half.value=(g.halfInning||'top').toLowerCase().indexOf('bot')===0?'bottom':'top'; }
+  }
+  if(sel) sel.addEventListener('change',sync);
+  sync();
+}
+function forceFocusGo(){
+  var sel=document.getElementById('forceFocusSel');
+  if(!sel||!sel.value) return;
+  var pk=+sel.value;
+  setFocusGameManual(pk);
+  pushDevLog('log','focus',['Force Focus applied · gamePk='+pk]);
+  renderLiveControls();
+}
+// ── 📋 Diagnostic Snapshot ──────────────────────────────────────────────────
+// One-tap bundle of every inspector's output as a single Markdown report — the
+// paste-to-Claude workhorse. Bundles: context · focus · gameStates · feedItems(50)
+// · storyPool · last 50 logs · last 50 network calls · localStorage sizes.
+function copyDiagnosticSnapshot(){
+  var ctx=_stateContext();
+  var lsKeys=_lsKeys();
+  var lsSizes=lsKeys.map(function(k){var e=_lsEntry(k);return '- `'+k+'`: '+_fmtBytes(e.bytes)+(e.isJson?' (json)':'');}).join('\n')||'_(none)_';
+  var swSummary='_not yet fetched_';
+  if(_swState && (_swState.scope||_swState.error)){
+    swSummary=[
+      '- Scope: '+(_swState.scope||'-'),
+      '- Active: '+(_swState.scriptURL||'-'),
+      '- Controller: '+(_swState.controller||'(uncontrolled)'),
+      '- Update waiting: '+(_swState.hasUpdate?'YES':'no'),
+      _swState.error?'- Error: '+_swState.error:null
+    ].filter(Boolean).join('\n');
+  }
+  var counts=ctx.counts;
+  var logSummary=devLog.length
+    ? (function(){
+        var rows=devLog.slice(-50);
+        var lines=['| time | level | src | message |','|---|---|---|---|'];
+        rows.forEach(function(e){
+          var msg=e.msg.replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+          if(msg.length>200) msg=msg.slice(0,200)+'…';
+          lines.push('| '+_fmtLogTs(e.ts)+' | '+e.level+' | '+(e.src||'-')+' | '+msg+' |');
+        });
+        return lines.join('\n');
+      })()
+    : '_(empty)_';
+  var netSummary=devNetLog.length
+    ? (function(){
+        var lines=['| time | method | status | ms | size | url |','|---|---|---|---|---|---|'];
+        devNetLog.forEach(function(e){
+          var url=(e.url||'').replace(/\|/g,'\\|');
+          var status=(e.status==null)?(e.ok===false?'ERR':'-'):e.status;
+          lines.push('| '+_fmtLogTs(e.ts)+' | '+e.method+' | '+status+' | '+(e.ms||'-')+' | '+_fmtBytes(e.sizeBytes)+' | '+url+' |');
+        });
+        var failed=devNetLog.filter(function(e){return e.ok===false;});
+        if(failed.length){
+          lines.push('','**Failed:** '+failed.length);
+          failed.forEach(function(e){lines.push('- `'+e.method+' '+(e.status||'ERR')+'` '+e.url+(e.errorMsg?' — '+e.errorMsg:''));});
+        }
+        return lines.join('\n');
+      })()
+    : '_(empty)_';
+
+  var parts=[
+    '# MLB Pulse — Diagnostic Snapshot',
+    'Generated: '+new Date().toISOString(),
+    'Version: '+ctx.version+' · Section: '+ctx.section+' · Active team: '+ctx.activeTeam,
+    'demoMode: '+ctx.demoMode+' · pulseInitialized: '+ctx.pulseInitialized+' · pulseColorScheme: '+ctx.pulseColorScheme+' · themeScope: '+ctx.themeScope,
+    'Focus: gamePk='+(ctx.focusGamePk||'(auto)')+' · manual='+ctx.focusIsManual+' · radioCurrentTeamId='+(ctx.radioCurrentTeamId||'-'),
+    'Viewport: '+ctx.viewport,
+    'UA: '+ctx.userAgent,
+    '',
+    '## Counts',
+    '- gameStates: '+counts.gameStates,
+    '- feedItems: '+counts.feedItems,
+    '- storyPool: '+counts.storyPool,
+    '- enabledGames: '+counts.enabledGames,
+    '- devLog: '+counts.devLog,
+    '- devNetLog: '+devNetLog.length,
+    '',
+    _stateAsMarkdownContext(),
+    _stateAsMarkdownFocus(),
+    _stateAsMarkdownGames(),
+    _stateAsMarkdownFeed(50),
+    _stateAsMarkdownStories(),
+    '## Service Worker',
+    '',
+    swSummary,
+    '',
+    '## localStorage sizes',
+    '',
+    lsSizes,
+    '',
+    '## Last 50 logs',
+    '',
+    logSummary,
+    '',
+    '## Last '+devNetLog.length+' network calls',
+    '',
+    netSummary,
+  ];
+  // Refresh SW state asynchronously so the next snapshot has fresh data
+  _refreshSWState().catch(function(){});
+  _copyToClipboard(parts.join('\n'),'diagSnapshotBtn');
+}
+
+function forceRecapGo(){
+  var sel=document.getElementById('forceRecapGame'),
+      half=document.getElementById('forceRecapHalf'),
+      inn=document.getElementById('forceRecapInning');
+  if(!sel||!half||!inn||!sel.value){ alert('Pick a game first.'); return; }
+  var pk=+sel.value, inning=parseInt(inn.value,10), halfInning=(half.value||'top').toLowerCase();
+  if(!inning||inning<1){ alert('Enter a valid inning number.'); return; }
+  var key=pk+'_'+inning+'_'+halfInning;
+  if(typeof inningRecapsFired!=='undefined') inningRecapsFired.delete && inningRecapsFired.delete(key);
+  if(typeof inningRecapsPending!=='undefined'){
+    inningRecapsPending[key]={gamePk:pk, inning:inning, halfInning:halfInning};
+    pushDevLog('log','recap',['Queued recap · '+key]);
+  }
+  if(typeof buildStoryPool==='function') buildStoryPool();
+  alert('Recap queued for '+key+'. Wait for the next carousel rotation (or open Pulse to see it sooner).');
+}
+// Lazy: render only when the details element is opened, then live-refresh on filter input.
+document.addEventListener('DOMContentLoaded',function(){
+  var stateDet=document.getElementById('appStateDetails');
+  if(stateDet) stateDet.addEventListener('toggle',function(){if(stateDet.open)renderAppState();});
+  var netDet=document.getElementById('netTraceDetails');
+  if(netDet) netDet.addEventListener('toggle',function(){if(netDet.open)renderNetTrace();});
+  var stoDet=document.getElementById('storageDetails');
+  if(stoDet) stoDet.addEventListener('toggle',function(){if(stoDet.open)renderStorageInspector();});
+  var swDet=document.getElementById('swDetails');
+  if(swDet) swDet.addEventListener('toggle',function(){if(swDet.open)renderSWInspector();});
+  var lcDet=document.getElementById('liveControlsDetails');
+  if(lcDet) lcDet.addEventListener('toggle',function(){if(lcDet.open)renderLiveControls();});
+  var det=document.getElementById('logCaptureDetails');
+  if(!det)return;
+  det.addEventListener('toggle',function(){if(det.open)renderLogCapture();});
+  var lvl=document.getElementById('logCaptureLevel');
+  if(lvl) lvl.addEventListener('change',renderLogCapture);
+  var f=document.getElementById('logCaptureFilter');
+  if(f) f.addEventListener('input',renderLogCapture);
+});
 
 // ── 🔬 News Source Test (TEMP — remove after News tab QA) ────────────────
 var NEWS_TEST_SOURCES=['fangraphs','mlbtraderumors','cbssports','yahoo','sbnation_mets','baseballamerica','mlb_direct','reddit_baseball','espn_news'];
@@ -4791,11 +5774,35 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='testClip'){devTestVideoClip();toggleDevTools();}
     else if(action==='resetCollection'){resetCollection();}
     else if(action==='newsTest'){openNewsSourceTest();toggleDevTools();}
+    else if(action==='youtubeDebug'){openYoutubeDebug();toggleDevTools();}
     else if(action==='videoDebug'){openVideoDebugPanel();toggleDevTools();}
     else if(action==='resetTuning'){resetTuning();}
     else if(action==='captureApp'){captureCurrentTheme('app');}
     else if(action==='capturePulse'){captureCurrentTheme('pulse');}
     else if(action==='refreshDebug'){refreshDebugPanel();}
+    else if(action==='copyLog'){copyLogAsMarkdown();}
+    else if(action==='clearLog'){clearDevLog();}
+    else if(action==='refreshLog'){renderLogCapture();}
+    else if(action==='copyState'){copyAppStateAsMarkdown();}
+    else if(action==='refreshState'){renderAppState();}
+    else if(action==='copyStateContext'){_copyToClipboard(_stateAsMarkdownContext());}
+    else if(action==='copyStateFocus'){_copyToClipboard(_stateAsMarkdownFocus());}
+    else if(action==='copyStateGames'){_copyToClipboard(_stateAsMarkdownGames());}
+    else if(action==='copyStateFeed'){_copyToClipboard(_stateAsMarkdownFeed(50));}
+    else if(action==='copyStateStories'){_copyToClipboard(_stateAsMarkdownStories());}
+    else if(action==='copyNet'){copyNetTraceAsMarkdown();}
+    else if(action==='clearNet'){clearNetTrace();}
+    else if(action==='refreshNet'){renderNetTrace();}
+    else if(action==='copyStorage'){copyStorageAsMarkdown();}
+    else if(action==='refreshStorage'){renderStorageInspector();}
+    else if(action==='clearLsKey'){clearLsKey(btn.dataset.lsKey);}
+    else if(action==='copySW'){copySWStateAsMarkdown();}
+    else if(action==='swUpdate'){swForceUpdate();}
+    else if(action==='swUnregister'){swUnregisterAndReload();}
+    else if(action==='testNotif'){testLocalNotification();}
+    else if(action==='forceFocusGo'){forceFocusGo();}
+    else if(action==='forceRecapGo'){forceRecapGo();}
+    else if(action==='copySnapshot'){copyDiagnosticSnapshot();}
     else if(action==='confirm'){confirmDevToolsChanges();}
   });
 });
@@ -4910,6 +5917,7 @@ function hslLighten(hex,targetL){hex=hex.replace('#','');var n=parseInt(hex,16),
 function pickAccent(secondaryHex,cardHex){var sLum=relLuminance(secondaryHex),cCon=contrastRatio(secondaryHex,cardHex);if(sLum>=0.18&&cCon>=3.0)return secondaryHex;var lifted=hslLighten(secondaryHex,0.65);if(contrastRatio(lifted,cardHex)>=3.0)return lifted;return'#FFB273';}
 function pickHeaderText(primaryHex){return relLuminance(primaryHex)>0.5?'#0a0f1e':'#ffffff';}
 function applyTeamTheme(team){
+  if(team) devTrace('theme','applyTeamTheme · '+team.name+' (id:'+team.id+')'+(devColorLocked?' [locked]':''));
   if(devColorLocked&&devColorOverrides.app.primary){
     document.documentElement.style.setProperty('--dark',devColorOverrides.app.dark);
     document.documentElement.style.setProperty('--card',devColorOverrides.app.card);
@@ -5246,6 +6254,7 @@ function onSoundPanelClickOutside(e){
 }
 
 function showSection(id,btn){
+  devTrace('nav','showSection · '+id);
   if(demoMode)exitDemo();
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
   if(id!=='league'&&leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}
@@ -6138,18 +7147,39 @@ document.addEventListener('visibilitychange',function(){
 
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&focusOverlayOpen) { closeFocusOverlay(); return; }
-  if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
-  if(e.shiftKey && e.key === 'R') { replayHRCard(); }
-  if(e.shiftKey && e.key === 'E') { replayRBICard(); }
+  // Mnemonics: M=deMo, H=Home run, B=rBi, V=Variants, D=Dev tools, F=Focus,
+  // G=Generate test card, C=Collection demo, P=Play clip, N=News, L=Log,
+  // S=State, I=Info dump (snapshot)
+  if(e.shiftKey && e.key === 'M') { toggleDemoMode(); }
+  if(e.shiftKey && e.key === 'H') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'B') { replayRBICard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
   if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
   if(e.shiftKey && e.key === 'G') { generateTestCard(); }
   if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
-  if(e.shiftKey && e.key === 'W') { devTestVideoClip(); }
+  if(e.shiftKey && e.key === 'P') { devTestVideoClip(); }
   if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
+  if(e.shiftKey && e.key === 'L') {
+    var p=document.getElementById('devToolsPanel');
+    if(p && p.style.display!=='block') toggleDevTools();
+    var det=document.getElementById('logCaptureDetails');
+    if(det){det.open=true;renderLogCapture();det.scrollIntoView({block:'nearest'});}
+  }
+  if(e.shiftKey && e.key === 'S') {
+    var p=document.getElementById('devToolsPanel');
+    if(p && p.style.display!=='block') toggleDevTools();
+    var det=document.getElementById('appStateDetails');
+    if(det){det.open=true;renderAppState();det.scrollIntoView({block:'nearest'});}
+  }
+  if(e.shiftKey && e.key === 'I') { copyDiagnosticSnapshot(); }
 });
 
 document.addEventListener('click',onSoundPanelClickOutside);
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(
+    function(reg){devTrace('sw','registered · scope='+reg.scope);},
+    function(err){devTrace('sw','registration FAILED · '+(err&&err.message||err));}
+  );
+}

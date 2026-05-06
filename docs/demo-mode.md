@@ -11,7 +11,7 @@ Self-contained replay of a full MLB day (April 27-28, 2026) from static `daily-e
 - Format: `{gameStates, feedItems, ...caches}` — direct snapshot from live Pulse export
 
 **Starting Demo:**
-- Click **"▶ Try Demo"** button in Pulse empty state (top-right hype block) or Dev Tools panel (`Shift+H`)
+- Click **"▶ Try Demo"** button in Pulse empty state (top-right hype block) or Dev Tools panel (`Shift+M`)
 - `toggleDemoMode()` calls `initDemo()` and updates the Dev Tools button label
 - `initDemo()` loads `daily-events.json` via `fetch()`
 - Resets all games to `Preview` status for chronological replay

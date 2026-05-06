@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. Split across three files: `index.html` (HTML structure), `styles.css` (all CSS), `app.js` (all JavaScript).
 
-**Current version:** v3.38.0
+**Current version:** v3.38.10
 
 **Version history** (full detail in `CHANGELOG.md`):
 - **v1.x** — initial build: schedule, standings, stats, live game view, PWA install, push notifications, team theming
@@ -20,6 +20,7 @@ An MLB sports tracker, defaulting to the New York Mets. All data is pulled live 
 - **v3.37.3** — exclude ABS challenge clips (carry batter player_id but are pitch-review overlays)
 - **v3.37.5** — remove timestamp fallback from clip matching; player_id match only
 - **v3.38** — carousel logic improvements: clawback requires trailing/tied score; inning recap runs use actual differential
+- **v3.38.1–v3.38.10** — Dev Tools enhancement series: in-app Log Capture (console wrap + uncaught errors); App State Inspector (gameStates / feedItems / focusState / storyPool); Network Trace (fetch wrap with metadata-only ring buffer); localStorage + Service Worker inspectors; Test Notification + 🎯 Live Controls (Force Focus, Force Inning Recap); 📋 Diagnostic Snapshot one-tap clipboard export; panel reflow (Actions / Inspectors / Tuning / Export with width bump 560→760); cleaner shortcut mnemonics (Shift+M deMo, Shift+H Home run, Shift+B rBi, Shift+P Play clip, Shift+S State, Shift+I Info dump); custom-URL testers for radio + YouTube channels
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
@@ -299,7 +300,7 @@ Enabled teams, disabled teams, Radio Check tool, Hls.js routing: `docs/radio-sys
 
 ## 📽️ Demo Mode
 
-Self-contained replay of April 27-28, 2026 from `daily-events.json` (562KB, 619 plays, 23 games). No API calls. Speeds: 1x (10s/play), 10x (1s/play), 100x (100ms/play). Toggle via `Shift+H` or "▶ Try Demo" button.
+Self-contained replay of April 27-28, 2026 from `daily-events.json` (562KB, 619 plays, 23 games). No API calls. Speeds: 1x (10s/play), 10x (1s/play), 100x (100ms/play). Toggle via `Shift+M` or "▶ Try Demo" button.
 
 `devTuning` object, all demo globals, key functions: `docs/demo-mode.md`.
 
@@ -317,18 +318,23 @@ Icons, VAPID key storage, cron setup: `docs/pwa-push.md`.
 
 ## Dev Tools
 
-| Shortcut | Command | Purpose |
+| Shortcut | Mnemonic | Command |
 |---|---|---|
-| `Shift+H` | `toggleDemoMode()` | Toggle demo mode on/off |
-| `Shift+R` | `replayHRCard()` | Replay most recent HR card from live feed |
-| `Shift+E` | `replayRBICard()` | Replay most recent RBI card from live feed |
-| `Shift+V` | `window.PulseCard.demo()` | Cycle through all four HR card template variants |
-| `Shift+D` | `toggleDevTools()` | Toggle Dev Tools panel open/closed |
-| `Shift+F` | `window.FocusCard.demo()` | Open Focus Mode demo overlay with sample data |
-| `Shift+G` | `generateTestCard()` | Inject one random card into collection (bypasses demo guard) |
-| `Shift+W` | `devTestVideoClip()` | Open video overlay: live clip → yesterdayContentCache → fetch yesterday |
+| `Shift+D` | **D**ev tools | `toggleDevTools()` — toggle panel open/closed |
+| `Shift+M` | de**M**o | `toggleDemoMode()` |
+| `Shift+H` | **H**ome run | `replayHRCard()` |
+| `Shift+B` | r**B**i | `replayRBICard()` |
+| `Shift+V` | **V**ariants | `window.PulseCard.demo()` — cycle the 4 HR card templates |
+| `Shift+F` | **F**ocus | `window.FocusCard.demo()` |
+| `Shift+C` | **C**ollection | `window.CollectionCard.demo()` |
+| `Shift+G` | **G**enerate | `generateTestCard()` — inject one random card into collection |
+| `Shift+P` | **P**lay clip | `devTestVideoClip()` — live clip → yesterday cache → fetch fallback |
+| `Shift+N` | **N**ews | `openNewsSourceTest()` |
+| `Shift+L` | **L**og | open Dev Tools, scroll to Log Capture |
+| `Shift+S` | **S**tate | open Dev Tools, scroll to App State |
+| `Shift+I` | **I**nfo dump | `copyDiagnosticSnapshot()` — full snapshot to clipboard |
 
-Panel contents, all tuning fields and defaults, `replayHRCard()` details, Video Debug panel: `docs/dev-tools.md`.
+Panel contents, all tuning fields and defaults, `replayHRCard()` details, inspector + snapshot details: `docs/dev-tools.md`.
 
 ---
 
