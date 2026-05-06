@@ -147,7 +147,7 @@ async function initDemo() {
     g.onSecond=false;
     g.onThird=false;
   });
-  state.feedItems=(jsonData.state.feedItems||[]).map(function(item){
+  state.feedItems=(jsonData.feedItems||[]).map(function(item){
     var ts=item.ts||item.playTime;
     if(ts&&typeof ts==='string') ts=new Date(ts);
     if(!(ts instanceof Date)) ts=new Date();
