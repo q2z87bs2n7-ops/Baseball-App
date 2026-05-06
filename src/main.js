@@ -254,6 +254,8 @@ function initReal() {
   state.storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
   if(state.videoClipPollTimer){clearInterval(state.videoClipPollTimer);state.videoClipPollTimer=null;}
   state.videoClipPollTimer=setInterval(pollPendingVideoClips,30*1000);
+  if(state.newsRefreshTimer){clearInterval(state.newsRefreshTimer);state.newsRefreshTimer=null;}
+  state.newsRefreshTimer=setInterval(loadPulseNews,TIMING.NEWS_REFRESH_MS);
   if(state.yesterdayRefreshTimer){clearInterval(state.yesterdayRefreshTimer);state.yesterdayRefreshTimer=null;}
   state.yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){

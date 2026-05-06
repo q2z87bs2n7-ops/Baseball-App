@@ -138,6 +138,8 @@
     // around the league matchup auto-refresh
     STORY_POOL_MS: 3e4,
     // buildStoryPool rebuild interval
+    NEWS_REFRESH_MS: 6e5,
+    // news carousel refresh (10 min)
     YESTERDAY_REFRESH_MS: 36e5,
     // yesterday recap hourly refresh
     CARD_DISMISS_MS: 5500,
@@ -7891,9 +7893,7 @@
       var r = await fetch(API_BASE + "/api/proxy-news");
       if (!r.ok) throw new Error("Status " + r.status);
       var d = await r.json();
-      state.pulseNewsArticles = Array.isArray(d.articles) ? d.articles.filter(function(a) {
-        return a.image;
-      }).slice(0, 10) : [];
+      state.pulseNewsArticles = Array.isArray(d.articles) ? d.articles.slice(0, 10) : [];
       state.pulseNewsIndex = 0;
       renderPulseNewsCard();
     } catch (e) {
@@ -9082,6 +9082,11 @@
       state.videoClipPollTimer = null;
     }
     state.videoClipPollTimer = setInterval(pollPendingVideoClips, 30 * 1e3);
+    if (state.newsRefreshTimer) {
+      clearInterval(state.newsRefreshTimer);
+      state.newsRefreshTimer = null;
+    }
+    state.newsRefreshTimer = setInterval(loadPulseNews, TIMING.NEWS_REFRESH_MS);
     if (state.yesterdayRefreshTimer) {
       clearInterval(state.yesterdayRefreshTimer);
       state.yesterdayRefreshTimer = null;

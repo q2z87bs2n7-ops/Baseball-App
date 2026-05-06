@@ -56,6 +56,7 @@ export const TIMING = {
   HOME_LIVE_MS:       60000,  // home card live auto-refresh
   LEAGUE_REFRESH_MS:  60000,  // around the league matchup auto-refresh
   STORY_POOL_MS:      30000,  // buildStoryPool rebuild interval
+  NEWS_REFRESH_MS:   600000,  // news carousel refresh (10 min)
   YESTERDAY_REFRESH_MS: 3600000, // yesterday recap hourly refresh
   CARD_DISMISS_MS:     5500,  // player/RBI card auto-dismiss
   CARD_CLOSE_ANIM_MS:   280,  // card close animation duration
