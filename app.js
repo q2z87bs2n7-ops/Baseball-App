@@ -1937,15 +1937,11 @@ function renderStoryCard(story){
   var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',leaders:'LEADERS',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT',inning_recap:'INNING RECAP',hot:'HOT',cold:'COLD',streak:'HITTING STREAK',roster:'ROSTER MOVE',award:'AWARD',record:'SEASON HIGH'};
   var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
   el.className='story-card tier'+story.tier+(story.id.indexOf('biginning')===0?' story-biginning':'')+(story.id.indexOf('leader_')===0?' story-leaders':'');
-  var videoBtn=story.videoUrl
-    ?'<div style="margin-top:10px"><button onclick="openVideoOverlay(\''+story.videoUrl.replace(/'/g,"\\'")+'\',(\''+( (story.videoTitle||story.headline).replace(/'/g,"\\'") )+'\')" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;font-size:.72rem;font-weight:700;padding:5px 13px;cursor:pointer;letter-spacing:.04em">▶ WATCH</button></div>'
-    :'';
   el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
     +'<div style="display:flex;align-items:flex-start;gap:6px;margin-top:2px">'
     +'<span class="story-icon">'+story.icon+'</span>'
     +'<div><div class="story-headline">'+story.headline+'</div>'
     +(story.sub?'<div class="story-sub">'+story.sub+'</div>':'')
-    +videoBtn
     +'</div></div>';
 }
 
@@ -2949,7 +2945,6 @@ async function pollPendingVideoClips() {
       if(best&&bestDiff<limit){
         lastVideoClip=best;
         patchFeedItemWithClip(playTs,gpk,best);
-        patchStoryWithClip(gpk,item.data.batterId,item.data.batterName,best);
       }
     });
   }
@@ -3100,19 +3095,6 @@ function patchFeedItemWithClip(feedItemTs,gamePk,clip){
   el.appendChild(wrap);
 }
 
-function patchStoryWithClip(gamePk,batterId,batterName,clip){
-  var url=pickPlayback(clip.playbacks);
-  if(!url) return;
-  var lastName=(batterName||'').split(' ').pop();
-  var story=storyPool.find(function(s){
-    return s.gamePk===gamePk&&s.id.indexOf('hr_')===0&&lastName&&s.headline.indexOf(lastName)!==-1;
-  });
-  if(!story) return;
-  story.videoUrl=url;
-  story.videoThumb=pickHeroImage(clip)||null;
-  story.videoTitle=clip.headline||clip.blurb||'';
-  if(storyShownId===story.id) renderStoryCard(story);
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
