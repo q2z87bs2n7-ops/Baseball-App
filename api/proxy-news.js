@@ -1,10 +1,10 @@
 // Vercel serverless function: Aggregate MLB news from multiple RSS sources
 // Usage: /api/proxy-news
 // Returns: { success, count, sourceCounts, errors?, articles[] }
-//   - articles: { title, link, image, source, pubDate } — IMAGE-ONLY (picture-focused carousel)
+//   - articles: { title, link, image, source, pubDate }
 //   - sources fetched in parallel with 6s per-upstream timeout via AbortController
 //   - rejected/timed-out sources are silently dropped (don't 500 whole call)
-//   - merged, sorted newest-first by pubDate, filtered to articles with images, capped at 150 items
+//   - merged, sorted newest-first by pubDate, capped at 80 items
 //   - edge-cached 5 min fresh, 10 min stale-while-revalidate
 //
 // Source URLs are aligned with /api/proxy-test ALLOWLIST so any URL that
@@ -22,8 +22,8 @@ const SOURCES = {
 };
 
 const PER_SOURCE_TIMEOUT_MS = 6000;
-const PER_SOURCE_CAP = 50; // Fetch more to account for articles without images
-const TOTAL_CAP = 150; // Filter to image-only articles, so we need a larger pool
+const PER_SOURCE_CAP = 25;
+const TOTAL_CAP = 80;
 const UA = 'Mozilla/5.0 (compatible; BaseballAppNews/1.0; +https://baseball-app-sigma.vercel.app)';
 
 function parseEspnJson(body, key) {
@@ -106,9 +106,7 @@ export default async function handler(req, res) {
     return b.pubDate.localeCompare(a.pubDate);
   });
 
-  // Filter to only articles with images (news carousel is picture-focused)
-  const withImages = merged.filter(a => a.image);
-  const articles = withImages.slice(0, TOTAL_CAP);
+  const articles = merged.slice(0, TOTAL_CAP);
 
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
   res.status(200).json({
