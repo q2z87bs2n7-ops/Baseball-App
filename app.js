@@ -1,5 +1,41 @@
 const DEBUG=false; // Set true locally to enable verbose console logging
 
+// ── 🔍 Dev log ring buffer ───────────────────────────────────────────────────
+// In-memory capture of console output + uncaught errors so Dev Tools → Log Capture
+// can surface them on iPad/phone where the browser console isn't reachable. Cap
+// is intentionally small — this is "what just happened?" not durable telemetry.
+const DEV_LOG_CAP = 500;
+var devLog = []; // {ts:number, level:'log'|'warn'|'error'|'info', src:string, msg:string}
+function pushDevLog(level, src, args){
+  try{
+    var msg = Array.prototype.map.call(args, function(a){
+      if (a == null) return String(a);
+      if (typeof a === 'string') return a;
+      if (a instanceof Error) return (a.stack || (a.name + ': ' + a.message));
+      try { return JSON.stringify(a); } catch(e) { return String(a); }
+    }).join(' ');
+    if (msg.length > 600) msg = msg.slice(0, 600) + '…';
+    devLog.push({ts: Date.now(), level: level, src: src || '', msg: msg});
+    if (devLog.length > DEV_LOG_CAP) devLog.splice(0, devLog.length - DEV_LOG_CAP);
+  }catch(e){ /* swallow — logging must never throw */ }
+}
+(function wrapConsole(){
+  ['log','info','warn','error'].forEach(function(lvl){
+    var orig = console[lvl];
+    console[lvl] = function(){
+      pushDevLog(lvl === 'info' ? 'log' : lvl, '', arguments);
+      try { orig.apply(console, arguments); } catch(e) {}
+    };
+  });
+})();
+window.addEventListener('error', function(e){
+  pushDevLog('error', 'window', [e && e.message ? e.message : 'error', e && e.filename ? (e.filename + ':' + e.lineno) : '']);
+});
+window.addEventListener('unhandledrejection', function(e){
+  var r = e && e.reason;
+  pushDevLog('error', 'promise', [r && r.stack ? r.stack : (r && r.message ? r.message : String(r))]);
+});
+
 // ── Naming conventions ────────────────────────────────────────────────────────
 // load*()    — fetch + cache + render a full section (loadTodayGame, loadSchedule)
 // fetch*()   — async data fetch with session cache, returns data or null (fetchBoxscore, fetchCareerStats)
@@ -4693,6 +4729,80 @@ function fallbackCopy(text){
   document.body.removeChild(ta);
 }
 
+// ── 🔍 Log Capture (Dev Tools) ───────────────────────────────────────────────
+// Renders/filters/copies the in-memory devLog buffer populated at the top of app.js.
+function _logLevelRank(lvl){return lvl==='error'?3:lvl==='warn'?2:1;}
+function _fmtLogTs(ts){
+  var d=new Date(ts);
+  var pad=function(n){return n<10?'0'+n:''+n;};
+  return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0');
+}
+function _filteredDevLog(){
+  var levelSel=(document.getElementById('logCaptureLevel')||{}).value||'all';
+  var filter=((document.getElementById('logCaptureFilter')||{}).value||'').trim().toLowerCase();
+  var minRank=levelSel==='all'?0:_logLevelRank(levelSel);
+  return devLog.filter(function(e){
+    if(minRank&&_logLevelRank(e.level)<minRank)return false;
+    if(filter){
+      var hay=(e.msg+' '+e.src+' '+e.level).toLowerCase();
+      if(hay.indexOf(filter)===-1)return false;
+    }
+    return true;
+  });
+}
+function renderLogCapture(){
+  var list=document.getElementById('logCaptureList');
+  var count=document.getElementById('logCaptureCount');
+  if(!list)return;
+  if(count) count.textContent='('+devLog.length+')';
+  var rows=_filteredDevLog().slice(-200); // newest 200 of filtered
+  if(!rows.length){
+    list.innerHTML='<div class="dt-label-muted" style="padding:4px 0">No log entries match.</div>';
+    return;
+  }
+  // Render newest at top for easier scanning
+  list.innerHTML=rows.slice().reverse().map(function(e){
+    var cls='dt-log-row'+(e.level==='error'?' lv-error':e.level==='warn'?' lv-warn':'');
+    var tag=e.src?'<span class="lv-tag">['+escapeHtml(e.src)+']</span>':'';
+    return '<div class="'+cls+'"><span class="lv-ts">'+_fmtLogTs(e.ts)+'</span>'+tag+escapeHtml(e.msg)+'</div>';
+  }).join('');
+}
+function copyLogAsMarkdown(){
+  var rows=_filteredDevLog();
+  var lines=['# MLB Pulse — Log Capture','Captured: '+new Date().toISOString(),'Total entries: '+devLog.length+' (showing '+rows.length+' after filter)',''];
+  if(!rows.length){lines.push('_(empty)_');}
+  else{
+    lines.push('| time | level | src | message |');
+    lines.push('|---|---|---|---|');
+    rows.forEach(function(e){
+      var msg=e.msg.replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+      lines.push('| '+_fmtLogTs(e.ts)+' | '+e.level+' | '+(e.src||'-')+' | '+msg+' |');
+    });
+  }
+  var text=lines.join('\n');
+  var btn=document.getElementById('logCaptureCopyBtn');
+  function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;btn.style.background='#1f7a3a';setTimeout(function(){btn.textContent=orig;btn.style.background='';},1500);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');},function(){fallbackCopy(text);flash('✓ Copied (fallback)');});
+  }else{
+    fallbackCopy(text);flash('✓ Copied (fallback)');
+  }
+}
+function clearDevLog(){
+  devLog.length=0;
+  renderLogCapture();
+}
+// Lazy: render only when the details element is opened, then live-refresh on filter input.
+document.addEventListener('DOMContentLoaded',function(){
+  var det=document.getElementById('logCaptureDetails');
+  if(!det)return;
+  det.addEventListener('toggle',function(){if(det.open)renderLogCapture();});
+  var lvl=document.getElementById('logCaptureLevel');
+  if(lvl) lvl.addEventListener('change',renderLogCapture);
+  var f=document.getElementById('logCaptureFilter');
+  if(f) f.addEventListener('input',renderLogCapture);
+});
+
 // ── 🔬 News Source Test (TEMP — remove after News tab QA) ────────────────
 var NEWS_TEST_SOURCES=['fangraphs','mlbtraderumors','cbssports','yahoo','sbnation_mets','baseballamerica','mlb_direct','reddit_baseball','espn_news'];
 var newsTestResults={}; // key → result object from proxy
@@ -4796,6 +4906,9 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='captureApp'){captureCurrentTheme('app');}
     else if(action==='capturePulse'){captureCurrentTheme('pulse');}
     else if(action==='refreshDebug'){refreshDebugPanel();}
+    else if(action==='copyLog'){copyLogAsMarkdown();}
+    else if(action==='clearLog'){clearDevLog();}
+    else if(action==='refreshLog'){renderLogCapture();}
     else if(action==='confirm'){confirmDevToolsChanges();}
   });
 });
@@ -6148,6 +6261,12 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
   if(e.shiftKey && e.key === 'W') { devTestVideoClip(); }
   if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
+  if(e.shiftKey && e.key === 'L') {
+    var p=document.getElementById('devToolsPanel');
+    if(p && p.style.display!=='block') toggleDevTools();
+    var det=document.getElementById('logCaptureDetails');
+    if(det){det.open=true;renderLogCapture();det.scrollIntoView({block:'nearest'});}
+  }
 });
 
 document.addEventListener('click',onSoundPanelClickOutside);

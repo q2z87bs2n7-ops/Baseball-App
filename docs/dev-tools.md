@@ -14,6 +14,7 @@ Dev Tools panel (`#devToolsPanel`) is a centered modal opened via `toggleDevTool
 | `Shift+F` | `window.FocusCard.demo()` | Open Focus Mode demo overlay with sample data |
 | `Shift+G` | `generateTestCard()` | Inject one random card into the collection (bypasses demo mode guard) |
 | `Shift+W` | `devTestVideoClip()` | Open video overlay with most recent live clip → yesterdayContentCache fallback → fetches yesterday's first game |
+| `Shift+L` | open Dev Tools + scroll to Log Capture | Opens Dev Tools (if closed), expands the Log Capture details, scrolls it into view |
 
 Keyboard listener is located in `app.js` near the bottom, after the `visibilitychange` event listener.
 
@@ -65,3 +66,40 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 ## Video Debug panel
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
+
+## 🔍 Log Capture (added v3.38.1)
+
+In-memory ring buffer (`devLog`, cap 500) populated by a `console.log/warn/error/info` wrap installed at the top of `app.js`. Also captures uncaught errors via `window.error` and `window.unhandledrejection` listeners. Surfaced in Dev Tools as a collapsible "🔍 Log Capture" section between the existing tuning panels and Story Carousel Debug.
+
+**Why:** the highest-value debugging loop for this project is *paste real app logs into Claude*. The browser DevTools console isn't reachable from iPad/phone PWA installs, and even on desktop you have to flip windows and hand-pick lines. Log Capture brings the same data into the app itself.
+
+**Controls:**
+- Level dropdown — `all` (default) / `error` / `warn+` / `log+` (filters by minimum severity)
+- Free-text filter — substring match against `msg`, `src`, and `level`
+- 📋 Copy — writes a Markdown table of the filtered entries to the clipboard via `navigator.clipboard.writeText()` with `fallbackCopy()` fallback. Output format:
+  ```
+  # MLB Pulse — Log Capture
+  Captured: 2026-05-06T18:30:00.000Z
+  Total entries: 247 (showing 38 after filter)
+
+  | time | level | src | message |
+  |---|---|---|---|
+  | 18:29:14.121 | error | promise | TypeError: ... |
+  ```
+- Clear — empties the ring buffer
+- 🔄 — re-renders without changing anything
+
+**Behaviour:**
+- Render is lazy: nothing is built until the `<details>` is opened (via `toggle` event), and live-updates only when the level/filter inputs change. Closed Dev Tools = zero overhead.
+- Newest entries render at top of the list; copy output preserves chronological order.
+- The console wrap is a strict superset — every original `console.*` call still fires, so existing `if(DEBUG)` workflows are unaffected.
+- Errors thrown anywhere — even in untouched code paths — flow into the buffer at `level:'error'`, `src:'window'` (sync errors) or `src:'promise'` (unhandled rejections).
+
+**Functions** (all in `app.js`):
+- `pushDevLog(level, src, args)` — internal, called by the console wrap and error listeners
+- `renderLogCapture()` — re-renders the list from current filter state
+- `copyLogAsMarkdown()` — clipboard export
+- `clearDevLog()` — empties `devLog` and re-renders
+- `_filteredDevLog()`, `_logLevelRank()`, `_fmtLogTs()` — internal helpers
+
+**Globals:** `devLog` (ring buffer array), `DEV_LOG_CAP` (500).
