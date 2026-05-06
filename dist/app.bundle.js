@@ -767,7 +767,7 @@
       statusBorder: "rgba(37,99,235,0.22)"
     }
   };
-  var pulseColorScheme2 = function() {
+  var pulseColorScheme = function() {
     try {
       return localStorage.getItem("mlb_pulse_scheme") || "dark";
     } catch (e) {
@@ -783,7 +783,7 @@
       document.documentElement.style.setProperty("--p-border", state.devColorOverrides.pulse.border);
       return;
     }
-    var s = PULSE_SCHEME[pulseColorScheme2] || PULSE_SCHEME.dark;
+    var s = PULSE_SCHEME[pulseColorScheme] || PULSE_SCHEME.dark;
     document.documentElement.style.setProperty("--dark", s.dark);
     document.documentElement.style.setProperty("--p-dark", s.dark);
     document.documentElement.style.setProperty("--p-card", s.card);
@@ -802,7 +802,7 @@
     document.documentElement.style.setProperty("--p-status-border", s.statusBorder);
   }
   function setPulseColorScheme(scheme) {
-    pulseColorScheme2 = scheme;
+    pulseColorScheme = scheme;
     try {
       localStorage.setItem("mlb_pulse_scheme", scheme);
     } catch (e) {
@@ -812,7 +812,7 @@
     updatePulseToggle();
   }
   function updatePulseToggle() {
-    var isLight = pulseColorScheme2 === "light";
+    var isLight = pulseColorScheme === "light";
     var icon = document.getElementById("ptbSchemeIcon");
     if (icon) icon.textContent = isLight ? "\u2600\uFE0F" : "\u{1F319}";
   }
@@ -2094,9 +2094,9 @@
       return g.status === "Live" && g.detailedState === "In Progress";
     });
     var postSlate = isPostSlate();
-    var intermission2 = !postSlate && isIntermission();
-    var showHype = !hasVisible && !(state.myTeamLens && hasLiveInProgress) || !hasAnyGames || postSlate || intermission2;
-    if (showHype) renderEmptyState(postSlate, intermission2);
+    var intermission = !postSlate && isIntermission();
+    var showHype = !hasVisible && !(state.myTeamLens && hasLiveInProgress) || !hasAnyGames || postSlate || intermission;
+    if (showHype) renderEmptyState(postSlate, intermission);
     document.getElementById("feedEmpty").style.display = showHype ? "" : "none";
     var hideWhenEmpty = ["gameTicker", "sideRailNews", "sideRailGames", "myTeamLensBtn"];
     document.getElementById("pulse").classList.toggle("pulse-empty", !hasAnyGames || showHype);
@@ -2107,7 +2107,7 @@
     var ybtn = document.getElementById("ptbYestBtn");
     if (ybtn) ybtn.style.display = state.yesterdayCache && state.yesterdayCache.length && !showHype ? "" : "none";
   }
-  function renderEmptyState(postSlate, intermission2) {
+  function renderEmptyState(postSlate, intermission) {
     var el = document.getElementById("feedEmpty");
     var upcoming = Object.values(state.gameStates).filter(function(g) {
       if (!(g.status === "Preview" || g.status === "Scheduled" || g.status === "Live" && g.detailedState !== "In Progress")) return false;
@@ -2124,7 +2124,7 @@
       if (aMs !== bMs) return aMs - bMs;
       return a.awayAbbr.localeCompare(b.awayAbbr);
     });
-    devTrace("empty", "renderEmptyState \xB7 upcoming=" + upcoming.length + " \xB7 postSlate=" + postSlate + " \xB7 intermission=" + intermission2);
+    devTrace("empty", "renderEmptyState \xB7 upcoming=" + upcoming.length + " \xB7 postSlate=" + postSlate + " \xB7 intermission=" + intermission);
     if (!upcoming.length) {
       el.className = "";
       if (postSlate) {
@@ -2151,9 +2151,9 @@
     var hero = upcoming[0], rest = upcoming.slice(1), n = upcoming.length;
     var heroGrad = state.themeOverride === MLB_THEME ? "linear-gradient(90deg," + MLB_THEME.primary + " 0%,#111827 45%," + MLB_THEME.primary + " 100%)" : "linear-gradient(90deg," + hero.awayPrimary + " 0%,#111827 45%," + hero.homePrimary + " 100%)";
     var greeting = pulseGreeting();
-    var labelText = intermission2 ? "NEXT UP &middot; " + n + (n === 1 ? " GAME REMAINING" : " GAMES REMAINING") : n + (n === 1 ? " UPCOMING GAME" : " UPCOMING GAMES");
+    var labelText = intermission ? "NEXT UP &middot; " + n + (n === 1 ? " GAME REMAINING" : " GAMES REMAINING") : n + (n === 1 ? " UPCOMING GAME" : " UPCOMING GAMES");
     var hypeRecapCta = state.yesterdayCache && state.yesterdayCache.length ? `<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;margin:8px 0 14px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">\u{1F4FA} Yesterday's Highlights \u2192</button>` : "";
-    var hypeBlock = intermission2 ? "" : '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">' + (state.demoMode ? "\u23F9 Exit Demo" : "\u25B6 Try Demo") + '</button><div class="empty-hype-headline">' + greeting.headline + "</div>" + hypeRecapCta + '<div class="empty-hype-pills"><span class="hype-pill hr">\u{1F4A5} Home Runs</span><span class="hype-pill scoring">\u{1F7E2} Scoring Plays</span><span class="hype-pill risp">\u26A1 RISP</span></div><div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
+    var hypeBlock = intermission ? "" : '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">' + (state.demoMode ? "\u23F9 Exit Demo" : "\u25B6 Try Demo") + '</button><div class="empty-hype-headline">' + greeting.headline + "</div>" + hypeRecapCta + '<div class="empty-hype-pills"><span class="hype-pill hr">\u{1F4A5} Home Runs</span><span class="hype-pill scoring">\u{1F7E2} Scoring Plays</span><span class="hype-pill risp">\u26A1 RISP</span></div><div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
     var html = '<div class="empty-upcoming-label">' + labelText + "</div>" + hypeBlock + '<div class="upcoming-hero" style="background:' + heroGrad + '"><div class="upcoming-hero-kicker">NEXT UP</div><div class="upcoming-matchup-row"><div style="display:flex;align-items:center;gap:9px"><img class="upcoming-cap" src="https://www.mlbstatic.com/team-logos/' + hero.awayId + `.svg" onerror="this.style.display='none'"><div class="upcoming-team-name">` + hero.awayAbbr + '</div></div><div class="upcoming-at">@</div><div style="display:flex;align-items:center;gap:9px;flex-direction:row-reverse"><img class="upcoming-cap" src="https://www.mlbstatic.com/team-logos/' + hero.homeId + `.svg" onerror="this.style.display='none'"><div class="upcoming-team-name">` + hero.homeAbbr + '</div></div></div><div class="upcoming-foot"><div><div class="upcoming-foot-time">' + (hero.gameTime || "TBD") + '</div><div class="upcoming-foot-countdown" id="heroCountdown"></div></div>' + (hero.venueName ? '<div class="upcoming-foot-venue">' + hero.venueName + "</div>" : "") + "</div></div>";
     if (rest.length) {
       html += '<div class="upcoming-grid">';
@@ -2779,7 +2779,7 @@
   // src/dev/youtube-debug.js
   var ytDebugResults = {};
   var _loadHomeYoutubeWidget = null;
-  function escapeHtml2(s) {
+  function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function(c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
@@ -2812,11 +2812,11 @@
     var out = document.getElementById("ytCustomResult");
     var p = parseYTChannelInput(raw);
     if (p.error) {
-      if (out) out.innerHTML = '<span style="color:#ff6b6b">' + escapeHtml2(p.error) + "</span>";
+      if (out) out.innerHTML = '<span style="color:#ff6b6b">' + escapeHtml(p.error) + "</span>";
       return;
     }
     var uc = p.uc;
-    if (out) out.innerHTML = '<span style="color:var(--text)">\u23F3 Fetching ' + escapeHtml2(uc) + "\u2026</span>";
+    if (out) out.innerHTML = '<span style="color:var(--text)">\u23F3 Fetching ' + escapeHtml(uc) + "\u2026</span>";
     var t0 = Date.now();
     fetch(API_BASE + "/api/proxy-youtube?channel=" + encodeURIComponent(uc)).then(function(r) {
       return r.json().then(function(j) {
@@ -2826,7 +2826,7 @@
       var ms = Date.now() - t0;
       if (!o.res.ok || !o.j.success || !o.j.videos || !o.j.videos.length) {
         var msg = "HTTP " + o.res.status + (o.j && o.j.error ? " \xB7 " + o.j.error : o.j && o.j.message ? " \xB7 " + o.j.message : "");
-        if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C ' + escapeHtml2(msg) + " \xB7 " + ms + "ms</span>";
+        if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C ' + escapeHtml(msg) + " \xB7 " + ms + "ms</span>";
         return;
       }
       var v = o.j.videos.slice(0, 5);
@@ -2834,14 +2834,14 @@
       var html = '<div style="color:#22c55e;font-weight:700">\u2705 HTTP ' + o.res.status + " \xB7 " + o.j.count + " videos \xB7 " + ms + "ms</div>";
       html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
       v.forEach(function(vid) {
-        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml2(vid.thumb || "") + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml2(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml2(vid.date || "") + "</div></div></div>";
+        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(vid.thumb || "") + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || "") + "</div></div></div>";
       });
       html += "</div>";
-      html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam('` + escapeHtml2(uc) + `')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">\u2699 Apply to ` + escapeHtml2(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml2(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open \u2197</a></div>';
+      html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam('` + escapeHtml(uc) + `')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">\u2699 Apply to ` + escapeHtml(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open \u2197</a></div>';
       if (out) out.innerHTML = html;
     }).catch(function(err) {
       var ms = Date.now() - t0;
-      if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C Network: ' + escapeHtml2(err && err.message || "failed") + " \xB7 " + ms + "ms</span>";
+      if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C Network: ' + escapeHtml(err && err.message || "failed") + " \xB7 " + ms + "ms</span>";
     });
   }
   function ytDebugApplyToTeam(uc) {
@@ -2901,9 +2901,9 @@
       } else {
         icon = "\u274C";
         statusLine = '<span style="color:#e03030;font-weight:700">HTTP ' + (r.status || 0) + '</span><span style="color:var(--muted);font-size:.66rem"> \xB7 ' + r.ms + "ms</span>";
-        if (r.error) extra = '<div style="margin-top:2px;font-size:.66rem;color:#e03030">' + escapeHtml2(r.error) + "</div>";
+        if (r.error) extra = '<div style="margin-top:2px;font-size:.66rem;color:#e03030">' + escapeHtml(r.error) + "</div>";
       }
-      return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">' + icon + '</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text)">' + escapeHtml2(e.teamName) + '</span><span style="font-size:.66rem;color:var(--muted)">' + escapeHtml2(e.abbr) + '</span></div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px"><span style="font-size:.63rem;color:var(--muted);font-family:monospace">' + escapeHtml2(e.channelId) + '</span><span style="color:var(--muted)">\xB7</span>' + statusLine + "</div>" + extra + `</div><button onclick="runYoutubeDebugOne('` + e.key + `')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">\u25B6</button></div>`;
+      return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">' + icon + '</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text)">' + escapeHtml(e.teamName) + '</span><span style="font-size:.66rem;color:var(--muted)">' + escapeHtml(e.abbr) + '</span></div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px"><span style="font-size:.63rem;color:var(--muted);font-family:monospace">' + escapeHtml(e.channelId) + '</span><span style="color:var(--muted)">\xB7</span>' + statusLine + "</div>" + extra + `</div><button onclick="runYoutubeDebugOne('` + e.key + `')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">\u25B6</button></div>`;
     }).join("");
     list.innerHTML = summary + html;
   }
@@ -2993,7 +2993,7 @@
   // src/dev/news-test.js
   var NEWS_TEST_SOURCES = ["fangraphs", "mlbtraderumors", "cbssports", "yahoo", "sbnation_mets", "baseballamerica", "mlb_direct", "reddit_baseball", "espn_news"];
   var newsTestResults = {};
-  function escapeHtml3(s) {
+  function escapeHtml2(s) {
     return String(s).replace(/[&<>"']/g, function(c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
@@ -3019,9 +3019,9 @@
       var ok = r.ok && r.status >= 200 && r.status < 300 && r.itemCount > 0;
       var icon = ok ? "\u2705" : "\u274C";
       var line1 = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:1rem">' + icon + '</span><b style="color:var(--text)">' + k + '</b><span style="color:var(--muted);font-size:.7rem">HTTP ' + (r.status || "?") + " \xB7 " + (r.kind || "?") + " \xB7 " + (r.byteLength || 0) + "b \xB7 " + (r.elapsedMs || 0) + "ms \xB7 " + (r.itemCount || 0) + " items</span></div>";
-      var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml3(r.firstTitle).slice(0, 140) + "</div>" : "";
-      var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml3(r.error) + "</div>" : "";
-      var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml3(r.sample) + "</pre></details>" : "";
+      var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml2(r.firstTitle).slice(0, 140) + "</div>" : "";
+      var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml2(r.error) + "</div>" : "";
+      var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml2(r.sample) + "</pre></details>" : "";
       return '<div style="padding:10px;border-bottom:1px solid var(--border)">' + line1 + line2 + line3 + line4 + "</div>";
     }).join("");
     list.innerHTML = rows;
@@ -3107,427 +3107,185 @@
     }
   }
 
-  // src/demo/mode.js
-  var demoPaused = false;
-  var demoSpeedMs = 1e4;
-  var _addFeedItem = null;
-  var _renderTicker = null;
-  var _renderSideRailGames = null;
-  var _buildStoryPool = null;
-  var _updateFeedEmpty = null;
-  var _showAlert = null;
-  var _playSound = null;
-  var _showPlayerCard = null;
-  var _rotateStory = null;
-  var _localDateStr = null;
-  function setDemoCallbacks(callbacks) {
-    _addFeedItem = callbacks.addFeedItem;
-    _renderTicker = callbacks.renderTicker;
-    _renderSideRailGames = callbacks.renderSideRailGames;
-    _buildStoryPool = callbacks.buildStoryPool;
-    _updateFeedEmpty = callbacks.updateFeedEmpty;
-    _showAlert = callbacks.showAlert;
-    _playSound = callbacks.playSound;
-    _showPlayerCard = callbacks.showPlayerCard;
-    _rotateStory = callbacks.rotateStory;
-    _localDateStr = callbacks.localDateStr;
+  // src/dev/video-debug.js
+  var _pollPendingVideoClips = null;
+  var _pickPlayback = null;
+  function escHtml2(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
-  async function loadDailyEventsJSON() {
-    try {
-      var r = await fetch("./daily-events.json");
-      if (!r.ok) return null;
-      var data = await r.json();
-      if (data.feedItems) {
-        data.feedItems.forEach(function(item) {
-          if (item.playTime && typeof item.playTime === "string") {
-            item.playTime = new Date(item.playTime);
-          }
-          if (item.playTime && !item.ts) item.ts = item.playTime;
-        });
-      }
-      if (data.onThisDayCache) {
-        data.onThisDayCache.forEach(function(item) {
-          if (item.ts && typeof item.ts === "string") {
-            item.ts = new Date(item.ts);
-          }
-        });
-      }
-      if (data.yesterdayCache) {
-        data.yesterdayCache.forEach(function(item) {
-          if (item.ts && typeof item.ts === "string") {
-            item.ts = new Date(item.ts);
-          }
-        });
-      }
-      return data;
-    } catch (e) {
-      console.error("Demo: Failed to load daily-events.json", e);
-      return null;
-    }
+  function setVideoDebugCallbacks(cbs) {
+    if (cbs.pollPendingVideoClips) _pollPendingVideoClips = cbs.pollPendingVideoClips;
+    if (cbs.pickPlayback) _pickPlayback = cbs.pickPlayback;
   }
-  function updateDemoBtnLabel() {
-    var lbl = document.getElementById("demoBtnLabel");
-    if (lbl) lbl.textContent = state.demoMode ? "\u23F9 Exit Demo" : "\u25B6 Try Demo";
+  function openVideoDebugPanel() {
+    var p = document.getElementById("videoDebugPanel");
+    if (!p) return;
+    p.style.display = "flex";
+    renderVideoDebugPanel();
   }
-  function toggleDemoMode() {
-    devTrace("demo", state.demoMode ? "exit" : "init");
-    if (state.demoMode) exitDemo();
-    else initDemo();
-    updateDemoBtnLabel();
+  function closeVideoDebugPanel() {
+    var p = document.getElementById("videoDebugPanel");
+    if (p) p.style.display = "none";
   }
-  async function initDemo() {
-    if (state.pulseTimer) {
-      clearInterval(state.pulseTimer);
-      state.pulseTimer = null;
-    }
-    if (state.pulseAbortCtrl) {
-      state.pulseAbortCtrl.abort();
-      state.pulseAbortCtrl = null;
-    }
-    if (state.storyRotateTimer) {
-      clearInterval(state.storyRotateTimer);
-      state.storyRotateTimer = null;
-    }
-    state.demoMode = true;
-    document.body.classList.add("demo-active");
-    var pulseSection = document.getElementById("pulse");
-    if (pulseSection) pulseSection.classList.add("active");
-    var main = document.getElementById("main");
-    if (main) main.style.display = "none";
-    var feedWrap = document.getElementById("feedWrap");
-    if (feedWrap) feedWrap.style.display = "block";
-    demoSpeedMs = 1e4;
-    demoPaused = false;
-    var mockBar = document.getElementById("mockBar");
-    if (mockBar) {
-      mockBar.style.display = "block";
-      var badge = document.getElementById("mockBarBadge");
-      if (badge) badge.textContent = "\u{1F4FD}\uFE0F Demo";
-      document.getElementById("demoSpeed1x").style.display = "";
-      document.getElementById("demoSpeed10x").style.display = "";
-      document.getElementById("demoSpeed100x").style.display = "";
-      document.getElementById("demoSpeed1x").classList.add("active");
-      document.getElementById("demoNextHRBtn").style.display = "";
-      document.getElementById("demoPauseBtn").style.display = "";
-      document.getElementById("demoForwardBtn").style.display = "";
-      document.getElementById("demoPauseBtn").textContent = "\u23F8 Pause";
-    }
-    state.gameStates = {};
-    state.feedItems = [];
-    state.scheduleData = [];
-    state.enabledGames = /* @__PURE__ */ new Set();
-    state.storyPool = [];
-    state.storyShownId = null;
-    state.demoPlayQueue = [];
-    state.demoPlayIdx = 0;
-    state.dailyLeadersCache = null;
-    state.onThisDayCache = null;
-    state.yesterdayCache = null;
-    state.hrBatterStatsCache = {};
-    state.probablePitcherStatsCache = {};
-    state.dailyHitsTracker = {};
-    state.dailyPitcherKs = {};
-    state.storyCarouselRawGameData = {};
-    state.stolenBaseEvents = [];
-    state.inningRecapsFired = /* @__PURE__ */ new Set();
-    state.inningRecapsPending = {};
-    state.lastInningState = {};
-    var jsonData = await loadDailyEventsJSON();
-    if (!jsonData || !jsonData.gameStates) {
-      _showAlert({ icon: "\u26A0\uFE0F", event: "Demo Load Failed", desc: "Could not load daily-events.json", color: "#e85d4f", duration: 3e3 });
-      return;
-    }
-    state.gameStates = jsonData.gameStates;
-    Object.values(state.gameStates).forEach(function(g) {
-      g.status = "Preview";
-      g.detailedState = "Scheduled";
-      g.inning = 0;
-      g.halfInning = null;
-      g.outs = 0;
-      g.awayScore = 0;
-      g.homeScore = 0;
-      g.onFirst = false;
-      g.onSecond = false;
-      g.onThird = false;
-    });
-    state.feedItems = (jsonData.feedItems || []).map(function(item) {
-      var ts = item.ts || item.playTime;
-      if (ts && typeof ts === "string") ts = new Date(ts);
-      if (!(ts instanceof Date)) ts = /* @__PURE__ */ new Date();
-      return { gamePk: item.gamePk, data: item.data, ts };
-    });
-    state.dailyLeadersCache = jsonData.dailyLeadersCache || null;
-    state.onThisDayCache = jsonData.onThisDayCache || [];
-    state.yesterdayCache = jsonData.yesterdayCache || [];
-    state.hrBatterStatsCache = jsonData.hrBatterStatsCache || {};
-    state.probablePitcherStatsCache = jsonData.probablePitcherStatsCache || {};
-    state.dailyHitsTracker = jsonData.dailyHitsTracker || {};
-    state.dailyPitcherKs = jsonData.dailyPitcherKs || {};
-    state.storyCarouselRawGameData = jsonData.storyCarouselRawGameData || {};
-    state.stolenBaseEvents = jsonData.stolenBaseEvents || [];
-    state.scheduleData = jsonData.scheduleData || [];
-    if (jsonData.gameStates) {
-      var earliestMs = Infinity;
-      Object.values(jsonData.gameStates).forEach(function(g) {
-        if (g.gameDateMs && g.gameDateMs < earliestMs) earliestMs = g.gameDateMs;
-      });
-      if (earliestMs !== Infinity) state.demoDate = new Date(earliestMs);
-    }
-    state.feedItems.forEach(function(item) {
-      if (item.playTime && typeof item.playTime === "string") item.playTime = new Date(item.playTime);
-    });
-    state.onThisDayCache.forEach(function(item) {
-      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
-    });
-    state.yesterdayCache.forEach(function(item) {
-      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
-    });
-    var gamesWithPlays = /* @__PURE__ */ new Set();
-    state.feedItems.forEach(function(item) {
-      if (item.gamePk) gamesWithPlays.add(item.gamePk);
-    });
-    Object.keys(state.gameStates).forEach(function(pk) {
-      if (state.demoMode) {
-        if (gamesWithPlays.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
-      } else {
-        state.enabledGames.add(parseInt(pk));
-      }
-    });
-    state.demoPlayQueue = [];
-    state.feedItems.forEach(function(item) {
-      var ts = item.playTime && item.playTime.getTime ? item.playTime.getTime() : new Date(item.ts).getTime();
-      var d = item.data || {};
-      state.demoPlayQueue.push({
-        gamePk: item.gamePk,
-        ts,
-        event: d.event,
-        desc: d.desc,
-        type: d.type || "play",
-        inning: d.inning,
-        halfInning: d.halfInning,
-        outs: d.outs,
-        awayScore: d.awayScore,
-        homeScore: d.homeScore,
-        scoring: d.scoring,
-        risp: d.risp,
-        playClass: d.playClass,
-        playTime: new Date(ts),
-        batterId: d.batterId,
-        batterName: d.batterName,
-        pitcherName: d.pitcherName,
-        distance: d.distance,
-        icon: d.icon,
-        label: d.label,
-        sub: d.sub
-      });
-    });
-    state.demoPlayQueue.sort(function(a, b) {
-      return a.ts - b.ts;
-    });
-    state.demoPlayIdx = 0;
-    state.demoCurrentTime = state.demoPlayQueue.length > 0 ? state.demoPlayQueue[0].ts : 0;
-    var feed = document.getElementById("feed");
-    if (feed) feed.innerHTML = "";
-    _renderTicker();
-    _renderSideRailGames();
-    await _buildStoryPool();
-    _updateFeedEmpty();
-    _showAlert({ icon: "\u25B6", event: "Demo Mode", desc: state.enabledGames.size + " games \xB7 " + state.feedItems.length + " plays", color: "#7dd89e", duration: 3e3 });
-    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-    state.storyRotateTimer = setInterval(_rotateStory, state.devTuning.rotateMs);
-    state.demoStartTime = Date.now();
-    updateDemoBtnLabel();
-    pollDemoFeeds();
-  }
-  async function pollDemoFeeds() {
-    if (!state.demoMode) return;
-    if (demoPaused) {
-      clearTimeout(state.demoTimer);
-      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
-      return;
-    }
-    if (state.demoPlayIdx >= state.demoPlayQueue.length) {
-      renderDemoEndScreen();
-      return;
-    }
-    var play = state.demoPlayQueue[state.demoPlayIdx];
-    await advanceDemoPlay(play);
-    state.demoPlayIdx++;
-    clearTimeout(state.demoTimer);
-    state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
-  }
-  function setDemoSpeed(ms, btn) {
-    demoSpeedMs = ms;
+  async function refreshVideoDebugPanel() {
+    var btn = document.getElementById("videoDebugRefreshBtn");
     if (btn) {
-      document.querySelectorAll("#demoSpeed1x,#demoSpeed10x,#demoSpeed100x").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
+      btn.textContent = "\u23F3 Fetching...";
+      btn.disabled = true;
     }
-    if (state.demoMode && !demoPaused && state.demoTimer) {
-      clearTimeout(state.demoTimer);
-      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
+    if (_pollPendingVideoClips) await _pollPendingVideoClips();
+    renderVideoDebugPanel();
+    if (btn) {
+      btn.textContent = "\u21BB Fetch Now";
+      btn.disabled = false;
     }
   }
-  function toggleDemoPause() {
-    demoPaused = !demoPaused;
-    var btn = document.getElementById("demoPauseBtn");
-    if (btn) btn.textContent = demoPaused ? "\u25B6 Resume" : "\u23F8 Pause";
-    if (!demoPaused && state.demoMode) pollDemoFeeds();
-  }
-  function forwardDemoPlay() {
-    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
-    clearTimeout(state.demoTimer);
-    if (!demoPaused) pollDemoFeeds();
-  }
-  function demoNextHR() {
-    var nextHRIdx = -1;
-    for (var i = state.demoPlayIdx; i < state.demoPlayQueue.length; i++) {
-      if (state.demoPlayQueue[i].event === "Home Run") {
-        nextHRIdx = i;
-        break;
-      }
-    }
-    if (nextHRIdx === -1) {
-      _showAlert({ icon: "\u26A0\uFE0F", event: "No more HRs", desc: "Reached end of demo", duration: 2e3 });
-      return;
-    }
-    state.demoPlayIdx = nextHRIdx - 1;
-    clearTimeout(state.demoTimer);
-    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
-    var play = state.demoPlayQueue[state.demoPlayIdx];
-    if (play) {
-      state.demoCurrentTime = play.ts;
-      advanceDemoPlay(play).then(function() {
-        state.demoPlayIdx++;
-        demoPaused = true;
-        var btn = document.getElementById("demoPauseBtn");
-        if (btn) btn.textContent = "\u25B6 Resume";
+  function renderVideoDebugPanel() {
+    var el = document.getElementById("videoDebugList");
+    if (!el) return;
+    var html = "";
+    var feed = document.getElementById("feed");
+    var cutoff = Date.now() - 2 * 60 * 60 * 1e3;
+    var hrItems = state.feedItems.filter(function(item) {
+      if (!item.data || !item.data.batterId) return false;
+      if (item.data.event !== "Home Run" && !item.data.scoring) return false;
+      return item.ts && item.ts.getTime() >= cutoff;
+    });
+    html += '<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+    html += '<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text)">\u{1F3AF} HR / scoring plays in last 2h \u2014 ' + hrItems.length + " found</div>";
+    if (!hrItems.length) {
+      html += '<div style="padding:8px 12px;color:var(--muted)">No qualifying plays in state.feedItems yet.</div>';
+    } else {
+      hrItems.slice().reverse().forEach(function(item) {
+        var domEl = feed && feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
+        var patched = domEl && domEl.dataset.clipPatched === "1";
+        var patchBadge = patched ? '<span style="background:rgba(34,197,94,.2);color:#4ade80;padding:1px 6px;border-radius:4px">\u2713 clip attached</span>' : '<span style="background:rgba(245,158,11,.18);color:#fbbf24;padding:1px 6px;border-radius:4px">\u23F3 pending</span>';
+        var domBadge = domEl ? '<span style="color:var(--muted)">in DOM</span>' : '<span style="color:#f87171">not in DOM</span>';
+        html += '<div style="padding:7px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+        html += patchBadge + " " + domBadge;
+        html += '<span style="color:var(--text)">' + escHtml2(item.data.batterName || "?") + "</span>";
+        html += '<span style="color:var(--muted)">' + escHtml2(item.data.event || "") + "</span>";
+        html += '<span style="color:var(--muted);font-size:.65rem">pk:' + item.gamePk + " ts:" + new Date(item.ts).toLocaleTimeString() + "</span>";
+        html += "</div>";
       });
     }
-  }
-  async function advanceDemoPlay(play) {
-    state.demoCurrentTime = play.ts;
-    var g = state.gameStates[play.gamePk];
-    if (!g) return;
-    var feedData = { playTime: new Date(play.ts) };
-    if (play.type === "status") {
-      feedData.type = "status";
-      feedData.icon = play.icon;
-      feedData.label = play.label;
-      feedData.sub = play.sub;
-      if (play.label === "Game underway!") {
-        g.status = "Live";
-        g.detailedState = "In Progress";
-      } else if (play.label === "Game Final") {
-        g.status = "Final";
+    html += "</div>";
+    var pks = Object.keys(state.liveContentCache);
+    html += '<div style="margin-bottom:8px;font-weight:700;color:var(--text);font-size:.8rem">\u{1F4E6} state.liveContentCache \u2014 ' + pks.length + " game" + (pks.length === 1 ? "" : "s") + "</div>";
+    if (!pks.length) {
+      html += '<div style="color:var(--muted);padding:8px 0 4px">No content fetched yet. Click "\u21BB Fetch Now" above after HR plays appear in the feed.</div>';
+    }
+    pks.forEach(function(pk) {
+      var entry = state.liveContentCache[pk];
+      var clips = entry.items || [];
+      var age = Math.round((Date.now() - entry.fetchedAt) / 1e3);
+      html += '<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+      html += '<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center">';
+      html += "<span>Game " + pk + ' &nbsp;<span style="color:var(--muted);font-weight:400">(' + clips.length + " video clips)</span></span>";
+      html += '<span style="color:var(--muted);font-size:.65rem;font-weight:400">fetched ' + age + "s ago</span>";
+      html += "</div>";
+      if (!clips.length) {
+        html += '<div style="padding:8px 12px;color:var(--muted)">No playable video clips returned from API.</div>';
+      } else {
+        clips.forEach(function(clip, i) {
+          var title = (clip.headline || clip.blurb || "").toLowerCase();
+          var isStatcast2 = title.indexOf("statcast") !== -1 || title.indexOf("savant") !== -1 || (clip.keywordsAll || []).some(function(kw) {
+            var v = (kw.value || kw.slug || "").toLowerCase();
+            return v === "statcast" || v === "savant";
+          });
+          var hasScoringKw = (clip.keywordsAll || []).some(function(kw) {
+            var v = kw.value || kw.slug || "";
+            return v === "home-run" || v === "scoring-play" || v === "walk-off";
+          });
+          var playerIds = (clip.keywordsAll || []).filter(function(kw) {
+            return kw.type === "player_id" || kw.slug && kw.slug.startsWith("player_id-");
+          }).map(function(kw) {
+            return kw.type === "player_id" ? kw.value : kw.slug.split("-")[1];
+          });
+          var hasPlayback = _pickPlayback ? !!_pickPlayback(clip.playbacks) : false;
+          var clipTs = clip.date ? new Date(clip.date).getTime() : null;
+          var clipAge = clipTs ? Math.round((Date.now() - clipTs) / 6e4) + "m ago" : "no date";
+          var statcastBadge = isStatcast2 ? '<span style="background:rgba(220,60,60,.25);color:#f87171;padding:1px 5px;border-radius:4px">\u{1F6AB}SC</span>' : '<span style="background:rgba(34,197,94,.15);color:#4ade80;padding:1px 5px;border-radius:4px">\u2713bc</span>';
+          var scoringBadge = hasScoringKw ? '<span style="background:rgba(245,158,11,.2);color:#fbbf24;padding:1px 5px;border-radius:4px">\u2713kw</span>' : '<span style="color:var(--muted);padding:1px 5px">\u2014kw</span>';
+          var playbackBadge = hasPlayback ? '<span style="color:#4ade80">\u2713mp4</span>' : '<span style="color:#f87171">\u2717mp4</span>';
+          html += '<div style="padding:6px 12px;border-top:1px solid var(--border);' + (isStatcast2 ? "opacity:.4" : "") + '">';
+          html += '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:3px">';
+          html += '<span style="color:var(--muted);min-width:16px">' + i + ".</span>";
+          html += statcastBadge + " " + scoringBadge + " " + playbackBadge;
+          html += '<span style="color:var(--muted);font-size:.62rem">' + clipAge + "</span>";
+          html += "</div>";
+          html += '<div style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px" title="' + escHtml2(clip.headline || "") + '">' + escHtml2(clip.headline || clip.blurb || "(no title)") + "</div>";
+          if (playerIds.length) html += '<div style="color:var(--muted);font-size:.62rem">player_ids: ' + escHtml2(playerIds.join(", ")) + "</div>";
+          var kwTax = (clip.keywordsAll || []).filter(function(kw) {
+            return kw.type === "taxonomy";
+          }).map(function(kw) {
+            return kw.value || kw.slug;
+          }).join(", ");
+          if (kwTax) html += '<div style="color:var(--muted);font-size:.62rem">taxonomy: ' + escHtml2(kwTax) + "</div>";
+          html += "</div>";
+        });
       }
-    } else {
-      g.inning = play.inning;
-      g.halfInning = play.halfInning;
-      g.outs = play.outs;
-      g.awayScore = play.awayScore;
-      g.homeScore = play.homeScore;
-      var badge = "";
-      if (play.event === "Home Run") badge = "HR";
-      else if (play.event === "Double") badge = "2B";
-      else if (play.event === "Triple") badge = "3B";
-      else if (play.event === "Single") badge = "1B";
-      feedData.type = "play";
-      feedData.event = play.event;
-      feedData.desc = play.desc;
-      feedData.badge = badge;
-      feedData.scoring = play.scoring;
-      feedData.inning = play.inning;
-      feedData.halfInning = play.halfInning;
-      feedData.outs = play.outs;
-      feedData.awayScore = play.awayScore;
-      feedData.homeScore = play.homeScore;
-      feedData.risp = play.risp;
-      feedData.playClass = play.playClass;
-      if (play.event === "Home Run") {
-        _playSound("hr");
-        if (play.batterId) _showPlayerCard(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
-      } else if (play.scoring) {
-        _showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + play.awayScore + ", " + g.homeAbbr + " " + play.homeScore, desc: play.desc, color: g.homePrimary, duration: 4e3 });
-        _playSound("run");
+      html += "</div>";
+    });
+    el.innerHTML = html;
+  }
+  function copyVideoDebug() {
+    var btn = document.getElementById("videoDebugCopyBtn");
+    function flash(t) {
+      if (btn) {
+        var o = btn.textContent;
+        btn.textContent = t;
+        setTimeout(function() {
+          btn.textContent = o;
+        }, 1800);
       }
     }
-    _addFeedItem(play.gamePk, feedData);
-    _renderTicker();
-    _renderSideRailGames();
-    await _buildStoryPool();
-  }
-  function renderDemoEndScreen() {
-    state.demoMode = false;
-    clearTimeout(state.demoTimer);
-    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-    var overlay = document.createElement("div");
-    overlay.className = "demo-end-screen";
-    overlay.innerHTML = '<div class="demo-end-card"><div class="demo-end-headline">Demo Complete</div><div class="demo-end-summary">' + state.demoGamesCache.length + " games &middot; " + state.demoPlayQueue.length + ' plays</div><div class="demo-end-tagline">Ready for live games? Enable Game Start Alerts in Settings.</div><button onclick="exitDemo()" style="margin-top:12px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600">Exit Demo</button></div>';
-    overlay.onclick = function(e) {
-      if (e.target === overlay) exitDemo();
-    };
-    document.body.appendChild(overlay);
-    setTimeout(function() {
-      if (document.body.contains(overlay)) exitDemo();
-    }, 4e3);
-  }
-  function exitDemo() {
-    state.demoMode = false;
-    demoPaused = false;
-    clearTimeout(state.demoTimer);
-    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-    if (state.pulseAbortCtrl) {
-      state.pulseAbortCtrl.abort();
-      state.pulseAbortCtrl = null;
-    }
-    if (state.focusAbortCtrl) {
-      state.focusAbortCtrl.abort();
-      state.focusAbortCtrl = null;
-    }
-    var overlay = document.querySelector(".demo-end-screen");
-    if (overlay) overlay.remove();
-    document.body.classList.remove("demo-active");
-    state.demoMode = false;
-    state.gameStates = {};
-    state.feedItems = [];
-    state.enabledGames = /* @__PURE__ */ new Set();
-    state.storyPool = [];
-    state.demoPlayQueue = [];
-    state.demoPlayIdx = 0;
-    state.storyShownId = null;
-    state.demoCurrentTime = 0;
-    state.inningRecapsFired = /* @__PURE__ */ new Set();
-    state.inningRecapsPending = {};
-    state.lastInningState = {};
     var feed = document.getElementById("feed");
-    if (feed) feed.innerHTML = "";
-    var ticker = document.getElementById("gameTicker");
-    if (ticker) ticker.innerHTML = "";
-    var mockBar = document.getElementById("mockBar");
-    if (mockBar) {
-      mockBar.style.display = "none";
-      var btnNormal = document.getElementById("btnNormal");
-      if (btnNormal) btnNormal.style.display = "";
-      var btnFast = document.getElementById("btnFast");
-      if (btnFast) btnFast.style.display = "";
-      var btnSkip = document.getElementById("btnSkip");
-      if (btnSkip) btnSkip.style.display = "";
-      var demoSpeed1x = document.getElementById("demoSpeed1x");
-      if (demoSpeed1x) demoSpeed1x.style.display = "none";
-      var demoSpeed10x = document.getElementById("demoSpeed10x");
-      if (demoSpeed10x) demoSpeed10x.style.display = "none";
-      var demoSpeed100x = document.getElementById("demoSpeed100x");
-      if (demoSpeed100x) demoSpeed100x.style.display = "none";
-      var demoNextHRBtn = document.getElementById("demoNextHRBtn");
-      if (demoNextHRBtn) demoNextHRBtn.style.display = "none";
-      var demoPauseBtn = document.getElementById("demoPauseBtn");
-      if (demoPauseBtn) demoPauseBtn.style.display = "none";
-      var demoForwardBtn = document.getElementById("demoForwardBtn");
-      if (demoForwardBtn) demoForwardBtn.style.display = "none";
-      var badge = document.getElementById("mockBarBadge");
-      if (badge) badge.textContent = "\u26A1 Mock";
+    var cutoff = Date.now() - 2 * 60 * 60 * 1e3;
+    var pendingItems = state.feedItems.filter(function(item) {
+      return item.data && item.data.batterId && (item.data.event === "Home Run" || item.data.scoring) && item.ts && item.ts.getTime() >= cutoff;
+    }).map(function(item) {
+      var domEl = feed && feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
+      return { gamePk: item.gamePk, batterName: item.data.batterName, batterId: item.data.batterId, event: item.data.event, ts: item.ts.toISOString(), clipPatched: !!(domEl && domEl.dataset.clipPatched === "1") };
+    });
+    var cacheOut = {};
+    Object.keys(state.liveContentCache).forEach(function(pk) {
+      var entry = state.liveContentCache[pk];
+      cacheOut[pk] = {
+        fetchedAt: new Date(entry.fetchedAt).toISOString(),
+        clipCount: (entry.items || []).length,
+        clips: (entry.items || []).map(function(clip) {
+          var playerIds = (clip.keywordsAll || []).filter(function(kw) {
+            return kw.type === "player_id" || kw.slug && kw.slug.startsWith("player_id-");
+          }).map(function(kw) {
+            return kw.type === "player_id" ? kw.value : kw.slug.split("-")[1];
+          });
+          var taxonomy = (clip.keywordsAll || []).filter(function(kw) {
+            return kw.type === "taxonomy";
+          }).map(function(kw) {
+            return kw.value || kw.slug;
+          });
+          var isStatcast = (clip.headline || clip.blurb || "").toLowerCase().indexOf("statcast") !== -1 || taxonomy.some(function(v) {
+            return v === "statcast" || v === "savant";
+          });
+          return { id: clip.id, headline: clip.headline || clip.blurb, date: clip.date, isStatcast, hasScoringKw: taxonomy.some(function(v) {
+            return v === "home-run" || v === "scoring-play" || v === "walk-off";
+          }), playerIds, taxonomy, hasPlayback: _pickPlayback ? !!_pickPlayback(clip.playbacks) : false };
+        })
+      };
+    });
+    var text = JSON.stringify({ pendingFeedItems: pendingItems, liveContentCache: cacheOut }, null, 2);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        flash("\u2713 Copied!");
+      }).catch(function() {
+        if (typeof window !== "undefined" && window.fallbackCopy) window.fallbackCopy(text);
+        flash("\u2713 Copied (fallback)");
+      });
+    } else {
+      if (typeof window !== "undefined" && window.fallbackCopy) window.fallbackCopy(text);
+      flash("\u2713 Copied (fallback)");
     }
-    updateDemoBtnLabel();
   }
 
   // src/focus/mode.js
@@ -3852,6 +3610,1340 @@
   function dismissFocusAlert() {
     var el = document.getElementById("focusAlertBanner");
     if (el) el.style.display = "none";
+  }
+
+  // src/dev/panels.js
+  var _buildStoryPool = null;
+  var _fallbackCopy = null;
+  function escapeHtml3(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function setPanelsCallbacks(cbs) {
+    if (cbs.buildStoryPool) _buildStoryPool = cbs.buildStoryPool;
+    if (cbs.fallbackCopy) _fallbackCopy = cbs.fallbackCopy;
+  }
+  function fallbackCopy2(text) {
+    if (_fallbackCopy) return _fallbackCopy(text);
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+    } catch (e) {
+    }
+    document.body.removeChild(ta);
+  }
+  function _logLevelRank(lvl) {
+    return lvl === "error" ? 3 : lvl === "warn" ? 2 : 1;
+  }
+  function _fmtLogTs(ts) {
+    var d = new Date(ts);
+    var pad = function(n) {
+      return n < 10 ? "0" + n : "" + n;
+    };
+    return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()) + "." + String(d.getMilliseconds()).padStart(3, "0");
+  }
+  function _filteredDevLog() {
+    var levelSel = (document.getElementById("logCaptureLevel") || {}).value || "all";
+    var filter = ((document.getElementById("logCaptureFilter") || {}).value || "").trim().toLowerCase();
+    var minRank = levelSel === "all" ? 0 : _logLevelRank(levelSel);
+    return devLog.filter(function(e) {
+      if (minRank && _logLevelRank(e.level) < minRank) return false;
+      if (filter) {
+        var hay = (e.msg + " " + e.src + " " + e.level).toLowerCase();
+        if (hay.indexOf(filter) === -1) return false;
+      }
+      return true;
+    });
+  }
+  function renderLogCapture() {
+    var list = document.getElementById("logCaptureList");
+    var count = document.getElementById("logCaptureCount");
+    if (!list) return;
+    if (count) count.textContent = "(" + devLog.length + ")";
+    var rows = _filteredDevLog().slice(-200);
+    if (!rows.length) {
+      list.innerHTML = '<div class="dt-label-muted" style="padding:4px 0">No log entries match.</div>';
+      return;
+    }
+    list.innerHTML = rows.slice().reverse().map(function(e) {
+      var cls = "dt-log-row" + (e.level === "error" ? " lv-error" : e.level === "warn" ? " lv-warn" : "");
+      var tag = e.src ? '<span class="lv-tag">[' + escapeHtml3(e.src) + "]</span>" : "";
+      return '<div class="' + cls + '"><span class="lv-ts">' + _fmtLogTs(e.ts) + "</span>" + tag + escapeHtml3(e.msg) + "</div>";
+    }).join("");
+  }
+  function copyLogAsMarkdown() {
+    var rows = _filteredDevLog();
+    var lines = ["# MLB Pulse \u2014 Log Capture", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), "Total entries: " + devLog.length + " (showing " + rows.length + " after filter)", ""];
+    if (!rows.length) {
+      lines.push("_(empty)_");
+    } else {
+      lines.push("| time | level | src | message |");
+      lines.push("|---|---|---|---|");
+      rows.forEach(function(e) {
+        var msg = e.msg.replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
+        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.level + " | " + (e.src || "-") + " | " + msg + " |");
+      });
+    }
+    var text = lines.join("\n");
+    var btn = document.getElementById("logCaptureCopyBtn");
+    function flash(msg) {
+      if (!btn) return;
+      var orig = btn.textContent;
+      btn.textContent = msg;
+      btn.style.background = "#1f7a3a";
+      setTimeout(function() {
+        btn.textContent = orig;
+        btn.style.background = "";
+      }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        flash("\u2713 Copied!");
+      }, function() {
+        fallbackCopy2(text);
+        flash("\u2713 Copied (fallback)");
+      });
+    } else {
+      fallbackCopy2(text);
+      flash("\u2713 Copied (fallback)");
+    }
+  }
+  function clearDevLog() {
+    devLog.length = 0;
+    renderLogCapture();
+  }
+  function _stateGameRow(g) {
+    if (!g) return "\u2014";
+    var matchup = (g.awayAbbr || "?") + " " + g.awayScore + " @ " + (g.homeAbbr || "?") + " " + g.homeScore;
+    var inn = g.status === "Live" ? " \xB7 " + (g.halfInning || "") + " " + (g.inning || "?") + " (" + g.outs + "o)" : "";
+    var bases = g.onFirst || g.onSecond || g.onThird ? " \xB7 \u{1F3C3}" + (g.onFirst ? "1" : "\xB7") + (g.onSecond ? "2" : "\xB7") + (g.onThird ? "3" : "\xB7") : "";
+    return matchup + " \xB7 " + g.status + (g.detailedState && g.detailedState !== g.status ? " (" + g.detailedState + ")" : "") + inn + bases;
+  }
+  function _stateContext() {
+    var t = typeof state.activeTeam !== "undefined" && state.activeTeam || {};
+    var section = "?";
+    try {
+      var s = document.querySelector(".section.active");
+      if (s) section = s.id;
+    } catch (e) {
+    }
+    return {
+      version: function() {
+        try {
+          return (document.title.match(/v[\d.]+/) || ["?"])[0];
+        } catch (e) {
+          return "?";
+        }
+      }(),
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      activeTeam: t.id ? t.short + " (id:" + t.id + ")" : "?",
+      section,
+      demoMode: typeof state.demoMode !== "undefined" ? !!state.demoMode : "?",
+      pulseInitialized: typeof state.pulseInitialized !== "undefined" ? !!state.pulseInitialized : "?",
+      pulseColorScheme: "?",
+      themeScope: typeof state.themeScope !== "undefined" ? state.themeScope : "?",
+      themeOverride: typeof state.themeOverride !== "undefined" && state.themeOverride ? state.themeOverride.short || "set" : null,
+      themeInvert: typeof state.themeInvert !== "undefined" ? !!state.themeInvert : "?",
+      devColorLocked: typeof state.devColorLocked !== "undefined" ? !!state.devColorLocked : "?",
+      radioCurrentTeamId: getCurrentTeamId(),
+      focusGamePk: typeof state.focusGamePk !== "undefined" ? state.focusGamePk : null,
+      focusIsManual: typeof state.focusIsManual !== "undefined" ? !!state.focusIsManual : "?",
+      counts: {
+        gameStates: typeof state.gameStates !== "undefined" ? Object.keys(state.gameStates).length : 0,
+        feedItems: typeof state.feedItems !== "undefined" ? state.feedItems.length : 0,
+        storyPool: typeof state.storyPool !== "undefined" ? state.storyPool.length : 0,
+        enabledGames: typeof state.enabledGames !== "undefined" ? state.enabledGames.size : 0,
+        devLog: devLog.length
+      },
+      viewport: window.innerWidth + "\xD7" + window.innerHeight,
+      userAgent: navigator.userAgent
+    };
+  }
+  function _stateGameStatesArr() {
+    if (typeof state.gameStates === "undefined") return [];
+    return Object.keys(state.gameStates).map(function(pk) {
+      var g = state.gameStates[pk];
+      return {
+        gamePk: +pk,
+        status: g.status,
+        detailedState: g.detailedState,
+        matchup: (g.awayAbbr || "?") + "@" + (g.homeAbbr || "?"),
+        score: (g.awayScore || 0) + "-" + (g.homeScore || 0),
+        inning: (g.halfInning || "") + (g.inning || ""),
+        outs: g.outs,
+        bases: (g.onFirst ? "1" : "") + (g.onSecond ? "2" : "") + (g.onThird ? "3" : ""),
+        hits: (g.awayHits || 0) + "-" + (g.homeHits || 0),
+        enabled: typeof state.enabledGames !== "undefined" ? state.enabledGames.has(+pk) : null
+      };
+    }).sort(function(a, b) {
+      var rank = function(s) {
+        return s === "Live" ? 0 : s === "Preview" || s === "Scheduled" ? 1 : 2;
+      };
+      return rank(a.status) - rank(b.status);
+    });
+  }
+  function _stateFeedItemsArr(limit) {
+    if (typeof state.feedItems === "undefined") return [];
+    return state.feedItems.slice(0, limit || 50).map(function(fi) {
+      var d = fi.data || {};
+      return {
+        ts: fi.ts ? fi.ts.toISOString() : null,
+        gamePk: fi.gamePk,
+        type: d.type,
+        label: d.label || d.event || "",
+        desc: (d.desc || d.sub || "").slice(0, 200),
+        scoring: !!d.scoring,
+        score: (d.awayScore != null ? d.awayScore : "") + (d.homeScore != null ? "-" + d.homeScore : ""),
+        inning: d.halfInning ? d.halfInning + " " + (d.inning || "") : null
+      };
+    });
+  }
+  function _stateStoryPoolArr() {
+    if (typeof state.storyPool === "undefined") return [];
+    return state.storyPool.map(function(s) {
+      var cdRem = null;
+      if (s.lastShown && s.cooldownMs) {
+        var rem = s.cooldownMs - (Date.now() - s.lastShown);
+        cdRem = rem > 0 ? Math.round(rem / 1e3) + "s" : "ready";
+      }
+      return {
+        id: s.id,
+        type: s.type,
+        tier: s.tier,
+        priority: s.priority,
+        headline: s.headline,
+        gamePk: s.gamePk,
+        cooldownRem: cdRem,
+        lastShownAgo: s.lastShown ? Math.round((Date.now() - s.lastShown) / 1e3) + "s" : null,
+        isShown: s.id === state.storyShownId
+      };
+    }).sort(function(a, b) {
+      return (b.priority || 0) - (a.priority || 0);
+    });
+  }
+  function _stateFocusObj() {
+    return {
+      focusGamePk: typeof state.focusGamePk !== "undefined" ? state.focusGamePk : null,
+      focusIsManual: typeof state.focusIsManual !== "undefined" ? !!state.focusIsManual : "?",
+      focusedGame: typeof state.focusGamePk !== "undefined" && state.focusGamePk && typeof state.gameStates !== "undefined" && state.gameStates[state.focusGamePk] ? _stateGameRow(state.gameStates[state.focusGamePk]) : null
+    };
+  }
+  function _kvList(obj) {
+    return Object.keys(obj).map(function(k) {
+      var v = obj[k];
+      var disp = v == null ? "\u2014" : typeof v === "object" ? JSON.stringify(v) : String(v);
+      if (disp.length > 200) disp = disp.slice(0, 200) + "\u2026";
+      return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">' + escapeHtml3(k) + "</span><span>" + escapeHtml3(disp) + "</span></div>";
+    }).join("");
+  }
+  function _miniCopyBtn(action) {
+    return '<button data-dt-action="' + action + '" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer;font-weight:600">\u{1F4CB}</button>';
+  }
+  function _section(title, action, body) {
+    return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="dt-label">' + title + "</span>" + _miniCopyBtn(action) + "</div>" + body + "</div>";
+  }
+  function renderAppState() {
+    var body = document.getElementById("appStateBody");
+    if (!body) return;
+    var ctx = _stateContext();
+    var c = document.getElementById("appStateCounts");
+    if (c) c.textContent = "(" + ctx.counts.gameStates + "g \xB7 " + ctx.counts.feedItems + "f \xB7 " + ctx.counts.storyPool + "s)";
+    var gs = _stateGameStatesArr();
+    var gsBody = gs.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + gs.map(function(g) {
+      return '<div class="dt-log-row">' + escapeHtml3(g.matchup) + " \xB7 " + escapeHtml3(g.status) + " \xB7 " + escapeHtml3(g.score) + (g.inning ? " \xB7 " + escapeHtml3(g.inning) + " (" + g.outs + "o)" : "") + (g.bases ? " \xB7 \u{1F3C3}" + escapeHtml3(g.bases) : "") + (g.enabled === false ? ' <span class="lv-tag">[hidden]</span>' : "") + "</div>";
+    }).join("") + "</div>" : '<div class="dt-label-muted">No games loaded.</div>';
+    var fi = _stateFeedItemsArr(30);
+    var fiBody = fi.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + fi.map(function(f) {
+      var ts = f.ts ? f.ts.slice(11, 19) : "";
+      return '<div class="dt-log-row"><span class="lv-ts">' + escapeHtml3(ts) + '</span><span class="lv-tag">[' + escapeHtml3(String(f.type || "?")) + "]</span>" + escapeHtml3(f.label || f.desc || "") + (f.scoring ? " \u2B50" : "") + "</div>";
+    }).join("") + "</div>" : '<div class="dt-label-muted">Feed empty.</div>';
+    var sp = _stateStoryPoolArr();
+    var spBody = sp.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + sp.map(function(s) {
+      return '<div class="dt-log-row' + (s.isShown ? " lv-warn" : "") + '"><span class="lv-tag">p' + (s.priority || 0) + '</span><span class="lv-tag">[' + escapeHtml3(String(s.type || "?")) + "]</span>" + escapeHtml3(s.headline || "") + (s.cooldownRem ? ' <span class="lv-ts">(' + escapeHtml3(s.cooldownRem) + ")</span>" : "") + (s.isShown ? " \u25C0 shown" : "") + "</div>";
+    }).join("") + "</div>" : '<div class="dt-label-muted">Story pool empty.</div>';
+    var ctxBody = '<div style="font-size:.65rem">' + _kvList({
+      version: ctx.version,
+      section: ctx.section,
+      activeTeam: ctx.activeTeam,
+      demoMode: ctx.demoMode,
+      pulseInitialized: ctx.pulseInitialized,
+      pulseColorScheme: ctx.pulseColorScheme,
+      themeScope: ctx.themeScope,
+      themeOverride: ctx.themeOverride,
+      themeInvert: ctx.themeInvert,
+      devColorLocked: ctx.devColorLocked,
+      radioCurrentTeamId: ctx.radioCurrentTeamId,
+      focusGamePk: ctx.focusGamePk,
+      focusIsManual: ctx.focusIsManual,
+      viewport: ctx.viewport
+    }) + "</div>";
+    var focusBody = '<div style="font-size:.65rem">' + _kvList(_stateFocusObj()) + "</div>";
+    var now = /* @__PURE__ */ new Date();
+    var greeting = pulseGreeting();
+    var upcoming = Object.values(state.gameStates).filter(function(g) {
+      if (!(g.status === "Preview" || g.status === "Scheduled" || g.status === "Live" && g.detailedState !== "In Progress")) return false;
+      var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
+      if (rawG && rawG.doubleHeader === "Y" && rawG.gameNumber == 2) {
+        if (Object.values(state.gameStates).some(function(s) {
+          return s.status === "Live" && s.awayId === g.awayId && s.homeId === g.homeId;
+        })) return false;
+      }
+      return true;
+    });
+    var liveGames = Object.values(state.gameStates).filter(function(g) {
+      return g.status === "Live" && g.detailedState === "In Progress";
+    });
+    var pulseInfo = {
+      now: now.toISOString().split("T")[1].split(".")[0],
+      greeting: greeting.kicker + ": " + greeting.headline,
+      liveGames: liveGames.length,
+      upcomingGames: upcoming.length,
+      enabledGames: state.enabledGames.size,
+      totalGames: Object.keys(state.gameStates).length
+    };
+    var pulseBody = '<div style="font-size:.65rem">' + _kvList(pulseInfo) + "</div>";
+    body.innerHTML = _section("Context", "copyStateContext", ctxBody) + _section("\u26A1 Pulse Diagnostics", "copyStatePulse", pulseBody) + _section("\u{1F3AF} Focus", "copyStateFocus", focusBody) + _section("\u{1F3AE} state.gameStates (" + gs.length + ")", "copyStateGames", gsBody) + _section("\u{1F4F0} state.feedItems (showing " + fi.length + " of " + ctx.counts.feedItems + ")", "copyStateFeed", fiBody) + _section("\u{1F4D6} state.storyPool (" + sp.length + ")", "copyStateStories", spBody);
+  }
+  function _copyToClipboard(text, btnId) {
+    var btn = btnId ? document.getElementById(btnId) : null;
+    function flash(msg) {
+      if (!btn) return;
+      var orig = btn.textContent;
+      btn.textContent = msg;
+      btn.style.background = "#1f7a3a";
+      setTimeout(function() {
+        btn.textContent = orig;
+        btn.style.background = "";
+      }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        flash("\u2713 Copied!");
+      }, function() {
+        fallbackCopy2(text);
+        flash("\u2713 Copied (fb)");
+      });
+    } else {
+      fallbackCopy2(text);
+      flash("\u2713 Copied (fb)");
+    }
+  }
+  function _stateAsMarkdownContext() {
+    var c = _stateContext();
+    return "## Context\n\n```json\n" + JSON.stringify(c, null, 2) + "\n```\n";
+  }
+  function _stateAsMarkdownGames() {
+    var gs = _stateGameStatesArr();
+    if (!gs.length) return "## state.gameStates\n\n_(empty)_\n";
+    var lines = ["## state.gameStates (" + gs.length + ")", "", "| gamePk | matchup | status | score | inning | bases | hits | enabled |", "|---|---|---|---|---|---|---|---|"];
+    gs.forEach(function(g) {
+      lines.push("| " + g.gamePk + " | " + g.matchup + " | " + g.status + (g.detailedState && g.detailedState !== g.status ? " (" + g.detailedState + ")" : "") + " | " + g.score + " | " + (g.inning || "-") + (g.outs != null ? " " + g.outs + "o" : "") + " | " + (g.bases || "-") + " | " + g.hits + " | " + (g.enabled == null ? "-" : g.enabled ? "y" : "n") + " |");
+    });
+    return lines.join("\n") + "\n";
+  }
+  function _stateAsMarkdownFeed(limit) {
+    var fi = _stateFeedItemsArr(limit || 50);
+    if (!fi.length) return "## state.feedItems\n\n_(empty)_\n";
+    var lines = ["## state.feedItems (" + fi.length + (typeof state.feedItems !== "undefined" && state.feedItems.length > fi.length ? " of " + state.feedItems.length : "") + ")", "", "| time | gamePk | type | label/desc | scoring |", "|---|---|---|---|---|"];
+    fi.forEach(function(f) {
+      var ts = f.ts ? f.ts.slice(11, 19) : "-";
+      var msg = (f.label || f.desc || "").replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
+      lines.push("| " + ts + " | " + f.gamePk + " | " + (f.type || "-") + " | " + msg + " | " + (f.scoring ? "y" : "") + " |");
+    });
+    return lines.join("\n") + "\n";
+  }
+  function _stateAsMarkdownStories() {
+    var sp = _stateStoryPoolArr();
+    if (!sp.length) return "## state.storyPool\n\n_(empty)_\n";
+    var lines = ["## state.storyPool (" + sp.length + ")", "", "| priority | type | tier | headline | cooldown | shown |", "|---|---|---|---|---|---|"];
+    sp.forEach(function(s) {
+      lines.push("| " + (s.priority || 0) + " | " + (s.type || "-") + " | " + (s.tier || "-") + " | " + (s.headline || "").replace(/\|/g, "\\|") + " | " + (s.cooldownRem || "-") + " | " + (s.isShown ? "\u25C0" : "") + " |");
+    });
+    return lines.join("\n") + "\n";
+  }
+  function _stateAsMarkdownFocus() {
+    return "## Focus\n\n```json\n" + JSON.stringify(_stateFocusObj(), null, 2) + "\n```\n";
+  }
+  function _stateAsMarkdownPulse() {
+    var now = /* @__PURE__ */ new Date();
+    var hour = now.getHours();
+    var greeting = pulseGreeting();
+    var upcoming = Object.values(state.gameStates).filter(function(g) {
+      if (!(g.status === "Preview" || g.status === "Scheduled" || g.status === "Live" && g.detailedState !== "In Progress")) return false;
+      var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
+      if (rawG && rawG.doubleHeader === "Y" && rawG.gameNumber == 2) {
+        if (Object.values(state.gameStates).some(function(s) {
+          return s.status === "Live" && s.awayId === g.awayId && s.homeId === g.homeId;
+        })) return false;
+      }
+      return true;
+    });
+    var liveGames = Object.values(state.gameStates).filter(function(g) {
+      return g.status === "Live" && g.detailedState === "In Progress";
+    });
+    var finalGames = Object.values(state.gameStates).filter(function(g) {
+      return g.status === "Final";
+    });
+    var lines = [
+      "## Pulse Empty State Diagnostics",
+      "",
+      "### Current Time & Greeting",
+      "| Field | Value |",
+      "|---|---|",
+      "| Now | " + now.toISOString() + " |",
+      "| Hour | " + hour + " (" + greeting.kicker + ") |",
+      "| Greeting | " + greeting.headline + " |",
+      "",
+      "### Game Counts",
+      "| State | Count |",
+      "|---|---|",
+      "| Total state.gameStates | " + Object.keys(state.gameStates).length + " |",
+      "| Enabled Games | " + state.enabledGames.size + " |",
+      "| Live (In Progress) | " + liveGames.length + " |",
+      "| Preview/Scheduled (Upcoming) | " + upcoming.length + " |",
+      "| Final | " + finalGames.length + " |",
+      "",
+      "### Why Empty State Shows",
+      "| Reason | Active |",
+      "|---|---|",
+      "| No upcoming games found | " + (upcoming.length === 0 ? '**YES** \u2014 will show "Slate complete"' : "no") + " |",
+      "| Has intermission flag | no |",
+      "| Has live games | " + (liveGames.length > 0 ? "**YES** \u2014 empty state should not show" : "no") + " |",
+      "",
+      "### All Games in state.gameStates"
+    ];
+    var gameRows = ["| gamePk | matchup | status | detailed | enabled | inning |", "|---|---|---|---|---|---|"];
+    Object.values(state.gameStates).sort(function(a, b) {
+      return (a.gameDateMs || 0) - (b.gameDateMs || 0);
+    }).forEach(function(g) {
+      var enabled = state.enabledGames.has(g.gamePk) ? "\u2713" : "\u2717";
+      var inning = g.status === "Live" ? " " + g.inning + "i (" + g.halfInning.charAt(0) + ")" : "-";
+      gameRows.push("| " + g.gamePk + " | " + g.awayAbbr + " @ " + g.homeAbbr + " | " + g.status + " | " + g.detailedState + " | " + enabled + " | " + inning + " |");
+    });
+    return lines.join("\n") + "\n" + gameRows.join("\n") + "\n";
+  }
+  function copyAppStateAsMarkdown() {
+    var parts = [
+      "# MLB Pulse \u2014 App State Snapshot",
+      "Captured: " + (/* @__PURE__ */ new Date()).toISOString(),
+      "",
+      _stateAsMarkdownPulse(),
+      _stateAsMarkdownContext(),
+      _stateAsMarkdownFocus(),
+      _stateAsMarkdownGames(),
+      _stateAsMarkdownFeed(50),
+      _stateAsMarkdownStories()
+    ];
+    _copyToClipboard(parts.join("\n"), "appStateCopyBtn");
+  }
+  function _shortUrl(u) {
+    if (!u) return "?";
+    try {
+      var parsed = new URL(u, window.location.href);
+      var host = parsed.host || "";
+      var path = parsed.pathname.replace(/^\/api\/v1(\.1)?/, "/v1$1");
+      var q = parsed.search ? parsed.search.length > 40 ? parsed.search.slice(0, 40) + "\u2026" : parsed.search : "";
+      return (host ? host + " " : "") + path + q;
+    } catch (e) {
+      return u.length > 120 ? u.slice(0, 120) + "\u2026" : u;
+    }
+  }
+  function _fmtBytes(n) {
+    if (n == null) return "-";
+    if (n < 1024) return n + "b";
+    if (n < 1048576) return (n / 1024).toFixed(1) + "k";
+    return (n / 1048576).toFixed(2) + "M";
+  }
+  function renderNetTrace() {
+    var list = document.getElementById("netTraceList");
+    var count = document.getElementById("netTraceCount");
+    if (!list) return;
+    if (count) count.textContent = "(" + devNetLog.length + ")";
+    if (!devNetLog.length) {
+      list.innerHTML = '<div class="dt-label-muted" style="padding:4px 0">No fetches captured yet.</div>';
+      return;
+    }
+    list.innerHTML = devNetLog.slice().reverse().map(function(e) {
+      var ts = _fmtLogTs(e.ts);
+      var st = e.status == null ? e.ok === false ? "ERR" : "\u2026" : e.status;
+      var cls = "dt-log-row";
+      if (e.ok === false) cls += " lv-error";
+      else if (e.status >= 400) cls += " lv-error";
+      else if (e.status >= 300) cls += " lv-warn";
+      var ms = e.ms != null ? e.ms + "ms" : "-";
+      var size = _fmtBytes(e.sizeBytes);
+      var err = e.errorMsg ? '<div style="margin-left:24px;color:#ff6b6b">' + escapeHtml3(e.errorMsg) + "</div>" : "";
+      return '<div class="' + cls + '" title="' + escapeHtml3(e.url || "") + '"><span class="lv-ts">' + ts + '</span><span class="lv-tag">' + escapeHtml3(e.method) + " " + st + '</span><span class="lv-ts">' + ms + " \xB7 " + size + "</span> " + escapeHtml3(_shortUrl(e.url)) + err + "</div>";
+    }).join("");
+  }
+  function copyNetTraceAsMarkdown() {
+    var lines = ["# MLB Pulse \u2014 Network Trace", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), "Total entries: " + devNetLog.length + " (cap " + DEV_NET_CAP + ")", ""];
+    if (!devNetLog.length) {
+      lines.push("_(empty)_");
+    } else {
+      lines.push("| time | method | status | ms | size | url |");
+      lines.push("|---|---|---|---|---|---|");
+      devNetLog.forEach(function(e) {
+        var url = (e.url || "").replace(/\|/g, "\\|");
+        var status = e.status == null ? e.ok === false ? "ERR" : "-" : e.status;
+        var ms = e.ms != null ? e.ms : "-";
+        var size = _fmtBytes(e.sizeBytes);
+        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.method + " | " + status + " | " + ms + " | " + size + " | " + url + " |");
+      });
+      var failed = devNetLog.filter(function(e) {
+        return e.ok === false;
+      });
+      if (failed.length) {
+        lines.push("", "## Failed requests (" + failed.length + ")", "");
+        failed.forEach(function(e) {
+          lines.push("- `" + e.method + " " + (e.status || "ERR") + "` " + e.url + (e.errorMsg ? " \u2014 " + e.errorMsg : ""));
+        });
+      }
+    }
+    _copyToClipboard(lines.join("\n"), "netTraceCopyBtn");
+  }
+  function clearNetTrace() {
+    devNetLog.length = 0;
+    renderNetTrace();
+  }
+  function _lsKeys() {
+    var keys = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf("mlb_") === 0) keys.push(k);
+      }
+    } catch (e) {
+    }
+    keys.sort();
+    return keys;
+  }
+  function _lsEntry(k) {
+    var raw = null, parsed = null, isJson = false, bytes = 0;
+    try {
+      raw = localStorage.getItem(k);
+    } catch (e) {
+      raw = null;
+    }
+    if (raw != null) {
+      bytes = raw.length;
+      try {
+        parsed = JSON.parse(raw);
+        isJson = parsed !== null && typeof parsed === "object";
+      } catch (e) {
+      }
+    }
+    return { key: k, raw, parsed, isJson, bytes };
+  }
+  function renderStorageInspector() {
+    var list = document.getElementById("storageList");
+    var count = document.getElementById("storageCount");
+    if (!list) return;
+    var keys = _lsKeys();
+    if (count) count.textContent = "(" + keys.length + ")";
+    if (!keys.length) {
+      list.innerHTML = '<div class="dt-label-muted">No mlb_* keys present.</div>';
+      return;
+    }
+    list.innerHTML = keys.map(function(k) {
+      var e = _lsEntry(k);
+      var preview;
+      if (e.isJson) {
+        preview = '<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml3(JSON.stringify(e.parsed, null, 2)) + "</pre></details>";
+      } else if (e.raw != null) {
+        var disp = e.raw.length > 140 ? e.raw.slice(0, 140) + "\u2026" : e.raw;
+        preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">' + escapeHtml3(disp) + "</div>";
+      } else preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">(null)</div>';
+      return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">' + escapeHtml3(k) + '</span><span class="dt-label-muted">' + _fmtBytes(e.bytes) + '</span><button data-dt-action="clearLsKey" data-ls-key="' + escapeHtml3(k) + '" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">\u{1F5D1}</button></div>' + preview + "</div>";
+    }).join("");
+  }
+  function clearLsKey(key) {
+    if (!key) return;
+    if (!confirm('Remove localStorage key "' + key + '"? This may log you out / reset settings depending on the key.')) return;
+    try {
+      localStorage.removeItem(key);
+      pushDevLog("warn", "storage", ["removed key: " + key]);
+    } catch (e) {
+    }
+    renderStorageInspector();
+  }
+  function copyStorageAsMarkdown() {
+    var keys = _lsKeys();
+    var lines = ["# MLB Pulse \u2014 localStorage Snapshot", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), "Keys: " + keys.length, ""];
+    if (!keys.length) lines.push("_(no mlb_* keys)_");
+    else {
+      lines.push("| key | bytes | json | preview |");
+      lines.push("|---|---|---|---|");
+      keys.forEach(function(k) {
+        var e = _lsEntry(k);
+        var prev = (e.raw || "").replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
+        if (prev.length > 120) prev = prev.slice(0, 120) + "\u2026";
+        lines.push("| `" + k + "` | " + _fmtBytes(e.bytes) + " | " + (e.isJson ? "y" : "") + " | " + prev + " |");
+      });
+      lines.push("", "## Full values", "");
+      keys.forEach(function(k) {
+        var e = _lsEntry(k);
+        lines.push("### `" + k + "` (" + _fmtBytes(e.bytes) + ")");
+        if (e.isJson) lines.push("```json", JSON.stringify(e.parsed, null, 2), "```", "");
+        else lines.push("```", e.raw == null ? "(null)" : e.raw, "```", "");
+      });
+    }
+    _copyToClipboard(lines.join("\n"), "storageCopyBtn");
+  }
+  var _swState = { scope: null, scriptURL: null, controller: null, hasUpdate: false, lastUpdated: null, error: null };
+  function _refreshSWState() {
+    if (!("serviceWorker" in navigator)) {
+      _swState.error = "Service Worker API not supported.";
+      return Promise.resolve();
+    }
+    return navigator.serviceWorker.getRegistration().then(function(reg) {
+      if (!reg) {
+        _swState.error = "No registration found.";
+        return;
+      }
+      _swState.scope = reg.scope;
+      _swState.scriptURL = reg.active && reg.active.scriptURL || reg.installing && reg.installing.scriptURL || reg.waiting && reg.waiting.scriptURL || null;
+      _swState.controller = navigator.serviceWorker.controller ? navigator.serviceWorker.controller.scriptURL : null;
+      _swState.hasUpdate = !!reg.waiting;
+      _swState.error = null;
+    }, function(err) {
+      _swState.error = err && err.message || String(err);
+    });
+  }
+  function renderSWInspector() {
+    var info = document.getElementById("swInfo");
+    if (!info) return;
+    info.innerHTML = '<div class="dt-label-muted">Loading\u2026</div>';
+    _refreshSWState().then(function() {
+      var rows = {
+        "Supported": "serviceWorker" in navigator,
+        "Scope": _swState.scope || "\u2014",
+        "Active script": _swState.scriptURL || "\u2014",
+        "Controller": _swState.controller || "(uncontrolled)",
+        "Update waiting": _swState.hasUpdate ? "YES \u2014 reload to activate" : "no",
+        "Error": _swState.error || "\u2014"
+      };
+      info.innerHTML = _kvList(rows);
+    });
+  }
+  function copySWStateAsMarkdown() {
+    _refreshSWState().then(function() {
+      var lines = ["# MLB Pulse \u2014 Service Worker", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), ""];
+      lines.push("- Supported: " + ("serviceWorker" in navigator));
+      lines.push("- Scope: " + (_swState.scope || "-"));
+      lines.push("- Active script: " + (_swState.scriptURL || "-"));
+      lines.push("- Controller: " + (_swState.controller || "(uncontrolled)"));
+      lines.push("- Update waiting: " + (_swState.hasUpdate ? "YES" : "no"));
+      if (_swState.error) lines.push("- Error: " + _swState.error);
+      _copyToClipboard(lines.join("\n"), "swCopyBtn");
+    });
+  }
+  function swForceUpdate() {
+    if (!("serviceWorker" in navigator)) {
+      alert("Service Worker not supported.");
+      return;
+    }
+    navigator.serviceWorker.getRegistration().then(function(reg) {
+      if (!reg) {
+        alert("No SW registration found.");
+        return;
+      }
+      pushDevLog("log", "sw", ["Force update requested"]);
+      reg.update().then(function() {
+        pushDevLog("log", "sw", ["update() resolved \xB7 waiting=" + !!reg.waiting]);
+        if (reg.waiting) {
+          try {
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          } catch (e) {
+          }
+          alert("Update found. Reload the page to activate the new version.");
+        } else {
+          alert("No new update available \u2014 already on latest.");
+        }
+        renderSWInspector();
+      }, function(err) {
+        pushDevLog("error", "sw", ["update() failed: " + (err && err.message || err)]);
+        alert("Update failed: " + (err && err.message || err));
+      });
+    });
+  }
+  function swUnregisterAndReload() {
+    if (!confirm("Unregister the service worker and reload? This forces a fresh load (clears cached app shell).")) return;
+    if (!("serviceWorker" in navigator)) {
+      location.reload();
+      return;
+    }
+    navigator.serviceWorker.getRegistration().then(function(reg) {
+      var done = function() {
+        try {
+          if (window.caches) {
+            caches.keys().then(function(keys) {
+              keys.forEach(function(k) {
+                caches.delete(k);
+              });
+              location.reload(true);
+            });
+          } else location.reload(true);
+        } catch (e) {
+          location.reload(true);
+        }
+      };
+      if (reg) {
+        reg.unregister().then(done, done);
+      } else done();
+    });
+  }
+  function testLocalNotification() {
+    if (!("Notification" in window)) {
+      alert("Notifications not supported on this device.");
+      return;
+    }
+    function show() {
+      if (!("serviceWorker" in navigator)) {
+        alert("Service Worker not supported.");
+        return;
+      }
+      navigator.serviceWorker.getRegistration().then(function(reg) {
+        if (!reg) {
+          alert("No SW registered yet \u2014 reload and try again.");
+          return;
+        }
+        reg.showNotification("MLB Pulse \xB7 Dev test", {
+          body: "Local test fired " + (/* @__PURE__ */ new Date()).toLocaleTimeString() + " \xB7 server pipeline NOT exercised",
+          icon: "./icons/icon-192.png",
+          badge: "./icons/icon-192.png",
+          tag: "mlb-dev-test",
+          renotify: true
+        }).then(
+          function() {
+            pushDevLog("log", "notif", ["local test notification fired"]);
+          },
+          function(err) {
+            pushDevLog("error", "notif", ["showNotification failed: " + (err && err.message || err)]);
+            alert("showNotification failed: " + (err && err.message || err));
+          }
+        );
+      });
+    }
+    if (Notification.permission === "granted") show();
+    else if (Notification.permission === "denied") alert("Notifications are blocked. Re-enable in browser/site settings.");
+    else Notification.requestPermission().then(function(p) {
+      if (p === "granted") show();
+      else alert("Permission not granted (" + p + ").");
+    });
+  }
+  function _liveGamesForControls() {
+    if (typeof state.gameStates === "undefined") return [];
+    return Object.keys(state.gameStates).map(function(pk) {
+      return { pk: +pk, g: state.gameStates[pk] };
+    }).filter(function(x) {
+      return x.g.status === "Live";
+    }).sort(function(a, b) {
+      return (b.g.inning || 0) - (a.g.inning || 0);
+    });
+  }
+  function renderLiveControls() {
+    var body = document.getElementById("liveControlsBody");
+    if (!body) return;
+    var live = _liveGamesForControls();
+    if (!live.length) {
+      body.innerHTML = '<div class="dt-label-muted">No live games right now. Try Demo Mode (Shift+M) to populate state.gameStates with sample data.</div>';
+      return;
+    }
+    var opts = live.map(function(x) {
+      return '<option value="' + x.pk + '">' + escapeHtml3(x.g.awayAbbr + " @ " + x.g.homeAbbr + " \xB7 " + (x.g.halfInning || "") + " " + (x.g.inning || "?") + " \xB7 " + x.g.awayScore + "-" + x.g.homeScore) + "</option>";
+    }).join("");
+    var curFocus = typeof state.focusGamePk !== "undefined" && state.focusGamePk ? state.focusGamePk : "";
+    body.innerHTML = '<div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F3AF} Force Focus</div><div class="dt-label-muted" style="margin-bottom:6px">Override auto-scoring and pin Focus Mode to a specific live game. Resets via the \u21A9 AUTO pill in the focus card.</div><div style="display:flex;gap:6px;align-items:center"><select id="forceFocusSel" class="dt-input" style="flex:1">' + opts + '</select><button data-dt-action="forceFocusGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Apply</button></div>' + (curFocus ? '<div class="dt-label-muted" style="margin-top:4px">Current focus: gamePk ' + curFocus + "</div>" : "") + '</div><div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F4D6} Force Inning Recap</div><div class="dt-label-muted" style="margin-bottom:6px">Queues an inning_recap story so it surfaces in the next pool build. Replaces the manual <code>state.inningRecapsPending[\u2026]</code> + <code>buildStoryPool()</code> console workflow.</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="forceRecapGame" class="dt-input" style="flex:2;min-width:140px">' + opts + '</select><select id="forceRecapHalf" class="dt-input" style="flex:1;min-width:60px"><option value="top">Top</option><option value="bottom">Bottom</option></select><input id="forceRecapInning" type="number" min="1" max="20" placeholder="Inn" class="dt-input" style="flex:0 0 60px"><button data-dt-action="forceRecapGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Queue</button></div></div>';
+    var sel = document.getElementById("forceRecapGame"), inn = document.getElementById("forceRecapInning"), half = document.getElementById("forceRecapHalf");
+    function sync() {
+      if (!sel || !inn || !half) return;
+      var g = state.gameStates[+sel.value];
+      if (g) {
+        inn.value = g.inning || 1;
+        half.value = (g.halfInning || "top").toLowerCase().indexOf("bot") === 0 ? "bottom" : "top";
+      }
+    }
+    if (sel) sel.addEventListener("change", sync);
+    sync();
+  }
+  function forceFocusGo() {
+    var sel = document.getElementById("forceFocusSel");
+    if (!sel || !sel.value) return;
+    var pk = +sel.value;
+    setFocusGameManual(pk);
+    pushDevLog("log", "focus", ["Force Focus applied \xB7 gamePk=" + pk]);
+    renderLiveControls();
+  }
+  function forceRecapGo() {
+    var sel = document.getElementById("forceRecapGame"), half = document.getElementById("forceRecapHalf"), inn = document.getElementById("forceRecapInning");
+    if (!sel || !half || !inn || !sel.value) {
+      alert("Pick a game first.");
+      return;
+    }
+    var pk = +sel.value, inning = parseInt(inn.value, 10), halfInning = (half.value || "top").toLowerCase();
+    if (!inning || inning < 1) {
+      alert("Enter a valid inning number.");
+      return;
+    }
+    var key = pk + "_" + inning + "_" + halfInning;
+    if (typeof state.inningRecapsFired !== "undefined") state.inningRecapsFired.delete && state.inningRecapsFired.delete(key);
+    if (typeof state.inningRecapsPending !== "undefined") {
+      state.inningRecapsPending[key] = { gamePk: pk, inning, halfInning };
+      pushDevLog("log", "recap", ["Queued recap \xB7 " + key]);
+    }
+    if (_buildStoryPool) _buildStoryPool();
+    alert("Recap queued for " + key + ". Wait for the next carousel rotation (or open Pulse to see it sooner).");
+  }
+  function copyDiagnosticSnapshot() {
+    var ctx = _stateContext();
+    var lsKeys = _lsKeys();
+    var lsSizes = lsKeys.map(function(k) {
+      var e = _lsEntry(k);
+      return "- `" + k + "`: " + _fmtBytes(e.bytes) + (e.isJson ? " (json)" : "");
+    }).join("\n") || "_(none)_";
+    var swSummary = "_not yet fetched_";
+    if (_swState && (_swState.scope || _swState.error)) {
+      swSummary = [
+        "- Scope: " + (_swState.scope || "-"),
+        "- Active: " + (_swState.scriptURL || "-"),
+        "- Controller: " + (_swState.controller || "(uncontrolled)"),
+        "- Update waiting: " + (_swState.hasUpdate ? "YES" : "no"),
+        _swState.error ? "- Error: " + _swState.error : null
+      ].filter(Boolean).join("\n");
+    }
+    var counts = ctx.counts;
+    var logSummary = devLog.length ? function() {
+      var rows = devLog.slice(-50);
+      var lines = ["| time | level | src | message |", "|---|---|---|---|"];
+      rows.forEach(function(e) {
+        var msg = e.msg.replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
+        if (msg.length > 200) msg = msg.slice(0, 200) + "\u2026";
+        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.level + " | " + (e.src || "-") + " | " + msg + " |");
+      });
+      return lines.join("\n");
+    }() : "_(empty)_";
+    var netSummary = devNetLog.length ? function() {
+      var lines = ["| time | method | status | ms | size | url |", "|---|---|---|---|---|---|"];
+      devNetLog.forEach(function(e) {
+        var url = (e.url || "").replace(/\|/g, "\\|");
+        var status = e.status == null ? e.ok === false ? "ERR" : "-" : e.status;
+        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.method + " | " + status + " | " + (e.ms || "-") + " | " + _fmtBytes(e.sizeBytes) + " | " + url + " |");
+      });
+      var failed = devNetLog.filter(function(e) {
+        return e.ok === false;
+      });
+      if (failed.length) {
+        lines.push("", "**Failed:** " + failed.length);
+        failed.forEach(function(e) {
+          lines.push("- `" + e.method + " " + (e.status || "ERR") + "` " + e.url + (e.errorMsg ? " \u2014 " + e.errorMsg : ""));
+        });
+      }
+      return lines.join("\n");
+    }() : "_(empty)_";
+    var parts = [
+      "# MLB Pulse \u2014 Diagnostic Snapshot",
+      "Generated: " + (/* @__PURE__ */ new Date()).toISOString(),
+      "Version: " + ctx.version + " \xB7 Section: " + ctx.section + " \xB7 Active team: " + ctx.activeTeam,
+      "state.demoMode: " + ctx.demoMode + " \xB7 state.pulseInitialized: " + ctx.pulseInitialized + " \xB7 pulseColorScheme: " + ctx.pulseColorScheme + " \xB7 state.themeScope: " + ctx.themeScope,
+      "Focus: gamePk=" + (ctx.focusGamePk || "(auto)") + " \xB7 manual=" + ctx.focusIsManual + " \xB7 radioCurrentTeamId=" + (ctx.radioCurrentTeamId || "-"),
+      "Viewport: " + ctx.viewport,
+      "UA: " + ctx.userAgent,
+      "",
+      "## Counts",
+      "- state.gameStates: " + counts.gameStates,
+      "- state.feedItems: " + counts.feedItems,
+      "- state.storyPool: " + counts.storyPool,
+      "- state.enabledGames: " + counts.enabledGames,
+      "- devLog: " + counts.devLog,
+      "- devNetLog: " + devNetLog.length,
+      "",
+      _stateAsMarkdownContext(),
+      _stateAsMarkdownFocus(),
+      _stateAsMarkdownGames(),
+      _stateAsMarkdownFeed(50),
+      _stateAsMarkdownStories(),
+      "## Service Worker",
+      "",
+      swSummary,
+      "",
+      "## localStorage sizes",
+      "",
+      lsSizes,
+      "",
+      "## Last 50 logs",
+      "",
+      logSummary,
+      "",
+      "## Last " + devNetLog.length + " network calls",
+      "",
+      netSummary
+    ];
+    _refreshSWState().catch(function() {
+    });
+    _copyToClipboard(parts.join("\n"), "diagSnapshotBtn");
+  }
+  function initPanelsLazyRendering() {
+    document.addEventListener("DOMContentLoaded", function() {
+      var stateDet = document.getElementById("appStateDetails");
+      if (stateDet) stateDet.addEventListener("toggle", function() {
+        if (stateDet.open) renderAppState();
+      });
+      var netDet = document.getElementById("netTraceDetails");
+      if (netDet) netDet.addEventListener("toggle", function() {
+        if (netDet.open) renderNetTrace();
+      });
+      var stoDet = document.getElementById("storageDetails");
+      if (stoDet) stoDet.addEventListener("toggle", function() {
+        if (stoDet.open) renderStorageInspector();
+      });
+      var swDet = document.getElementById("swDetails");
+      if (swDet) swDet.addEventListener("toggle", function() {
+        if (swDet.open) renderSWInspector();
+      });
+      var lcDet = document.getElementById("liveControlsDetails");
+      if (lcDet) lcDet.addEventListener("toggle", function() {
+        if (lcDet.open) renderLiveControls();
+      });
+      var det = document.getElementById("logCaptureDetails");
+      if (!det) return;
+      det.addEventListener("toggle", function() {
+        if (det.open) renderLogCapture();
+      });
+      var lvl = document.getElementById("logCaptureLevel");
+      if (lvl) lvl.addEventListener("change", renderLogCapture);
+      var f = document.getElementById("logCaptureFilter");
+      if (f) f.addEventListener("input", renderLogCapture);
+    });
+  }
+
+  // src/demo/mode.js
+  var demoPaused = false;
+  var demoSpeedMs = 1e4;
+  var _addFeedItem = null;
+  var _renderTicker = null;
+  var _renderSideRailGames = null;
+  var _buildStoryPool2 = null;
+  var _updateFeedEmpty = null;
+  var _showAlert = null;
+  var _playSound = null;
+  var _showPlayerCard = null;
+  var _rotateStory = null;
+  var _localDateStr = null;
+  function setDemoCallbacks(callbacks) {
+    _addFeedItem = callbacks.addFeedItem;
+    _renderTicker = callbacks.renderTicker;
+    _renderSideRailGames = callbacks.renderSideRailGames;
+    _buildStoryPool2 = callbacks.buildStoryPool;
+    _updateFeedEmpty = callbacks.updateFeedEmpty;
+    _showAlert = callbacks.showAlert;
+    _playSound = callbacks.playSound;
+    _showPlayerCard = callbacks.showPlayerCard;
+    _rotateStory = callbacks.rotateStory;
+    _localDateStr = callbacks.localDateStr;
+  }
+  async function loadDailyEventsJSON() {
+    try {
+      var r = await fetch("./daily-events.json");
+      if (!r.ok) return null;
+      var data = await r.json();
+      if (data.feedItems) {
+        data.feedItems.forEach(function(item) {
+          if (item.playTime && typeof item.playTime === "string") {
+            item.playTime = new Date(item.playTime);
+          }
+          if (item.playTime && !item.ts) item.ts = item.playTime;
+        });
+      }
+      if (data.onThisDayCache) {
+        data.onThisDayCache.forEach(function(item) {
+          if (item.ts && typeof item.ts === "string") {
+            item.ts = new Date(item.ts);
+          }
+        });
+      }
+      if (data.yesterdayCache) {
+        data.yesterdayCache.forEach(function(item) {
+          if (item.ts && typeof item.ts === "string") {
+            item.ts = new Date(item.ts);
+          }
+        });
+      }
+      return data;
+    } catch (e) {
+      console.error("Demo: Failed to load daily-events.json", e);
+      return null;
+    }
+  }
+  function updateDemoBtnLabel() {
+    var lbl = document.getElementById("demoBtnLabel");
+    if (lbl) lbl.textContent = state.demoMode ? "\u23F9 Exit Demo" : "\u25B6 Try Demo";
+  }
+  function toggleDemoMode() {
+    devTrace("demo", state.demoMode ? "exit" : "init");
+    if (state.demoMode) exitDemo();
+    else initDemo();
+    updateDemoBtnLabel();
+  }
+  async function initDemo() {
+    if (state.pulseTimer) {
+      clearInterval(state.pulseTimer);
+      state.pulseTimer = null;
+    }
+    if (state.pulseAbortCtrl) {
+      state.pulseAbortCtrl.abort();
+      state.pulseAbortCtrl = null;
+    }
+    if (state.storyRotateTimer) {
+      clearInterval(state.storyRotateTimer);
+      state.storyRotateTimer = null;
+    }
+    state.demoMode = true;
+    document.body.classList.add("demo-active");
+    var pulseSection = document.getElementById("pulse");
+    if (pulseSection) pulseSection.classList.add("active");
+    var main = document.getElementById("main");
+    if (main) main.style.display = "none";
+    var feedWrap = document.getElementById("feedWrap");
+    if (feedWrap) feedWrap.style.display = "block";
+    demoSpeedMs = 1e4;
+    demoPaused = false;
+    var mockBar = document.getElementById("mockBar");
+    if (mockBar) {
+      mockBar.style.display = "block";
+      var badge = document.getElementById("mockBarBadge");
+      if (badge) badge.textContent = "\u{1F4FD}\uFE0F Demo";
+      document.getElementById("demoSpeed1x").style.display = "";
+      document.getElementById("demoSpeed10x").style.display = "";
+      document.getElementById("demoSpeed100x").style.display = "";
+      document.getElementById("demoSpeed1x").classList.add("active");
+      document.getElementById("demoNextHRBtn").style.display = "";
+      document.getElementById("demoPauseBtn").style.display = "";
+      document.getElementById("demoForwardBtn").style.display = "";
+      document.getElementById("demoPauseBtn").textContent = "\u23F8 Pause";
+    }
+    state.gameStates = {};
+    state.feedItems = [];
+    state.scheduleData = [];
+    state.enabledGames = /* @__PURE__ */ new Set();
+    state.storyPool = [];
+    state.storyShownId = null;
+    state.demoPlayQueue = [];
+    state.demoPlayIdx = 0;
+    state.dailyLeadersCache = null;
+    state.onThisDayCache = null;
+    state.yesterdayCache = null;
+    state.hrBatterStatsCache = {};
+    state.probablePitcherStatsCache = {};
+    state.dailyHitsTracker = {};
+    state.dailyPitcherKs = {};
+    state.storyCarouselRawGameData = {};
+    state.stolenBaseEvents = [];
+    state.inningRecapsFired = /* @__PURE__ */ new Set();
+    state.inningRecapsPending = {};
+    state.lastInningState = {};
+    var jsonData = await loadDailyEventsJSON();
+    if (!jsonData || !jsonData.gameStates) {
+      _showAlert({ icon: "\u26A0\uFE0F", event: "Demo Load Failed", desc: "Could not load daily-events.json", color: "#e85d4f", duration: 3e3 });
+      return;
+    }
+    state.gameStates = jsonData.gameStates;
+    Object.values(state.gameStates).forEach(function(g) {
+      g.status = "Preview";
+      g.detailedState = "Scheduled";
+      g.inning = 0;
+      g.halfInning = null;
+      g.outs = 0;
+      g.awayScore = 0;
+      g.homeScore = 0;
+      g.onFirst = false;
+      g.onSecond = false;
+      g.onThird = false;
+    });
+    state.feedItems = (jsonData.feedItems || []).map(function(item) {
+      var ts = item.ts || item.playTime;
+      if (ts && typeof ts === "string") ts = new Date(ts);
+      if (!(ts instanceof Date)) ts = /* @__PURE__ */ new Date();
+      return { gamePk: item.gamePk, data: item.data, ts };
+    });
+    state.dailyLeadersCache = jsonData.dailyLeadersCache || null;
+    state.onThisDayCache = jsonData.onThisDayCache || [];
+    state.yesterdayCache = jsonData.yesterdayCache || [];
+    state.hrBatterStatsCache = jsonData.hrBatterStatsCache || {};
+    state.probablePitcherStatsCache = jsonData.probablePitcherStatsCache || {};
+    state.dailyHitsTracker = jsonData.dailyHitsTracker || {};
+    state.dailyPitcherKs = jsonData.dailyPitcherKs || {};
+    state.storyCarouselRawGameData = jsonData.storyCarouselRawGameData || {};
+    state.stolenBaseEvents = jsonData.stolenBaseEvents || [];
+    state.scheduleData = jsonData.scheduleData || [];
+    if (jsonData.gameStates) {
+      var earliestMs = Infinity;
+      Object.values(jsonData.gameStates).forEach(function(g) {
+        if (g.gameDateMs && g.gameDateMs < earliestMs) earliestMs = g.gameDateMs;
+      });
+      if (earliestMs !== Infinity) state.demoDate = new Date(earliestMs);
+    }
+    state.feedItems.forEach(function(item) {
+      if (item.playTime && typeof item.playTime === "string") item.playTime = new Date(item.playTime);
+    });
+    state.onThisDayCache.forEach(function(item) {
+      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
+    });
+    state.yesterdayCache.forEach(function(item) {
+      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
+    });
+    var gamesWithPlays = /* @__PURE__ */ new Set();
+    state.feedItems.forEach(function(item) {
+      if (item.gamePk) gamesWithPlays.add(item.gamePk);
+    });
+    Object.keys(state.gameStates).forEach(function(pk) {
+      if (state.demoMode) {
+        if (gamesWithPlays.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
+      } else {
+        state.enabledGames.add(parseInt(pk));
+      }
+    });
+    state.demoPlayQueue = [];
+    state.feedItems.forEach(function(item) {
+      var ts = item.playTime && item.playTime.getTime ? item.playTime.getTime() : new Date(item.ts).getTime();
+      var d = item.data || {};
+      state.demoPlayQueue.push({
+        gamePk: item.gamePk,
+        ts,
+        event: d.event,
+        desc: d.desc,
+        type: d.type || "play",
+        inning: d.inning,
+        halfInning: d.halfInning,
+        outs: d.outs,
+        awayScore: d.awayScore,
+        homeScore: d.homeScore,
+        scoring: d.scoring,
+        risp: d.risp,
+        playClass: d.playClass,
+        playTime: new Date(ts),
+        batterId: d.batterId,
+        batterName: d.batterName,
+        pitcherName: d.pitcherName,
+        distance: d.distance,
+        icon: d.icon,
+        label: d.label,
+        sub: d.sub
+      });
+    });
+    state.demoPlayQueue.sort(function(a, b) {
+      return a.ts - b.ts;
+    });
+    state.demoPlayIdx = 0;
+    state.demoCurrentTime = state.demoPlayQueue.length > 0 ? state.demoPlayQueue[0].ts : 0;
+    var feed = document.getElementById("feed");
+    if (feed) feed.innerHTML = "";
+    _renderTicker();
+    _renderSideRailGames();
+    await _buildStoryPool2();
+    _updateFeedEmpty();
+    _showAlert({ icon: "\u25B6", event: "Demo Mode", desc: state.enabledGames.size + " games \xB7 " + state.feedItems.length + " plays", color: "#7dd89e", duration: 3e3 });
+    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
+    state.storyRotateTimer = setInterval(_rotateStory, state.devTuning.rotateMs);
+    state.demoStartTime = Date.now();
+    updateDemoBtnLabel();
+    pollDemoFeeds();
+  }
+  async function pollDemoFeeds() {
+    if (!state.demoMode) return;
+    if (demoPaused) {
+      clearTimeout(state.demoTimer);
+      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
+      return;
+    }
+    if (state.demoPlayIdx >= state.demoPlayQueue.length) {
+      renderDemoEndScreen();
+      return;
+    }
+    var play = state.demoPlayQueue[state.demoPlayIdx];
+    await advanceDemoPlay(play);
+    state.demoPlayIdx++;
+    clearTimeout(state.demoTimer);
+    state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
+  }
+  function setDemoSpeed(ms, btn) {
+    demoSpeedMs = ms;
+    if (btn) {
+      document.querySelectorAll("#demoSpeed1x,#demoSpeed10x,#demoSpeed100x").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    }
+    if (state.demoMode && !demoPaused && state.demoTimer) {
+      clearTimeout(state.demoTimer);
+      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
+    }
+  }
+  function toggleDemoPause() {
+    demoPaused = !demoPaused;
+    var btn = document.getElementById("demoPauseBtn");
+    if (btn) btn.textContent = demoPaused ? "\u25B6 Resume" : "\u23F8 Pause";
+    if (!demoPaused && state.demoMode) pollDemoFeeds();
+  }
+  function forwardDemoPlay() {
+    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
+    clearTimeout(state.demoTimer);
+    if (!demoPaused) pollDemoFeeds();
+  }
+  function demoNextHR() {
+    var nextHRIdx = -1;
+    for (var i = state.demoPlayIdx; i < state.demoPlayQueue.length; i++) {
+      if (state.demoPlayQueue[i].event === "Home Run") {
+        nextHRIdx = i;
+        break;
+      }
+    }
+    if (nextHRIdx === -1) {
+      _showAlert({ icon: "\u26A0\uFE0F", event: "No more HRs", desc: "Reached end of demo", duration: 2e3 });
+      return;
+    }
+    state.demoPlayIdx = nextHRIdx - 1;
+    clearTimeout(state.demoTimer);
+    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
+    var play = state.demoPlayQueue[state.demoPlayIdx];
+    if (play) {
+      state.demoCurrentTime = play.ts;
+      advanceDemoPlay(play).then(function() {
+        state.demoPlayIdx++;
+        demoPaused = true;
+        var btn = document.getElementById("demoPauseBtn");
+        if (btn) btn.textContent = "\u25B6 Resume";
+      });
+    }
+  }
+  async function advanceDemoPlay(play) {
+    state.demoCurrentTime = play.ts;
+    var g = state.gameStates[play.gamePk];
+    if (!g) return;
+    var feedData = { playTime: new Date(play.ts) };
+    if (play.type === "status") {
+      feedData.type = "status";
+      feedData.icon = play.icon;
+      feedData.label = play.label;
+      feedData.sub = play.sub;
+      if (play.label === "Game underway!") {
+        g.status = "Live";
+        g.detailedState = "In Progress";
+      } else if (play.label === "Game Final") {
+        g.status = "Final";
+      }
+    } else {
+      g.inning = play.inning;
+      g.halfInning = play.halfInning;
+      g.outs = play.outs;
+      g.awayScore = play.awayScore;
+      g.homeScore = play.homeScore;
+      var badge = "";
+      if (play.event === "Home Run") badge = "HR";
+      else if (play.event === "Double") badge = "2B";
+      else if (play.event === "Triple") badge = "3B";
+      else if (play.event === "Single") badge = "1B";
+      feedData.type = "play";
+      feedData.event = play.event;
+      feedData.desc = play.desc;
+      feedData.badge = badge;
+      feedData.scoring = play.scoring;
+      feedData.inning = play.inning;
+      feedData.halfInning = play.halfInning;
+      feedData.outs = play.outs;
+      feedData.awayScore = play.awayScore;
+      feedData.homeScore = play.homeScore;
+      feedData.risp = play.risp;
+      feedData.playClass = play.playClass;
+      if (play.event === "Home Run") {
+        _playSound("hr");
+        if (play.batterId) _showPlayerCard(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
+      } else if (play.scoring) {
+        _showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + play.awayScore + ", " + g.homeAbbr + " " + play.homeScore, desc: play.desc, color: g.homePrimary, duration: 4e3 });
+        _playSound("run");
+      }
+    }
+    _addFeedItem(play.gamePk, feedData);
+    _renderTicker();
+    _renderSideRailGames();
+    await _buildStoryPool2();
+  }
+  function renderDemoEndScreen() {
+    state.demoMode = false;
+    clearTimeout(state.demoTimer);
+    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
+    var overlay = document.createElement("div");
+    overlay.className = "demo-end-screen";
+    overlay.innerHTML = '<div class="demo-end-card"><div class="demo-end-headline">Demo Complete</div><div class="demo-end-summary">' + state.demoGamesCache.length + " games &middot; " + state.demoPlayQueue.length + ' plays</div><div class="demo-end-tagline">Ready for live games? Enable Game Start Alerts in Settings.</div><button onclick="exitDemo()" style="margin-top:12px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600">Exit Demo</button></div>';
+    overlay.onclick = function(e) {
+      if (e.target === overlay) exitDemo();
+    };
+    document.body.appendChild(overlay);
+    setTimeout(function() {
+      if (document.body.contains(overlay)) exitDemo();
+    }, 4e3);
+  }
+  function exitDemo() {
+    state.demoMode = false;
+    demoPaused = false;
+    clearTimeout(state.demoTimer);
+    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
+    if (state.pulseAbortCtrl) {
+      state.pulseAbortCtrl.abort();
+      state.pulseAbortCtrl = null;
+    }
+    if (state.focusAbortCtrl) {
+      state.focusAbortCtrl.abort();
+      state.focusAbortCtrl = null;
+    }
+    var overlay = document.querySelector(".demo-end-screen");
+    if (overlay) overlay.remove();
+    document.body.classList.remove("demo-active");
+    state.demoMode = false;
+    state.gameStates = {};
+    state.feedItems = [];
+    state.enabledGames = /* @__PURE__ */ new Set();
+    state.storyPool = [];
+    state.demoPlayQueue = [];
+    state.demoPlayIdx = 0;
+    state.storyShownId = null;
+    state.demoCurrentTime = 0;
+    state.inningRecapsFired = /* @__PURE__ */ new Set();
+    state.inningRecapsPending = {};
+    state.lastInningState = {};
+    var feed = document.getElementById("feed");
+    if (feed) feed.innerHTML = "";
+    var ticker = document.getElementById("gameTicker");
+    if (ticker) ticker.innerHTML = "";
+    var mockBar = document.getElementById("mockBar");
+    if (mockBar) {
+      mockBar.style.display = "none";
+      var btnNormal = document.getElementById("btnNormal");
+      if (btnNormal) btnNormal.style.display = "";
+      var btnFast = document.getElementById("btnFast");
+      if (btnFast) btnFast.style.display = "";
+      var btnSkip = document.getElementById("btnSkip");
+      if (btnSkip) btnSkip.style.display = "";
+      var demoSpeed1x = document.getElementById("demoSpeed1x");
+      if (demoSpeed1x) demoSpeed1x.style.display = "none";
+      var demoSpeed10x = document.getElementById("demoSpeed10x");
+      if (demoSpeed10x) demoSpeed10x.style.display = "none";
+      var demoSpeed100x = document.getElementById("demoSpeed100x");
+      if (demoSpeed100x) demoSpeed100x.style.display = "none";
+      var demoNextHRBtn = document.getElementById("demoNextHRBtn");
+      if (demoNextHRBtn) demoNextHRBtn.style.display = "none";
+      var demoPauseBtn = document.getElementById("demoPauseBtn");
+      if (demoPauseBtn) demoPauseBtn.style.display = "none";
+      var demoForwardBtn = document.getElementById("demoForwardBtn");
+      if (demoForwardBtn) demoForwardBtn.style.display = "none";
+      var badge = document.getElementById("mockBarBadge");
+      if (badge) badge.textContent = "\u26A1 Mock";
+    }
+    updateDemoBtnLabel();
   }
 
   // src/carousel/rotation.js
@@ -5521,6 +6613,9 @@
     setSectionCallbacks({ renderNextGame, getSeriesInfo, localDateStr, teamCapImg, capImgError });
     setRadioCheckCallbacks({ toggleSettings });
     setYoutubeDebugCallbacks({ loadHomeYoutubeWidget });
+    setVideoDebugCallbacks({ pollPendingVideoClips, pickPlayback: pickPlayback2 });
+    setPanelsCallbacks({ buildStoryPool });
+    initPanelsLazyRendering();
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -6470,175 +7565,6 @@
           patchFeedItemWithClip(playTs, gpk, best);
         }
       });
-    }
-  }
-  function openVideoDebugPanel() {
-    var p = document.getElementById("videoDebugPanel");
-    if (!p) return;
-    p.style.display = "flex";
-    renderVideoDebugPanel();
-  }
-  function closeVideoDebugPanel() {
-    var p = document.getElementById("videoDebugPanel");
-    if (p) p.style.display = "none";
-  }
-  async function refreshVideoDebugPanel() {
-    var btn = document.getElementById("videoDebugRefreshBtn");
-    if (btn) {
-      btn.textContent = "\u23F3 Fetching...";
-      btn.disabled = true;
-    }
-    await pollPendingVideoClips();
-    renderVideoDebugPanel();
-    if (btn) {
-      btn.textContent = "\u21BB Fetch Now";
-      btn.disabled = false;
-    }
-  }
-  function renderVideoDebugPanel() {
-    var el = document.getElementById("videoDebugList");
-    if (!el) return;
-    var html = "";
-    var feed = document.getElementById("feed");
-    var cutoff = Date.now() - 2 * 60 * 60 * 1e3;
-    var hrItems = state.feedItems.filter(function(item) {
-      if (!item.data || !item.data.batterId) return false;
-      if (item.data.event !== "Home Run" && !item.data.scoring) return false;
-      return item.ts && item.ts.getTime() >= cutoff;
-    });
-    html += '<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
-    html += '<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text)">\u{1F3AF} HR / scoring plays in last 2h \u2014 ' + hrItems.length + " found</div>";
-    if (!hrItems.length) {
-      html += '<div style="padding:8px 12px;color:var(--muted)">No qualifying plays in state.feedItems yet.</div>';
-    } else {
-      hrItems.slice().reverse().forEach(function(item) {
-        var domEl = feed && feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
-        var patched = domEl && domEl.dataset.clipPatched === "1";
-        var patchBadge = patched ? '<span style="background:rgba(34,197,94,.2);color:#4ade80;padding:1px 6px;border-radius:4px">\u2713 clip attached</span>' : '<span style="background:rgba(245,158,11,.18);color:#fbbf24;padding:1px 6px;border-radius:4px">\u23F3 pending</span>';
-        var domBadge = domEl ? '<span style="color:var(--muted)">in DOM</span>' : '<span style="color:#f87171">not in DOM</span>';
-        html += '<div style="padding:7px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
-        html += patchBadge + " " + domBadge;
-        html += '<span style="color:var(--text)">' + escHtml2(item.data.batterName || "?") + "</span>";
-        html += '<span style="color:var(--muted)">' + escHtml2(item.data.event || "") + "</span>";
-        html += '<span style="color:var(--muted);font-size:.65rem">pk:' + item.gamePk + " ts:" + new Date(item.ts).toLocaleTimeString() + "</span>";
-        html += "</div>";
-      });
-    }
-    html += "</div>";
-    var pks = Object.keys(state.liveContentCache);
-    html += '<div style="margin-bottom:8px;font-weight:700;color:var(--text);font-size:.8rem">\u{1F4E6} state.liveContentCache \u2014 ' + pks.length + " game" + (pks.length === 1 ? "" : "s") + "</div>";
-    if (!pks.length) {
-      html += '<div style="color:var(--muted);padding:8px 0 4px">No content fetched yet. Click "\u21BB Fetch Now" above after HR plays appear in the feed.</div>';
-    }
-    pks.forEach(function(pk) {
-      var entry = state.liveContentCache[pk];
-      var clips = entry.items || [];
-      var age = Math.round((Date.now() - entry.fetchedAt) / 1e3);
-      html += '<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
-      html += '<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center">';
-      html += "<span>Game " + pk + ' &nbsp;<span style="color:var(--muted);font-weight:400">(' + clips.length + " video clips)</span></span>";
-      html += '<span style="color:var(--muted);font-size:.65rem;font-weight:400">fetched ' + age + "s ago</span>";
-      html += "</div>";
-      if (!clips.length) {
-        html += '<div style="padding:8px 12px;color:var(--muted)">No playable video clips returned from API.</div>';
-      } else {
-        clips.forEach(function(clip, i) {
-          var title = (clip.headline || clip.blurb || "").toLowerCase();
-          var isStatcast2 = title.indexOf("statcast") !== -1 || title.indexOf("savant") !== -1 || (clip.keywordsAll || []).some(function(kw) {
-            var v = (kw.value || kw.slug || "").toLowerCase();
-            return v === "statcast" || v === "savant";
-          });
-          var hasScoringKw = (clip.keywordsAll || []).some(function(kw) {
-            var v = kw.value || kw.slug || "";
-            return v === "home-run" || v === "scoring-play" || v === "walk-off";
-          });
-          var playerIds = (clip.keywordsAll || []).filter(function(kw) {
-            return kw.type === "player_id" || kw.slug && kw.slug.startsWith("player_id-");
-          }).map(function(kw) {
-            return kw.type === "player_id" ? kw.value : kw.slug.split("-")[1];
-          });
-          var hasPlayback = !!pickPlayback2(clip.playbacks);
-          var clipTs = clip.date ? new Date(clip.date).getTime() : null;
-          var clipAge = clipTs ? Math.round((Date.now() - clipTs) / 6e4) + "m ago" : "no date";
-          var statcastBadge = isStatcast2 ? '<span style="background:rgba(220,60,60,.25);color:#f87171;padding:1px 5px;border-radius:4px">\u{1F6AB}SC</span>' : '<span style="background:rgba(34,197,94,.15);color:#4ade80;padding:1px 5px;border-radius:4px">\u2713bc</span>';
-          var scoringBadge = hasScoringKw ? '<span style="background:rgba(245,158,11,.2);color:#fbbf24;padding:1px 5px;border-radius:4px">\u2713kw</span>' : '<span style="color:var(--muted);padding:1px 5px">\u2014kw</span>';
-          var playbackBadge = hasPlayback ? '<span style="color:#4ade80">\u2713mp4</span>' : '<span style="color:#f87171">\u2717mp4</span>';
-          html += '<div style="padding:6px 12px;border-top:1px solid var(--border);' + (isStatcast2 ? "opacity:.4" : "") + '">';
-          html += '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:3px">';
-          html += '<span style="color:var(--muted);min-width:16px">' + i + ".</span>";
-          html += statcastBadge + " " + scoringBadge + " " + playbackBadge;
-          html += '<span style="color:var(--muted);font-size:.62rem">' + clipAge + "</span>";
-          html += "</div>";
-          html += '<div style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px" title="' + escHtml2(clip.headline || "") + '">' + escHtml2(clip.headline || clip.blurb || "(no title)") + "</div>";
-          if (playerIds.length) html += '<div style="color:var(--muted);font-size:.62rem">player_ids: ' + escHtml2(playerIds.join(", ")) + "</div>";
-          var kwTax = (clip.keywordsAll || []).filter(function(kw) {
-            return kw.type === "taxonomy";
-          }).map(function(kw) {
-            return kw.value || kw.slug;
-          }).join(", ");
-          if (kwTax) html += '<div style="color:var(--muted);font-size:.62rem">taxonomy: ' + escHtml2(kwTax) + "</div>";
-          html += "</div>";
-        });
-      }
-      html += "</div>";
-    });
-    el.innerHTML = html;
-  }
-  function escHtml2(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-  function copyVideoDebug() {
-    var btn = document.getElementById("videoDebugCopyBtn");
-    function flash(t) {
-      if (btn) {
-        var o = btn.textContent;
-        btn.textContent = t;
-        setTimeout(function() {
-          btn.textContent = o;
-        }, 1800);
-      }
-    }
-    var feed = document.getElementById("feed");
-    var cutoff = Date.now() - 2 * 60 * 60 * 1e3;
-    var pendingItems = state.feedItems.filter(function(item) {
-      return item.data && item.data.batterId && (item.data.event === "Home Run" || item.data.scoring) && item.ts && item.ts.getTime() >= cutoff;
-    }).map(function(item) {
-      var domEl = feed && feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
-      return { gamePk: item.gamePk, batterName: item.data.batterName, batterId: item.data.batterId, event: item.data.event, ts: item.ts.toISOString(), clipPatched: !!(domEl && domEl.dataset.clipPatched === "1") };
-    });
-    var cacheOut = {};
-    Object.keys(state.liveContentCache).forEach(function(pk) {
-      var entry = state.liveContentCache[pk];
-      cacheOut[pk] = { fetchedAt: new Date(entry.fetchedAt).toISOString(), clipCount: (entry.items || []).length, clips: (entry.items || []).map(function(clip) {
-        var playerIds = (clip.keywordsAll || []).filter(function(kw) {
-          return kw.type === "player_id" || kw.slug && kw.slug.startsWith("player_id-");
-        }).map(function(kw) {
-          return kw.type === "player_id" ? kw.value : kw.slug.split("-")[1];
-        });
-        var taxonomy = (clip.keywordsAll || []).filter(function(kw) {
-          return kw.type === "taxonomy";
-        }).map(function(kw) {
-          return kw.value || kw.slug;
-        });
-        var isStatcast = (clip.headline || clip.blurb || "").toLowerCase().indexOf("statcast") !== -1 || taxonomy.some(function(v) {
-          return v === "statcast" || v === "savant";
-        });
-        return { id: clip.id, headline: clip.headline || clip.blurb, date: clip.date, isStatcast, hasScoringKw: taxonomy.some(function(v) {
-          return v === "home-run" || v === "scoring-play" || v === "walk-off";
-        }), playerIds, taxonomy, hasPlayback: !!pickPlayback2(clip.playbacks) };
-      }) };
-    });
-    var text = JSON.stringify({ pendingFeedItems: pendingItems, liveContentCache: cacheOut }, null, 2);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function() {
-        flash("\u2713 Copied!");
-      }).catch(function() {
-        fallbackCopy2(text);
-        flash("\u2713 Copied (fallback)");
-      });
-    } else {
-      fallbackCopy2(text);
-      flash("\u2713 Copied (fallback)");
     }
   }
   function patchFeedItemWithClip(feedItemTs, gamePk, clip) {
@@ -7727,901 +8653,6 @@
       btn.classList.remove("applied");
     }, 1500);
   }
-  function fallbackCopy2(text) {
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand("copy");
-    } catch (e) {
-    }
-    document.body.removeChild(ta);
-  }
-  function _logLevelRank(lvl) {
-    return lvl === "error" ? 3 : lvl === "warn" ? 2 : 1;
-  }
-  function _fmtLogTs(ts) {
-    var d = new Date(ts);
-    var pad = function(n) {
-      return n < 10 ? "0" + n : "" + n;
-    };
-    return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()) + "." + String(d.getMilliseconds()).padStart(3, "0");
-  }
-  function _filteredDevLog() {
-    var levelSel = (document.getElementById("logCaptureLevel") || {}).value || "all";
-    var filter = ((document.getElementById("logCaptureFilter") || {}).value || "").trim().toLowerCase();
-    var minRank = levelSel === "all" ? 0 : _logLevelRank(levelSel);
-    return devLog.filter(function(e) {
-      if (minRank && _logLevelRank(e.level) < minRank) return false;
-      if (filter) {
-        var hay = (e.msg + " " + e.src + " " + e.level).toLowerCase();
-        if (hay.indexOf(filter) === -1) return false;
-      }
-      return true;
-    });
-  }
-  function renderLogCapture() {
-    var list = document.getElementById("logCaptureList");
-    var count = document.getElementById("logCaptureCount");
-    if (!list) return;
-    if (count) count.textContent = "(" + devLog.length + ")";
-    var rows = _filteredDevLog().slice(-200);
-    if (!rows.length) {
-      list.innerHTML = '<div class="dt-label-muted" style="padding:4px 0">No log entries match.</div>';
-      return;
-    }
-    list.innerHTML = rows.slice().reverse().map(function(e) {
-      var cls = "dt-log-row" + (e.level === "error" ? " lv-error" : e.level === "warn" ? " lv-warn" : "");
-      var tag = e.src ? '<span class="lv-tag">[' + escapeHtml(e.src) + "]</span>" : "";
-      return '<div class="' + cls + '"><span class="lv-ts">' + _fmtLogTs(e.ts) + "</span>" + tag + escapeHtml(e.msg) + "</div>";
-    }).join("");
-  }
-  function copyLogAsMarkdown() {
-    var rows = _filteredDevLog();
-    var lines = ["# MLB Pulse \u2014 Log Capture", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), "Total entries: " + devLog.length + " (showing " + rows.length + " after filter)", ""];
-    if (!rows.length) {
-      lines.push("_(empty)_");
-    } else {
-      lines.push("| time | level | src | message |");
-      lines.push("|---|---|---|---|");
-      rows.forEach(function(e) {
-        var msg = e.msg.replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
-        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.level + " | " + (e.src || "-") + " | " + msg + " |");
-      });
-    }
-    var text = lines.join("\n");
-    var btn = document.getElementById("logCaptureCopyBtn");
-    function flash(msg) {
-      if (!btn) return;
-      var orig = btn.textContent;
-      btn.textContent = msg;
-      btn.style.background = "#1f7a3a";
-      setTimeout(function() {
-        btn.textContent = orig;
-        btn.style.background = "";
-      }, 1500);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function() {
-        flash("\u2713 Copied!");
-      }, function() {
-        fallbackCopy2(text);
-        flash("\u2713 Copied (fallback)");
-      });
-    } else {
-      fallbackCopy2(text);
-      flash("\u2713 Copied (fallback)");
-    }
-  }
-  function clearDevLog() {
-    devLog.length = 0;
-    renderLogCapture();
-  }
-  function _stateGameRow(g) {
-    if (!g) return "\u2014";
-    var matchup = (g.awayAbbr || "?") + " " + g.awayScore + " @ " + (g.homeAbbr || "?") + " " + g.homeScore;
-    var inn = g.status === "Live" ? " \xB7 " + (g.halfInning || "") + " " + (g.inning || "?") + " (" + g.outs + "o)" : "";
-    var bases = g.onFirst || g.onSecond || g.onThird ? " \xB7 \u{1F3C3}" + (g.onFirst ? "1" : "\xB7") + (g.onSecond ? "2" : "\xB7") + (g.onThird ? "3" : "\xB7") : "";
-    return matchup + " \xB7 " + g.status + (g.detailedState && g.detailedState !== g.status ? " (" + g.detailedState + ")" : "") + inn + bases;
-  }
-  function _stateContext() {
-    var t = typeof state.activeTeam !== "undefined" && state.activeTeam || {};
-    var section = "?";
-    try {
-      var s = document.querySelector(".section.active");
-      if (s) section = s.id;
-    } catch (e) {
-    }
-    return {
-      version: function() {
-        try {
-          return (document.title.match(/v[\d.]+/) || ["?"])[0];
-        } catch (e) {
-          return "?";
-        }
-      }(),
-      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      activeTeam: t.id ? t.short + " (id:" + t.id + ")" : "?",
-      section,
-      demoMode: typeof state.demoMode !== "undefined" ? !!state.demoMode : "?",
-      pulseInitialized: typeof state.pulseInitialized !== "undefined" ? !!state.pulseInitialized : "?",
-      pulseColorScheme: typeof pulseColorScheme !== "undefined" ? pulseColorScheme : "?",
-      themeScope: typeof state.themeScope !== "undefined" ? state.themeScope : "?",
-      themeOverride: typeof state.themeOverride !== "undefined" && state.themeOverride ? state.themeOverride.short || "set" : null,
-      themeInvert: typeof state.themeInvert !== "undefined" ? !!state.themeInvert : "?",
-      devColorLocked: typeof state.devColorLocked !== "undefined" ? !!state.devColorLocked : "?",
-      radioCurrentTeamId: getCurrentTeamId(),
-      focusGamePk: typeof state.focusGamePk !== "undefined" ? state.focusGamePk : null,
-      focusIsManual: typeof state.focusIsManual !== "undefined" ? !!state.focusIsManual : "?",
-      counts: {
-        gameStates: typeof state.gameStates !== "undefined" ? Object.keys(state.gameStates).length : 0,
-        feedItems: typeof state.feedItems !== "undefined" ? state.feedItems.length : 0,
-        storyPool: typeof state.storyPool !== "undefined" ? state.storyPool.length : 0,
-        enabledGames: typeof state.enabledGames !== "undefined" ? state.enabledGames.size : 0,
-        devLog: devLog.length
-      },
-      viewport: window.innerWidth + "\xD7" + window.innerHeight,
-      userAgent: navigator.userAgent
-    };
-  }
-  function _stateGameStatesArr() {
-    if (typeof state.gameStates === "undefined") return [];
-    return Object.keys(state.gameStates).map(function(pk) {
-      var g = state.gameStates[pk];
-      return {
-        gamePk: +pk,
-        status: g.status,
-        detailedState: g.detailedState,
-        matchup: (g.awayAbbr || "?") + "@" + (g.homeAbbr || "?"),
-        score: (g.awayScore || 0) + "-" + (g.homeScore || 0),
-        inning: (g.halfInning || "") + (g.inning || ""),
-        outs: g.outs,
-        bases: (g.onFirst ? "1" : "") + (g.onSecond ? "2" : "") + (g.onThird ? "3" : ""),
-        hits: (g.awayHits || 0) + "-" + (g.homeHits || 0),
-        enabled: typeof state.enabledGames !== "undefined" ? state.enabledGames.has(+pk) : null
-      };
-    }).sort(function(a, b) {
-      var rank = function(s) {
-        return s === "Live" ? 0 : s === "Preview" || s === "Scheduled" ? 1 : 2;
-      };
-      return rank(a.status) - rank(b.status);
-    });
-  }
-  function _stateFeedItemsArr(limit) {
-    if (typeof state.feedItems === "undefined") return [];
-    return state.feedItems.slice(0, limit || 50).map(function(fi) {
-      var d = fi.data || {};
-      return {
-        ts: fi.ts ? fi.ts.toISOString() : null,
-        gamePk: fi.gamePk,
-        type: d.type,
-        label: d.label || d.event || "",
-        desc: (d.desc || d.sub || "").slice(0, 200),
-        scoring: !!d.scoring,
-        score: (d.awayScore != null ? d.awayScore : "") + (d.homeScore != null ? "-" + d.homeScore : ""),
-        inning: d.halfInning ? d.halfInning + " " + (d.inning || "") : null
-      };
-    });
-  }
-  function _stateStoryPoolArr() {
-    if (typeof state.storyPool === "undefined") return [];
-    return state.storyPool.map(function(s) {
-      var cdRem = null;
-      if (s.lastShown && s.cooldownMs) {
-        var rem = s.cooldownMs - (Date.now() - s.lastShown);
-        cdRem = rem > 0 ? Math.round(rem / 1e3) + "s" : "ready";
-      }
-      return {
-        id: s.id,
-        type: s.type,
-        tier: s.tier,
-        priority: s.priority,
-        headline: s.headline,
-        gamePk: s.gamePk,
-        cooldownRem: cdRem,
-        lastShownAgo: s.lastShown ? Math.round((Date.now() - s.lastShown) / 1e3) + "s" : null,
-        isShown: s.id === state.storyShownId
-      };
-    }).sort(function(a, b) {
-      return (b.priority || 0) - (a.priority || 0);
-    });
-  }
-  function _stateFocusObj() {
-    return {
-      focusGamePk: typeof state.focusGamePk !== "undefined" ? state.focusGamePk : null,
-      focusIsManual: typeof state.focusIsManual !== "undefined" ? !!state.focusIsManual : "?",
-      focusedGame: typeof state.focusGamePk !== "undefined" && state.focusGamePk && typeof state.gameStates !== "undefined" && state.gameStates[state.focusGamePk] ? _stateGameRow(state.gameStates[state.focusGamePk]) : null
-    };
-  }
-  function _kvList(obj) {
-    return Object.keys(obj).map(function(k) {
-      var v = obj[k];
-      var disp = v == null ? "\u2014" : typeof v === "object" ? JSON.stringify(v) : String(v);
-      if (disp.length > 200) disp = disp.slice(0, 200) + "\u2026";
-      return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">' + escapeHtml(k) + "</span><span>" + escapeHtml(disp) + "</span></div>";
-    }).join("");
-  }
-  function _miniCopyBtn(action) {
-    return '<button data-dt-action="' + action + '" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer;font-weight:600">\u{1F4CB}</button>';
-  }
-  function _section(title, action, body) {
-    return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="dt-label">' + title + "</span>" + _miniCopyBtn(action) + "</div>" + body + "</div>";
-  }
-  function renderAppState() {
-    var body = document.getElementById("appStateBody");
-    if (!body) return;
-    var ctx = _stateContext();
-    var c = document.getElementById("appStateCounts");
-    if (c) c.textContent = "(" + ctx.counts.state.gameStates + "g \xB7 " + ctx.counts.state.feedItems + "f \xB7 " + ctx.counts.state.storyPool + "s)";
-    var gs = _stateGameStatesArr();
-    var gsBody = gs.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + gs.map(function(g) {
-      return '<div class="dt-log-row">' + escapeHtml(g.matchup) + " \xB7 " + escapeHtml(g.status) + " \xB7 " + escapeHtml(g.score) + (g.inning ? " \xB7 " + escapeHtml(g.inning) + " (" + g.outs + "o)" : "") + (g.bases ? " \xB7 \u{1F3C3}" + escapeHtml(g.bases) : "") + (g.enabled === false ? ' <span class="lv-tag">[hidden]</span>' : "") + "</div>";
-    }).join("") + "</div>" : '<div class="dt-label-muted">No games loaded.</div>';
-    var fi = _stateFeedItemsArr(30);
-    var fiBody = fi.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + fi.map(function(f) {
-      var ts = f.ts ? f.ts.slice(11, 19) : "";
-      return '<div class="dt-log-row"><span class="lv-ts">' + escapeHtml(ts) + '</span><span class="lv-tag">[' + escapeHtml(String(f.type || "?")) + "]</span>" + escapeHtml(f.label || f.desc || "") + (f.scoring ? " \u2B50" : "") + "</div>";
-    }).join("") + "</div>" : '<div class="dt-label-muted">Feed empty.</div>';
-    var sp = _stateStoryPoolArr();
-    var spBody = sp.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + sp.map(function(s) {
-      return '<div class="dt-log-row' + (s.isShown ? " lv-warn" : "") + '"><span class="lv-tag">p' + (s.priority || 0) + '</span><span class="lv-tag">[' + escapeHtml(String(s.type || "?")) + "]</span>" + escapeHtml(s.headline || "") + (s.cooldownRem ? ' <span class="lv-ts">(' + escapeHtml(s.cooldownRem) + ")</span>" : "") + (s.isShown ? " \u25C0 shown" : "") + "</div>";
-    }).join("") + "</div>" : '<div class="dt-label-muted">Story pool empty.</div>';
-    var ctxBody = '<div style="font-size:.65rem">' + _kvList({
-      version: ctx.version,
-      section: ctx.section,
-      activeTeam: ctx.activeTeam,
-      demoMode: ctx.demoMode,
-      pulseInitialized: ctx.pulseInitialized,
-      pulseColorScheme: ctx.pulseColorScheme,
-      themeScope: ctx.themeScope,
-      themeOverride: ctx.themeOverride,
-      themeInvert: ctx.themeInvert,
-      devColorLocked: ctx.devColorLocked,
-      radioCurrentTeamId: ctx.radioCurrentTeamId,
-      focusGamePk: ctx.focusGamePk,
-      focusIsManual: ctx.focusIsManual,
-      viewport: ctx.viewport
-    }) + "</div>";
-    var focusBody = '<div style="font-size:.65rem">' + _kvList(_stateFocusObj()) + "</div>";
-    var now = /* @__PURE__ */ new Date();
-    var greeting = pulseGreeting();
-    var upcoming = Object.values(state.gameStates).filter(function(g) {
-      if (!(g.status === "Preview" || g.status === "Scheduled" || g.status === "Live" && g.detailedState !== "In Progress")) return false;
-      var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
-      if (rawG && rawG.doubleHeader === "Y" && rawG.gameNumber == 2) {
-        if (Object.values(state.gameStates).some(function(s) {
-          return s.status === "Live" && s.awayId === g.awayId && s.homeId === g.homeId;
-        })) return false;
-      }
-      return true;
-    });
-    var liveGames = Object.values(state.gameStates).filter(function(g) {
-      return g.status === "Live" && g.detailedState === "In Progress";
-    });
-    var pulseInfo = {
-      now: now.toISOString().split("T")[1].split(".")[0],
-      greeting: greeting.kicker + ": " + greeting.headline,
-      liveGames: liveGames.length,
-      upcomingGames: upcoming.length,
-      enabledGames: state.enabledGames.size,
-      totalGames: Object.keys(state.gameStates).length
-    };
-    var pulseBody = '<div style="font-size:.65rem">' + _kvList(pulseInfo) + "</div>";
-    body.innerHTML = _section("Context", "copyStateContext", ctxBody) + _section("\u26A1 Pulse Diagnostics", "copyStatePulse", pulseBody) + _section("\u{1F3AF} Focus", "copyStateFocus", focusBody) + _section("\u{1F3AE} state.gameStates (" + gs.length + ")", "copyStateGames", gsBody) + _section("\u{1F4F0} state.feedItems (showing " + fi.length + " of " + ctx.counts.state.feedItems + ")", "copyStateFeed", fiBody) + _section("\u{1F4D6} state.storyPool (" + sp.length + ")", "copyStateStories", spBody);
-  }
-  function _copyToClipboard(text, btnId) {
-    var btn = btnId ? document.getElementById(btnId) : null;
-    function flash(msg) {
-      if (!btn) return;
-      var orig = btn.textContent;
-      btn.textContent = msg;
-      btn.style.background = "#1f7a3a";
-      setTimeout(function() {
-        btn.textContent = orig;
-        btn.style.background = "";
-      }, 1500);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function() {
-        flash("\u2713 Copied!");
-      }, function() {
-        fallbackCopy2(text);
-        flash("\u2713 Copied (fb)");
-      });
-    } else {
-      fallbackCopy2(text);
-      flash("\u2713 Copied (fb)");
-    }
-  }
-  function _stateAsMarkdownContext() {
-    var c = _stateContext();
-    return "## Context\n\n```json\n" + JSON.stringify(c, null, 2) + "\n```\n";
-  }
-  function _stateAsMarkdownGames() {
-    var gs = _stateGameStatesArr();
-    if (!gs.length) return "## state.gameStates\n\n_(empty)_\n";
-    var lines = ["## state.gameStates (" + gs.length + ")", "", "| gamePk | matchup | status | score | inning | bases | hits | enabled |", "|---|---|---|---|---|---|---|---|"];
-    gs.forEach(function(g) {
-      lines.push("| " + g.gamePk + " | " + g.matchup + " | " + g.status + (g.detailedState && g.detailedState !== g.status ? " (" + g.detailedState + ")" : "") + " | " + g.score + " | " + (g.inning || "-") + (g.outs != null ? " " + g.outs + "o" : "") + " | " + (g.bases || "-") + " | " + g.hits + " | " + (g.enabled == null ? "-" : g.enabled ? "y" : "n") + " |");
-    });
-    return lines.join("\n") + "\n";
-  }
-  function _stateAsMarkdownFeed(limit) {
-    var fi = _stateFeedItemsArr(limit || 50);
-    if (!fi.length) return "## state.feedItems\n\n_(empty)_\n";
-    var lines = ["## state.feedItems (" + fi.length + (typeof state.feedItems !== "undefined" && state.feedItems.length > fi.length ? " of " + state.feedItems.length : "") + ")", "", "| time | gamePk | type | label/desc | scoring |", "|---|---|---|---|---|"];
-    fi.forEach(function(f) {
-      var ts = f.ts ? f.ts.slice(11, 19) : "-";
-      var msg = (f.label || f.desc || "").replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
-      lines.push("| " + ts + " | " + f.gamePk + " | " + (f.type || "-") + " | " + msg + " | " + (f.scoring ? "y" : "") + " |");
-    });
-    return lines.join("\n") + "\n";
-  }
-  function _stateAsMarkdownStories() {
-    var sp = _stateStoryPoolArr();
-    if (!sp.length) return "## state.storyPool\n\n_(empty)_\n";
-    var lines = ["## state.storyPool (" + sp.length + ")", "", "| priority | type | tier | headline | cooldown | shown |", "|---|---|---|---|---|---|"];
-    sp.forEach(function(s) {
-      lines.push("| " + (s.priority || 0) + " | " + (s.type || "-") + " | " + (s.tier || "-") + " | " + (s.headline || "").replace(/\|/g, "\\|") + " | " + (s.cooldownRem || "-") + " | " + (s.isShown ? "\u25C0" : "") + " |");
-    });
-    return lines.join("\n") + "\n";
-  }
-  function _stateAsMarkdownFocus() {
-    return "## Focus\n\n```json\n" + JSON.stringify(_stateFocusObj(), null, 2) + "\n```\n";
-  }
-  function _stateAsMarkdownPulse() {
-    var now = /* @__PURE__ */ new Date();
-    var hour = now.getHours();
-    var greeting = pulseGreeting();
-    var upcoming = Object.values(state.gameStates).filter(function(g) {
-      if (!(g.status === "Preview" || g.status === "Scheduled" || g.status === "Live" && g.detailedState !== "In Progress")) return false;
-      var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
-      if (rawG && rawG.doubleHeader === "Y" && rawG.gameNumber == 2) {
-        if (Object.values(state.gameStates).some(function(s) {
-          return s.status === "Live" && s.awayId === g.awayId && s.homeId === g.homeId;
-        })) return false;
-      }
-      return true;
-    });
-    var liveGames = Object.values(state.gameStates).filter(function(g) {
-      return g.status === "Live" && g.detailedState === "In Progress";
-    });
-    var finalGames = Object.values(state.gameStates).filter(function(g) {
-      return g.status === "Final";
-    });
-    var lines = [
-      "## Pulse Empty State Diagnostics",
-      "",
-      "### Current Time & Greeting",
-      "| Field | Value |",
-      "|---|---|",
-      "| Now | " + now.toISOString() + " |",
-      "| Hour | " + hour + " (" + greeting.kicker + ") |",
-      "| Greeting | " + greeting.headline + " |",
-      "",
-      "### Game Counts",
-      "| State | Count |",
-      "|---|---|",
-      "| Total state.gameStates | " + Object.keys(state.gameStates).length + " |",
-      "| Enabled Games | " + state.enabledGames.size + " |",
-      "| Live (In Progress) | " + liveGames.length + " |",
-      "| Preview/Scheduled (Upcoming) | " + upcoming.length + " |",
-      "| Final | " + finalGames.length + " |",
-      "",
-      "### Why Empty State Shows",
-      "| Reason | Active |",
-      "|---|---|",
-      "| No upcoming games found | " + (upcoming.length === 0 ? '**YES** \u2014 will show "Slate complete"' : "no") + " |",
-      "| Has intermission flag | " + (typeof intermission !== "undefined" && intermission ? "**YES** \u2014 will hide hype block" : "no") + " |",
-      "| Has live games | " + (liveGames.length > 0 ? "**YES** \u2014 empty state should not show" : "no") + " |",
-      "",
-      "### All Games in state.gameStates"
-    ];
-    var gameRows = ["| gamePk | matchup | status | detailed | enabled | inning |", "|---|---|---|---|---|---|"];
-    Object.values(state.gameStates).sort(function(a, b) {
-      return (a.gameDateMs || 0) - (b.gameDateMs || 0);
-    }).forEach(function(g) {
-      var enabled = state.enabledGames.has(g.gamePk) ? "\u2713" : "\u2717";
-      var inning = g.status === "Live" ? " " + g.inning + "i (" + g.halfInning.charAt(0) + ")" : "-";
-      gameRows.push("| " + g.gamePk + " | " + g.awayAbbr + " @ " + g.homeAbbr + " | " + g.status + " | " + g.detailedState + " | " + enabled + " | " + inning + " |");
-    });
-    return lines.join("\n") + "\n" + gameRows.join("\n") + "\n";
-  }
-  function copyAppStateAsMarkdown() {
-    var parts = [
-      "# MLB Pulse \u2014 App State Snapshot",
-      "Captured: " + (/* @__PURE__ */ new Date()).toISOString(),
-      "",
-      _stateAsMarkdownPulse(),
-      _stateAsMarkdownContext(),
-      _stateAsMarkdownFocus(),
-      _stateAsMarkdownGames(),
-      _stateAsMarkdownFeed(50),
-      _stateAsMarkdownStories()
-    ];
-    _copyToClipboard(parts.join("\n"), "appStateCopyBtn");
-  }
-  function _shortUrl(u) {
-    if (!u) return "?";
-    try {
-      var parsed = new URL(u, window.location.href);
-      var host = parsed.host || "";
-      var path = parsed.pathname.replace(/^\/api\/v1(\.1)?/, "/v1$1");
-      var q = parsed.search ? parsed.search.length > 40 ? parsed.search.slice(0, 40) + "\u2026" : parsed.search : "";
-      return (host ? host + " " : "") + path + q;
-    } catch (e) {
-      return u.length > 120 ? u.slice(0, 120) + "\u2026" : u;
-    }
-  }
-  function _fmtBytes(n) {
-    if (n == null) return "-";
-    if (n < 1024) return n + "b";
-    if (n < 1048576) return (n / 1024).toFixed(1) + "k";
-    return (n / 1048576).toFixed(2) + "M";
-  }
-  function renderNetTrace() {
-    var list = document.getElementById("netTraceList");
-    var count = document.getElementById("netTraceCount");
-    if (!list) return;
-    if (count) count.textContent = "(" + devNetLog.length + ")";
-    if (!devNetLog.length) {
-      list.innerHTML = '<div class="dt-label-muted" style="padding:4px 0">No fetches captured yet.</div>';
-      return;
-    }
-    list.innerHTML = devNetLog.slice().reverse().map(function(e) {
-      var ts = _fmtLogTs(e.ts);
-      var st = e.status == null ? e.ok === false ? "ERR" : "\u2026" : e.status;
-      var cls = "dt-log-row";
-      if (e.ok === false) cls += " lv-error";
-      else if (e.status >= 400) cls += " lv-error";
-      else if (e.status >= 300) cls += " lv-warn";
-      var ms = e.ms != null ? e.ms + "ms" : "-";
-      var size = _fmtBytes(e.sizeBytes);
-      var err = e.errorMsg ? '<div style="margin-left:24px;color:#ff6b6b">' + escapeHtml(e.errorMsg) + "</div>" : "";
-      return '<div class="' + cls + '" title="' + escapeHtml(e.url || "") + '"><span class="lv-ts">' + ts + '</span><span class="lv-tag">' + escapeHtml(e.method) + " " + st + '</span><span class="lv-ts">' + ms + " \xB7 " + size + "</span> " + escapeHtml(_shortUrl(e.url)) + err + "</div>";
-    }).join("");
-  }
-  function copyNetTraceAsMarkdown() {
-    var lines = ["# MLB Pulse \u2014 Network Trace", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), "Total entries: " + devNetLog.length + " (cap " + DEV_NET_CAP + ")", ""];
-    if (!devNetLog.length) {
-      lines.push("_(empty)_");
-    } else {
-      lines.push("| time | method | status | ms | size | url |");
-      lines.push("|---|---|---|---|---|---|");
-      devNetLog.forEach(function(e) {
-        var url = (e.url || "").replace(/\|/g, "\\|");
-        var status = e.status == null ? e.ok === false ? "ERR" : "-" : e.status;
-        var ms = e.ms != null ? e.ms : "-";
-        var size = _fmtBytes(e.sizeBytes);
-        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.method + " | " + status + " | " + ms + " | " + size + " | " + url + " |");
-      });
-      var failed = devNetLog.filter(function(e) {
-        return e.ok === false;
-      });
-      if (failed.length) {
-        lines.push("", "## Failed requests (" + failed.length + ")", "");
-        failed.forEach(function(e) {
-          lines.push("- `" + e.method + " " + (e.status || "ERR") + "` " + e.url + (e.errorMsg ? " \u2014 " + e.errorMsg : ""));
-        });
-      }
-    }
-    _copyToClipboard(lines.join("\n"), "netTraceCopyBtn");
-  }
-  function clearNetTrace() {
-    devNetLog.length = 0;
-    renderNetTrace();
-  }
-  function _lsKeys() {
-    var keys = [];
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && k.indexOf("mlb_") === 0) keys.push(k);
-      }
-    } catch (e) {
-    }
-    keys.sort();
-    return keys;
-  }
-  function _lsEntry(k) {
-    var raw = null, parsed = null, isJson = false, bytes = 0;
-    try {
-      raw = localStorage.getItem(k);
-    } catch (e) {
-      raw = null;
-    }
-    if (raw != null) {
-      bytes = raw.length;
-      try {
-        parsed = JSON.parse(raw);
-        isJson = parsed !== null && typeof parsed === "object";
-      } catch (e) {
-      }
-    }
-    return { key: k, raw, parsed, isJson, bytes };
-  }
-  function renderStorageInspector() {
-    var list = document.getElementById("storageList");
-    var count = document.getElementById("storageCount");
-    if (!list) return;
-    var keys = _lsKeys();
-    if (count) count.textContent = "(" + keys.length + ")";
-    if (!keys.length) {
-      list.innerHTML = '<div class="dt-label-muted">No mlb_* keys present.</div>';
-      return;
-    }
-    list.innerHTML = keys.map(function(k) {
-      var e = _lsEntry(k);
-      var preview;
-      if (e.isJson) {
-        preview = '<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml(JSON.stringify(e.parsed, null, 2)) + "</pre></details>";
-      } else if (e.raw != null) {
-        var disp = e.raw.length > 140 ? e.raw.slice(0, 140) + "\u2026" : e.raw;
-        preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">' + escapeHtml(disp) + "</div>";
-      } else preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">(null)</div>';
-      return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">' + escapeHtml(k) + '</span><span class="dt-label-muted">' + _fmtBytes(e.bytes) + '</span><button data-dt-action="clearLsKey" data-ls-key="' + escapeHtml(k) + '" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">\u{1F5D1}</button></div>' + preview + "</div>";
-    }).join("");
-  }
-  function clearLsKey(key) {
-    if (!key) return;
-    if (!confirm('Remove localStorage key "' + key + '"? This may log you out / reset settings depending on the key.')) return;
-    try {
-      localStorage.removeItem(key);
-      pushDevLog("warn", "storage", ["removed key: " + key]);
-    } catch (e) {
-    }
-    renderStorageInspector();
-  }
-  function copyStorageAsMarkdown() {
-    var keys = _lsKeys();
-    var lines = ["# MLB Pulse \u2014 localStorage Snapshot", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), "Keys: " + keys.length, ""];
-    if (!keys.length) lines.push("_(no mlb_* keys)_");
-    else {
-      lines.push("| key | bytes | json | preview |");
-      lines.push("|---|---|---|---|");
-      keys.forEach(function(k) {
-        var e = _lsEntry(k);
-        var prev = (e.raw || "").replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
-        if (prev.length > 120) prev = prev.slice(0, 120) + "\u2026";
-        lines.push("| `" + k + "` | " + _fmtBytes(e.bytes) + " | " + (e.isJson ? "y" : "") + " | " + prev + " |");
-      });
-      lines.push("", "## Full values", "");
-      keys.forEach(function(k) {
-        var e = _lsEntry(k);
-        lines.push("### `" + k + "` (" + _fmtBytes(e.bytes) + ")");
-        if (e.isJson) lines.push("```json", JSON.stringify(e.parsed, null, 2), "```", "");
-        else lines.push("```", e.raw == null ? "(null)" : e.raw, "```", "");
-      });
-    }
-    _copyToClipboard(lines.join("\n"), "storageCopyBtn");
-  }
-  var _swState = { scope: null, scriptURL: null, controller: null, hasUpdate: false, lastUpdated: null, error: null };
-  function _refreshSWState() {
-    if (!("serviceWorker" in navigator)) {
-      _swState.error = "Service Worker API not supported.";
-      return Promise.resolve();
-    }
-    return navigator.serviceWorker.getRegistration().then(function(reg) {
-      if (!reg) {
-        _swState.error = "No registration found.";
-        return;
-      }
-      _swState.scope = reg.scope;
-      _swState.scriptURL = reg.active && reg.active.scriptURL || reg.installing && reg.installing.scriptURL || reg.waiting && reg.waiting.scriptURL || null;
-      _swState.controller = navigator.serviceWorker.controller ? navigator.serviceWorker.controller.scriptURL : null;
-      _swState.hasUpdate = !!reg.waiting;
-      _swState.error = null;
-    }, function(err) {
-      _swState.error = err && err.message || String(err);
-    });
-  }
-  function renderSWInspector() {
-    var info = document.getElementById("swInfo");
-    if (!info) return;
-    info.innerHTML = '<div class="dt-label-muted">Loading\u2026</div>';
-    _refreshSWState().then(function() {
-      var rows = {
-        "Supported": "serviceWorker" in navigator,
-        "Scope": _swState.scope || "\u2014",
-        "Active script": _swState.scriptURL || "\u2014",
-        "Controller": _swState.controller || "(uncontrolled)",
-        "Update waiting": _swState.hasUpdate ? "YES \u2014 reload to activate" : "no",
-        "Error": _swState.error || "\u2014"
-      };
-      info.innerHTML = _kvList(rows);
-    });
-  }
-  function copySWStateAsMarkdown() {
-    _refreshSWState().then(function() {
-      var lines = ["# MLB Pulse \u2014 Service Worker", "Captured: " + (/* @__PURE__ */ new Date()).toISOString(), ""];
-      lines.push("- Supported: " + ("serviceWorker" in navigator));
-      lines.push("- Scope: " + (_swState.scope || "-"));
-      lines.push("- Active script: " + (_swState.scriptURL || "-"));
-      lines.push("- Controller: " + (_swState.controller || "(uncontrolled)"));
-      lines.push("- Update waiting: " + (_swState.hasUpdate ? "YES" : "no"));
-      if (_swState.error) lines.push("- Error: " + _swState.error);
-      _copyToClipboard(lines.join("\n"), "swCopyBtn");
-    });
-  }
-  function swForceUpdate() {
-    if (!("serviceWorker" in navigator)) {
-      alert("Service Worker not supported.");
-      return;
-    }
-    navigator.serviceWorker.getRegistration().then(function(reg) {
-      if (!reg) {
-        alert("No SW registration found.");
-        return;
-      }
-      pushDevLog("log", "sw", ["Force update requested"]);
-      reg.update().then(function() {
-        pushDevLog("log", "sw", ["update() resolved \xB7 waiting=" + !!reg.waiting]);
-        if (reg.waiting) {
-          try {
-            reg.waiting.postMessage({ type: "SKIP_WAITING" });
-          } catch (e) {
-          }
-          alert("Update found. Reload the page to activate the new version.");
-        } else {
-          alert("No new update available \u2014 already on latest.");
-        }
-        renderSWInspector();
-      }, function(err) {
-        pushDevLog("error", "sw", ["update() failed: " + (err && err.message || err)]);
-        alert("Update failed: " + (err && err.message || err));
-      });
-    });
-  }
-  function swUnregisterAndReload() {
-    if (!confirm("Unregister the service worker and reload? This forces a fresh load (clears cached app shell).")) return;
-    if (!("serviceWorker" in navigator)) {
-      location.reload();
-      return;
-    }
-    navigator.serviceWorker.getRegistration().then(function(reg) {
-      var done = function() {
-        try {
-          if (window.caches) {
-            caches.keys().then(function(keys) {
-              keys.forEach(function(k) {
-                caches.delete(k);
-              });
-              location.reload(true);
-            });
-          } else location.reload(true);
-        } catch (e) {
-          location.reload(true);
-        }
-      };
-      if (reg) {
-        reg.unregister().then(done, done);
-      } else done();
-    });
-  }
-  function testLocalNotification() {
-    if (!("Notification" in window)) {
-      alert("Notifications not supported on this device.");
-      return;
-    }
-    function show() {
-      if (!("serviceWorker" in navigator)) {
-        alert("Service Worker not supported.");
-        return;
-      }
-      navigator.serviceWorker.getRegistration().then(function(reg) {
-        if (!reg) {
-          alert("No SW registered yet \u2014 reload and try again.");
-          return;
-        }
-        reg.showNotification("MLB Pulse \xB7 Dev test", {
-          body: "Local test fired " + (/* @__PURE__ */ new Date()).toLocaleTimeString() + " \xB7 server pipeline NOT exercised",
-          icon: "./icons/icon-192.png",
-          badge: "./icons/icon-192.png",
-          tag: "mlb-dev-test",
-          renotify: true
-        }).then(
-          function() {
-            pushDevLog("log", "notif", ["local test notification fired"]);
-          },
-          function(err) {
-            pushDevLog("error", "notif", ["showNotification failed: " + (err && err.message || err)]);
-            alert("showNotification failed: " + (err && err.message || err));
-          }
-        );
-      });
-    }
-    if (Notification.permission === "granted") show();
-    else if (Notification.permission === "denied") alert("Notifications are blocked. Re-enable in browser/site settings.");
-    else Notification.requestPermission().then(function(p) {
-      if (p === "granted") show();
-      else alert("Permission not granted (" + p + ").");
-    });
-  }
-  function _liveGamesForControls() {
-    if (typeof state.gameStates === "undefined") return [];
-    return Object.keys(state.gameStates).map(function(pk) {
-      return { pk: +pk, g: state.gameStates[pk] };
-    }).filter(function(x) {
-      return x.g.status === "Live";
-    }).sort(function(a, b) {
-      return (b.g.inning || 0) - (a.g.inning || 0);
-    });
-  }
-  function renderLiveControls() {
-    var body = document.getElementById("liveControlsBody");
-    if (!body) return;
-    var live = _liveGamesForControls();
-    if (!live.length) {
-      body.innerHTML = '<div class="dt-label-muted">No live games right now. Try Demo Mode (Shift+M) to populate state.gameStates with sample data.</div>';
-      return;
-    }
-    var opts = live.map(function(x) {
-      return '<option value="' + x.pk + '">' + escapeHtml(x.g.awayAbbr + " @ " + x.g.homeAbbr + " \xB7 " + (x.g.halfInning || "") + " " + (x.g.inning || "?") + " \xB7 " + x.g.awayScore + "-" + x.g.homeScore) + "</option>";
-    }).join("");
-    var curFocus = typeof state.focusGamePk !== "undefined" && state.focusGamePk ? state.focusGamePk : "";
-    body.innerHTML = '<div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F3AF} Force Focus</div><div class="dt-label-muted" style="margin-bottom:6px">Override auto-scoring and pin Focus Mode to a specific live game. Resets via the \u21A9 AUTO pill in the focus card.</div><div style="display:flex;gap:6px;align-items:center"><select id="forceFocusSel" class="dt-input" style="flex:1">' + opts + '</select><button data-dt-action="forceFocusGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Apply</button></div>' + (curFocus ? '<div class="dt-label-muted" style="margin-top:4px">Current focus: gamePk ' + curFocus + "</div>" : "") + '</div><div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F4D6} Force Inning Recap</div><div class="dt-label-muted" style="margin-bottom:6px">Queues an inning_recap story so it surfaces in the next pool build. Replaces the manual <code>state.inningRecapsPending[\u2026]</code> + <code>buildStoryPool()</code> console workflow.</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="forceRecapGame" class="dt-input" style="flex:2;min-width:140px">' + opts + '</select><select id="forceRecapHalf" class="dt-input" style="flex:1;min-width:60px"><option value="top">Top</option><option value="bottom">Bottom</option></select><input id="forceRecapInning" type="number" min="1" max="20" placeholder="Inn" class="dt-input" style="flex:0 0 60px"><button data-dt-action="forceRecapGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Queue</button></div></div>';
-    var sel = document.getElementById("forceRecapGame"), inn = document.getElementById("forceRecapInning"), half = document.getElementById("forceRecapHalf");
-    function sync() {
-      if (!sel || !inn || !half) return;
-      var g = state.gameStates[+sel.value];
-      if (g) {
-        inn.value = g.inning || 1;
-        half.value = (g.halfInning || "top").toLowerCase().indexOf("bot") === 0 ? "bottom" : "top";
-      }
-    }
-    if (sel) sel.addEventListener("change", sync);
-    sync();
-  }
-  function forceFocusGo() {
-    var sel = document.getElementById("forceFocusSel");
-    if (!sel || !sel.value) return;
-    var pk = +sel.value;
-    setFocusGameManual(pk);
-    pushDevLog("log", "focus", ["Force Focus applied \xB7 gamePk=" + pk]);
-    renderLiveControls();
-  }
-  function copyDiagnosticSnapshot() {
-    var ctx = _stateContext();
-    var lsKeys = _lsKeys();
-    var lsSizes = lsKeys.map(function(k) {
-      var e = _lsEntry(k);
-      return "- `" + k + "`: " + _fmtBytes(e.bytes) + (e.isJson ? " (json)" : "");
-    }).join("\n") || "_(none)_";
-    var swSummary = "_not yet fetched_";
-    if (_swState && (_swState.scope || _swState.error)) {
-      swSummary = [
-        "- Scope: " + (_swState.scope || "-"),
-        "- Active: " + (_swState.scriptURL || "-"),
-        "- Controller: " + (_swState.controller || "(uncontrolled)"),
-        "- Update waiting: " + (_swState.hasUpdate ? "YES" : "no"),
-        _swState.error ? "- Error: " + _swState.error : null
-      ].filter(Boolean).join("\n");
-    }
-    var counts = ctx.counts;
-    var logSummary = devLog.length ? function() {
-      var rows = devLog.slice(-50);
-      var lines = ["| time | level | src | message |", "|---|---|---|---|"];
-      rows.forEach(function(e) {
-        var msg = e.msg.replace(/\|/g, "\\|").replace(/\n/g, " \u21B5 ");
-        if (msg.length > 200) msg = msg.slice(0, 200) + "\u2026";
-        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.level + " | " + (e.src || "-") + " | " + msg + " |");
-      });
-      return lines.join("\n");
-    }() : "_(empty)_";
-    var netSummary = devNetLog.length ? function() {
-      var lines = ["| time | method | status | ms | size | url |", "|---|---|---|---|---|---|"];
-      devNetLog.forEach(function(e) {
-        var url = (e.url || "").replace(/\|/g, "\\|");
-        var status = e.status == null ? e.ok === false ? "ERR" : "-" : e.status;
-        lines.push("| " + _fmtLogTs(e.ts) + " | " + e.method + " | " + status + " | " + (e.ms || "-") + " | " + _fmtBytes(e.sizeBytes) + " | " + url + " |");
-      });
-      var failed = devNetLog.filter(function(e) {
-        return e.ok === false;
-      });
-      if (failed.length) {
-        lines.push("", "**Failed:** " + failed.length);
-        failed.forEach(function(e) {
-          lines.push("- `" + e.method + " " + (e.status || "ERR") + "` " + e.url + (e.errorMsg ? " \u2014 " + e.errorMsg : ""));
-        });
-      }
-      return lines.join("\n");
-    }() : "_(empty)_";
-    var parts = [
-      "# MLB Pulse \u2014 Diagnostic Snapshot",
-      "Generated: " + (/* @__PURE__ */ new Date()).toISOString(),
-      "Version: " + ctx.version + " \xB7 Section: " + ctx.section + " \xB7 Active team: " + ctx.state.activeTeam,
-      "state.demoMode: " + ctx.state.demoMode + " \xB7 state.pulseInitialized: " + ctx.state.pulseInitialized + " \xB7 pulseColorScheme: " + ctx.pulseColorScheme + " \xB7 state.themeScope: " + ctx.state.themeScope,
-      "Focus: gamePk=" + (ctx.state.focusGamePk || "(auto)") + " \xB7 manual=" + ctx.state.focusIsManual + " \xB7 radioCurrentTeamId=" + (ctx.radioCurrentTeamId || "-"),
-      "Viewport: " + ctx.viewport,
-      "UA: " + ctx.userAgent,
-      "",
-      "## Counts",
-      "- state.gameStates: " + counts.state.gameStates,
-      "- state.feedItems: " + counts.state.feedItems,
-      "- state.storyPool: " + counts.state.storyPool,
-      "- state.enabledGames: " + counts.state.enabledGames,
-      "- devLog: " + counts.devLog,
-      "- devNetLog: " + devNetLog.length,
-      "",
-      _stateAsMarkdownContext(),
-      _stateAsMarkdownFocus(),
-      _stateAsMarkdownGames(),
-      _stateAsMarkdownFeed(50),
-      _stateAsMarkdownStories(),
-      "## Service Worker",
-      "",
-      swSummary,
-      "",
-      "## localStorage sizes",
-      "",
-      lsSizes,
-      "",
-      "## Last 50 logs",
-      "",
-      logSummary,
-      "",
-      "## Last " + devNetLog.length + " network calls",
-      "",
-      netSummary
-    ];
-    _refreshSWState().catch(function() {
-    });
-    _copyToClipboard(parts.join("\n"), "diagSnapshotBtn");
-  }
-  function forceRecapGo() {
-    var sel = document.getElementById("forceRecapGame"), half = document.getElementById("forceRecapHalf"), inn = document.getElementById("forceRecapInning");
-    if (!sel || !half || !inn || !sel.value) {
-      alert("Pick a game first.");
-      return;
-    }
-    var pk = +sel.value, inning = parseInt(inn.value, 10), halfInning = (half.value || "top").toLowerCase();
-    if (!inning || inning < 1) {
-      alert("Enter a valid inning number.");
-      return;
-    }
-    var key = pk + "_" + inning + "_" + halfInning;
-    if (typeof state.inningRecapsFired !== "undefined") state.inningRecapsFired.delete && state.inningRecapsFired.delete(key);
-    if (typeof state.inningRecapsPending !== "undefined") {
-      state.inningRecapsPending[key] = { gamePk: pk, inning, halfInning };
-      pushDevLog("log", "recap", ["Queued recap \xB7 " + key]);
-    }
-    if (typeof buildStoryPool === "function") buildStoryPool();
-    alert("Recap queued for " + key + ". Wait for the next carousel rotation (or open Pulse to see it sooner).");
-  }
-  document.addEventListener("DOMContentLoaded", function() {
-    var stateDet = document.getElementById("appStateDetails");
-    if (stateDet) stateDet.addEventListener("toggle", function() {
-      if (stateDet.open) renderAppState();
-    });
-    var netDet = document.getElementById("netTraceDetails");
-    if (netDet) netDet.addEventListener("toggle", function() {
-      if (netDet.open) renderNetTrace();
-    });
-    var stoDet = document.getElementById("storageDetails");
-    if (stoDet) stoDet.addEventListener("toggle", function() {
-      if (stoDet.open) renderStorageInspector();
-    });
-    var swDet = document.getElementById("swDetails");
-    if (swDet) swDet.addEventListener("toggle", function() {
-      if (swDet.open) renderSWInspector();
-    });
-    var lcDet = document.getElementById("liveControlsDetails");
-    if (lcDet) lcDet.addEventListener("toggle", function() {
-      if (lcDet.open) renderLiveControls();
-    });
-    var det = document.getElementById("logCaptureDetails");
-    if (!det) return;
-    det.addEventListener("toggle", function() {
-      if (det.open) renderLogCapture();
-    });
-    var lvl = document.getElementById("logCaptureLevel");
-    if (lvl) lvl.addEventListener("change", renderLogCapture);
-    var f = document.getElementById("logCaptureFilter");
-    if (f) f.addEventListener("input", renderLogCapture);
-  });
   function toggleDevTools() {
     var p = document.getElementById("devToolsPanel");
     var opening = p.style.display !== "block";
