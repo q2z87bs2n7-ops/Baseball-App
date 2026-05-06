@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { SEASON, MLB_BASE } from '../config/constants.js';
 
-let carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null };
+let carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null };
 function setCarouselCallbacks(callbacks) {
   Object.assign(carouselCallbacks, callbacks);
 }
@@ -200,7 +200,7 @@ function genStreakStories(){
 }
 
 async function genMultiHitDay(){
-  var out=[], dateStr=localDateStr(getEffectiveDate());
+  var out=[], dateStr=carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
   var playerIds=Object.keys(state.dailyHitsTracker);
   for(var i=0;i<playerIds.length;i++){
     var batterId=playerIds[i];
@@ -237,7 +237,7 @@ function genDailyLeaders(){
     {key:'wins',           label:'Pitching Wins Leaders', icon:'⚾', fmtVal:null},
     {key:'saves',          label:'Pitching Saves Leaders',icon:'⚾', fmtVal:null},
   ];
-  var today=localDateStr(getEffectiveDate());
+  var today=carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
   cats.forEach(function(cat){
     var list=state.dailyLeadersCache[cat.key];
     if(!list||!list.length) return;
@@ -324,11 +324,11 @@ async function loadProbablePitcherStats(){
 }
 
 function genProbablePitchers(){
-  var out=[], today=localDateStr(getEffectiveDate());
+  var out=[], today=carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
   var games=[];
-  if(state.demoMode&&DEBUG) console.log('Demo: genProbablePitchers filtering to date',today,'found',Object.values(state.gameStates).filter(g=>localDateStr(new Date(g.gameDateMs))===today).length,'matching games');
+  if(state.demoMode&&DEBUG) console.log('Demo: genProbablePitchers filtering to date',today,'found',Object.values(state.gameStates).filter(g=>carouselCallbacks.localDateStr(new Date(g.gameDateMs))===today).length,'matching games');
   Object.values(state.gameStates).forEach(function(g){
-    if(localDateStr(new Date(g.gameDateMs))===today&&g.awayAbbr&&g.homeAbbr&&g.status!=='Live'&&g.status!=='Final') {
+    if(carouselCallbacks.localDateStr(new Date(g.gameDateMs))===today&&g.awayAbbr&&g.homeAbbr&&g.status!=='Live'&&g.status!=='Final') {
       var rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
       if(rawG&&rawG.doubleHeader==='Y'&&rawG.gameNumber===2){
         var game1Live=Object.values(state.gameStates).some(function(s){
@@ -807,9 +807,9 @@ function genLiveWinProbStories(){
 }
 
 function genDailyIntro(){
-  var todayStr=localDateStr(getEffectiveDate());
+  var todayStr=carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
   var todayGames=Object.values(state.gameStates).filter(function(g){
-    return g.gameDateMs && localDateStr(new Date(g.gameDateMs))===todayStr;
+    return g.gameDateMs && carouselCallbacks.localDateStr(new Date(g.gameDateMs))===todayStr;
   });
   if(!todayGames.length) return [];
   var liveCount =todayGames.filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';}).length;

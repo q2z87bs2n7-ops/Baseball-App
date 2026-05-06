@@ -1523,7 +1523,7 @@
   }
 
   // src/carousel/generators.js
-  var carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null };
+  var carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null };
   function setCarouselCallbacks(callbacks) {
     Object.assign(carouselCallbacks, callbacks);
   }
@@ -1742,7 +1742,7 @@
     return out;
   }
   async function genMultiHitDay() {
-    var out = [], dateStr = localDateStr(getEffectiveDate());
+    var out = [], dateStr = carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
     var playerIds = Object.keys(state.dailyHitsTracker);
     for (var i = 0; i < playerIds.length; i++) {
       var batterId = playerIds[i];
@@ -1800,7 +1800,7 @@
       { key: "wins", label: "Pitching Wins Leaders", icon: "\u26BE", fmtVal: null },
       { key: "saves", label: "Pitching Saves Leaders", icon: "\u26BE", fmtVal: null }
     ];
-    var today = localDateStr(getEffectiveDate());
+    var today = carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
     cats.forEach(function(cat) {
       var list = state.dailyLeadersCache[cat.key];
       if (!list || !list.length) return;
@@ -1890,11 +1890,11 @@
     }));
   }
   function genProbablePitchers() {
-    var out = [], today = localDateStr(getEffectiveDate());
+    var out = [], today = carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
     var games = [];
-    if (state.demoMode && DEBUG) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(state.gameStates).filter((g) => localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
+    if (state.demoMode && DEBUG) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(state.gameStates).filter((g) => carouselCallbacks.localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
     Object.values(state.gameStates).forEach(function(g) {
-      if (localDateStr(new Date(g.gameDateMs)) === today && g.awayAbbr && g.homeAbbr && g.status !== "Live" && g.status !== "Final") {
+      if (carouselCallbacks.localDateStr(new Date(g.gameDateMs)) === today && g.awayAbbr && g.homeAbbr && g.status !== "Live" && g.status !== "Final") {
         var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
         if (rawG && rawG.doubleHeader === "Y" && rawG.gameNumber === 2) {
           var game1Live = Object.values(state.gameStates).some(function(s) {
@@ -2536,9 +2536,9 @@
     return out;
   }
   function genDailyIntro() {
-    var todayStr = localDateStr(getEffectiveDate());
+    var todayStr = carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
     var todayGames = Object.values(state.gameStates).filter(function(g) {
-      return g.gameDateMs && localDateStr(new Date(g.gameDateMs)) === todayStr;
+      return g.gameDateMs && carouselCallbacks.localDateStr(new Date(g.gameDateMs)) === todayStr;
     });
     if (!todayGames.length) return [];
     var liveCount = todayGames.filter(function(g) {
@@ -2854,7 +2854,7 @@
     }
     return state.boxscoreCache[gamePk];
   }
-  function getEffectiveDate2() {
+  function getEffectiveDate() {
     return state.demoMode && state.demoDate ? state.demoDate : /* @__PURE__ */ new Date();
   }
   function initLeaguePulse() {
@@ -2862,7 +2862,7 @@
     initReal();
   }
   function initReal() {
-    setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore });
+    setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore, localDateStr, getEffectiveDate });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -2871,9 +2871,9 @@
     if (!state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6) {
       var _d = /* @__PURE__ */ new Date();
       _d.setDate(_d.getDate() - 1);
-      state.pollDateStr = localDateStr2(_d);
+      state.pollDateStr = localDateStr(_d);
     } else {
-      state.pollDateStr = localDateStr2(getEffectiveDate2());
+      state.pollDateStr = localDateStr(getEffectiveDate());
     }
     loadRoster();
     loadOnThisDayCache();
@@ -2921,12 +2921,12 @@
     var isMidnightWindow = !state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6;
     if (!hasLive) {
       var hasGamesFromCurrentDate = state.pollDateStr && Object.values(state.gameStates).some(function(g) {
-        return g.gameDateMs && localDateStr2(new Date(g.gameDateMs)) === state.pollDateStr;
+        return g.gameDateMs && localDateStr(new Date(g.gameDateMs)) === state.pollDateStr;
       });
       if (!hasGamesFromCurrentDate && !isMidnightWindow) {
-        state.pollDateStr = localDateStr2(getEffectiveDate2());
+        state.pollDateStr = localDateStr(getEffectiveDate());
       } else if (!isMidnightWindow && isPostSlate()) {
-        var todayStr = localDateStr2(getEffectiveDate2());
+        var todayStr = localDateStr(getEffectiveDate());
         if (state.pollDateStr < todayStr) {
           pruneStaleGames(todayStr);
           state.pollDateStr = todayStr;
@@ -2948,7 +2948,7 @@
       if ((!games.length || isMidnightWindow && !hasLiveInFetch) && !hasLive) {
         var yesterday = /* @__PURE__ */ new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        var yDateStr = localDateStr2(yesterday);
+        var yDateStr = localDateStr(yesterday);
         var yr = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + yDateStr + "&hydrate=linescore,team,probablePitcher", { signal: sig });
         if (!yr.ok) throw new Error(yr.status);
         var yd = await yr.json();
@@ -3288,10 +3288,10 @@
   function renderSideRailGames() {
     var upcomingHtml = "", completedHtml = "";
     var upcomingGames = [], completedGames = [];
-    var filterDate = state.demoMode ? localDateStr2(state.demoDate) : localDateStr2(/* @__PURE__ */ new Date());
+    var filterDate = state.demoMode ? localDateStr(state.demoDate) : localDateStr(/* @__PURE__ */ new Date());
     if (state.demoMode && DEBUG2) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(state.gameStates).length, "total games");
     Object.values(state.gameStates).forEach(function(g) {
-      if (state.demoMode && localDateStr2(new Date(g.gameDateMs)) !== filterDate) return;
+      if (state.demoMode && localDateStr(new Date(g.gameDateMs)) !== filterDate) return;
       if (g.status === "Live") return;
       if (g.status === "Final") completedGames.push(g);
       else upcomingGames.push(g);
@@ -4778,7 +4778,7 @@
     tick();
     state.countdownTimer = setInterval(tick, 3e4);
   }
-  function localDateStr2(d) {
+  function localDateStr(d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function toggleGame(gamePk) {
@@ -4897,7 +4897,7 @@
     Object.keys(state.gameStates).forEach(function(pk) {
       var g = state.gameStates[pk];
       if (g.status !== "Final" || !g.gameDateMs) return;
-      var gDate = localDateStr2(new Date(g.gameDateMs));
+      var gDate = localDateStr(new Date(g.gameDateMs));
       if (gDate < beforeDateStr) {
         delete state.gameStates[pk];
         state.enabledGames.delete(+pk);
@@ -4916,7 +4916,7 @@
       var seed = state.pollDateStr ? state.pollDateStr.split("-").map(Number) : null;
       var nextDate = seed ? new Date(seed[0], seed[1] - 1, seed[2]) : /* @__PURE__ */ new Date();
       nextDate.setDate(nextDate.getDate() + 1);
-      var ts = localDateStr2(nextDate);
+      var ts = localDateStr(nextDate);
       var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + ts + "&hydrate=team");
       if (!r.ok) throw new Error(r.status);
       var d = await r.json();
@@ -7946,9 +7946,9 @@
       return x.gamePk === gamePk;
     });
     if (!g) return;
-    var ds = localDateStr2(new Date(g.gameDate));
+    var ds = localDateStr(new Date(g.gameDate));
     var dayGames = state.scheduleData.filter(function(x) {
-      return localDateStr2(new Date(x.gameDate)) === ds;
+      return localDateStr(new Date(x.gameDate)) === ds;
     }).sort(function(a, b) {
       return a.gamePk - b.gamePk;
     });
@@ -8973,7 +8973,7 @@
       playSound,
       showPlayerCard,
       rotateStory,
-      localDateStr: localDateStr2
+      localDateStr
     });
     state.pulseInitialized = true;
     initLeaguePulse();
