@@ -2995,6 +2995,13 @@
       detail.innerHTML = '<div class="error">Could not load game details</div>';
     }
   }
+  function switchBoxTab(bsId, side) {
+    var other = side === "away" ? "home" : "away";
+    document.getElementById(bsId + "_" + side).style.display = "block";
+    document.getElementById(bsId + "_" + other).style.display = "none";
+    document.getElementById(bsId + "_" + side + "_btn").classList.add("is-active");
+    document.getElementById(bsId + "_" + other + "_btn").classList.remove("is-active");
+  }
   function buildBoxscore(players) {
     var hitters = [], pitchers = [];
     Object.values(players).forEach(function(p) {
@@ -3023,6 +3030,28 @@
     return playbacks && playbacks.length ? playbacks.find(function(p) {
       return p.name === "mp4";
     }) || playbacks[0] : null;
+  }
+  function playHighlightVideo(el, url) {
+    var stopAllMedia2 = window.stopAllMedia;
+    if (stopAllMedia2) stopAllMedia2("highlight");
+    var video = document.createElement("video");
+    video.controls = true;
+    video.style.cssText = "width:100%;display:block;background:#000";
+    video.addEventListener("error", function(e) {
+      console.error("Video load error:", e, video.error);
+      video.innerHTML = '<div style="color:#e03030;padding:20px;text-align:center">Video failed to load. Please try refreshing.</div>';
+    });
+    video.addEventListener("canplay", function() {
+      if (false) console.log("Video ready to play");
+      video.play().catch(function(err) {
+        console.error("Autoplay blocked:", err);
+      });
+    }, { once: true });
+    var src = document.createElement("source");
+    src.src = url;
+    src.type = "video/mp4";
+    video.appendChild(src);
+    el.replaceWith(video);
   }
   async function buildGameDetailPanel(g, gameNum) {
     var home = g.teams.home, away = g.teams.away, gameDate = new Date(g.gameDate);
@@ -3551,10 +3580,10 @@
     var lbl = document.getElementById("matchupDayLabel");
     if (lbl) lbl.textContent = "Today's";
     await loadLeagueStandings();
-    loadLeagueMatchups2();
+    loadLeagueMatchups();
     loadLeagueNews();
     loadLeagueLeaders();
-    leagueRefreshTimer = setInterval(loadLeagueMatchups2, TIMING.LEAGUE_REFRESH_MS);
+    leagueRefreshTimer = setInterval(loadLeagueMatchups, TIMING.LEAGUE_REFRESH_MS);
   }
   async function loadLeagueStandings() {
     try {
@@ -3569,7 +3598,7 @@
     } catch (e) {
     }
   }
-  async function loadLeagueMatchups2() {
+  async function loadLeagueMatchups() {
     var el = document.getElementById("leagueMatchups");
     var dayLabels = ["Yesterday's", "Today's", "Tomorrow's"], dayLabel = dayLabels[leagueMatchupOffset + 1];
     el.style.transition = "opacity 0.18s ease";
@@ -3641,7 +3670,7 @@
     if (btn) btn.classList.add("active");
     var labels = ["Yesterday's", "Today's", "Tomorrow's"], lbl = document.getElementById("matchupDayLabel");
     if (lbl) lbl.textContent = labels[offset + 1];
-    loadLeagueMatchups2();
+    loadLeagueMatchups();
   }
   async function loadLeagueNews() {
     var el = document.getElementById("leagueNews");

@@ -54,11 +54,11 @@ import {
 import {
   setSectionCallbacks, clearHomeTimer, clearLeagueTimer,
   loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
-  loadSchedule, changeMonth, selectCalGame,
+  loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
   loadStandings,
   selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer,
   selectNewsSource, loadNews, switchNewsFeed,
-  loadLeagueView, switchMatchupDay, switchLeagueLeaderTab,
+  loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
   showLiveGame, closeLiveView, fetchLiveGame,
 } from './sections/loaders.js';
 import {

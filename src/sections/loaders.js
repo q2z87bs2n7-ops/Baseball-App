@@ -254,7 +254,7 @@ export async function selectCalGame(gamePk,evt){
   }catch(e){detail.innerHTML='<div class="error">Could not load game details</div>';}
 }
 
-function switchBoxTab(bsId,side){
+export function switchBoxTab(bsId,side){
   var other=side==='away'?'home':'away';
   document.getElementById(bsId+'_'+side).style.display='block';document.getElementById(bsId+'_'+other).style.display='none';
   document.getElementById(bsId+'_'+side+'_btn').classList.add('is-active');
@@ -278,7 +278,7 @@ function buildBoxscore(players){
 
 function pickPlayback(playbacks){return playbacks&&playbacks.length?playbacks.find(function(p){return p.name==='mp4'})||playbacks[0]:null;}
 
-function playHighlightVideo(el,url){
+export function playHighlightVideo(el,url){
   var stopAllMedia=window.stopAllMedia;
   if(stopAllMedia)stopAllMedia('highlight');
   var video=document.createElement('video');
@@ -602,7 +602,7 @@ export async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leag
 
 async function loadLeagueStandings(){try{var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team');var d=await r.json();leagueStandingsMap={};(d.records||[]).forEach(function(rec){(rec.teamRecords||[]).forEach(function(t){leagueStandingsMap[t.team.id]={w:t.wins,l:t.losses};});});}catch(e){}}
 
-async function loadLeagueMatchups(){
+export async function loadLeagueMatchups(){
   var el=document.getElementById('leagueMatchups');
   var dayLabels=["Yesterday's","Today's","Tomorrow's"],dayLabel=dayLabels[leagueMatchupOffset+1];
   el.style.transition='opacity 0.18s ease';el.style.opacity='0.3';
