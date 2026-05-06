@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.42.4</title>
+<title>MLB Pulse v3.42.6</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,7 +16,7 @@
 <script defer src="pulse-card-templates.js"></script>
 <script defer src="focusCard.js"></script>
 <script defer src="collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=3.42.3"></script>
+<script defer src="dist/app.bundle.js?v=3.42.6"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -75,10 +75,6 @@
           <div style="display:none" id="radioStatusText">Off · Auto-pairs to focus game</div>
         </div>
         <div class="settings-row">
-          <div class="settings-row__label">🔍 Radio Check</div>
-          <button class="settings-action" onclick="openRadioCheck()">Open</button>
-        </div>
-        <div class="settings-row">
           <div class="settings-row__label">🛠️ Dev Tools</div>
           <button id="btnDevTools" class="settings-action" onclick="toggleDevTools()">Open</button>
         </div>
@@ -86,7 +82,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.42.4</div>
+        <div class="settings-version">v3.42.6</div>
       </div>
     </div>
   </div>
@@ -430,6 +426,10 @@
     <button class="dev-btn" data-dt-action="testNotif">
       <div class="dev-btn-label">🔔 Test Notification</div>
       <div class="dev-btn-shortcut">local</div>
+    </button>
+    <button class="dev-btn" data-dt-action="radioCheck">
+      <div class="dev-btn-label">🔍 Radio Check</div>
+      <div class="dev-btn-shortcut">sweep stations</div>
     </button>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
