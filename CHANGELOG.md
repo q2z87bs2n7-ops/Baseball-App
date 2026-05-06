@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.42.2
+**Current version:** v3.42.3
+
+**v3.42.3** — Restore news carousel to Pulse side rail. The carousel was removed in v3.39 when the RSS proxy broke, leaving behind orphaned HTML and nav buttons (`nextNewsCard`/`prevNewsCard` functions never reimplemented). Re-added news carousel that loads 10 headlines from `/api/proxy-news` and rotates them on left/right click. Extracted into dedicated `src/pulse/news-carousel.js` module following modular architecture pattern (substantive logic lives in subsystem modules, main.js is orchestration only). State tracking: `state.pulseNewsArticles`, `state.pulseNewsIndex`. Exports: `loadPulseNews`, `nextNewsCard`, `prevNewsCard`, `renderPulseNewsCard`.
 
 **v3.42.2** — Fix second module-extraction omission in `src/carousel/generators.js`: `fmtRate` was used at line 43 (HR story stat line — `fmtRate(statObj.avg) + ' AVG · ' + fmtRate(statObj.ops) + ' OPS'`) but never imported. Threw `ReferenceError: fmtRate is not defined` whenever `genHRStories` ran with a cached HR batter stat object — i.e. during normal carousel rotation, not only Demo Mode. Fix: add `import { fmtRate } from '../utils/format.js';` to `src/carousel/generators.js`. (The `fmt(start)` / `fmt(today)` calls at line 455 use a *local* `var fmt = function(d){...}` declared one line above — that one is fine and intentionally not the format.js export.)
 

@@ -79,6 +79,9 @@ src/
                                      getEffectiveDate. Hot poller — diffs
                                      /schedule into state.gameStates and
                                      fires HR/RBI cards on per-game playByPlay.
+    news-carousel.js                — loadPulseNews, nextNewsCard, prevNewsCard,
+                                     renderPulseNewsCard. Rotating headline
+                                     carousel in Pulse side rail.
 
   carousel/
     rotation.js                     — buildStoryPool, rotateStory, showStoryCard,
