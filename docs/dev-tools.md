@@ -67,6 +67,30 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
 
+## 🔔 Test Notification + 🎯 Live Controls (added v3.38.6)
+
+### 🔔 Test Notification
+A new button in the Actions row that calls `registration.showNotification()` directly via the active service worker. Verifies on-device notification surfacing — permission state, OS-level delivery, icon/badge rendering — without exercising the Vercel + Upstash + VAPID server pipeline.
+
+End-to-end push tests still belong in `.github/workflows/test-push.yml` because `/api/test-push.js` requires the `NOTIFY_TOKEN` server secret, which can't safely live in browser code.
+
+Permission flow: if `Notification.permission === 'denied'` it alerts the user; if `'default'` it triggers `Notification.requestPermission()`; if `'granted'` it fires immediately. Result is logged to Log Capture as `[notif]`.
+
+### 🎯 Live Controls
+A new collapsible directly under the Actions buttons — lazy-rendered with the current set of live games on toggle.
+
+**Force Focus** — replaces auto-scoring (`calcFocusScore`) with a manual pin. Dropdown lists every `gameStates[pk]` where `status==='Live'`, sorted by inning desc. Apply button calls existing `setFocusGameManual(pk)`. The current focus gamePk is shown beneath. Reset by tapping the `↩ AUTO` pill in the focus card itself (existing UX — not duplicated here).
+
+**Force Inning Recap** — surfaces the previously console-only workflow that was documented in CLAUDE.md (now `docs/dev-tools.md`). Game dropdown + half-inning + inning-number; "Queue" pushes a `{gamePk, inning, halfInning}` entry into `inningRecapsPending[…]`, deletes any matching `inningRecapsFired` entry so it can re-fire, then calls `buildStoryPool()` to surface it. The inning + half are auto-prefilled from the selected game's current state.
+
+**Empty state:** When `gameStates` has no Live games, the panel suggests Demo Mode (Shift+H) which seeds a populated `gameStates` from `daily-events.json`.
+
+**Functions** (all in `app.js`):
+- `testLocalNotification()` — permission + showNotification flow
+- `renderLiveControls()` — populates dropdowns, wires inning auto-sync
+- `_liveGamesForControls()` — pure data shaper
+- `forceFocusGo()`, `forceRecapGo()` — apply handlers
+
 ## 💾 localStorage + ⚙️ Service Worker (added v3.38.5)
 
 Two side-by-side inspectors that surface persistent state and PWA cache state — both opaque to the browser DevTools console anyway, and completely unreachable from an iPad PWA install.

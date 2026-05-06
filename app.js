@@ -5270,6 +5270,106 @@ function swUnregisterAndReload(){
     if(reg){ reg.unregister().then(done, done); } else done();
   });
 }
+
+// ── 🔔 Test Notification (local) ─────────────────────────────────────────────
+// Calls registration.showNotification() directly — proves the on-device notification
+// path works (permission, SW active, OS-level surfaces), bypassing the Vercel +
+// Upstash + VAPID pipeline. End-to-end server push tests still live in
+// .github/workflows/test-push.yml since /api/test-push.js requires a server secret.
+function testLocalNotification(){
+  if(!('Notification' in window)){ alert('Notifications not supported on this device.'); return; }
+  function show(){
+    if(!('serviceWorker' in navigator)){ alert('Service Worker not supported.'); return; }
+    navigator.serviceWorker.getRegistration().then(function(reg){
+      if(!reg){ alert('No SW registered yet — reload and try again.'); return; }
+      reg.showNotification('MLB Pulse · Dev test', {
+        body: 'Local test fired '+new Date().toLocaleTimeString()+' · server pipeline NOT exercised',
+        icon: './icons/icon-192.png',
+        badge: './icons/icon-192.png',
+        tag: 'mlb-dev-test',
+        renotify: true,
+      }).then(
+        function(){ pushDevLog('log','notif',['local test notification fired']); },
+        function(err){ pushDevLog('error','notif',['showNotification failed: '+(err&&err.message||err)]); alert('showNotification failed: '+(err&&err.message||err)); }
+      );
+    });
+  }
+  if(Notification.permission==='granted') show();
+  else if(Notification.permission==='denied') alert('Notifications are blocked. Re-enable in browser/site settings.');
+  else Notification.requestPermission().then(function(p){ if(p==='granted') show(); else alert('Permission not granted ('+p+').'); });
+}
+
+// ── 🎯 Live Controls: Force Focus + Force Recap ─────────────────────────────
+function _liveGamesForControls(){
+  if(typeof gameStates==='undefined') return [];
+  return Object.keys(gameStates).map(function(pk){return {pk:+pk, g:gameStates[pk]};})
+    .filter(function(x){return x.g.status==='Live';})
+    .sort(function(a,b){return (b.g.inning||0)-(a.g.inning||0);});
+}
+function renderLiveControls(){
+  var body=document.getElementById('liveControlsBody');
+  if(!body) return;
+  var live=_liveGamesForControls();
+  if(!live.length){
+    body.innerHTML='<div class="dt-label-muted">No live games right now. Try Demo Mode (Shift+H) to populate gameStates with sample data.</div>';
+    return;
+  }
+  var opts=live.map(function(x){return '<option value="'+x.pk+'">'+escapeHtml(x.g.awayAbbr+' @ '+x.g.homeAbbr+' · '+(x.g.halfInning||'')+' '+(x.g.inning||'?')+' · '+x.g.awayScore+'-'+x.g.homeScore)+'</option>';}).join('');
+  var curFocus = (typeof focusGamePk!=='undefined'&&focusGamePk) ? focusGamePk : '';
+  body.innerHTML =
+    '<div class="dt-box">'+
+      '<div class="dt-label" style="margin-bottom:6px">🎯 Force Focus</div>'+
+      '<div class="dt-label-muted" style="margin-bottom:6px">Override auto-scoring and pin Focus Mode to a specific live game. Resets via the ↩ AUTO pill in the focus card.</div>'+
+      '<div style="display:flex;gap:6px;align-items:center">'+
+        '<select id="forceFocusSel" class="dt-input" style="flex:1">'+opts+'</select>'+
+        '<button data-dt-action="forceFocusGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Apply</button>'+
+      '</div>'+
+      (curFocus?'<div class="dt-label-muted" style="margin-top:4px">Current focus: gamePk '+curFocus+'</div>':'')+
+    '</div>'+
+    '<div class="dt-box">'+
+      '<div class="dt-label" style="margin-bottom:6px">📖 Force Inning Recap</div>'+
+      '<div class="dt-label-muted" style="margin-bottom:6px">Queues an inning_recap story so it surfaces in the next pool build. Replaces the manual <code>inningRecapsPending[…]</code> + <code>buildStoryPool()</code> console workflow.</div>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+        '<select id="forceRecapGame" class="dt-input" style="flex:2;min-width:140px">'+opts+'</select>'+
+        '<select id="forceRecapHalf" class="dt-input" style="flex:1;min-width:60px"><option value="top">Top</option><option value="bottom">Bottom</option></select>'+
+        '<input id="forceRecapInning" type="number" min="1" max="20" placeholder="Inn" class="dt-input" style="flex:0 0 60px">'+
+        '<button data-dt-action="forceRecapGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Queue</button>'+
+      '</div>'+
+    '</div>';
+  // Pre-fill recap inning from the selected game's current inning when game changes
+  var sel=document.getElementById('forceRecapGame'), inn=document.getElementById('forceRecapInning'), half=document.getElementById('forceRecapHalf');
+  function sync(){
+    if(!sel||!inn||!half) return;
+    var g=gameStates[+sel.value];
+    if(g){ inn.value=g.inning||1; half.value=(g.halfInning||'top').toLowerCase().indexOf('bot')===0?'bottom':'top'; }
+  }
+  if(sel) sel.addEventListener('change',sync);
+  sync();
+}
+function forceFocusGo(){
+  var sel=document.getElementById('forceFocusSel');
+  if(!sel||!sel.value) return;
+  var pk=+sel.value;
+  setFocusGameManual(pk);
+  pushDevLog('log','focus',['Force Focus applied · gamePk='+pk]);
+  renderLiveControls();
+}
+function forceRecapGo(){
+  var sel=document.getElementById('forceRecapGame'),
+      half=document.getElementById('forceRecapHalf'),
+      inn=document.getElementById('forceRecapInning');
+  if(!sel||!half||!inn||!sel.value){ alert('Pick a game first.'); return; }
+  var pk=+sel.value, inning=parseInt(inn.value,10), halfInning=(half.value||'top').toLowerCase();
+  if(!inning||inning<1){ alert('Enter a valid inning number.'); return; }
+  var key=pk+'_'+inning+'_'+halfInning;
+  if(typeof inningRecapsFired!=='undefined') inningRecapsFired.delete && inningRecapsFired.delete(key);
+  if(typeof inningRecapsPending!=='undefined'){
+    inningRecapsPending[key]={gamePk:pk, inning:inning, halfInning:halfInning};
+    pushDevLog('log','recap',['Queued recap · '+key]);
+  }
+  if(typeof buildStoryPool==='function') buildStoryPool();
+  alert('Recap queued for '+key+'. Wait for the next carousel rotation (or open Pulse to see it sooner).');
+}
 // Lazy: render only when the details element is opened, then live-refresh on filter input.
 document.addEventListener('DOMContentLoaded',function(){
   var stateDet=document.getElementById('appStateDetails');
@@ -5280,6 +5380,8 @@ document.addEventListener('DOMContentLoaded',function(){
   if(stoDet) stoDet.addEventListener('toggle',function(){if(stoDet.open)renderStorageInspector();});
   var swDet=document.getElementById('swDetails');
   if(swDet) swDet.addEventListener('toggle',function(){if(swDet.open)renderSWInspector();});
+  var lcDet=document.getElementById('liveControlsDetails');
+  if(lcDet) lcDet.addEventListener('toggle',function(){if(lcDet.open)renderLiveControls();});
   var det=document.getElementById('logCaptureDetails');
   if(!det)return;
   det.addEventListener('toggle',function(){if(det.open)renderLogCapture();});
@@ -5411,6 +5513,9 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='copySW'){copySWStateAsMarkdown();}
     else if(action==='swUpdate'){swForceUpdate();}
     else if(action==='swUnregister'){swUnregisterAndReload();}
+    else if(action==='testNotif'){testLocalNotification();}
+    else if(action==='forceFocusGo'){forceFocusGo();}
+    else if(action==='forceRecapGo'){forceRecapGo();}
     else if(action==='confirm'){confirmDevToolsChanges();}
   });
 });
