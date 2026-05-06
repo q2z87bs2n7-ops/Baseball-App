@@ -28,7 +28,7 @@ Claude performs a comprehensive code review:
 
 **Files created:**
 - `.claude/tech-debt-session.md` (working checklist, git-ignored)
-- `audits/audit-{date}.md` (committed to branch)
+- `audits/audit-{date}-baseball-app.md` (committed to branch)
 
 **Checkpoint:** Claude presents findings. You decide:
 - ✅ "Fix all of them"
@@ -46,7 +46,7 @@ Claude applies approved fixes:
 - Manual testing per fix
 
 **Files created:**
-- `remediation/remediation-{date}.md` (committed to branch)
+- `remediation/remediation-{date}-baseball-app.md` (committed to branch)
 
 **Progress:** `.claude/tech-debt-session.md` updated with checklist of fixed issues
 
@@ -66,7 +66,7 @@ Claude runs comprehensive testing:
 - **Edge cases** — Rapid team switch, demo mode, doubleheaders, etc.
 
 **Files created:**
-- `qa/qa-{date}.md` (committed to branch)
+- `qa/qa-{date}-baseball-app.md` (committed to branch)
 
 **Result:** ✅ PASS or ❌ FAIL (with list of issues)
 
@@ -97,7 +97,7 @@ You test the branch in your browser:
 ### Stage 5: FINALIZATION (Claude)
 
 Claude wraps up:
-1. Creates `sprints/sprint-{date}-summary.md` (high-level recap)
+1. Creates `sprints/sprint-{date}-baseball-app.md` (high-level recap)
 2. Appends to `docs/technical-debt/HISTORY.md` (permanent archive)
 3. Creates PR, waits for final approval
 4. Merges to main
