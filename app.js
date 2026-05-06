@@ -5138,12 +5138,148 @@ function clearNetTrace(){
   devNetLog.length=0;
   renderNetTrace();
 }
+
+// ── 💾 localStorage Inspector (Dev Tools) ───────────────────────────────────
+function _lsKeys(){
+  var keys=[];
+  try{ for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf('mlb_')===0) keys.push(k); } }catch(e){}
+  keys.sort();
+  return keys;
+}
+function _lsEntry(k){
+  var raw=null, parsed=null, isJson=false, bytes=0;
+  try{ raw=localStorage.getItem(k); }catch(e){ raw=null; }
+  if(raw!=null){
+    bytes=raw.length;
+    try{ parsed=JSON.parse(raw); isJson=(parsed!==null && typeof parsed==='object'); }catch(e){}
+  }
+  return {key:k, raw:raw, parsed:parsed, isJson:isJson, bytes:bytes};
+}
+function renderStorageInspector(){
+  var list=document.getElementById('storageList');
+  var count=document.getElementById('storageCount');
+  if(!list) return;
+  var keys=_lsKeys();
+  if(count) count.textContent='('+keys.length+')';
+  if(!keys.length){ list.innerHTML='<div class="dt-label-muted">No mlb_* keys present.</div>'; return; }
+  list.innerHTML=keys.map(function(k){
+    var e=_lsEntry(k);
+    var preview;
+    if(e.isJson){ preview='<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">'+escapeHtml(JSON.stringify(e.parsed,null,2))+'</pre></details>'; }
+    else if(e.raw!=null){ var disp=e.raw.length>140?e.raw.slice(0,140)+'…':e.raw; preview='<div style="margin-top:2px;color:var(--muted);font-size:.6rem">'+escapeHtml(disp)+'</div>'; }
+    else preview='<div style="margin-top:2px;color:var(--muted);font-size:.6rem">(null)</div>';
+    return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">'+escapeHtml(k)+'</span><span class="dt-label-muted">'+_fmtBytes(e.bytes)+'</span><button data-dt-action="clearLsKey" data-ls-key="'+escapeHtml(k)+'" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">🗑</button></div>'+preview+'</div>';
+  }).join('');
+}
+function clearLsKey(key){
+  if(!key) return;
+  if(!confirm('Remove localStorage key "'+key+'"? This may log you out / reset settings depending on the key.')) return;
+  try{ localStorage.removeItem(key); pushDevLog('warn','storage',['removed key: '+key]); }catch(e){}
+  renderStorageInspector();
+}
+function copyStorageAsMarkdown(){
+  var keys=_lsKeys();
+  var lines=['# MLB Pulse — localStorage Snapshot','Captured: '+new Date().toISOString(),'Keys: '+keys.length,''];
+  if(!keys.length) lines.push('_(no mlb_* keys)_');
+  else{
+    lines.push('| key | bytes | json | preview |');
+    lines.push('|---|---|---|---|');
+    keys.forEach(function(k){
+      var e=_lsEntry(k);
+      var prev=(e.raw||'').replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+      if(prev.length>120) prev=prev.slice(0,120)+'…';
+      lines.push('| `'+k+'` | '+_fmtBytes(e.bytes)+' | '+(e.isJson?'y':'')+' | '+prev+' |');
+    });
+    lines.push('','## Full values','');
+    keys.forEach(function(k){
+      var e=_lsEntry(k);
+      lines.push('### `'+k+'` ('+_fmtBytes(e.bytes)+')');
+      if(e.isJson) lines.push('```json',JSON.stringify(e.parsed,null,2),'```','');
+      else lines.push('```',(e.raw==null?'(null)':e.raw),'```','');
+    });
+  }
+  _copyToClipboard(lines.join('\n'),'storageCopyBtn');
+}
+
+// ── ⚙️ Service Worker Inspector (Dev Tools) ─────────────────────────────────
+var _swState = {scope:null, scriptURL:null, controller:null, hasUpdate:false, lastUpdated:null, error:null};
+function _refreshSWState(){
+  if(!('serviceWorker' in navigator)){ _swState.error='Service Worker API not supported.'; return Promise.resolve(); }
+  return navigator.serviceWorker.getRegistration().then(function(reg){
+    if(!reg){ _swState.error='No registration found.'; return; }
+    _swState.scope=reg.scope;
+    _swState.scriptURL=(reg.active && reg.active.scriptURL) || (reg.installing && reg.installing.scriptURL) || (reg.waiting && reg.waiting.scriptURL) || null;
+    _swState.controller=navigator.serviceWorker.controller ? navigator.serviceWorker.controller.scriptURL : null;
+    _swState.hasUpdate=!!reg.waiting;
+    _swState.error=null;
+  }, function(err){ _swState.error=(err&&err.message)||String(err); });
+}
+function renderSWInspector(){
+  var info=document.getElementById('swInfo');
+  if(!info) return;
+  info.innerHTML='<div class="dt-label-muted">Loading…</div>';
+  _refreshSWState().then(function(){
+    var rows={
+      'Supported': ('serviceWorker' in navigator),
+      'Scope': _swState.scope || '—',
+      'Active script': _swState.scriptURL || '—',
+      'Controller': _swState.controller || '(uncontrolled)',
+      'Update waiting': _swState.hasUpdate ? 'YES — reload to activate' : 'no',
+      'Error': _swState.error || '—',
+    };
+    info.innerHTML=_kvList(rows);
+  });
+}
+function copySWStateAsMarkdown(){
+  _refreshSWState().then(function(){
+    var lines=['# MLB Pulse — Service Worker','Captured: '+new Date().toISOString(),''];
+    lines.push('- Supported: '+('serviceWorker' in navigator));
+    lines.push('- Scope: '+(_swState.scope||'-'));
+    lines.push('- Active script: '+(_swState.scriptURL||'-'));
+    lines.push('- Controller: '+(_swState.controller||'(uncontrolled)'));
+    lines.push('- Update waiting: '+(_swState.hasUpdate?'YES':'no'));
+    if(_swState.error) lines.push('- Error: '+_swState.error);
+    _copyToClipboard(lines.join('\n'),'swCopyBtn');
+  });
+}
+function swForceUpdate(){
+  if(!('serviceWorker' in navigator)){ alert('Service Worker not supported.'); return; }
+  navigator.serviceWorker.getRegistration().then(function(reg){
+    if(!reg){ alert('No SW registration found.'); return; }
+    pushDevLog('log','sw',['Force update requested']);
+    reg.update().then(function(){
+      pushDevLog('log','sw',['update() resolved · waiting='+!!reg.waiting]);
+      if(reg.waiting){
+        try{ reg.waiting.postMessage({type:'SKIP_WAITING'}); }catch(e){}
+        alert('Update found. Reload the page to activate the new version.');
+      }else{
+        alert('No new update available — already on latest.');
+      }
+      renderSWInspector();
+    }, function(err){
+      pushDevLog('error','sw',['update() failed: '+(err&&err.message||err)]);
+      alert('Update failed: '+(err&&err.message||err));
+    });
+  });
+}
+function swUnregisterAndReload(){
+  if(!confirm('Unregister the service worker and reload? This forces a fresh load (clears cached app shell).')) return;
+  if(!('serviceWorker' in navigator)){ location.reload(); return; }
+  navigator.serviceWorker.getRegistration().then(function(reg){
+    var done=function(){ try{ if(window.caches){ caches.keys().then(function(keys){ keys.forEach(function(k){ caches.delete(k); }); location.reload(true); }); } else location.reload(true); }catch(e){ location.reload(true); } };
+    if(reg){ reg.unregister().then(done, done); } else done();
+  });
+}
 // Lazy: render only when the details element is opened, then live-refresh on filter input.
 document.addEventListener('DOMContentLoaded',function(){
   var stateDet=document.getElementById('appStateDetails');
   if(stateDet) stateDet.addEventListener('toggle',function(){if(stateDet.open)renderAppState();});
   var netDet=document.getElementById('netTraceDetails');
   if(netDet) netDet.addEventListener('toggle',function(){if(netDet.open)renderNetTrace();});
+  var stoDet=document.getElementById('storageDetails');
+  if(stoDet) stoDet.addEventListener('toggle',function(){if(stoDet.open)renderStorageInspector();});
+  var swDet=document.getElementById('swDetails');
+  if(swDet) swDet.addEventListener('toggle',function(){if(swDet.open)renderSWInspector();});
   var det=document.getElementById('logCaptureDetails');
   if(!det)return;
   det.addEventListener('toggle',function(){if(det.open)renderLogCapture();});
@@ -5269,6 +5405,12 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='copyNet'){copyNetTraceAsMarkdown();}
     else if(action==='clearNet'){clearNetTrace();}
     else if(action==='refreshNet'){renderNetTrace();}
+    else if(action==='copyStorage'){copyStorageAsMarkdown();}
+    else if(action==='refreshStorage'){renderStorageInspector();}
+    else if(action==='clearLsKey'){clearLsKey(btn.dataset.lsKey);}
+    else if(action==='copySW'){copySWStateAsMarkdown();}
+    else if(action==='swUpdate'){swForceUpdate();}
+    else if(action==='swUnregister'){swUnregisterAndReload();}
     else if(action==='confirm'){confirmDevToolsChanges();}
   });
 });

@@ -67,6 +67,30 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
 
+## 💾 localStorage + ⚙️ Service Worker (added v3.38.5)
+
+Two side-by-side inspectors that surface persistent state and PWA cache state — both opaque to the browser DevTools console anyway, and completely unreachable from an iPad PWA install.
+
+### 💾 localStorage
+Auto-enumerates all keys starting with `mlb_*` so it future-proofs against new keys. For each:
+- Key name (monospace), byte size, and a 🗑 button (with confirm) to delete the single key
+- Inline preview: pretty-printed JSON in a nested `<details>` if the value parses as JSON, otherwise truncated raw string
+- 📋 Copy emits a Markdown summary table + a `## Full values` section with each key's full content (JSON-fenced when applicable). Drop the whole thing into Claude when sync, theme, or auth is misbehaving.
+
+Currently surfaces (as of v3.38.5): `mlb_my_team_lens`, `mlb_demo_snapshot`, `mlb_card_collection`, `mlb_radio_check`, `mlb_radio_check_notes`, `mlb_radio_check_notes_seeded_v2`, `mlb_sound_settings`, `mlb_theme`, `mlb_theme_vars`, `mlb_theme_scope`, `mlb_invert`, `mlb_pulse_scheme`, `mlb_team`, `mlb_session_token`, `mlb_auth_user`, `mlb_push`. Any new `mlb_*` key shows up automatically.
+
+### ⚙️ Service Worker
+- Read-only state via `navigator.serviceWorker.getRegistration()`: scope, active script URL, controller URL, "update waiting" flag, error if registration failed.
+- **↻ Force Update** — calls `reg.update()`, posts `SKIP_WAITING` to any waiting worker, alerts the user if a new version was fetched. (sw.js already calls `self.skipWaiting()` at install, so the postMessage is belt-and-braces.)
+- **⚠ Unregister + Reload** — confirm-gated nuclear option: unregisters the SW, deletes every `caches.keys()` entry, hard-reloads. Use when stale shell cache is suspected.
+- 📋 Copy outputs the state as a Markdown bullet list.
+
+**Functions** (all in `app.js`):
+- `renderStorageInspector()`, `clearLsKey(key)`, `copyStorageAsMarkdown()`
+- `_lsKeys()`, `_lsEntry(k)` — internal data shapers
+- `renderSWInspector()`, `_refreshSWState()`, `copySWStateAsMarkdown()`
+- `swForceUpdate()`, `swUnregisterAndReload()`
+
 ## 🌐 Network Trace (added v3.38.4)
 
 Wraps `window.fetch` once at boot to capture metadata about every HTTP request the app makes. Surfaced as the "🌐 Network" collapsible in Dev Tools, between App State and Log Capture.
