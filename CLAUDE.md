@@ -3,18 +3,18 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v3.42.4
+**Current version:** v3.43
 
 **Recent versions** (full history in `CHANGELOG.md`):
+- **v3.43** — News carousel + News tab image fixes. (1) **Carousel sources restored** — `src/pulse/news-carousel.js` rolled back from the multi-source `/api/proxy-news` aggregator to the original two-tier MLB-RSS-then-ESPN fallback (matches pre-v3.40 behaviour from `app.js fetchMLBNewsFeed`). (2) **`/api/proxy-rss` MLB feed URL fixed** — `MLB_RSS_FEEDS.mlb` updated from deprecated `/feeds/rss.xml` (returning 500) → working `/feeds/news/rss.xml`. (3) **MLB.com images now extracted** — `parseRssItems` adds a new precedence step for `<image href="..."/>` (self-closing element with href attribute, MLB.com news-feed style); previously every existing pattern missed it, including the URL-extension fallback (img.mlbstatic.com URLs are extension-less). (4) **Radio Check moved from Settings → Dev Tools** Actions section. (5) **Dev Tools News Source Test enhanced** — per-source image extraction stats over the full `/api/proxy-news` pool, "Reason:" diagnostic when an image fails `isSafeNewsImage()` (with suggested allowlist entry), and `firstItemSample` (raw first-item XML/JSON) per source. Net effect: News tab MLB-filtered articles render with thumbnails again; Pulse carousel works without console 500s.
 - **v3.42.4** — Fix news carousel headline property fallback. Carousel now handles API responses with varying property names (headline/title, pubDate/published/publishedAt). Gracefully defaults to 'News' if headline missing.
-- **v3.42.3** — Restore news carousel to Pulse side rail. Headlines carousel was removed in v3.39 when RSS proxy broke, leaving orphaned HTML. Re-added with `/api/proxy-news` as source. Extracted to dedicated `src/pulse/news-carousel.js` module (substantive logic lives in subsystems; main.js is orchestration only).
+- **v3.42.3** — Restore news carousel to Pulse side rail. Headlines carousel was removed in v3.39 when RSS proxy broke, leaving orphaned HTML. Re-added with `/api/proxy-news` as source. Extracted to dedicated `src/pulse/news-carousel.js` module (substantive logic lives in subsystems; main.js is orchestration only). _(Source switched back to MLB→ESPN fallback in v3.43.)_
 - **v3.42.2** — Fix second carousel-extraction bug: `fmtRate` used in `genHRStories` but never imported into `src/carousel/generators.js`. Caused `ReferenceError: fmtRate is not defined` during normal carousel rotation when an HR story had a cached batter stat. Added `import { fmtRate } from '../utils/format.js';`.
 - **v3.42.1** — Fix Demo Mode crash (`ReferenceError: DEBUG is not defined`) in `src/carousel/generators.js`. Module was missing the local `const DEBUG = false;` that other extracted modules declared during the v3.40 refactor.
 - **v3.42.0** — Removed legacy `app.js` fallback, the `USE_BUNDLE` flag, and the parity-check script. `dist/app.bundle.js` is now the only source of truth, loaded via a static `<script defer>`. Pre-cleanup git tag: `pre-bundle-cleanup-v3.41` for emergency revert.
 - **v3.40.0** — Modular refactor complete. `src/main.js` is now ~680 LOC of boot/orchestration glue; the rest of the original 7,127-line `app.js` has been extracted into ~30 modules under `src/` (config, diag, utils, data, ui, feed, pulse, carousel, focus, cards, collection, radio, push, auth, sections, demo, dev). Single `state.js` container holds hot mutable state. See `docs/module-graph.md`.
 - **v3.39.0** — Initial bundle scaffolding (esbuild + first module extraction).
 - **v3.38** — Dev Tools enhancement series: Log Capture, App State Inspector, Network Trace, localStorage + SW inspectors, Diagnostic Snapshot, Live Controls.
-- **v3.37** — HR video clip pipeline hardening: ABS-challenge filter, player_id-only clip matching, taxonomy hyphens fix.
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
@@ -271,8 +271,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **Invert Colours** — swaps primary and secondary; works with theme override
 - **🔔 Game Start Alerts** — push toggle; hidden on desktop via CSS `@media(min-width:1025px){ #pushRow { display:none !important } }`
 - **📻 Live Game Radio** (`#radioRow`, `#radioToggle`) — calls `toggleRadio()`; auto-pairs to focused game's flagship station if in `APPROVED_RADIO_TEAM_IDS`, else Fox Sports. Also toggled from `#ptbRadioBtn`; both synced by `setRadioUI()`.
-- **🔍 Radio Check** — sweep-test every station + Fox Sports fallback. See `docs/radio-system.md`.
-- **🛠️ Dev Tools** — `toggleDevTools()` opens `#devToolsPanel`. See `docs/dev-tools.md`.
+- **🛠️ Dev Tools** — `toggleDevTools()` opens `#devToolsPanel`. Includes 🔍 Radio Check sweep tool (moved from Settings in v3.43). See `docs/dev-tools.md` and `docs/radio-system.md`.
 - Panel closes on click outside. All settings persist via `localStorage`.
 
 ---

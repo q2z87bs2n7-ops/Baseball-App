@@ -5,7 +5,59 @@
 
 ---
 
-**Current version:** v3.42.4
+**Current version:** v3.43
+
+**v3.43** — **News carousel + News-tab image fixes.** Net result of an investigation into "carousel pictures sometimes missing" and "MLB articles in News tab show no images." Changes consolidated from a chain of in-flight commits (v3.42.5 → v3.42.15) where the diagnostic surfaced the issues progressively; this entry describes the final landed state.
+
+  **Source pipeline cleanup** — pre-v3.43 the carousel was using the 5-source aggregator `/api/proxy-news` (built v3.30.1 for the News tab redesign), which polluted it with FanGraphs/MLBTradeRumors/CBS feeds whose images either lacked extraction patterns or pointed at CDNs not in `NEWS_IMAGE_HOSTS`. Carousel now uses the same two-tier MLB-RSS-then-ESPN fallback chain that powered `fetchMLBNewsFeed()` in pre-v3.40 `app.js`. Modular structure (`src/pulse/news-carousel.js`) preserved — only the data-fetch logic changed:
+  ```js
+  // src/pulse/news-carousel.js
+  // 1) try /api/proxy-rss?feed=mlb
+  // 2) on failure, fall back to ESPN's public news API directly
+  ```
+  News tab and Home "Latest News" card continue to use `/api/proxy-news` (unchanged) — the proxy still aggregates 5 sources, no upstream image filter, original `PER_SOURCE_CAP=25` / `TOTAL_CAP=80` (a brief detour through inflated caps + image-only filter in v3.42.9 was reverted in v3.42.12).
+
+  **`/api/proxy-rss?feed=mlb` 500 fix** — `MLB_RSS_FEEDS.mlb` was pointing at `https://www.mlb.com/feeds/rss.xml`, which MLB.com deprecated some time before v3.40 (commit `4a4d9d8` deleted the legacy carousel as "broken RSS proxy news feed code" specifically because of this). The carousel's ESPN fallback was masking the failure. Updated to the current path `https://www.mlb.com/feeds/news/rss.xml` — same path `/api/proxy-news` already uses, confirmed 200 OK with ~25 items in dev-tools diagnostic.
+
+  **MLB.com image extraction** — MLB.com's news feed uses a non-standard self-closing tag the parser had no pattern for:
+  ```xml
+  <image href="https://img.mlbstatic.com/mlb-images/image/upload/..."/>
+  ```
+  Distinct from `<image><url>...</url></image>` (block form, added v3.42.7) and from `<itunes:image href="...">` (different leading characters). The `img.mlbstatic.com` URLs are extension-less so even the last-resort `.jpg/.png` URL scan missed them. Added at position 4 of the precedence chain in `parseRssItems` (`api/proxy-rss.js`):
+  ```js
+  // 4. <image href="..."/> — MLB.com news-feed style
+  m = new RegExp(`<image\\b[^>]+href=${ATTR}`).exec(itemXml);
+  ```
+  Matches MLB.com's tag without false-positives on `<itunes:image>` (different prefix). Net result: News-tab MLB-filtered articles now render their `img.mlbstatic.com` thumbnails.
+
+  **Radio Check moved Settings → Dev Tools** — the 🔍 Radio Check sweep tool's entry point migrated from a Settings panel button to a Dev Tools Actions button (alongside other QA/diagnostic tools). `openRadioCheck()` overlay itself is unchanged. Dropped the Settings-panel callback that auto-closed Settings when opening Radio Check (no longer needed). See `docs/radio-system.md` and `docs/dev-tools.md`.
+
+  **Dev Tools → News Source Test enhancements** — three diagnostic additions:
+  1. **Carousel/proxy-news article inspector** — shows the first 10 articles from `/api/proxy-news` with image URL, domain, `isSafeNewsImage()` result, and `forceHttps` modification.
+  2. **Per-source image extraction summary** — table over the FULL proxy-news pool: per source `{total, withImage, %, withSafeImage, exampleNoImage}`. Made it possible to see at-a-glance which feeds extract images successfully and which don't.
+  3. **`Reason:` field on failing images** — when `isSafeNewsImage()` returns false, the diagnostic surfaces *why*: `"hostname X not in NEWS_IMAGE_HOSTS allowlist (add 'parent.tld' to fix)"` or `"malformed URL"`. Includes the current `NEWS_IMAGE_HOSTS` regex source at the end of the panel for reference.
+  4. **`firstItemSample` from `/api/proxy-test`** — for each source, returns the first complete `<item>...</item>` block (or first JSON article object), capped 1500 chars. Surfaces the actual image-tag structure each feed uses; this is how we identified MLB.com's `<image href>` shape and added the matching extraction pattern.
+
+  **`parseRssItems` precedence chain** (`api/proxy-rss.js`):
+  ```
+  1. <media:content url=...>
+  2. <media:thumbnail url=...>
+  3. <itunes:image href=...>
+  4. <image href=...>             ← NEW v3.43 (MLB.com)
+  5. <image><url>...</url>        ← added v3.42.7 (channel-style)
+  6. <img src=...> in description
+  7. <img src=...> in content:encoded
+  8. <enclosure type="image/...">
+  9. <thumbnail>...</thumbnail>   ← added v3.42.7
+  10. URL-extension scan (last resort)
+  ```
+
+  **Reverted along the way (do not re-introduce):**
+  - `/api/proxy-news` upstream image filter (`merged.filter(a => a.image)`) — was reducing News-tab pool unnecessarily.
+  - Inflated `PER_SOURCE_CAP=50` / `TOTAL_CAP=150` — were only there to compensate for the filter; reverted to original 25 / 80.
+  - Adding `cbsistatic.com` to the allowlist — was a piecemeal patch; the better solution turned out to be fixing the carousel source pool so CBS images don't appear there in the first place. The allowlist still doesn't include `cbsistatic.com`; News-tab CBS articles will render without images by `mkEspnRow` but that's tolerated since News tab is text-led.
+
+  **Files touched:** `src/pulse/news-carousel.js`, `api/proxy-rss.js`, `api/proxy-news.js`, `api/proxy-test.js`, `src/dev/news-test.js`, `src/dev/tuning.js`, `src/radio/check.js`, `index.html` (settings panel + Dev Tools buttons), `sw.js` (CACHE bumps).
 
 **v3.42.4** — Fix news carousel headline property fallback. The `/api/proxy-news` endpoint returns articles with varying property names (`headline`, `title`, or `published`/`pubDate`/`publishedAt` for dates). Carousel now handles all variants and gracefully defaults to 'News' if headline missing, matches behavior in News section loader.
 

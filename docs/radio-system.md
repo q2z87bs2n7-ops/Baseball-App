@@ -63,15 +63,16 @@ Many MLB market flagships are Audacy-owned (URLs `live.amperwave.net/manifest/au
 
 ```
 [ Settings panel ]
-   ├─ 📻 Live Game Radio toggle (id="radioToggle")
-   │     └─ toggleRadio() → startRadio()/stopRadio()
-   │           └─ pickRadioForFocus()  ← APPROVED_RADIO_TEAM_IDS gate
-   │                 └─ MLB_TEAM_RADIO[homeId] || MLB_TEAM_RADIO[awayId] || FALLBACK_RADIO
-   │           └─ loadRadioStream(pick)
-   │                 ├─ Hls.js (window.Hls)         if format==='hls' && Hls.isSupported()
-   │                 ├─ Safari native HLS           if format==='hls' && audio.canPlayType('application/vnd.apple.mpegurl')
-   │                 └─ <audio> direct AAC/MP3      otherwise
-   │
+   └─ 📻 Live Game Radio toggle (id="radioToggle")
+         └─ toggleRadio() → startRadio()/stopRadio()
+               └─ pickRadioForFocus()  ← APPROVED_RADIO_TEAM_IDS gate
+                     └─ MLB_TEAM_RADIO[homeId] || MLB_TEAM_RADIO[awayId] || FALLBACK_RADIO
+               └─ loadRadioStream(pick)
+                     ├─ Hls.js (window.Hls)         if format==='hls' && Hls.isSupported()
+                     ├─ Safari native HLS           if format==='hls' && audio.canPlayType('application/vnd.apple.mpegurl')
+                     └─ <audio> direct AAC/MP3      otherwise
+
+[ Dev Tools panel ]                                  (moved from Settings in v3.43)
    └─ 🔍 Radio Check button → openRadioCheck()
          └─ #radioCheckOverlay (z-index 550)
 
@@ -114,7 +115,7 @@ Light build (~50KB). Not stored in repo, not in `sw.js` SHELL cache. If CDN goes
 
 ## 🔍 Radio Check tool
 
-Self-test panel for sweeping every station in `MLB_TEAM_RADIO` + Fox Sports fallback. Open via: Settings → 🔍 Radio Check row → "Open" → `openRadioCheck()`. Modal `#radioCheckOverlay` (z-index 550, top-level DOM).
+Self-test panel for sweeping every station in `MLB_TEAM_RADIO` + Fox Sports fallback. Open via: Dev Tools → 🔍 Radio Check button → `openRadioCheck()` (moved from Settings panel in v3.43). Modal `#radioCheckOverlay` (z-index 550, top-level DOM).
 
 **Per-station row:**
 - ▶ Play — `radioCheckPlay(key)` → `loadRadioStream(...)` directly. **Bypasses** `APPROVED_RADIO_TEAM_IDS` gate (testing path).
@@ -135,7 +136,7 @@ Self-test panel for sweeping every station in `MLB_TEAM_RADIO` + Fox Sports fall
 
 ## Workflow — updating the approved pool
 
-1. Open Settings → 🔍 Radio Check
+1. Open Dev Tools → 🔍 Radio Check
 2. ▶ test each station, mark ✅/❌, add notes
 3. 📋 Copy Results → paste into Claude session
 4. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`src/radio/stations.js`) — add ✅ `teamId`s, remove ❌ ones

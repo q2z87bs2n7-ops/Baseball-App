@@ -119,7 +119,7 @@ Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, 
 Two paste-and-try tools designed for hunting replacement URLs without editing code or redeploying.
 
 ### 🔍 Radio Check → Try a Custom URL
-A new section pinned at the top of the existing Radio Check overlay (Settings → 🔍 Radio Check). Paste any HLS (`.m3u8`) or MP3/Icecast stream URL, pick the format (or leave on `auto` — auto-detects HLS by extension), and tap **▶ Play**. The URL flows through the existing radio engine via `loadRadioStream({teamId:null, abbr:'TEST', name:'Custom · …', url, format})` so Hls.js routing, error handling, and the focus-pair UI all behave the same way as approved stations. Status row reports `playing` / failure so you don't have to listen for audio. Tap **⏹ Stop** in the footer to end the test (also clears the status row).
+A section pinned at the top of the Radio Check overlay (Dev Tools → 🔍 Radio Check button — moved from Settings in v3.43). Paste any HLS (`.m3u8`) or MP3/Icecast stream URL, pick the format (or leave on `auto` — auto-detects HLS by extension), and tap **▶ Play**. The URL flows through the existing radio engine via `loadRadioStream({teamId:null, abbr:'TEST', name:'Custom · …', url, format})` so Hls.js routing, error handling, and the focus-pair UI all behave the same way as approved stations. Status row reports `playing` / failure so you don't have to listen for audio. Tap **⏹ Stop** in the footer to end the test (also clears the status row).
 
 Use case: hunting for replacement URLs for the [Audacy rights gap](./radio-system.md#audacy-rights-gap) — try an iHeart / StreamTheWorld / Bonneville URL, confirm it actually plays game audio (not ads), then add it to `MLB_TEAM_RADIO`.
 
