@@ -8,7 +8,7 @@ export async function loadPulseNews() {
     var r=await fetch(API_BASE+'/api/proxy-news');
     if(!r.ok) throw new Error('Status '+r.status);
     var d=await r.json();
-    state.pulseNewsArticles=Array.isArray(d.articles)?(d.articles.slice(0,10)):[];
+    state.pulseNewsArticles=Array.isArray(d.articles)?(d.articles.filter(function(a){return a.image;}).slice(0,10)):[];
     state.pulseNewsIndex=0;
     renderPulseNewsCard();
   } catch(e) {
