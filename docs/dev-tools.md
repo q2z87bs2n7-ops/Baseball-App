@@ -86,6 +86,39 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
 
+## 🧪 Custom-URL Testers (added v3.38.9)
+
+Two paste-and-try tools designed for hunting replacement URLs without editing code or redeploying.
+
+### 🔍 Radio Check → Try a Custom URL
+A new section pinned at the top of the existing Radio Check overlay (Settings → 🔍 Radio Check). Paste any HLS (`.m3u8`) or MP3/Icecast stream URL, pick the format (or leave on `auto` — auto-detects HLS by extension), and tap **▶ Play**. The URL flows through the existing radio engine via `loadRadioStream({teamId:null, abbr:'TEST', name:'Custom · …', url, format})` so Hls.js routing, error handling, and the focus-pair UI all behave the same way as approved stations. Status row reports `playing` / failure so you don't have to listen for audio. Tap **⏹ Stop** in the footer to end the test (also clears the status row).
+
+Use case: hunting for replacement URLs for the [Audacy rights gap](./radio-system.md#audacy-rights-gap) — try an iHeart / StreamTheWorld / Bonneville URL, confirm it actually plays game audio (not ads), then add it to `MLB_TEAM_RADIO`.
+
+**Function:** `radioCheckTryCustom()` in `app.js`. URL is validated as `http(s)://`. Format `auto` looks for `.m3u8` extension (with optional querystring) → HLS, else MP3.
+
+### 📺 YouTube Channel Test
+New Dev Tools button (next to 🔬 News Source Test). Single overlay, two sections:
+
+**Try a Custom Channel** — pinned at top of the modal. Paste:
+- A raw UC channel id (`UCgIMbGazP0uBDy9JVCqBUaA`), or
+- A channel URL (`https://www.youtube.com/channel/UCxxx`)
+
+`@handle` / `/user/` / `/c/` URLs aren't supported (would need YouTube API to resolve handle → UC). The error message tells the user how to find the UC.
+
+**▶ Fetch** hits `/api/proxy-youtube?channel=UCxxx`, shows HTTP status, video count, response time, and previews the latest 5 videos with thumbnails. **⚙ Apply to {team}** sets `activeTeam.youtubeUC = uc` (session-only — TEAMS array is not modified) and calls `loadHomeYoutubeWidget()` so the home page reloads with the new channel for visual verification. Switching teams or refreshing reverts.
+
+**Sweep all 30** — bottom of the modal. Tests every team's `youtubeUC` plus the `MLB_FALLBACK_UC` and reports HTTP status + video count + response time per row. Per-row ▶ button retests just that channel. **📋 Copy Results** outputs ✅/❌/⏳ Markdown grouped by status. Ported from `claude/debug-youtube-api-SYBtV` branch (Anthropic, May 2026, with a custom-channel section added).
+
+**Functions** (all in `app.js`):
+- `parseYTChannelInput(s)` — UC/URL parser; returns `{uc}` or `{error}`
+- `ytDebugFetchCustom()` — one-channel fetch + preview
+- `ytDebugApplyToTeam(uc)` — session-only `activeTeam.youtubeUC` override + widget reload
+- `openYoutubeDebug()` / `closeYoutubeDebug()` — modal lifecycle (pre-fills input with current `activeTeam.youtubeUC`)
+- `ytDebugEntries()` — TEAMS array + MLB fallback
+- `runYoutubeDebugAll()` / `runYoutubeDebugOne(key)` — sweep
+- `renderYoutubeDebugList()`, `ytDebugReset()`, `ytDebugCopy()` — UI
+
 ## 📋 Diagnostic Snapshot (added v3.38.7)
 
 The headline feature for the v3.38 enhancement series: a single button that bundles **everything** the inspectors capture into one Markdown document and writes it to the clipboard. Drop it into a Claude chat and the agent has full context — version, section, active team, focus state, every game's status, last 50 feed events, story pool with priorities and cooldowns, last 50 log entries, last 50 network calls (with a separate "Failed" section), localStorage sizes, and Service Worker state.
