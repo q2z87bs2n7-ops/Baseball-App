@@ -9044,11 +9044,12 @@
     fetchLiveGame,
     switchBoxTab,
     selectCalGame,
-    // Carousel nav + news carousel
+    // Carousel nav (story carousel only — prevNewsCard/nextNewsCard are
+    // referenced from index.html but never implemented; intentionally omitted
+    // so the no-op stays a clean ReferenceError on click rather than
+    // crashing the bridge at script load time)
     prevStory,
     nextStory,
-    prevNewsCard,
-    nextNewsCard,
     // Demo Mode controls
     setDemoSpeed,
     demoNextHR,
