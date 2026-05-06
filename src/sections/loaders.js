@@ -348,7 +348,7 @@ async function buildGameDetailPanel(g,gameNum){
     html+='<div class="detail-highlight">';
     if(thumbUrl){
       html+='<div onclick="playHighlightVideo(this,\''+safeUrl+'\')" class="detail-highlight-thumb">';
-      html+='<img src="'+thumbUrl+'" loading="lazy">';
+      html+='<img src="'+forceHttps(thumbUrl)+'" loading="lazy" onerror="this.style.display=\'none\'">';
       html+='<div class="detail-highlight-overlay">';
       html+='<div class="detail-highlight-play">';
       html+='<span class="detail-highlight-arrow">▶</span></div></div></div>';

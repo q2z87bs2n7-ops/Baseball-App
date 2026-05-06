@@ -2787,6 +2787,9 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function forceHttps(url) {
+    return url ? url.replace(/^http:/, "https:") : url;
+  }
   function setYoutubeDebugCallbacks(cbs) {
     if (cbs.loadHomeYoutubeWidget) _loadHomeYoutubeWidget = cbs.loadHomeYoutubeWidget;
   }
@@ -2837,7 +2840,8 @@
       var html = '<div style="color:#22c55e;font-weight:700">\u2705 HTTP ' + o.res.status + " \xB7 " + o.j.count + " videos \xB7 " + ms + "ms</div>";
       html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
       v.forEach(function(vid) {
-        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(vid.thumb || "") + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || "") + "</div></div></div>";
+        var thumbUrl = vid.thumb ? forceHttps(vid.thumb) : "";
+        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(thumbUrl) + `" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy" onerror="this.style.display='none'"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">` + escapeHtml(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || "") + "</div></div></div>";
       });
       html += "</div>";
       html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam('` + escapeHtml(uc) + `')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">\u2699 Apply to ` + escapeHtml(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open \u2197</a></div>';
@@ -3166,6 +3170,9 @@
   }
 
   // src/data/clips.js
+  function forceHttps2(url) {
+    return url ? url.replace(/^http:/, "https:") : url;
+  }
   function pickPlayback(playbacks) {
     if (!playbacks || !playbacks.length) return null;
     var mp4 = playbacks.find(function(p) {
@@ -3217,7 +3224,8 @@
     el.dataset.clipPatched = "1";
     var wrap = document.createElement("div");
     wrap.style.cssText = "margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto";
-    wrap.innerHTML = (thumb ? '<img src="' + thumb + '" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">' : '<div style="width:100%;aspect-ratio:16/9;background:#111"></div>') + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">\u25B6</div></div>';
+    var thumbUrl = thumb ? forceHttps2(thumb) : "";
+    wrap.innerHTML = (thumbUrl ? '<img src="' + thumbUrl + `" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block" onerror="this.style.display='none'">` : '<div style="width:100%;aspect-ratio:16/9;background:#111"></div>') + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">\u25B6</div></div>';
     wrap.onclick = function(e) {
       e.stopPropagation();
       openVideoOverlay(url, title);
@@ -5012,7 +5020,7 @@
     var html = "";
     mediaVideos.forEach(function(v) {
       var sel = v.videoId === selectedVideoId;
-      var thumbUrl = v.thumb ? forceHttps(v.thumb) : "";
+      var thumbUrl = v.thumb ? forceHttps3(v.thumb) : "";
       html += `<div onclick="selectMediaVideo('` + v.videoId + `')" style="cursor:pointer;padding:10px;border-bottom:1px solid var(--border);background:` + (sel ? "color-mix(in srgb,var(--accent) 12%,transparent)" : "transparent") + ";" + (sel ? "border-left:3px solid var(--accent)" : "border-left:3px solid transparent") + '"><img src="' + thumbUrl + `" style="width:100%;border-radius:4px;margin-bottom:6px;display:block" loading="lazy" onerror="this.style.display='none'"/><div style="font-size:.72rem;font-weight:600;color:` + (sel ? "var(--accent)" : "var(--text)") + ';line-height:1.3;margin-bottom:3px">' + v.title + '</div><div style="font-size:.65rem;color:var(--muted)">' + v.date + "</div></div>";
     });
     listEl.innerHTML = html;
@@ -5297,7 +5305,7 @@
       html += '<div class="detail-highlight">';
       if (thumbUrl) {
         html += `<div onclick="playHighlightVideo(this,'` + safeUrl + `')" class="detail-highlight-thumb">`;
-        html += '<img src="' + thumbUrl + '" loading="lazy">';
+        html += '<img src="' + forceHttps3(thumbUrl) + `" loading="lazy" onerror="this.style.display='none'">`;
         html += '<div class="detail-highlight-overlay">';
         html += '<div class="detail-highlight-play">';
         html += '<span class="detail-highlight-arrow">\u25B6</span></div></div></div>';
@@ -5622,7 +5630,7 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
-  function forceHttps(url) {
+  function forceHttps3(url) {
     return url ? url.replace(/^http:/, "https:") : url;
   }
   function decodeNewsHtml(s) {
@@ -5644,7 +5652,7 @@
   function mkProxyNewsRow(item) {
     var icon = window.NEWS_SOURCE_ICONS ? window.NEWS_SOURCE_ICONS[item.source] || "\u{1F4F0}" : "\u{1F4F0}";
     var sourceClass = item.source ? " news-thumb--" + item.source : "";
-    var thumb = isSafeNewsImage(item.image) ? '<div class="news-thumb' + sourceClass + '"><img src="' + escapeNewsHtml(forceHttps(item.image)) + `" alt="" onerror="this.parentNode.innerHTML='<span class=&quot;news-thumb-placeholder&quot;>` + icon + `</span>'"></div>` : '<div class="news-thumb' + sourceClass + '"><span class="news-thumb-placeholder">' + icon + "</span></div>";
+    var thumb = isSafeNewsImage(item.image) ? '<div class="news-thumb' + sourceClass + '"><img src="' + escapeNewsHtml(forceHttps3(item.image)) + `" alt="" onerror="this.parentNode.innerHTML='<span class=&quot;news-thumb-placeholder&quot;>` + icon + `</span>'"></div>` : '<div class="news-thumb' + sourceClass + '"><span class="news-thumb-placeholder">' + icon + "</span></div>";
     var NEWS_SOURCE_LABELS2 = window.NEWS_SOURCE_LABELS || {};
     var src = NEWS_SOURCE_LABELS2[item.source] || item.source || "";
     var kicker = src ? '<div class="news-source-kicker">VIA ' + escapeNewsHtml(src) + "</div>" : "";
@@ -6645,7 +6653,7 @@
 
   // src/sections/yesterday.js
   var ydPrevSection = null;
-  function forceHttps2(url) {
+  function forceHttps4(url) {
     return url ? url.replace(/^http:/, "https:") : url;
   }
   function getYdActiveCache() {
@@ -7027,7 +7035,7 @@
     var tiles = heroes.map(function(h) {
       var lbl = typeof roleLabel[h.role] === "function" ? roleLabel[h.role](h) : roleLabel[h.role];
       var lastName = h.playerName ? h.playerName.split(" ").pop() : h.playerName;
-      var heroUrl = h.imageUrl ? forceHttps2(h.imageUrl) : "";
+      var heroUrl = h.imageUrl ? forceHttps4(h.imageUrl) : "";
       return '<div onclick="scrollToYdTile(' + h.gamePk + ')" style="cursor:pointer;flex-shrink:0;width:110px;position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border)"><img src="' + heroUrl + `" style="width:110px;height:74px;object-fit:cover;display:block" loading="lazy" onerror="this.style.display='none'"><div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.82));padding:4px 6px"><div style="font-size:.58rem;font-weight:700;color:#f59e0b;letter-spacing:.06em">` + lbl + '</div><div style="font-size:.68rem;font-weight:700;color:#fff">' + lastName + "</div></div></div>";
     }).join("");
     var heroesLabel = state.ydDateOffset === -1 ? "YESTERDAY'S HEROES" : "HEROES \xB7 " + getYesterdayDisplayStr().toUpperCase();
@@ -7063,7 +7071,7 @@
     var item = items[0];
     if (!item) return "";
     var imgUrl = pickHeroImage(item) || "";
-    var safeUrl = imgUrl ? forceHttps2(imgUrl) : "";
+    var safeUrl = imgUrl ? forceHttps4(imgUrl) : "";
     var title = (item.headline || item.blurb || "Game Highlight").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return '<div class="yd-game-thumb" onclick="playYesterdayClip(' + JSON.stringify(gamePk) + ',0)">' + (safeUrl ? '<img src="' + safeUrl + `" loading="lazy" alt="" onerror="this.style.display='none'">` : '<div style="width:100%;height:140px;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem">\u25B6</div>') + '<div class="yd-game-thumb-play"><span>\u25B6</span></div><div class="yd-game-thumb-label">' + title + "</div></div>";
   }
@@ -7801,13 +7809,13 @@
     var article = state.pulseNewsArticles[state.pulseNewsIndex];
     var img = "";
     if (article.image && isSafeNewsImage(article.image)) {
-      var imgUrl = forceHttps3(article.image);
+      var imgUrl = forceHttps5(article.image);
       img = '<img src="' + imgUrl + `" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block" onerror="this.style.display='none'">`;
     }
     var html = '<div style="padding:12px;display:flex;flex-direction:column;gap:8px">' + img + '<div style="font-size:.8rem;font-weight:600;color:var(--text);line-height:1.35">' + article.headline + '</div><div style="font-size:.65rem;color:var(--muted)">' + fmtNewsDate(article.pubDate) + "</div></div>";
     container.innerHTML = html;
   }
-  function forceHttps3(url) {
+  function forceHttps5(url) {
     return url ? url.replace(/^http:/, "https:") : url;
   }
   function nextNewsCard() {

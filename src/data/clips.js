@@ -7,6 +7,10 @@ import { state } from '../state.js';
 import { MLB_BASE } from '../config/constants.js';
 import { openVideoOverlay } from '../ui/overlays.js';
 
+function forceHttps(url) {
+  return url ? url.replace(/^http:/, 'https:') : url;
+}
+
 // MLB API returns playbacks as a list of formats. Prefer mp4Avc (broadcast quality),
 // fall back to any .mp4 URL. Returns null if no playable URL.
 export function pickPlayback(playbacks) {
@@ -59,7 +63,8 @@ export function patchFeedItemWithClip(feedItemTs, gamePk, clip) {
   el.dataset.clipPatched = '1';
   var wrap = document.createElement('div');
   wrap.style.cssText = 'margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto';
-  wrap.innerHTML = (thumb ? '<img src="' + thumb + '" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">' : '<div style="width:100%;aspect-ratio:16/9;background:#111"></div>')
+  var thumbUrl = thumb ? forceHttps(thumb) : '';
+  wrap.innerHTML = (thumbUrl ? '<img src="' + thumbUrl + '" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block" onerror="this.style.display=\'none\'">' : '<div style="width:100%;aspect-ratio:16/9;background:#111"></div>')
     + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'
     + '<div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">▶</div>'
     + '</div>';

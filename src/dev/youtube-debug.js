@@ -19,6 +19,10 @@ function escapeHtml(s) {
   });
 }
 
+function forceHttps(url) {
+  return url ? url.replace(/^http:/, 'https:') : url;
+}
+
 export function setYoutubeDebugCallbacks(cbs) {
   if (cbs.loadHomeYoutubeWidget) _loadHomeYoutubeWidget = cbs.loadHomeYoutubeWidget;
 }
@@ -76,7 +80,8 @@ export function ytDebugFetchCustom() {
       var html = '<div style="color:#22c55e;font-weight:700">✅ HTTP ' + o.res.status + ' · ' + o.j.count + ' videos · ' + ms + 'ms</div>';
       html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
       v.forEach(function(vid) {
-        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(vid.thumb || '') + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml(vid.title || '?') + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || '') + '</div></div></div>';
+        var thumbUrl = vid.thumb ? forceHttps(vid.thumb) : '';
+        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(thumbUrl) + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy" onerror="this.style.display=\'none\'"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml(vid.title || '?') + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || '') + '</div></div></div>';
       });
       html += '</div>';
       html += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam(\'' + escapeHtml(uc) + '\')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">⚙ Apply to ' + escapeHtml(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open ↗</a></div>';
