@@ -2865,13 +2865,13 @@ async function devTestVideoClip() {
 }
 
 async function pollPendingVideoClips() {
-  // Scan feedItems for HR plays whose feed element hasn't been patched with a clip yet.
+  // Scan feedItems for HR and scoring plays whose feed element hasn't been patched with a clip yet.
   var cutoff=Date.now()-2*60*60*1000;
   var feed=document.getElementById('feed');
   if(!feed) return;
   var pending=feedItems.filter(function(item){
     if(!item.data||!item.data.batterId) return false;
-    if(item.data.event!=='Home Run') return false;
+    if(item.data.event!=='Home Run'&&!item.data.scoring) return false;
     if(!item.ts||item.ts.getTime()<cutoff) return false;
     var el=feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
     return el&&!el.dataset.clipPatched;
@@ -2977,16 +2977,16 @@ function renderVideoDebugPanel(){
   if(!el) return;
   var html='';
 
-  // ── Section 1: HR feed items and their clip-patch state ──────────────────
+  // ── Section 1: HR / scoring play feed items and their clip-patch state ──────
   var feed=document.getElementById('feed');
   var cutoff=Date.now()-2*60*60*1000;
   var hrItems=feedItems.filter(function(item){
     if(!item.data||!item.data.batterId) return false;
-    if(item.data.event!=='Home Run') return false;
+    if(item.data.event!=='Home Run'&&!item.data.scoring) return false;
     return item.ts&&item.ts.getTime()>=cutoff;
   });
   html+='<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
-  html+='<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text)">🎯 HR feed items in last 2h — '+hrItems.length+' found</div>';
+  html+='<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text)">🎯 HR / scoring plays in last 2h — '+hrItems.length+' found</div>';
   if(!hrItems.length){
     html+='<div style="padding:8px 12px;color:var(--muted)">No qualifying plays in feedItems yet.</div>';
   } else {
@@ -3060,7 +3060,7 @@ function copyVideoDebug(){
   var feed=document.getElementById('feed');
   var cutoff=Date.now()-2*60*60*1000;
   var pendingItems=feedItems.filter(function(item){
-    return item.data&&item.data.batterId&&item.data.event==='Home Run'&&item.ts&&item.ts.getTime()>=cutoff;
+    return item.data&&item.data.batterId&&(item.data.event==='Home Run'||item.data.scoring)&&item.ts&&item.ts.getTime()>=cutoff;
   }).map(function(item){
     var domEl=feed&&feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
     return {gamePk:item.gamePk,batterName:item.data.batterName,batterId:item.data.batterId,event:item.data.event,ts:item.ts.toISOString(),clipPatched:!!(domEl&&domEl.dataset.clipPatched==='1')};
