@@ -8792,7 +8792,7 @@
   }
 
   // src/main.js
-  devTrace("boot", "app.js loaded \xB7 " + (/* @__PURE__ */ new Date()).toISOString());
+  devTrace("boot", "bundle loaded \xB7 " + (/* @__PURE__ */ new Date()).toISOString());
   var devTuningDefaults = {
     rotateMs: 4500,
     rbiThreshold: 10,

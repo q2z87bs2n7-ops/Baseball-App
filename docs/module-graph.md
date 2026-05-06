@@ -1,10 +1,11 @@
 # Module Graph
 
-Final layout of the bundled JS introduced over v3.39 and completed in v3.40.0.
-Source-of-truth lives under `src/`; `build.mjs` runs esbuild → `dist/app.bundle.js`
-(IIFE, ~464KB). `index.html` loads the bundle via dynamic `<script>` insertion
-gated on a `USE_BUNDLE` flag. The legacy monolithic `app.js` is preserved verbatim
-as a one-flag-flip fallback while the bundle proves stable.
+Final layout of the bundled JS introduced over v3.39, completed in v3.40.0,
+and decommissioned-from-fallback in v3.42.0. Source-of-truth lives under `src/`;
+`build.mjs` runs esbuild → `dist/app.bundle.js` (IIFE, ~464KB). `index.html`
+loads the bundle via a static `<script defer>`. Emergency revert path: the
+`pre-bundle-cleanup-v3.41` git tag still has the legacy `app.js` + `USE_BUNDLE`
+flag wiring in place.
 
 ---
 
@@ -182,11 +183,6 @@ dist/
 build.mjs                           — esbuild driver. `npm run build` →
                                      dist/app.bundle.js + sourcemap.
                                      `npm run watch` for dev.
-
-app.js                              — Legacy fallback (preserved verbatim).
-                                     Loaded only when USE_BUNDLE = false.
-                                     Do NOT edit; will be removed once the
-                                     bundle is fully proven.
 ```
 
 **Total:** ~30 modules, ~6,500 LOC distributed across `src/`. `main.js` is now
@@ -306,8 +302,6 @@ push to `main` if `src/**` or `build.mjs` changes — guarded with
 
 | Severity | Action | Effect |
 |---|---|---|
-| **L1** | edit `index.html`: `window.USE_BUNDLE = false`; commit + push | Next reload runs legacy `app.js`. Modules become dead code. |
+| **L1** | `git checkout pre-bundle-cleanup-v3.41` (or cherry-pick its `index.html` + `sw.js` + restore `app.js`) | Restores the `USE_BUNDLE` flag and the legacy `app.js` fallback. |
 | **L2** | `git revert <sha>` of a specific extraction commit | Removes that module + restores its inline code (only valid for a single extraction; the v3.40.0 series has cumulative dependencies). |
 | **L3** | bump `CACHE` in `sw.js` after L1 | Next SW activation drops cached bundle. |
-
-L1 is the panic button — one HTML edit, one commit, ~30s.

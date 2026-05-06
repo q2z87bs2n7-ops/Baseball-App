@@ -93,7 +93,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 | Hosting | GitHub Pages (static app) + Vercel (serverless API) |
 | Cron | GitHub Actions scheduled workflow |
 
-**Build pipeline is opt-in for source edits only.** Push to `main` and GitHub Actions rebuilds the bundle automatically — but `dist/app.bundle.js` is also committed so a manual run isn't required for static hosting. A `USE_BUNDLE = false` flag in `index.html` reverts to the legacy monolithic `app.js` (preserved verbatim) in one line if the bundle ever breaks.
+**Build pipeline is opt-in for source edits only.** Push to `main` and GitHub Actions rebuilds the bundle automatically — but `dist/app.bundle.js` is also committed so a manual run isn't required for static hosting. Emergency revert: `git checkout pre-bundle-cleanup-v3.41` restores the legacy `app.js` + `USE_BUNDLE` flag setup.
 
 ---
 
@@ -144,7 +144,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 - `feedItems` capped at 600 entries (oldest trimmed)
 - GUMBO `diffPatch` after initial seed — first call ~500KB, subsequent ~1–5KB
 - Boxscore cache shared across story generators
-- Service worker caches app shell (`index.html`, `styles.css`, `dist/app.bundle.js`, `app.js` legacy fallback, sidecar JS) for offline boot
+- Service worker caches app shell (`index.html`, `styles.css`, `dist/app.bundle.js`, sidecar JS) for offline boot
 - Theme variables persisted to localStorage and applied via inline `<script>` in `<head>` to prevent flash-of-wrong-theme on reload
 
 ---
@@ -175,7 +175,6 @@ src/                      — ES6 module source (~30 files): main.js + state.js
                             (full map: docs/module-graph.md)
 build.mjs                 — esbuild driver
 dist/app.bundle.js        — bundled IIFE build (~464KB), served by GitHub Pages
-app.js                    — legacy monolithic fallback (USE_BUNDLE=false)
 focusCard.js              — At-Bat Focus Mode visual templates
 pulse-card-templates.js   — HR/RBI player card variants (4 templates)
 collectionCard.js         — Card Collection binder visuals

@@ -15,7 +15,7 @@ Functions are split across ~30 ES6 modules under `src/` (full file map: `docs/mo
 | Dev Tools | `src/dev/tuning.js`, `src/dev/panels.js`, `src/dev/{youtube,video,news}-debug.js` | `docs/dev-tools.md` |
 | Auth + push | `src/auth/oauth.js`, `src/auth/session.js`, `src/push/push.js` | `docs/pwa-push.md` |
 
-The signatures listed in the rest of this file are organised by topic, not by module. The legacy `app.js` (preserved as `USE_BUNDLE=false` fallback) still inlines all of these — function names are identical so external onclick handlers and keyboard shortcuts work for both code paths.
+The signatures listed in the rest of this file are organised by topic, not by module.
 
 ## Theme & CSS
 
