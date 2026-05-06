@@ -23,6 +23,10 @@ import {
   MLB_TEAM_RADIO, FALLBACK_RADIO, APPROVED_RADIO_TEAM_IDS,
   RADIO_CHECK_DEFAULT_NOTES,
 } from './radio/stations.js';
+import {
+  pickRadioForFocus, stopAllMedia, toggleRadio, startRadio, loadRadioStream,
+  stopRadio, updateRadioForFocus, getCurrentTeamId,
+} from './radio/engine.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
@@ -4166,79 +4170,7 @@ function confirmDevToolsChanges(){
 // toggleSoundPanel imported from ./ui/sound.js
 // MLB Stats API teamId → primary flagship radio broadcast (extracted from radio.net)
 // `format`: 'hls' uses Hls.js (or native Safari); 'direct' is plain <audio> AAC/MP3
-// MLB_TEAM_RADIO + FALLBACK_RADIO + APPROVED_RADIO_TEAM_IDS imported from ./radio/stations.js
-var radioAudio=null;
-var radioHls=null;
-var radioCurrentTeamId=null;  // teamId whose broadcast is currently loaded; null = fallback
-function pickRadioForFocus(){
-  if(state.focusGamePk&&state.gameStates[state.focusGamePk]){
-    var g=state.gameStates[state.focusGamePk];
-    if(MLB_TEAM_RADIO[g.homeId]&&APPROVED_RADIO_TEAM_IDS.has(g.homeId)) return Object.assign({teamId:g.homeId,abbr:g.homeAbbr},MLB_TEAM_RADIO[g.homeId]);
-    if(MLB_TEAM_RADIO[g.awayId]&&APPROVED_RADIO_TEAM_IDS.has(g.awayId)) return Object.assign({teamId:g.awayId,abbr:g.awayAbbr},MLB_TEAM_RADIO[g.awayId]);
-  }
-  return Object.assign({teamId:null,abbr:''},FALLBACK_RADIO);
-}
-function stopAllMedia(except){
-  if(except!=='radio'&&radioAudio&&!radioAudio.paused){stopRadio();}
-  if(except!=='youtube'){var yt=document.getElementById('homeYoutubePlayer');if(yt&&yt.contentWindow){try{yt.contentWindow.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:''}),'*');}catch(e){}}}
-  if(except!=='highlight'){document.querySelectorAll('video').forEach(function(v){if(!v.paused)v.pause();});}
-}
-function toggleRadio(){if(radioAudio&&!radioAudio.paused){stopRadio();}else{startRadio();}}
-function startRadio(){devTrace('radio','startRadio');stopAllMedia('radio');loadRadioStream(pickRadioForFocus());}
-function loadRadioStream(pick){
-  if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
-  if(!radioAudio){radioAudio=new Audio();radioAudio.preload='none';}
-  radioAudio.pause();
-  radioCurrentTeamId=pick.teamId;
-  var isHls=pick.format==='hls';
-  var nativeHls=radioAudio.canPlayType('application/vnd.apple.mpegurl');
-  if(isHls&&window.Hls&&Hls.isSupported()){
-    radioHls=new Hls();
-    radioHls.loadSource(pick.url);
-    radioHls.attachMedia(radioAudio);
-    radioHls.on(Hls.Events.ERROR,function(_,d){if(d.fatal){console.error('HLS fatal:',d);handleRadioError(new Error(d.details||'HLS error'));}});
-    radioAudio.play().then(function(){setRadioUI(true,pick);}).catch(handleRadioError);
-  }else if(isHls&&nativeHls){
-    radioAudio.src=pick.url;
-    radioAudio.play().then(function(){setRadioUI(true,pick);}).catch(handleRadioError);
-  }else{
-    radioAudio.src=pick.url;
-    radioAudio.play().then(function(){setRadioUI(true,pick);}).catch(handleRadioError);
-  }
-}
-function stopRadio(){
-  devTrace('radio','stopRadio · was teamId='+radioCurrentTeamId);
-  if(radioAudio){radioAudio.pause();}
-  if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
-  radioCurrentTeamId=null;
-  setRadioUI(false,null);
-}
-function handleRadioError(err){
-  console.error('Radio play failed:',err);
-  alert('Radio failed: '+(err&&err.message?err.message:'unknown'));
-  setRadioUI(false,null);
-}
-function setRadioUI(on,pick){
-  var t=document.getElementById('radioToggle'),k=document.getElementById('radioToggleKnob'),s=document.getElementById('radioStatusText');
-  if(t){
-    if(on){
-      t.style.background='#22c55e';k.style.left='21px';
-      var label=pick&&pick.name?pick.name:'Radio';
-      if(pick&&pick.abbr) label=pick.abbr+' · '+label;
-      s.textContent='Playing · '+label;
-    }else{
-      t.style.background='var(--border)';k.style.left='3px';
-      s.textContent='Off · Auto-pairs to focus game';
-    }
-  }
-  var ptbDot=document.getElementById('ptbRadioDot');
-  if(ptbDot) ptbDot.style.display=on?'inline-block':'none';
-}
-function updateRadioForFocus(){
-  if(!radioAudio||radioAudio.paused) return;
-  var pick=pickRadioForFocus();
-  if(pick.teamId!==radioCurrentTeamId) loadRadioStream(pick);
-}
+// Radio engine imported from src/radio/engine.js
 
 // ── 🔍 Radio Check ────────────────────────────────────────────────────────
 var radioCheckResults={}; // key: teamId or 'fallback' → 'yes'|'no' (absent = untested)
@@ -4677,7 +4609,7 @@ function _stateContext(){
     themeOverride: typeof state.themeOverride!=='undefined' && state.themeOverride ? (state.themeOverride.short||'set') : null,
     themeInvert: typeof state.themeInvert!=='undefined' ? !!state.themeInvert : '?',
     devColorLocked: typeof state.devColorLocked!=='undefined' ? !!state.devColorLocked : '?',
-    radioCurrentTeamId: typeof radioCurrentTeamId!=='undefined' ? radioCurrentTeamId : null,
+    radioCurrentTeamId: getCurrentTeamId(),
     focusGamePk: typeof state.focusGamePk!=='undefined' ? state.focusGamePk : null,
     focusIsManual: typeof state.focusIsManual!=='undefined' ? !!state.focusIsManual : '?',
     counts: {

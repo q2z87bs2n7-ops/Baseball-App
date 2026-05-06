@@ -472,94 +472,6 @@
     "158": "URL updated v3.34.1 \u2014 not yet confirmed"
   };
 
-  // src/auth/oauth.js
-  function signInWithGitHub() {
-    const state2 = Math.random().toString(36).slice(2, 15);
-    const githubAuthUrl = "https://github.com/login/oauth/authorize?client_id=Ov23lilv8CB5JzyvevZE&redirect_uri=" + encodeURIComponent(window.location.origin + "/api/auth/github") + "&state=" + state2 + "&scope=user:email";
-    window.location = githubAuthUrl;
-  }
-  function signInWithEmail() {
-    var email = prompt("Enter your email to receive a sign-in link:");
-    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      return alert("Invalid email");
-    }
-    fetch((API_BASE || "") + "/api/auth/email-request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    }).then((r) => r.json()).then((d) => {
-      if (d.error) alert("Error: " + d.error);
-      else alert(d.message);
-    }).catch((e) => alert("Network error"));
-  }
-
-  // src/push/push.js
-  var VAPID_PUBLIC_KEY = "BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE";
-  function urlBase64ToUint8Array(b64) {
-    var pad = "=".repeat((4 - b64.length % 4) % 4);
-    var raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
-    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
-  }
-  async function subscribeToPush() {
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
-      await fetch((API_BASE || "") + "/api/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(sub)
-      });
-      localStorage.setItem("mlb_push", "1");
-      document.getElementById("pushStatusText").textContent = "On";
-    } catch (err) {
-      document.getElementById("pushToggle").style.background = "var(--border)";
-      document.getElementById("pushToggleKnob").style.left = "3px";
-      document.getElementById("pushStatusText").textContent = "Permission Denied";
-    }
-  }
-  async function unsubscribeFromPush() {
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        await sub.unsubscribe();
-        await fetch((API_BASE || "") + "/api/subscribe", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint: sub.endpoint })
-        });
-      }
-    } catch (e) {
-    }
-    localStorage.removeItem("mlb_push");
-    document.getElementById("pushStatusText").textContent = "Off";
-  }
-  function togglePush() {
-    var tog = document.getElementById("pushToggle");
-    var knob = document.getElementById("pushToggleKnob");
-    var enabled = localStorage.getItem("mlb_push") === "1";
-    if (!enabled) {
-      if (!("serviceWorker" in navigator && "PushManager" in window)) {
-        document.getElementById("pushStatusText").textContent = "Not Supported On This Browser";
-        return;
-      }
-      if (!VAPID_PUBLIC_KEY) {
-        document.getElementById("pushStatusText").textContent = "Push Not Configured Yet";
-        return;
-      }
-      tog.style.background = "var(--secondary)";
-      knob.style.left = "21px";
-      subscribeToPush();
-    } else {
-      tog.style.background = "var(--border)";
-      knob.style.left = "3px";
-      unsubscribeFromPush();
-    }
-  }
-
   // src/state.js
   var state = {
     // ── Team & UI State ──────────────────────────────────────────────────────
@@ -729,6 +641,227 @@
     demoDate: null,
     demoCurrentTime: 0
   };
+
+  // src/radio/engine.js
+  var radioAudio2 = null;
+  var radioHls = null;
+  var radioCurrentTeamId = null;
+  function pickRadioForFocus() {
+    if (state.focusGamePk && state.gameStates[state.focusGamePk]) {
+      var g = state.gameStates[state.focusGamePk];
+      if (MLB_TEAM_RADIO[g.homeId] && APPROVED_RADIO_TEAM_IDS.has(g.homeId))
+        return Object.assign({ teamId: g.homeId, abbr: g.homeAbbr }, MLB_TEAM_RADIO[g.homeId]);
+      if (MLB_TEAM_RADIO[g.awayId] && APPROVED_RADIO_TEAM_IDS.has(g.awayId))
+        return Object.assign({ teamId: g.awayId, abbr: g.awayAbbr }, MLB_TEAM_RADIO[g.awayId]);
+    }
+    return Object.assign({ teamId: null, abbr: "" }, FALLBACK_RADIO);
+  }
+  function stopAllMedia(except) {
+    if (except !== "radio" && radioAudio2 && !radioAudio2.paused) {
+      stopRadio();
+    }
+    if (except !== "youtube") {
+      var yt = document.getElementById("homeYoutubePlayer");
+      if (yt && yt.contentWindow) {
+        try {
+          yt.contentWindow.postMessage(JSON.stringify({ event: "command", func: "pauseVideo", args: "" }), "*");
+        } catch (e) {
+        }
+      }
+    }
+    if (except !== "highlight") {
+      document.querySelectorAll("video").forEach(function(v) {
+        if (!v.paused) v.pause();
+      });
+    }
+  }
+  function toggleRadio() {
+    if (radioAudio2 && !radioAudio2.paused) {
+      stopRadio();
+    } else {
+      startRadio();
+    }
+  }
+  function startRadio() {
+    devTrace("radio", "startRadio");
+    stopAllMedia("radio");
+    loadRadioStream(pickRadioForFocus());
+  }
+  function loadRadioStream(pick) {
+    if (radioHls) {
+      try {
+        radioHls.destroy();
+      } catch (e) {
+      }
+      radioHls = null;
+    }
+    if (!radioAudio2) {
+      radioAudio2 = new Audio();
+      radioAudio2.preload = "none";
+    }
+    radioAudio2.pause();
+    radioCurrentTeamId = pick.teamId;
+    var isHls = pick.format === "hls";
+    var nativeHls = radioAudio2.canPlayType("application/vnd.apple.mpegurl");
+    if (isHls && window.Hls && Hls.isSupported()) {
+      radioHls = new Hls();
+      radioHls.loadSource(pick.url);
+      radioHls.attachMedia(radioAudio2);
+      radioHls.on(Hls.Events.ERROR, function(_, d) {
+        if (d.fatal) {
+          console.error("HLS fatal:", d);
+          handleRadioError(new Error(d.details || "HLS error"));
+        }
+      });
+      radioAudio2.play().then(function() {
+        setRadioUI(true, pick);
+      }).catch(handleRadioError);
+    } else if (isHls && nativeHls) {
+      radioAudio2.src = pick.url;
+      radioAudio2.play().then(function() {
+        setRadioUI(true, pick);
+      }).catch(handleRadioError);
+    } else {
+      radioAudio2.src = pick.url;
+      radioAudio2.play().then(function() {
+        setRadioUI(true, pick);
+      }).catch(handleRadioError);
+    }
+  }
+  function stopRadio() {
+    devTrace("radio", "stopRadio \xB7 was teamId=" + radioCurrentTeamId);
+    if (radioAudio2) {
+      radioAudio2.pause();
+    }
+    if (radioHls) {
+      try {
+        radioHls.destroy();
+      } catch (e) {
+      }
+      radioHls = null;
+    }
+    radioCurrentTeamId = null;
+    setRadioUI(false, null);
+  }
+  function handleRadioError(err) {
+    console.error("Radio play failed:", err);
+    alert("Radio failed: " + (err && err.message ? err.message : "unknown"));
+    setRadioUI(false, null);
+  }
+  function setRadioUI(on, pick) {
+    var t = document.getElementById("radioToggle"), k = document.getElementById("radioToggleKnob"), s = document.getElementById("radioStatusText");
+    if (t) {
+      if (on) {
+        t.style.background = "#22c55e";
+        k.style.left = "21px";
+        var label = pick && pick.name ? pick.name : "Radio";
+        if (pick && pick.abbr) label = pick.abbr + " \xB7 " + label;
+        s.textContent = "Playing \xB7 " + label;
+      } else {
+        t.style.background = "var(--border)";
+        k.style.left = "3px";
+        s.textContent = "Off \xB7 Auto-pairs to focus game";
+      }
+    }
+    var ptbDot = document.getElementById("ptbRadioDot");
+    if (ptbDot) ptbDot.style.display = on ? "inline-block" : "none";
+  }
+  function updateRadioForFocus() {
+    if (!radioAudio2 || radioAudio2.paused) return;
+    var pick = pickRadioForFocus();
+    if (pick.teamId !== radioCurrentTeamId) loadRadioStream(pick);
+  }
+  function getCurrentTeamId() {
+    return radioCurrentTeamId;
+  }
+
+  // src/auth/oauth.js
+  function signInWithGitHub() {
+    const state2 = Math.random().toString(36).slice(2, 15);
+    const githubAuthUrl = "https://github.com/login/oauth/authorize?client_id=Ov23lilv8CB5JzyvevZE&redirect_uri=" + encodeURIComponent(window.location.origin + "/api/auth/github") + "&state=" + state2 + "&scope=user:email";
+    window.location = githubAuthUrl;
+  }
+  function signInWithEmail() {
+    var email = prompt("Enter your email to receive a sign-in link:");
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return alert("Invalid email");
+    }
+    fetch((API_BASE || "") + "/api/auth/email-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    }).then((r) => r.json()).then((d) => {
+      if (d.error) alert("Error: " + d.error);
+      else alert(d.message);
+    }).catch((e) => alert("Network error"));
+  }
+
+  // src/push/push.js
+  var VAPID_PUBLIC_KEY = "BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE";
+  function urlBase64ToUint8Array(b64) {
+    var pad = "=".repeat((4 - b64.length % 4) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+  async function subscribeToPush() {
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+      await fetch((API_BASE || "") + "/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub)
+      });
+      localStorage.setItem("mlb_push", "1");
+      document.getElementById("pushStatusText").textContent = "On";
+    } catch (err) {
+      document.getElementById("pushToggle").style.background = "var(--border)";
+      document.getElementById("pushToggleKnob").style.left = "3px";
+      document.getElementById("pushStatusText").textContent = "Permission Denied";
+    }
+  }
+  async function unsubscribeFromPush() {
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await sub.unsubscribe();
+        await fetch((API_BASE || "") + "/api/subscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: sub.endpoint })
+        });
+      }
+    } catch (e) {
+    }
+    localStorage.removeItem("mlb_push");
+    document.getElementById("pushStatusText").textContent = "Off";
+  }
+  function togglePush() {
+    var tog = document.getElementById("pushToggle");
+    var knob = document.getElementById("pushToggleKnob");
+    var enabled = localStorage.getItem("mlb_push") === "1";
+    if (!enabled) {
+      if (!("serviceWorker" in navigator && "PushManager" in window)) {
+        document.getElementById("pushStatusText").textContent = "Not Supported On This Browser";
+        return;
+      }
+      if (!VAPID_PUBLIC_KEY) {
+        document.getElementById("pushStatusText").textContent = "Push Not Configured Yet";
+        return;
+      }
+      tog.style.background = "var(--secondary)";
+      knob.style.left = "21px";
+      subscribeToPush();
+    } else {
+      tog.style.background = "var(--border)";
+      knob.style.left = "3px";
+      unsubscribeFromPush();
+    }
+  }
 
   // src/main.js
   var DEBUG2 = false;
@@ -5292,132 +5425,6 @@
       btn.classList.remove("applied");
     }, 1500);
   }
-  var radioAudio = null;
-  var radioHls = null;
-  var radioCurrentTeamId = null;
-  function pickRadioForFocus() {
-    if (state.focusGamePk && state.gameStates[state.focusGamePk]) {
-      var g = state.gameStates[state.focusGamePk];
-      if (MLB_TEAM_RADIO[g.homeId] && APPROVED_RADIO_TEAM_IDS.has(g.homeId)) return Object.assign({ teamId: g.homeId, abbr: g.homeAbbr }, MLB_TEAM_RADIO[g.homeId]);
-      if (MLB_TEAM_RADIO[g.awayId] && APPROVED_RADIO_TEAM_IDS.has(g.awayId)) return Object.assign({ teamId: g.awayId, abbr: g.awayAbbr }, MLB_TEAM_RADIO[g.awayId]);
-    }
-    return Object.assign({ teamId: null, abbr: "" }, FALLBACK_RADIO);
-  }
-  function stopAllMedia(except) {
-    if (except !== "radio" && radioAudio && !radioAudio.paused) {
-      stopRadio();
-    }
-    if (except !== "youtube") {
-      var yt = document.getElementById("homeYoutubePlayer");
-      if (yt && yt.contentWindow) {
-        try {
-          yt.contentWindow.postMessage(JSON.stringify({ event: "command", func: "pauseVideo", args: "" }), "*");
-        } catch (e) {
-        }
-      }
-    }
-    if (except !== "highlight") {
-      document.querySelectorAll("video").forEach(function(v) {
-        if (!v.paused) v.pause();
-      });
-    }
-  }
-  function toggleRadio() {
-    if (radioAudio && !radioAudio.paused) {
-      stopRadio();
-    } else {
-      startRadio();
-    }
-  }
-  function startRadio() {
-    devTrace("radio", "startRadio");
-    stopAllMedia("radio");
-    loadRadioStream(pickRadioForFocus());
-  }
-  function loadRadioStream(pick) {
-    if (radioHls) {
-      try {
-        radioHls.destroy();
-      } catch (e) {
-      }
-      radioHls = null;
-    }
-    if (!radioAudio) {
-      radioAudio = new Audio();
-      radioAudio.preload = "none";
-    }
-    radioAudio.pause();
-    radioCurrentTeamId = pick.teamId;
-    var isHls = pick.format === "hls";
-    var nativeHls = radioAudio.canPlayType("application/vnd.apple.mpegurl");
-    if (isHls && window.Hls && Hls.isSupported()) {
-      radioHls = new Hls();
-      radioHls.loadSource(pick.url);
-      radioHls.attachMedia(radioAudio);
-      radioHls.on(Hls.Events.ERROR, function(_, d) {
-        if (d.fatal) {
-          console.error("HLS fatal:", d);
-          handleRadioError(new Error(d.details || "HLS error"));
-        }
-      });
-      radioAudio.play().then(function() {
-        setRadioUI(true, pick);
-      }).catch(handleRadioError);
-    } else if (isHls && nativeHls) {
-      radioAudio.src = pick.url;
-      radioAudio.play().then(function() {
-        setRadioUI(true, pick);
-      }).catch(handleRadioError);
-    } else {
-      radioAudio.src = pick.url;
-      radioAudio.play().then(function() {
-        setRadioUI(true, pick);
-      }).catch(handleRadioError);
-    }
-  }
-  function stopRadio() {
-    devTrace("radio", "stopRadio \xB7 was teamId=" + radioCurrentTeamId);
-    if (radioAudio) {
-      radioAudio.pause();
-    }
-    if (radioHls) {
-      try {
-        radioHls.destroy();
-      } catch (e) {
-      }
-      radioHls = null;
-    }
-    radioCurrentTeamId = null;
-    setRadioUI(false, null);
-  }
-  function handleRadioError(err) {
-    console.error("Radio play failed:", err);
-    alert("Radio failed: " + (err && err.message ? err.message : "unknown"));
-    setRadioUI(false, null);
-  }
-  function setRadioUI(on, pick) {
-    var t = document.getElementById("radioToggle"), k = document.getElementById("radioToggleKnob"), s = document.getElementById("radioStatusText");
-    if (t) {
-      if (on) {
-        t.style.background = "#22c55e";
-        k.style.left = "21px";
-        var label = pick && pick.name ? pick.name : "Radio";
-        if (pick && pick.abbr) label = pick.abbr + " \xB7 " + label;
-        s.textContent = "Playing \xB7 " + label;
-      } else {
-        t.style.background = "var(--border)";
-        k.style.left = "3px";
-        s.textContent = "Off \xB7 Auto-pairs to focus game";
-      }
-    }
-    var ptbDot = document.getElementById("ptbRadioDot");
-    if (ptbDot) ptbDot.style.display = on ? "inline-block" : "none";
-  }
-  function updateRadioForFocus() {
-    if (!radioAudio || radioAudio.paused) return;
-    var pick = pickRadioForFocus();
-    if (pick.teamId !== radioCurrentTeamId) loadRadioStream(pick);
-  }
   var radioCheckResults = {};
   var radioCheckNotes = {};
   var radioCheckPlayingKey = null;
@@ -5949,7 +5956,7 @@
       themeOverride: typeof state.themeOverride !== "undefined" && state.themeOverride ? state.themeOverride.short || "set" : null,
       themeInvert: typeof state.themeInvert !== "undefined" ? !!state.themeInvert : "?",
       devColorLocked: typeof state.devColorLocked !== "undefined" ? !!state.devColorLocked : "?",
-      radioCurrentTeamId: typeof radioCurrentTeamId !== "undefined" ? radioCurrentTeamId : null,
+      radioCurrentTeamId: getCurrentTeamId(),
       focusGamePk: typeof state.focusGamePk !== "undefined" ? state.focusGamePk : null,
       focusIsManual: typeof state.focusIsManual !== "undefined" ? !!state.focusIsManual : "?",
       counts: {
