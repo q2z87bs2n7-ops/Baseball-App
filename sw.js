@@ -1,4 +1,4 @@
-const CACHE = 'mlb-v540'; // bump this version on every deploy to force cache refresh
+const CACHE = 'mlb-v545'; // bump this version on every deploy to force cache refresh
 // SHELL lists both ./app.js (legacy) and ./dist/app.bundle.js (modular bundle)
 // so the USE_BUNDLE flag in index.html can swap between them without a new SW.
 const SHELL = ['./', './manifest.json', './styles.css', './app.js', './dist/app.bundle.js', './pulse-card-templates.js', './focusCard.js', './collectionCard.js', './icons/icon-192.png', './icons/icon-512.png'];
