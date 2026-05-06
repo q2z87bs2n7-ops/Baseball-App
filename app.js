@@ -2932,17 +2932,14 @@ async function pollPendingVideoClips() {
           return false;
         });
       }
-      // 4-tier priority: player_id in scoringClips → player_id in broadcastClips →
-      // nearest-timestamp in scoringClips → nearest-timestamp in broadcastClips.
-      // This prevents a player whose clip lacks the home-run tag from being matched
-      // to another player's clip via timestamp when the game has mixed-tag clips.
+      // Only match when the clip carries the batter's player_id.
+      // Timestamp fallback was removed: it confidently patched the wrong play's clip
+      // (e.g. a sac fly clip onto a HR feed item) whenever the real clip wasn't
+      // published yet. No clip is better than the wrong clip — unpatched items retry
+      // on the next 30s poll.
       var playerFromScoring=scoringClips.filter(hasPlayer);
       var playerFromBroadcast=broadcastClips.filter(hasPlayer);
-      var pool=playerFromScoring.length?playerFromScoring
-              :playerFromBroadcast.length?playerFromBroadcast
-              :scoringClips.length?scoringClips
-              :broadcastClips;
-      var isPlayerMatched=playerFromScoring.length||playerFromBroadcast.length;
+      var pool=playerFromScoring.length?playerFromScoring:playerFromBroadcast;
       var best=null,bestDiff=Infinity;
       pool.forEach(function(clip){
         var clipTs=clip.date?new Date(clip.date).getTime():null;
@@ -2950,11 +2947,7 @@ async function pollPendingVideoClips() {
         var diff=Math.abs(clipTs-playTs);
         if(diff<bestDiff){bestDiff=diff;best=clip;}
       });
-      var limit=isPlayerMatched?Infinity:90*60*1000;
-      // HR clips typically take 1-2 min to publish after the play. If no player_id match
-      // was found, skip patching this poll so the next 30s retry can find the correct clip.
-      var isHR=item.data.event==='Home Run';
-      if(best&&bestDiff<limit&&(isPlayerMatched||!isHR)){
+      if(best){
         lastVideoClip=best;
         patchFeedItemWithClip(playTs,gpk,best);
       }

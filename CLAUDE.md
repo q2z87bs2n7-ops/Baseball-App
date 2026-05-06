@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.37.3
+**Current version:** v3.37.5
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -23,6 +23,7 @@ An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pull
 - **v3.36** — HR video clips: fix 4 bugs (historical plays not queued, player_id slug fallback, undated clips, 30s poll); drop pendingVideoQueue, scan feedItems directly; filter scoring/HR taxonomy; restore player_id as primary match; exclude Statcast/Savant clips; Video Debug panel in Dev Tools
 - **v3.37** — taxonomy hyphens fix (`home_run`→`home-run`); exclude data-visualization (darkroom) clips; 4-tier player matching; restore scoring plays to clip matching; remove carousel video clip integration (`patchStoryWithClip`)
 - **v3.37.3** — exclude ABS challenge clips from video clip matching; ABS clips carry the batter's `player_id` but are pitch-review overlays whose timestamps beat the actual hit clip, causing wrong clip to show
+- **v3.37.5** — remove timestamp fallback from clip matching; only player_id matches produce a clip patch; unmatched plays retry on next 30s poll rather than showing a clip from a different play
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
@@ -936,7 +937,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `openVideoOverlay(url, title)` | Shows `#videoOverlay` (z-index 800) with the given MP4 URL and title string. Sets `<video src>`, calls `play()`. Backdrop click or ✕ button calls `closeVideoOverlay()`. |
 | `closeVideoOverlay()` | Pauses and clears `#videoOverlayPlayer` src, hides `#videoOverlay`. |
 | `devTestVideoClip()` | Dev tool — opens video overlay using fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game. Wired to `Shift+W` and Dev Tools panel. |
-| `pollPendingVideoClips()` | Background poll (every 30s, also called at end of each `pollLeaguePulse()`). Scans `feedItems` for HR and scoring plays whose DOM element lacks `data-clip-patched`. Fetches `/game/{pk}/content` per game (cached in `liveContentCache`, 5min TTL; data-visualization/darkroom clips excluded at fill time). Excludes Statcast/Savant clips and ABS challenge clips (taxonomy contains both `"abs"` and `"challenge"`) from matching — ABS clips carry the batter's player_id but are pitch-review overlays whose timestamps often precede the actual hit clip. 4-tier match per play: player_id in scoring-tagged clips → player_id in broadcast clips → nearest-timestamp in scoring clips → nearest-timestamp in broadcast clips. No time cap when player_id matched; 90-min cap for timestamp fallback. On match: sets `lastVideoClip`, calls `patchFeedItemWithClip`. |
+| `pollPendingVideoClips()` | Background poll (every 30s, also called at end of each `pollLeaguePulse()`). Scans `feedItems` for HR and scoring plays whose DOM element lacks `data-clip-patched`. Fetches `/game/{pk}/content` per game (cached in `liveContentCache`, 5min TTL; data-visualization/darkroom clips excluded at fill time). Excludes Statcast/Savant clips and ABS challenge clips (taxonomy contains both `"abs"` and `"challenge"`) from matching. Match strategy: player_id in scoring-tagged clips (has `home-run`/`scoring-play`/`walk-off` taxonomy) → player_id in broadcast clips. No timestamp fallback — if no player_id match is found the item remains unpatched and retries next poll (clips typically publish 1–2 min after the play). On match: picks nearest timestamp within the player_id pool, sets `lastVideoClip`, calls `patchFeedItemWithClip`. |
 | `patchFeedItemWithClip(feedItemTs, gamePk, clip)` | Finds the HR/scoring-play feed item DOM node via `data-ts` + `data-gamepk`, appends a thumbnail + ▶ overlay div. Clicking opens `openVideoOverlay()`. Guards against double-patching via `el.dataset.clipPatched`. |
 | `calcFocusScore(g)` | Returns a numeric tension score for a live game object from `gameStates`. Formula: closeness (0–60) + situation bonus (runners/RISP/bases-loaded/walk-off/no-hitter) + count bonus (full count +20, 2-strike +12, 2-out +8) × inning multiplier (0.6 early → 2.0 extras). Higher = more exciting. Used by `selectFocusGame()` to auto-pick the best game. |
 | `selectFocusGame()` | Evaluates all live games via `calcFocusScore()`. If a non-focused game scores ≥20pts higher, fires a soft alert via `showFocusAlert()`. On first call with no focused game, calls `setFocusGame()` with the top scorer. Hooked into end of `pollLeaguePulse()`. |
