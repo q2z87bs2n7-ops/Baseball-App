@@ -1596,11 +1596,24 @@ function genInningRecapStories(){
       return item.gamePk===g.gamePk&&item.data&&item.data.inning===recapInning&&item.data.halfInning===recapHalf&&item.data.type==='play';
     });
     if(!inningPlays.length) return;
-    var runs=0,strikeouts=0,walks=0,hrs=0,dps=0,errors=0,playerHRs=[],pitcherNames=new Set(),hadRisp=false,dpBatter=null;
+    var lastPlayInInning=inningPlays[inningPlays.length-1];
+    var finalAwayScore=lastPlayInInning.data.awayScore;
+    var finalHomeScore=lastPlayInInning.data.homeScore;
+    var startAwayScore=0,startHomeScore=0;
+    for(var i=feedItems.length-1;i>=0;i--){
+      if(feedItems[i].data&&feedItems[i].data.type==='play'&&feedItems[i].gamePk===g.gamePk){
+        if(feedItems[i].data.inning<recapInning||(feedItems[i].data.inning===recapInning&&feedItems[i].data.halfInning!==recapHalf)){
+          startAwayScore=feedItems[i].data.awayScore;
+          startHomeScore=feedItems[i].data.homeScore;
+          break;
+        }
+      }
+    }
+    var runs=recapHalf==='top'?(finalAwayScore-startAwayScore):(finalHomeScore-startHomeScore);
+    var strikeouts=0,walks=0,hrs=0,dps=0,errors=0,playerHRs=[],pitcherNames=new Set(),hadRisp=false,dpBatter=null;
     var isClean123=inningPlays.length===3&&!inningPlays.some(function(p){return p.data.scoring;});
     var runnersLeftOn=false;
     inningPlays.forEach(function(play){
-      if(play.data.scoring) runs++;
       if(play.data.risp) hadRisp=true;
       if(play.data.desc.indexOf('strikes out')!==-1) strikeouts++;
       if(play.data.desc.indexOf('walk')!==-1) walks++;
