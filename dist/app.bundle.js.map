@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/main.js"],
+  "sourcesContent": ["// MLB Pulse \u2014 modular bundle entry point.\n// This file is filled in by Commit 2. Commit 1 provides the scaffolding only.\n// Boot order, when implemented:\n//   1. diag/devLog.js  (console wrap \u2014 must run before anything else logs)\n//   2. diag/devNet.js  (fetch wrap \u2014 must run before anything else fetches)\n//   3. state.js + config/* (foundation)\n//   4. All subsystems (pulse, focus, carousel, ...)\n//   5. bridge/windowGlobals.js (expose ~70 onclick handlers)\n//   6. Boot IIFE (restores localStorage, applies theme, starts polls)\nconsole.log('[boot] src/main.js placeholder \u2014 bundle not yet wired into index.html');\n"],
+  "mappings": ";;AASA,UAAQ,IAAI,4EAAuE;",
+  "names": []
+}
