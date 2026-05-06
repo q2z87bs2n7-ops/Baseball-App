@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.38.7</title>
+<title>MLB Pulse v3.38.8</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -86,7 +86,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.38.7</div>
+        <div class="settings-version">v3.38.8</div>
       </div>
     </div>
   </div>
@@ -384,18 +384,19 @@
     <span class="dev-panel-title">🛠️ Dev Tools</span>
     <button class="debug-close" data-dt-action="close">✕</button>
   </div>
+  <div class="dt-group-hd">Actions</div>
   <div class="dev-buttons">
     <button class="dev-btn" data-dt-action="demo">
       <div class="dev-btn-label" id="demoBtnLabel">▶ Try Demo</div>
-      <div class="dev-btn-shortcut">Shift+H</div>
+      <div class="dev-btn-shortcut">Shift+M</div>
     </button>
     <button class="dev-btn" data-dt-action="replayHR">
       <div class="dev-btn-label">🎬 Replay HR</div>
-      <div class="dev-btn-shortcut">Shift+R</div>
+      <div class="dev-btn-shortcut">Shift+H</div>
     </button>
     <button class="dev-btn" data-dt-action="replayRBI">
       <div class="dev-btn-label">💰 Replay RBI</div>
-      <div class="dev-btn-shortcut">Shift+E</div>
+      <div class="dev-btn-shortcut">Shift+B</div>
     </button>
     <button class="dev-btn" data-dt-action="cardVariants">
       <div class="dev-btn-label">💫 Card Variants</div>
@@ -407,7 +408,7 @@
     </button>
     <button class="dev-btn" data-dt-action="testClip">
       <div class="dev-btn-label">📽️ Test Clip</div>
-      <div class="dev-btn-shortcut">Shift+W</div>
+      <div class="dev-btn-shortcut">Shift+P</div>
     </button>
     <button class="dev-btn" data-dt-action="videoDebug">
       <div class="dev-btn-label">📹 Video Debug</div>
@@ -433,7 +434,82 @@
       <div id="liveControlsBody" style="margin-top:0.625rem;display:flex;flex-direction:column;gap:10px;font-size:.65rem"></div>
     </details>
   </div>
+  <div class="dt-group-hd">Inspectors</div>
+  <div style="padding:12px 15px">
+    <details id="appStateDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">📊 App State <span id="appStateCounts" style="color:var(--muted);font-weight:500"></span> <span style="float:right;color:var(--muted);font-weight:500;font-size:.6rem">Shift+S</span></summary>
+      <div id="appStateBody" style="margin-top:0.625rem;display:flex;flex-direction:column;gap:8px"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button id="appStateCopyBtn" data-dt-action="copyState" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy All State</button>
+        <button data-dt-action="refreshState" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
+      </div>
+    </details>
+  </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details id="logCaptureDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🔍 Log Capture <span id="logCaptureCount" style="color:var(--muted);font-weight:500">(0)</span> <span style="float:right;color:var(--muted);font-weight:500;font-size:.6rem">Shift+L</span></summary>
+      <div style="margin-top:0.625rem;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.65rem">
+          <label style="color:var(--muted)">Level
+            <select id="logCaptureLevel" style="margin-left:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:2px 4px;border-radius:4px">
+              <option value="all">all</option>
+              <option value="error">error</option>
+              <option value="warn">warn+</option>
+              <option value="log">log+</option>
+            </select>
+          </label>
+          <input id="logCaptureFilter" type="text" placeholder="filter…" style="flex:1;min-width:80px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:2px 6px;border-radius:4px">
+        </div>
+        <div id="logCaptureList" class="dt-mono" style="max-height:240px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 8px"></div>
+        <div style="display:flex;gap:6px">
+          <button id="logCaptureCopyBtn" data-dt-action="copyLog" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
+          <button data-dt-action="clearLog" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">Clear</button>
+          <button data-dt-action="refreshLog" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄</button>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details id="netTraceDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🌐 Network <span id="netTraceCount" style="color:var(--muted);font-weight:500">(0)</span></summary>
+      <div id="netTraceList" class="dt-mono" style="margin-top:0.625rem;max-height:240px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 8px"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button id="netTraceCopyBtn" data-dt-action="copyNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
+        <button data-dt-action="clearNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">Clear</button>
+        <button data-dt-action="refreshNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄</button>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details id="storageDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">💾 localStorage <span id="storageCount" style="color:var(--muted);font-weight:500">(0)</span></summary>
+      <div id="storageList" style="margin-top:0.625rem;font-size:.65rem;display:flex;flex-direction:column;gap:4px"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button id="storageCopyBtn" data-dt-action="copyStorage" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
+        <button data-dt-action="refreshStorage" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details id="swDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Service Worker</summary>
+      <div id="swInfo" style="margin-top:0.625rem;font-size:.65rem"></div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        <button id="swCopyBtn" data-dt-action="copySW" style="flex:1;min-width:90px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
+        <button data-dt-action="swUpdate" style="flex:1;min-width:90px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">↻ Force Update</button>
+        <button data-dt-action="swUnregister" style="flex:1;min-width:120px;background:var(--card2);border:1px solid var(--hr-border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">⚠ Unregister + Reload</button>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">📖 Story Carousel Debug</summary>
+      <div id="debugPanel" style="margin-top:0.625rem;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
+      <button data-dt-action="refreshDebug" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
+    </details>
+  </div>
+  <div class="dt-group-hd">Tuning</div>
+  <div style="padding:12px 15px">
     <details style="cursor:pointer;open">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚡ Pulse Tuning</summary>
       <div style="margin-top:0.625rem;font-size:.65rem;color:var(--muted);display:flex;flex-direction:column;gap:10px">
@@ -582,81 +658,9 @@
       </div>
     </details>
   </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border)">
-    <details id="appStateDetails" style="cursor:pointer">
-      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">📊 App State <span id="appStateCounts" style="color:var(--muted);font-weight:500"></span></summary>
-      <div id="appStateBody" style="margin-top:0.625rem;display:flex;flex-direction:column;gap:8px"></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button id="appStateCopyBtn" data-dt-action="copyState" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy All State</button>
-        <button data-dt-action="refreshState" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
-      </div>
-    </details>
-  </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border)">
-    <details id="netTraceDetails" style="cursor:pointer">
-      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🌐 Network <span id="netTraceCount" style="color:var(--muted);font-weight:500">(0)</span></summary>
-      <div id="netTraceList" class="dt-mono" style="margin-top:0.625rem;max-height:240px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 8px"></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button id="netTraceCopyBtn" data-dt-action="copyNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
-        <button data-dt-action="clearNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">Clear</button>
-        <button data-dt-action="refreshNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄</button>
-      </div>
-    </details>
-  </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border)">
-    <details id="storageDetails" style="cursor:pointer">
-      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">💾 localStorage <span id="storageCount" style="color:var(--muted);font-weight:500">(0)</span></summary>
-      <div id="storageList" style="margin-top:0.625rem;font-size:.65rem;display:flex;flex-direction:column;gap:4px"></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button id="storageCopyBtn" data-dt-action="copyStorage" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
-        <button data-dt-action="refreshStorage" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
-      </div>
-    </details>
-  </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border)">
-    <details id="swDetails" style="cursor:pointer">
-      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Service Worker</summary>
-      <div id="swInfo" style="margin-top:0.625rem;font-size:.65rem"></div>
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-        <button id="swCopyBtn" data-dt-action="copySW" style="flex:1;min-width:90px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
-        <button data-dt-action="swUpdate" style="flex:1;min-width:90px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">↻ Force Update</button>
-        <button data-dt-action="swUnregister" style="flex:1;min-width:120px;background:var(--card2);border:1px solid var(--hr-border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">⚠ Unregister + Reload</button>
-      </div>
-    </details>
-  </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border)">
-    <details id="logCaptureDetails" style="cursor:pointer">
-      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🔍 Log Capture <span id="logCaptureCount" style="color:var(--muted);font-weight:500">(0)</span></summary>
-      <div style="margin-top:0.625rem;display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.65rem">
-          <label style="color:var(--muted)">Level
-            <select id="logCaptureLevel" style="margin-left:4px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:2px 4px;border-radius:4px">
-              <option value="all">all</option>
-              <option value="error">error</option>
-              <option value="warn">warn+</option>
-              <option value="log">log+</option>
-            </select>
-          </label>
-          <input id="logCaptureFilter" type="text" placeholder="filter…" style="flex:1;min-width:80px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:2px 6px;border-radius:4px">
-        </div>
-        <div id="logCaptureList" class="dt-mono" style="max-height:240px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 8px"></div>
-        <div style="display:flex;gap:6px">
-          <button id="logCaptureCopyBtn" data-dt-action="copyLog" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
-          <button data-dt-action="clearLog" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">Clear</button>
-          <button data-dt-action="refreshLog" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄</button>
-        </div>
-      </div>
-    </details>
-  </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border)">
-    <details style="cursor:pointer">
-      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">⚙️ Story Carousel Debug</summary>
-      <div id="debugPanel" style="margin-top:0.625rem;font-size:.65rem;color:var(--muted);max-height:300px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:8px"></div>
-      <button data-dt-action="refreshDebug" style="margin-top:8px;width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
-    </details>
-  </div>
-  <div style="padding:12px 15px;border-top:1px solid var(--border);background:var(--card2)">
-    <button id="diagSnapshotBtn" data-dt-action="copySnapshot" style="width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.78rem;padding:10px;border-radius:6px;cursor:pointer;font-weight:700;letter-spacing:.02em">📋 Copy Diagnostic Snapshot</button>
+  <div class="dt-group-hd">Export</div>
+  <div style="padding:12px 15px;background:var(--card2)">
+    <button id="diagSnapshotBtn" data-dt-action="copySnapshot" style="width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.78rem;padding:10px;border-radius:6px;cursor:pointer;font-weight:700;letter-spacing:.02em">📋 Copy Diagnostic Snapshot <span style="float:right;color:var(--muted);font-weight:500;font-size:.65rem">Shift+I</span></button>
     <div class="dt-label-muted" style="margin-top:6px;text-align:center">One-tap bundle of context, state, last 50 logs, last 50 fetches, localStorage sizes — paste into Claude.</div>
   </div>
   <div class="dev-confirm-footer">

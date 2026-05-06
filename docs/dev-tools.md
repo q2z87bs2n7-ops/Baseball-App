@@ -2,30 +2,49 @@
 
 Dev Tools panel (`#devToolsPanel`) is a centered modal opened via `toggleDevTools()`. On open, populates all tuning inputs from live `devTuning`/`devColorLocked` values. Uses `p.style.display !== 'block'` (not `=== 'none'`) to detect closed state — panel starts with CSS `display:none` (no inline style), so checking for `'none'` would fail on first open.
 
+## Layout (v3.38.8)
+
+Width: `min(760px, 94vw)` — bumped from 560 to fit comfortably on iPad landscape and avoid cramped collapsibles. `@media (min-width:1280px)` widens to 820px for desktop. Max-height 92vh, vertical-scrolling.
+
+Sections are organised into four IA groups (small `.dt-group-hd` separator labels):
+
+1. **Actions** — buttons + 🎯 Live Controls. "Do something" verbs.
+2. **Inspectors** — read-only state views. "What's happening?" Order: 📊 App State → 🔍 Log Capture → 🌐 Network → 💾 localStorage → ⚙️ Service Worker → 📖 Story Carousel Debug.
+3. **Tuning** — config that requires the bottom Confirm Changes button. Order: ⚡ Pulse → 📖 Carousel Story Rules → 🎯 Focus → 🎨 Theme.
+4. **Export** — 📋 Copy Diagnostic Snapshot button (one-tap clipboard bundle of everything from groups 1–2).
+
+Sticky footer: **Confirm Changes** (commits all numeric tuning fields).
+
 ## Keyboard Shortcuts (global)
 
-| Shortcut | Command | Purpose |
-|---|---|---|
-| `Shift+H` | `toggleDemoMode()` | Toggle demo mode on/off |
-| `Shift+R` | `replayHRCard()` | Replay most recent HR card from live feed |
-| `Shift+E` | `replayRBICard()` | Replay most recent RBI card from live feed |
-| `Shift+V` | `window.PulseCard.demo()` | Cycle through all four HR card template variants |
-| `Shift+D` | `toggleDevTools()` | Toggle Dev Tools panel open/closed |
-| `Shift+F` | `window.FocusCard.demo()` | Open Focus Mode demo overlay with sample data |
-| `Shift+G` | `generateTestCard()` | Inject one random card into the collection (bypasses demo mode guard) |
-| `Shift+W` | `devTestVideoClip()` | Open video overlay with most recent live clip → yesterdayContentCache fallback → fetches yesterday's first game |
-| `Shift+L` | open Dev Tools + scroll to Log Capture | Opens Dev Tools (if closed), expands the Log Capture details, scrolls it into view |
+| Shortcut | Mnemonic | Command | Purpose |
+|---|---|---|---|
+| `Shift+D` | **D**ev tools | `toggleDevTools()` | Toggle Dev Tools panel open/closed |
+| `Shift+M` | de**M**o / Mock | `toggleDemoMode()` | Toggle demo mode on/off |
+| `Shift+H` | **H**ome run | `replayHRCard()` | Replay most recent HR card from live feed |
+| `Shift+B` | r**B**i | `replayRBICard()` | Replay most recent RBI card from live feed |
+| `Shift+V` | **V**ariants | `window.PulseCard.demo()` | Cycle through all four HR card template variants |
+| `Shift+F` | **F**ocus | `window.FocusCard.demo()` | Open Focus Mode demo overlay with sample data |
+| `Shift+C` | **C**ollection | `window.CollectionCard.demo()` | Open Card Collection demo |
+| `Shift+G` | **G**enerate | `generateTestCard()` | Inject one random card into the collection (bypasses demo mode guard) |
+| `Shift+P` | **P**lay clip | `devTestVideoClip()` | Open video overlay with most recent live clip → yesterdayContentCache fallback → fetches yesterday's first game |
+| `Shift+N` | **N**ews | `openNewsSourceTest()` | Run News Source diagnostic |
+| `Shift+L` | **L**og | open Dev Tools + scroll to Log Capture | Expand and focus Log Capture |
+| `Shift+S` | **S**tate | open Dev Tools + scroll to App State | Expand and focus App State Inspector |
+| `Shift+I` | **I**nfo dump | `copyDiagnosticSnapshot()` | One-tap copy full diagnostic snapshot to clipboard |
+
+(Renamed in v3.38.8: was `Shift+H/R/E/W` → `Shift+M/H/B/P` for clearer mnemonics.)
 
 Keyboard listener is located in `app.js` near the bottom, after the `visibilitychange` event listener.
 
 ## Panel contents
 
-- **▶ Try Demo / ⏹ Exit Demo** (`Shift+H`) — `toggleDemoMode()`; label updates via `updateDemoBtnLabel()`
-- **🎬 Replay HR** (`Shift+R`) — `replayHRCard()`: scans `feedItems` for HR plays, calls `showPlayerCard()` with real game data
-- **💰 Replay RBI** (`Shift+E`) — `replayRBICard()`: scans `feedItems` for non-HR scoring plays; bypasses cooldown
+- **▶ Try Demo / ⏹ Exit Demo** (`Shift+M`) — `toggleDemoMode()`; label updates via `updateDemoBtnLabel()`
+- **🎬 Replay HR** (`Shift+H`) — `replayHRCard()`: scans `feedItems` for HR plays, calls `showPlayerCard()` with real game data
+- **💰 Replay RBI** (`Shift+B`) — `replayRBICard()`: scans `feedItems` for non-HR scoring plays; bypasses cooldown
 - **💫 Card Variants** (`Shift+V`) — `window.PulseCard.demo()`: cycle through all 4 HR card templates (V1 Stylized, V2 Jumbotron, V3 Comic/Pop Art, V4 Broadcast)
 - **🎴 Test Card** (`Shift+G`) — `generateTestCard()`: injects one random card into collection with `force=true`. Pool = `rosterData.hitting` + hitting leaders from `leagueLeadersCache.hitting` + `dailyLeadersCache` (deduplicated)
-- **📽️ Test Clip** (`Shift+W`) — `devTestVideoClip()`: fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game content
+- **📽️ Test Clip** (`Shift+P`) — `devTestVideoClip()`: fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game content
 
 ### Tuning panels (require "Confirm Changes" button to apply)
 
@@ -119,7 +138,7 @@ A new collapsible directly under the Actions buttons — lazy-rendered with the 
 
 **Force Inning Recap** — surfaces the previously console-only workflow that was documented in CLAUDE.md (now `docs/dev-tools.md`). Game dropdown + half-inning + inning-number; "Queue" pushes a `{gamePk, inning, halfInning}` entry into `inningRecapsPending[…]`, deletes any matching `inningRecapsFired` entry so it can re-fire, then calls `buildStoryPool()` to surface it. The inning + half are auto-prefilled from the selected game's current state.
 
-**Empty state:** When `gameStates` has no Live games, the panel suggests Demo Mode (Shift+H) which seeds a populated `gameStates` from `daily-events.json`.
+**Empty state:** When `gameStates` has no Live games, the panel suggests Demo Mode (Shift+M) which seeds a populated `gameStates` from `daily-events.json`.
 
 **Functions** (all in `app.js`):
 - `testLocalNotification()` — permission + showNotification flow

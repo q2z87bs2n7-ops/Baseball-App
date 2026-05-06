@@ -2615,7 +2615,7 @@ function dismissFocusAlert() {
 
 // ── End Focus Mode functions ──────────────────────────────────────────────────
 
-// DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+R)
+// DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+H)
 function replayHRCard(itemIndex) {
   var hrs = feedItems.filter(function(item) { return item.data && item.data.event === 'Home Run'; });
   if (!hrs.length) { alert('No home runs in feed yet'); return; }
@@ -2639,7 +2639,7 @@ function replayHRCard(itemIndex) {
   if(DEBUG) console.log('Replaying HR:', batterName, 'at', gs.awayAbbr + ' @ ' + gs.homeAbbr);
 }
 
-// DEBUG: Replay most recent RBI card from live feed (press Shift+E)
+// DEBUG: Replay most recent RBI card from live feed (press Shift+B)
 function replayRBICard(itemIndex) {
   var rbis = feedItems.filter(function(item) { return item.data && item.data.scoring && item.data.event !== 'Home Run' && item.data.batterId; });
   if (!rbis.length) { alert('No RBI plays in feed yet'); return; }
@@ -5311,7 +5311,7 @@ function renderLiveControls(){
   if(!body) return;
   var live=_liveGamesForControls();
   if(!live.length){
-    body.innerHTML='<div class="dt-label-muted">No live games right now. Try Demo Mode (Shift+H) to populate gameStates with sample data.</div>';
+    body.innerHTML='<div class="dt-label-muted">No live games right now. Try Demo Mode (Shift+M) to populate gameStates with sample data.</div>';
     return;
   }
   var opts=live.map(function(x){return '<option value="'+x.pk+'">'+escapeHtml(x.g.awayAbbr+' @ '+x.g.homeAbbr+' · '+(x.g.halfInning||'')+' '+(x.g.inning||'?')+' · '+x.g.awayScore+'-'+x.g.homeScore)+'</option>';}).join('');
@@ -6952,15 +6952,18 @@ document.addEventListener('visibilitychange',function(){
 
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&focusOverlayOpen) { closeFocusOverlay(); return; }
-  if(e.shiftKey && e.key === 'H') { toggleDemoMode(); }
-  if(e.shiftKey && e.key === 'R') { replayHRCard(); }
-  if(e.shiftKey && e.key === 'E') { replayRBICard(); }
+  // Mnemonics: M=deMo, H=Home run, B=rBi, V=Variants, D=Dev tools, F=Focus,
+  // G=Generate test card, C=Collection demo, P=Play clip, N=News, L=Log,
+  // S=State, I=Info dump (snapshot)
+  if(e.shiftKey && e.key === 'M') { toggleDemoMode(); }
+  if(e.shiftKey && e.key === 'H') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'B') { replayRBICard(); }
   if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
   if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
   if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
   if(e.shiftKey && e.key === 'G') { generateTestCard(); }
   if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
-  if(e.shiftKey && e.key === 'W') { devTestVideoClip(); }
+  if(e.shiftKey && e.key === 'P') { devTestVideoClip(); }
   if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
   if(e.shiftKey && e.key === 'L') {
     var p=document.getElementById('devToolsPanel');
@@ -6968,6 +6971,13 @@ document.addEventListener('keydown',function(e){
     var det=document.getElementById('logCaptureDetails');
     if(det){det.open=true;renderLogCapture();det.scrollIntoView({block:'nearest'});}
   }
+  if(e.shiftKey && e.key === 'S') {
+    var p=document.getElementById('devToolsPanel');
+    if(p && p.style.display!=='block') toggleDevTools();
+    var det=document.getElementById('appStateDetails');
+    if(det){det.open=true;renderAppState();det.scrollIntoView({block:'nearest'});}
+  }
+  if(e.shiftKey && e.key === 'I') { copyDiagnosticSnapshot(); }
 });
 
 document.addEventListener('click',onSoundPanelClickOutside);
