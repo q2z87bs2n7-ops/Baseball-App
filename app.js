@@ -5070,8 +5070,30 @@ function renderAppState(){
 
   var focusBody='<div style="font-size:.65rem">'+_kvList(_stateFocusObj())+'</div>';
 
+  var now=new Date();
+  var greeting=pulseGreeting();
+  var upcoming=Object.values(gameStates).filter(function(g){
+    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
+    var rawG=storyCarouselRawGameData&&storyCarouselRawGameData[g.gamePk];
+    if(rawG&&rawG.doubleHeader==='Y'&&rawG.gameNumber==2){
+      if(Object.values(gameStates).some(function(s){return s.status==='Live'&&s.awayId===g.awayId&&s.homeId===g.homeId;})) return false;
+    }
+    return true;
+  });
+  var liveGames=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var pulseInfo={
+    now: now.toISOString().split('T')[1].split('.')[0],
+    greeting: greeting.kicker+': '+greeting.headline,
+    liveGames: liveGames.length,
+    upcomingGames: upcoming.length,
+    enabledGames: enabledGames.size,
+    totalGames: Object.keys(gameStates).length,
+  };
+  var pulseBody='<div style="font-size:.65rem">'+_kvList(pulseInfo)+'</div>';
+
   body.innerHTML =
     _section('Context','copyStateContext', ctxBody) +
+    _section('⚡ Pulse Diagnostics','copyStatePulse', pulseBody) +
     _section('🎯 Focus','copyStateFocus', focusBody) +
     _section('🎮 gameStates ('+gs.length+')','copyStateGames', gsBody) +
     _section('📰 feedItems (showing '+fi.length+' of '+ctx.counts.feedItems+')','copyStateFeed', fiBody) +
@@ -5122,11 +5144,50 @@ function _stateAsMarkdownStories(){
 function _stateAsMarkdownFocus(){
   return '## Focus\n\n```json\n'+JSON.stringify(_stateFocusObj(),null,2)+'\n```\n';
 }
+function _stateAsMarkdownPulse(){
+  var now=new Date();
+  var hour=now.getHours();
+  var greeting=pulseGreeting();
+  var upcoming=Object.values(gameStates).filter(function(g){
+    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
+    var rawG=storyCarouselRawGameData&&storyCarouselRawGameData[g.gamePk];
+    if(rawG&&rawG.doubleHeader==='Y'&&rawG.gameNumber==2){
+      if(Object.values(gameStates).some(function(s){return s.status==='Live'&&s.awayId===g.awayId&&s.homeId===g.homeId;})) return false;
+    }
+    return true;
+  });
+  var liveGames=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var finalGames=Object.values(gameStates).filter(function(g){return g.status==='Final';});
+  var lines=['## Pulse Empty State Diagnostics','','### Current Time & Greeting','| Field | Value |','|---|---|',
+    '| Now | '+now.toISOString()+' |',
+    '| Hour | '+hour+' ('+greeting.kicker+') |',
+    '| Greeting | '+greeting.headline+' |',
+    '','### Game Counts','| State | Count |','|---|---|',
+    '| Total gameStates | '+Object.keys(gameStates).length+' |',
+    '| Enabled Games | '+enabledGames.size+' |',
+    '| Live (In Progress) | '+liveGames.length+' |',
+    '| Preview/Scheduled (Upcoming) | '+upcoming.length+' |',
+    '| Final | '+finalGames.length+' |',
+    '','### Why Empty State Shows',
+    '| Reason | Active |','|---|---|',
+    '| No upcoming games found | '+(upcoming.length===0?'**YES** — will show "Slate complete"':'no')+' |',
+    '| Has intermission flag | '+(typeof intermission!=='undefined'&&intermission?'**YES** — will hide hype block':'no')+' |',
+    '| Has live games | '+(liveGames.length>0?'**YES** — empty state should not show':'no')+' |',
+    '','### All Games in gameStates'];
+  var gameRows=['| gamePk | matchup | status | detailed | enabled | inning |','|---|---|---|---|---|---|'];
+  Object.values(gameStates).sort(function(a,b){return (a.gameDateMs||0)-(b.gameDateMs||0);}).forEach(function(g){
+    var enabled=enabledGames.has(g.gamePk)?'✓':'✗';
+    var inning=g.status==='Live'?' '+g.inning+'i ('+g.halfInning.charAt(0)+')':'-';
+    gameRows.push('| '+g.gamePk+' | '+g.awayAbbr+' @ '+g.homeAbbr+' | '+g.status+' | '+g.detailedState+' | '+enabled+' | '+inning+' |');
+  });
+  return lines.join('\n')+'\n'+gameRows.join('\n')+'\n';
+}
 function copyAppStateAsMarkdown(){
   var parts=[
     '# MLB Pulse — App State Snapshot',
     'Captured: '+new Date().toISOString(),
     '',
+    _stateAsMarkdownPulse(),
     _stateAsMarkdownContext(),
     _stateAsMarkdownFocus(),
     _stateAsMarkdownGames(),
@@ -5659,6 +5720,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='copyState'){copyAppStateAsMarkdown();}
     else if(action==='refreshState'){renderAppState();}
     else if(action==='copyStateContext'){_copyToClipboard(_stateAsMarkdownContext());}
+    else if(action==='copyStatePulse'){_copyToClipboard(_stateAsMarkdownPulse());}
     else if(action==='copyStateFocus'){_copyToClipboard(_stateAsMarkdownFocus());}
     else if(action==='copyStateGames'){_copyToClipboard(_stateAsMarkdownGames());}
     else if(action==='copyStateFeed'){_copyToClipboard(_stateAsMarkdownFeed(50));}
