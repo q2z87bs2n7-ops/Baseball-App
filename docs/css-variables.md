@@ -1,6 +1,6 @@
 # MLB Tracker — CSS Variables & Design System
 
-All CSS variables are **runtime-computed** — set dynamically by `applyTeamTheme()` and `applyPulseMLBTheme()` in `app.js`. They are **not** declared in `styles.css`.
+All CSS variables are **runtime-computed** — set dynamically by `applyTeamTheme()` and `applyPulseMLBTheme()` in `src/ui/theme.js`. They are **not** declared in `styles.css`.
 
 ## Team-theme variables (set by `applyTeamTheme`)
 

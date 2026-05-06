@@ -5,7 +5,56 @@
 
 ---
 
-**Current version:** v3.38.14
+**Current version:** v3.40.0
+
+**v3.40.0** — **Modular refactor complete.** The original 7,127-line `app.js` is now distributed across ~30 ES6 modules under `src/`, with `src/main.js` reduced to ~680 LOC of boot/orchestration glue. All hot mutable state lives in a single `src/state.js` container; importers receive live bindings rather than copying state. Cumulative changes from v3.39.10 → v3.39.35 collapsed below.
+
+  Subsystem extractions (each its own commit on `claude/code-review-MyyeV`):
+  - **Radio Check** sweep tool → `src/radio/check.js` (~210 LOC)
+  - **YouTube Debug** dev panel → `src/dev/youtube-debug.js` (~165 LOC)
+  - **News Source Test** dev panel → `src/dev/news-test.js` (~78 LOC)
+  - **Video Debug** clip-pipeline inspector → `src/dev/video-debug.js` (~125 LOC)
+  - **Dev Tools Panels** (Log Capture, App State, Network Trace, Storage, Service Worker, Test Notification, Live Controls, Diagnostic Snapshot) → `src/dev/panels.js` (~765 LOC)
+  - **Yesterday Recap** overlay → `src/sections/yesterday.js` (~470 LOC)
+  - **UI Overlays** (video overlay, dismissPlayerCard, closeSignInCTA) → `src/ui/overlays.js` (~50 LOC)
+  - **Video clip resolution** (pickPlayback, pickHeroImage, fetchGameContent, patchFeedItemWithClip, pollPendingVideoClips, devTestVideoClip) → `src/data/clips.js` (~210 LOC)
+  - **Card Collection** (tier system + book overlay + collectCard + sync hooks) → `src/collection/book.js` (~458 LOC)
+  - **HR/RBI Player Cards** (resolvePlayerCardData, showPlayerCard, showRBICard, badge helpers, replay shortcuts) → `src/cards/playerCard.js` (~289 LOC)
+  - **Pulse Polling** (pollLeaguePulse, pollGamePlays, getEffectiveDate) → `src/pulse/poll.js` (~261 LOC)
+  - **Dev Tools Tuning UI** + panel-wide click delegator → `src/dev/tuning.js` (~219 LOC)
+  - **Auth Session** (signOut, updateSyncUI, showSignInCTA) → `src/auth/session.js` (~47 LOC)
+  - **My Team Lens** + game toggle → `src/ui/lens.js` (~53 LOC)
+
+  Architectural patterns established:
+  - `src/state.js` single mutable container — all importers receive live bindings.
+  - Callback injection (`setXCallbacks({ ... })`) for the few unavoidable circular dependencies (e.g. `cards/playerCard.js` ⇄ `collection/book.js`).
+  - Layering rule (Layer 1 foundation → Layer 6 boot) — every module imports only from strictly lower layers; verified by esbuild.
+  - Window-global bridge in `src/main.js` re-exposes ~95 functions to HTML inline handlers.
+
+  Bug fixes during refactor:
+  - **Boot IIFE restoration** (v3.39.25) — boot async-IIFE was accidentally deleted during a section-loader extraction; restored with module-aware adaptations (clearHomeTimer/clearLeagueTimer exports). Symptom was "Pulse broken with no console errors" — fixed by tracing the 60-line deletion via git blame.
+  - **`loadYdForDate` exposed** (v3.39.30) — was called from main.js but never exported from `carousel/generators.js`; silent runtime bug only triggered by Yesterday Recap date picker.
+  - **Stale bundle cache-bust** (v3.39.35) — `dist/app.bundle.js?v=3.39.X` querystring was frozen at `?v=3.39.26` for 8 versions because earlier replace_all only matched `v3.39.X` not `v=3.39.X`. Users were getting cached bundles.
+  - **Dev Tools click handler + inspector toggle handlers never attached** (v3.39.35) — bundle is loaded via dynamic `<script>` insertion in `index.html`, which makes it execute async; DOMContentLoaded had already fired by the time `initDevToolsClickDelegator()` and `initPanelsLazyRendering()` registered their listeners, so the panel-wide delegated click handler and every `<details>`-toggle hookup never attached. Fixed with `if (document.readyState === 'loading') addEventListener... else attach()` guard.
+
+  Documentation:
+  - `docs/module-graph.md` rewritten to reflect final ~30-module layout, layering rule, hot-state contract, callback injection pattern, and revert paths.
+  - `docs/refactor-status.md` deleted (was a session-resume aid for the in-progress refactor; obsolete now that work is complete).
+  - `CLAUDE.md` and `README.md` updated to describe the modular architecture.
+
+  Bundle: 463.7 → 463.8 KB (no significant size change across all 14 extractions; the IIFE wrapper amortizes well). Legacy `app.js` preserved verbatim — flipping `USE_BUNDLE = false` is a one-line revert at any future point.
+
+**v3.39.9** — Adds `docs/refactor-status.md` — durable session-resume document that summarizes current state of the modularize-app.js work, lists every extracted module with line counts and import semantics, audits the ~30 hot-state reassignment sites still blocking deeper extraction, and captures the Path A (single state-object container) vs Path B (per-subsystem state colocation + event bus) decision the user is choosing between. Recommended for any fresh Claude Code session picking up the work — eliminates the need to re-explore the codebase and re-derive context from the chat scrollback. Resume prompt included at the bottom of the file. No source code changes.
+
+**v3.39.8** — Extract OAuth/email sign-in initiators to `src/auth/oauth.js`. `signInWithGitHub` (redirect to GitHub OAuth flow with random state token) and `signInWithEmail` (POST to `/api/auth/email-request` for magic-link). Both are stateless fire-and-forget functions; the session-token state, `signOut`, sync interval, `mergeCollectionOnSignIn`, and `updateSyncUI` stay in `main.js` for now because they depend on the still-monolithic Card Collection module. Imports `API_BASE` from `config/constants.js`. Bridge exposure unchanged.
+
+**v3.39.7** — Extract radio station data to `src/radio/stations.js`. Pure-data extraction (no behavior change): `MLB_TEAM_RADIO` (30 flagship stations + URLs + format), `FALLBACK_RADIO` (Fox Sports), `APPROVED_RADIO_TEAM_IDS` (the 9-team `Set` for focus pairing), `RADIO_CHECK_DEFAULT_NOTES` (seeded-once default annotations for the Radio Check sweep tool). The radio ENGINE (`pickRadioForFocus`, `toggleRadio`, `loadRadioStream`, `setRadioUI`, `updateRadioForFocus`) stays in `main.js` for now because it reads `focusGamePk` + `gameStates` (hot mutable state); will move once `state.js` is in place. Net: src/main.js drops ~80 lines; modular code now 626 lines across 10 files.
+
+**v3.39.6** — Extract sound system to `src/ui/sound.js`. Moves `soundSettings`, the audio primitives (`_makeCtx`, `_closeCtx`, `_osc`, `_ns`), the eight per-event sound players (HR, run, RISP, DP, TP, gameStart, gameEnd, error), `playSound` dispatcher, `setSoundPref` settings setter, `toggleSoundPanel` UI toggle, and `onSoundPanelClickOutside` click-outside handler out of `main.js`. `soundSettings` localStorage hydration moved into the module's import-time init (Object.assign over the defaults instead of reassigning the binding) so importers always see a consistent object reference. `setSoundPref`/`toggleSoundPanel`/`onSoundPanelClickOutside` remain on the window bridge for HTML inline handlers + the global click listener. Boot IIFE in main.js no longer needs the `mlb_sound_settings` restore line — handled inside the sound module on import. Net: src/main.js drops ~25 lines; total modular code now 466 lines across 9 files.
+
+**v3.39.1–v3.39.5** — incremental module extraction following the v3.39.0 bundle setup. **v3.39.1** fix: removed `prevNewsCard`/`nextNewsCard` from the window-global bridge — they're referenced from index.html but never implemented anywhere in `app.js`, so the shorthand `Object.assign(window, { prevNewsCard, ... })` threw a `ReferenceError` at script load time and halted the entire bridge, breaking every onclick handler. Pre-existing no-op behavior preserved (the buttons never worked in legacy `app.js` either). **v3.39.2** extracts the diag layer to `src/diag/devLog.js` (console wrap + ring buffer + window error/unhandledrejection listeners + `devTrace`) and `src/diag/devNet.js` (fetch wrap + `devNetLog` ring buffer). **v3.39.3** extracts pure utility helpers to `src/utils/format.js` (`tcLookup`, `fmt`, `fmtRate`, `fmtDateTime`, `fmtNewsDate`, `pickOppColor`) and `src/utils/news.js` (`NEWS_IMAGE_HOSTS` + `isSafeNewsImage`). **v3.39.4** extracts `src/ui/wakelock.js` (Screen Wake Lock API wrapper; `screenWakeLock` state encapsulated inside the module — no longer a top-level global). **v3.39.5** extracts `src/push/push.js` (Web Push lifecycle: `VAPID_PUBLIC_KEY`, `urlBase64ToUint8Array`, `subscribeToPush`, `unsubscribeFromPush`, `togglePush`); `API_BASE` promoted to `src/config/constants.js` for shared use across subsystems extracted in future commits. Net effect: `src/main.js` shrunk from 7127 → 6991 lines; 347 lines now live in 8 separate modules under `src/`. Bundle size unchanged at 446 KB (same code, just split). `togglePush` remains on the window bridge for the settings-panel toggle.
+
+**v3.39.0** — Modular build pipeline + ES6 module scaffolding. Sets up esbuild bundling alongside the existing monolithic `app.js`, with a runtime feature flag (`USE_BUNDLE` in `index.html`) that switches between the two. Highlights: (1) **Esbuild build pipeline** — new `build.mjs` driver, `package.json` adds `esbuild@^0.21.0` as a devDep with `npm run build` / `npm run watch` scripts, GitHub Actions workflow `.github/workflows/build.yml` rebuilds `dist/app.bundle.js` on push to `main` (skips bot commits to prevent loops); (2) **`src/main.js`** — contents of `app.js` lifted verbatim with constants imported from `./config/constants.js` and a window-global bridge appended at the bottom that exposes ~95 functions to HTML inline `onclick=` handlers and keyboard shortcuts (esbuild's IIFE wrap would otherwise hide them); (3) **`src/config/constants.js`** — first extracted module: `SEASON`, `WC_SPOTS`, `MLB_BASE`, `MLB_BASE_V1_1`, `TEAMS`, `MLB_THEME`, `NEWS_SOURCE_LABELS`/`NEWS_SOURCE_ICONS`, `TIMING`. Pure constants, zero side effects — establishes the import/export pattern; (4) **`USE_BUNDLE` feature flag in `index.html`** — single line `window.USE_BUNDLE = true;` chooses between `dist/app.bundle.js?v=3.39.0` and legacy `app.js`. Flipping to `false` is a one-line revert at any future point; (5) **`sw.js` SHELL cache** — lists both `./app.js` and `./dist/app.bundle.js` so the flag swap doesn't require another SW rebuild; CACHE bumped `mlb-v531` → `mlb-v540`; (6) **`docs/module-graph.md`** — layering rule + hot-state guidance for future contributors extracting subsystems out of `main.js` incrementally. Legacy `app.js` is preserved verbatim and stays the live script if `USE_BUNDLE` flips back to `false`. Future work: extract Pulse polling, Story Carousel, Focus Mode, Card Collection, Radio, Demo Mode, Dev Tools, section loaders, theme/UI helpers into separate modules under `src/` per the layering rule in `docs/module-graph.md`.
 
 **v3.38.14** — Add Pulse state-change event logging. Comprehensive trace logging to track state transitions and diagnose why Pulse empty state shows what it shows. New traces: pollLeaguePulse start/end (hasLive, pollDate, game counts), schedule fetch result (date, games returned), game final (which game went final and score), renderEmptyState (upcoming count, postSlate/intermission flags). All visible in Dev Tools → Log Capture with timestamps — eliminates guesswork when investigating "why did the state change?" See individual commit messages for full trace points.
 

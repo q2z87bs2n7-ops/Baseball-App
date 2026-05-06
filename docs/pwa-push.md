@@ -22,7 +22,7 @@ Outfield Horizon design — stadium sunset scene with heartbeat/pulse line. File
 
 - Toggle in Settings: **🔔 Game Start Alerts** — persisted to `localStorage('mlb_push')`
 - **Hidden on desktop via CSS** (`@media(min-width:1025px){ #pushRow { display:none !important } }`) — push is unreliable on desktop browsers
-- `togglePush()` / `subscribeToPush()` / `unsubscribeFromPush()` / `urlBase64ToUint8Array()` in `app.js`
+- `togglePush()` / `subscribeToPush()` / `unsubscribeFromPush()` / `urlBase64ToUint8Array()` in `src/push/push.js`
 - Subscription POSTed to `${API_BASE}/api/subscribe` → stored in Upstash Redis under key `push:<b64-endpoint-hash>`
 - `api/notify.js` checks MLB schedule, notifies for games starting within 10 minutes **or started up to 2 minutes ago** (cron may fire after scheduled start); deduplicates via `notified:<gamePk>` key (24h TTL); auto-removes stale subscriptions (410/404 responses)
 - `api/test-push.js` sends a real push to all subscribers immediately — use the **Test Push Notification** GitHub Actions workflow (`workflow_dispatch`) to trigger it for QC
@@ -31,7 +31,7 @@ Outfield Horizon design — stadium sunset scene with heartbeat/pulse line. File
 ## VAPID Keys
 
 **Do not regenerate without re-subscribing all devices.**
-- Public key is hardcoded in `app.js` as `VAPID_PUBLIC_KEY` constant
+- Public key is hardcoded in `src/push/push.js` as the `VAPID_PUBLIC_KEY` constant
 - Private key is in Vercel env var `VAPID_PRIVATE_KEY` only — never in code
 - `VAPID_SUBJECT` = operator email in Vercel env vars
 - `NOTIFY_TOKEN` (Vercel) must match `NOTIFY_SECRET` (GitHub Actions secret) — authenticates cron calls to `/api/notify`

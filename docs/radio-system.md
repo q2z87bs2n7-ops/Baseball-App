@@ -4,11 +4,11 @@ Background terrestrial sports-radio audio added v3.9.b–f. Auto-pairs to the cu
 
 ## ⚙️ Approved teams — source of truth (READ FIRST)
 
-Controlled by one place in `app.js`:
+Controlled by one place in `src/radio/stations.js`:
 
 ```javascript
-// app.js ~line 4431
-const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
+// src/radio/stations.js
+export const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
 ```
 
 To enable a team: add its `teamId` to this Set, bump comment date, bump app version + `sw.js` CACHE, commit. To disable: remove `teamId`. The `MLB_TEAM_RADIO` URL map stays untouched.
@@ -138,7 +138,7 @@ Self-test panel for sweeping every station in `MLB_TEAM_RADIO` + Fox Sports fall
 1. Open Settings → 🔍 Radio Check
 2. ▶ test each station, mark ✅/❌, add notes
 3. 📋 Copy Results → paste into Claude session
-4. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`app.js` ~line 4431) — add ✅ `teamId`s, remove ❌ ones
+4. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`src/radio/stations.js`) — add ✅ `teamId`s, remove ❌ ones
 5. Update the comment "last updated YYYY-MM-DD"
 6. Bump `<title>` + settings panel version + `sw.js` CACHE
 7. Commit + push
