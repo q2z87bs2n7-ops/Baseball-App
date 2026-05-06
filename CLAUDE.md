@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.35
+**Current version:** v3.37
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -20,6 +20,8 @@ An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pull
 - **v3.33** — tech-debt sprint (see `docs/technical-debt/sprints/`)
 - **v3.34** — monolith split: `index.html` → `index.html` + `styles.css` + `app.js`; bug fixes: YouTube proxy regex, HR/RBI card flood on tab return, news image allowlist (corporate firewall), YouTube media layout swap (player left, list right 260px)
 - **v3.35** — version bump to main; consolidates v3.34.x patch series
+- **v3.36** — HR video clips: fix 4 bugs (historical plays not queued, player_id slug fallback, undated clips, 30s poll); drop pendingVideoQueue, scan feedItems directly; filter scoring/HR taxonomy; restore player_id as primary match; exclude Statcast/Savant clips; Video Debug panel in Dev Tools
+- **v3.37** — taxonomy hyphens fix (`home_run`→`home-run`); exclude data-visualization (darkroom) clips; 4-tier player matching; restore scoring plays to clip matching; remove carousel video clip integration (`patchStoryWithClip`)
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
@@ -153,10 +155,10 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
                          dp:true, tp:true, gameStart:true, gameEnd:true, error:true }
 let rbiCardCooldowns = {}              // gamePk → ms timestamp of last key RBI card shown (90s cooldown)
 let pulseColorScheme = (...)           // 'dark' | 'light' — active Pulse color scheme; persisted to localStorage('mlb_pulse_scheme'); defaults 'light'
-let pendingVideoQueue= []              // {gamePk, batterId, batterName, feedItemTs, playTs} — HR plays awaiting a matched clip from /game/{pk}/content
-let liveContentCache = {}             // gamePk → {items:[], fetchedAt:ms} — re-fetched if >5min stale; separate from yesterdayContentCache
+let pendingVideoQueue= []              // unused stub — feedItems is source of truth for clip matching
+let liveContentCache = {}             // gamePk → {items:[], fetchedAt:ms} — re-fetched if >5min stale; data-visualization clips excluded at fill time; separate from yesterdayContentCache
 let lastVideoClip    = null           // most recent matched live clip object — used by devTestVideoClip() as first fallback
-let videoClipPollTimer = null         // setInterval handle (2min) for pollPendingVideoClips()
+let videoClipPollTimer = null         // setInterval handle (30s) for pollPendingVideoClips()
 
 // ── 📖 Story Carousel globals (v2.7.1+) ──────────────────────────────────────
 let storyPool        = []               // array of story objects ready to rotate
@@ -939,9 +941,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `openVideoOverlay(url, title)` | Shows `#videoOverlay` (z-index 800) with the given MP4 URL and title string. Sets `<video src>`, calls `play()`. Backdrop click or ✕ button calls `closeVideoOverlay()`. |
 | `closeVideoOverlay()` | Pauses and clears `#videoOverlayPlayer` src, hides `#videoOverlay`. |
 | `devTestVideoClip()` | Dev tool — opens video overlay using fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game. Wired to `Shift+W` and Dev Tools panel. |
-| `pollPendingVideoClips()` | Background poll (every 2min, started by `initReal()`). Groups `pendingVideoQueue` by gamePk, fetches `/game/{pk}/content` (cached in `liveContentCache`, re-fetched if >5min stale), matches clips via `keywordsAll[player_id]` + clip date ≥ play timestamp. On match: sets `lastVideoClip`, calls `patchFeedItemWithClip` + `patchStoryWithClip`, removes from queue. |
-| `patchFeedItemWithClip(feedItemTs, gamePk, clip)` | Finds the HR feed item DOM node via `data-ts` + `data-gamepk`, appends a thumbnail + ▶ overlay div. Clicking opens `openVideoOverlay()`. Guards against double-patching via `el.dataset.clipPatched`. |
-| `patchStoryWithClip(gamePk, batterId, batterName, clip)` | Finds the matching HR story in `storyPool` by gamePk + batter last name in headline. Sets `story.videoUrl`, `story.videoThumb`, `story.videoTitle`. If that story is currently displayed (`storyShownId === story.id`), calls `renderStoryCard()` immediately to show the ▶ WATCH pill. |
+| `pollPendingVideoClips()` | Background poll (every 30s, also called at end of each `pollLeaguePulse()`). Scans `feedItems` for HR and scoring plays whose DOM element lacks `data-clip-patched`. Fetches `/game/{pk}/content` per game (cached in `liveContentCache`, 5min TTL; data-visualization/darkroom clips excluded at fill time). 4-tier match per play: player_id in scoring-tagged clips → player_id in broadcast clips → nearest-timestamp in scoring clips → nearest-timestamp in broadcast clips. No time cap when player_id matched; 90-min cap for timestamp fallback. On match: sets `lastVideoClip`, calls `patchFeedItemWithClip`. |
+| `patchFeedItemWithClip(feedItemTs, gamePk, clip)` | Finds the HR/scoring-play feed item DOM node via `data-ts` + `data-gamepk`, appends a thumbnail + ▶ overlay div. Clicking opens `openVideoOverlay()`. Guards against double-patching via `el.dataset.clipPatched`. |
 | `calcFocusScore(g)` | Returns a numeric tension score for a live game object from `gameStates`. Formula: closeness (0–60) + situation bonus (runners/RISP/bases-loaded/walk-off/no-hitter) + count bonus (full count +20, 2-strike +12, 2-out +8) × inning multiplier (0.6 early → 2.0 extras). Higher = more exciting. Used by `selectFocusGame()` to auto-pick the best game. |
 | `selectFocusGame()` | Evaluates all live games via `calcFocusScore()`. If a non-focused game scores ≥20pts higher, fires a soft alert via `showFocusAlert()`. On first call with no focused game, calls `setFocusGame()` with the top scorer. Hooked into end of `pollLeaguePulse()`. |
 | `setFocusGame(pk)` | Switches focus to `gamePk pk`. Resets `focusPitchSequence`, `focusCurrentAbIdx`, player stats, dismisses any open alert. If overlay is open, re-renders it. Starts `pollFocusLinescore()` immediately and schedules it every 5s via `focusFastTimer`. Does not modify `focusIsManual` — callers control that flag. |
