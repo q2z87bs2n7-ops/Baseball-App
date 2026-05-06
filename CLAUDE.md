@@ -410,6 +410,18 @@ Full backlog in `docs/BACKLOG.md`. Active blocker: card binder scroll on desktop
 
 ---
 
+## Refactor parity check
+
+Static audit ensuring the modular bundle hasn't lost any surface area from the legacy `app.js` (USE_BUNDLE=false fallback). Run before any merge to `main` involving module reorganization:
+
+```bash
+node scripts/verify-parity.mjs
+```
+
+Diffs five dimensions: top-level function names, HTML handler resolution, fetch() URL paths, localStorage keys, and getElementById DOM contracts. Clean pass = every legacy surface name still reachable in modular. Full doc: `docs/parity-check.md`.
+
+---
+
 ## Technical Debt Management
 
 Say *"Start tech debt sprint"* to trigger a sprint. Claude executes: Audit → Remediation → QA → UAT → Finalization, with explicit user checkpoints between each stage.
