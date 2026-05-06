@@ -153,6 +153,12 @@
   };
 
   // src/utils/format.js
+  function tcLookup(id) {
+    var t = TEAMS.find(function(t2) {
+      return t2.id === id;
+    });
+    return t ? { primary: t.primary, abbr: t.short, name: t.name } : { primary: "#444", abbr: "???", name: "Unknown" };
+  }
   function fmt(v, d) {
     d = d === void 0 ? 3 : d;
     if (v == null || v === "") return "\u2014";
@@ -168,11 +174,28 @@
     var s = n.toFixed(d);
     return n > 0 && n < 1 ? s.slice(1) : s;
   }
+  function fmtDateTime(ds) {
+    var d = new Date(ds);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
   function fmtNewsDate(iso) {
     if (!iso) return "";
     var d = new Date(iso);
     if (isNaN(d.getTime())) return "";
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  function pickOppColor(oppPrimary, oppSecondary, myPrimary) {
+    function rgbDist(a, b) {
+      a = (a || "").replace("#", "");
+      b = (b || "").replace("#", "");
+      if (a.length < 6 || b.length < 6) return 999;
+      var ar = parseInt(a.substr(0, 2), 16), ag = parseInt(a.substr(2, 2), 16), ab = parseInt(a.substr(4, 2), 16);
+      var br = parseInt(b.substr(0, 2), 16), bg = parseInt(b.substr(2, 2), 16), bb = parseInt(b.substr(4, 2), 16);
+      return Math.sqrt(Math.pow(ar - br, 2) + Math.pow(ag - bg, 2) + Math.pow(ab - bb, 2));
+    }
+    if (rgbDist(oppPrimary, myPrimary) >= 60) return oppPrimary;
+    if (oppSecondary && rgbDist(oppSecondary, myPrimary) >= 60) return oppSecondary;
+    return oppPrimary;
   }
 
   // src/utils/news.js
@@ -228,6 +251,143 @@
   } catch (e) {
   }
   var stored;
+  function _makeCtx() {
+    return new (window.AudioContext || window.webkitAudioContext)();
+  }
+  function _closeCtx(ctx, dur) {
+    setTimeout(function() {
+      try {
+        ctx.close();
+      } catch (e) {
+      }
+    }, (dur + 0.6) * 1e3);
+  }
+  function _osc(ctx, freq, t0, dur, vol, wave, attack) {
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.type = wave || "sine";
+    osc.frequency.value = freq;
+    var at = ctx.currentTime + t0, att = attack || 5e-3;
+    g.gain.setValueAtTime(1e-4, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + att);
+    g.gain.exponentialRampToValueAtTime(1e-4, at + dur);
+    osc.start(at);
+    osc.stop(at + dur + 0.05);
+  }
+  function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ) {
+    var len = Math.ceil(ctx.sampleRate * (dur + 0.1));
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    var filt = ctx.createBiquadFilter();
+    filt.type = filterType || "bandpass";
+    filt.frequency.value = filterFreq || 1e3;
+    filt.Q.value = filterQ !== void 0 ? filterQ : 1;
+    var g = ctx.createGain();
+    src.connect(filt);
+    filt.connect(g);
+    g.connect(ctx.destination);
+    var at = ctx.currentTime + t0, att = attack || 3e-3;
+    g.gain.setValueAtTime(1e-4, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + att);
+    g.gain.exponentialRampToValueAtTime(1e-4, at + dur);
+    src.start(at);
+    src.stop(at + dur + 0.05);
+  }
+  function playHrSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.07, 0.32, 1e-3, "highpass", 2200, 0.8);
+      _ns(ctx, 0, 0.05, 0.22, 1e-3, "bandpass", 900, 3);
+      _osc(ctx, 140, 0, 0.06, 0.18, "sine", 1e-3);
+      _ns(ctx, 0.05, 0.9, 0.09, 0.08, "lowpass", 300, 1);
+      _closeCtx(ctx, 1.2);
+    } catch (e) {
+    }
+  }
+  function playRunSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 523, 0, 0.55, 0.18, "sine");
+      _osc(ctx, 659, 0.15, 0.5, 0.18, "sine");
+      _osc(ctx, 784, 0.3, 0.6, 0.18, "sine");
+      _closeCtx(ctx, 1);
+    } catch (e) {
+    }
+  }
+  function playRispSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.1, 0.2, 3e-3, "lowpass", 180, 2);
+      _ns(ctx, 0.13, 0.14, 0.16, 4e-3, "lowpass", 220, 1.5);
+      _closeCtx(ctx, 0.4);
+    } catch (e) {
+    }
+  }
+  function playDpSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.06, 0.28, 1e-3, "bandpass", 750, 5);
+      _ns(ctx, 0.1, 0.06, 0.28, 1e-3, "bandpass", 750, 5);
+      _closeCtx(ctx, 0.4);
+    } catch (e) {
+    }
+  }
+  function playTpSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 392, 0, 0.12, 0.17, "triangle");
+      _osc(ctx, 523, 0.11, 0.12, 0.17, "triangle");
+      _osc(ctx, 659, 0.22, 0.12, 0.17, "triangle");
+      _osc(ctx, 784, 0.33, 0.32, 0.17, "triangle");
+      _closeCtx(ctx, 0.8);
+    } catch (e) {
+    }
+  }
+  function playGameStartSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 523, 0, 0.14, 0.16, "triangle");
+      _osc(ctx, 587, 0.13, 0.14, 0.16, "triangle");
+      _osc(ctx, 659, 0.26, 0.14, 0.16, "triangle");
+      _osc(ctx, 784, 0.39, 0.38, 0.16, "triangle");
+      _closeCtx(ctx, 1);
+    } catch (e) {
+    }
+  }
+  function playGameEndSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 784, 0, 0.65, 0.15, "sine");
+      _osc(ctx, 659, 0.38, 0.65, 0.15, "sine");
+      _osc(ctx, 523, 0.76, 0.8, 0.15, "sine");
+      _closeCtx(ctx, 1.8);
+    } catch (e) {
+    }
+  }
+  function playErrorSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.18, 0.22, 3e-3, "lowpass", 160, 1.5);
+      _osc(ctx, 130, 0.02, 0.16, 0.1, "sine");
+      _closeCtx(ctx, 0.5);
+    } catch (e) {
+    }
+  }
+  function playSound(type) {
+    if (!soundSettings.master || !soundSettings[type]) return;
+    if (type === "hr") playHrSound();
+    else if (type === "run") playRunSound();
+    else if (type === "risp") playRispSound();
+    else if (type === "dp") playDpSound();
+    else if (type === "tp") playTpSound();
+    else if (type === "gameStart") playGameStartSound();
+    else if (type === "gameEnd") playGameEndSound();
+    else if (type === "error") playErrorSound();
+  }
   function setSoundPref(key, val) {
     soundSettings[key] = val;
     if (key === "master") document.getElementById("soundRows").classList.toggle("master-off", !val);
@@ -236,6 +396,18 @@
   function toggleSoundPanel() {
     var p = document.getElementById("soundPanel");
     p.style.display = p.style.display === "none" ? "" : "none";
+  }
+  function onSoundPanelClickOutside(e) {
+    var panel = document.getElementById("soundPanel");
+    var btn = document.getElementById("ptbSoundBtn");
+    if (panel && panel.style.display !== "none" && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
+      panel.style.display = "none";
+    }
+    var dbgPanel = document.getElementById("devToolsPanel");
+    var dbgBtn = document.getElementById("btnDevTools");
+    if (dbgPanel && dbgPanel.style.display !== "none" && !dbgPanel.contains(e.target) && dbgBtn && !dbgBtn.contains(e.target)) {
+      dbgPanel.style.display = "none";
+    }
   }
 
   // src/state.js
@@ -410,6 +582,9 @@
 
   // src/ui/theme.js
   var themeCallbacks = { loadTodayGame: null, loadNextGame: null, loadNews: null, loadStandings: null, loadRoster: null, loadHomeYoutubeWidget: null, applyMyTeamLens: null, clearHomeLiveTimer: null };
+  function setThemeCallbacks(callbacks) {
+    Object.assign(themeCallbacks, callbacks);
+  }
   function relLuminance(hex) {
     hex = hex.replace("#", "");
     var n = parseInt(hex, 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
@@ -644,6 +819,30 @@
   function toggleSettings() {
     document.getElementById("settingsPanel").classList.toggle("open");
   }
+  function setupSettingsClickOutside() {
+    document.addEventListener("click", function(e) {
+      if (!document.querySelector(".settings-wrap").contains(e.target)) document.getElementById("settingsPanel").classList.remove("open");
+      var tt = document.getElementById("calTooltip");
+      if (tt && tt.classList.contains("open") && !e.target.closest(".cal-day")) tt.classList.remove("open");
+    });
+  }
+  function buildThemeSelect() {
+    var sel = document.getElementById("themeSelect");
+    sel.innerHTML = '<option value="-1">Default</option><option value="0">Follow Team</option>';
+    var lastDiv = "";
+    TEAMS.forEach(function(t) {
+      if (t.division !== lastDiv) {
+        var og = document.createElement("optgroup");
+        og.label = t.division;
+        sel.appendChild(og);
+        lastDiv = t.division;
+      }
+      var opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.name;
+      sel.lastChild.appendChild(opt);
+    });
+  }
   function switchTheme(val) {
     if (val === "0") {
       state.themeOverride = null;
@@ -673,6 +872,24 @@
     if (themeCallbacks.loadTodayGame) themeCallbacks.loadTodayGame();
     if (themeCallbacks.loadNextGame) themeCallbacks.loadNextGame();
   }
+  function buildTeamSelect() {
+    var sel = document.getElementById("teamSelect");
+    sel.innerHTML = "";
+    var lastDiv = "";
+    TEAMS.forEach(function(t) {
+      if (t.division !== lastDiv) {
+        var og = document.createElement("optgroup");
+        og.label = t.division;
+        sel.appendChild(og);
+        lastDiv = t.division;
+      }
+      var opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.name;
+      if (t.id === state.activeTeam.id) opt.selected = true;
+      sel.lastChild.appendChild(opt);
+    });
+  }
   function switchTeam(teamId) {
     if (themeCallbacks.clearHomeLiveTimer) themeCallbacks.clearHomeLiveTimer();
     state.activeTeam = TEAMS.find((t) => t.id === parseInt(teamId));
@@ -697,6 +914,9 @@
 
   // src/carousel/generators.js
   var carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null, tcLookup: null };
+  function setCarouselCallbacks(callbacks) {
+    Object.assign(carouselCallbacks, callbacks);
+  }
   function ordinal(n) {
     return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th";
   }
@@ -1411,6 +1631,257 @@
     } catch (e) {
     }
   }
+  async function loadOnThisDayCache() {
+    state.onThisDayCache = [];
+    var today = /* @__PURE__ */ new Date();
+    var mm = String(today.getMonth() + 1).padStart(2, "0");
+    var dd = String(today.getDate()).padStart(2, "0");
+    for (var i = 1; i <= 3; i++) {
+      var yr = SEASON - i;
+      try {
+        var r = await fetch(MLB_BASE + "/schedule?date=" + yr + "-" + mm + "-" + dd + "&sportId=1&hydrate=linescore,team");
+        if (!r.ok) throw new Error(r.status);
+        var d = await r.json();
+        var games = (d.dates || []).flatMap(function(dt) {
+          return dt.games || [];
+        }).filter(function(g2) {
+          return g2.status.abstractGameState === "Final";
+        });
+        for (var j = 0; j < games.length; j++) {
+          var g = games[j];
+          var away = g.teams.away, home = g.teams.home;
+          var winner = away.score > home.score ? away.team.abbreviation : home.team.abbreviation;
+          var loser = away.score > home.score ? home.team.abbreviation : away.team.abbreviation;
+          var ws = Math.max(away.score || 0, home.score || 0), ls = Math.min(away.score || 0, home.score || 0);
+          var playerHighlight = "", sigPlay = "";
+          try {
+            var bs = await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(g.gamePk) : null);
+            var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
+            var topBatter = null, topBatterStats = null;
+            var hrHitters = { multi: [], single: [] };
+            Object.values(allPlayers).forEach(function(p) {
+              if (!p.stats || !p.stats.batting) return;
+              var bat = p.stats.batting;
+              if (!bat.hits || bat.atBats < 2) return;
+              if (!topBatter || bat.hits / bat.atBats > topBatterStats.hits / topBatterStats.atBats) {
+                topBatter = p;
+                topBatterStats = bat;
+              }
+              if (bat.homeRuns && bat.homeRuns >= 2) hrHitters.multi.push({ name: p.person.fullName.split(" ").pop(), hrs: bat.homeRuns });
+              else if (bat.homeRuns === 1) hrHitters.single.push(p.person.fullName.split(" ").pop());
+            });
+            var winPitcher = null, winPitcherStats = null, losePitcher = null, losePitcherStats = null, savePitcher = null;
+            var allPitchers = [];
+            Object.values(allPlayers).forEach(function(p) {
+              if (!p.stats || !p.stats.pitching) return;
+              var pit = p.stats.pitching;
+              if (p.gameStatus) {
+                if (p.gameStatus.isWinningPitcher) {
+                  winPitcher = p;
+                  winPitcherStats = pit;
+                }
+                if (p.gameStatus.isLosingPitcher) {
+                  losePitcher = p;
+                  losePitcherStats = pit;
+                }
+                if (p.gameStatus.isSavePitcher) savePitcher = p;
+              }
+              if (parseFloat(pit.inningsPitched || 0) > 0) allPitchers.push({ p, stats: pit });
+            });
+            if (!winPitcher || !losePitcher) {
+              allPitchers.sort(function(a, b) {
+                return parseFloat(b.stats.inningsPitched || 0) - parseFloat(a.stats.inningsPitched || 0);
+              });
+              if (!winPitcher && allPitchers.length) {
+                winPitcher = allPitchers[0].p;
+                winPitcherStats = allPitchers[0].stats;
+              }
+              if (!losePitcher && allPitchers.length > 1) {
+                losePitcher = allPitchers[1].p;
+                losePitcherStats = allPitchers[1].stats;
+              }
+            }
+            var lines = [];
+            if (topBatter && topBatterStats) lines.push(topBatter.person.fullName.split(" ").pop() + " " + topBatterStats.hits + "-" + topBatterStats.atBats);
+            if (winPitcher && winPitcherStats) lines.push("W: " + winPitcher.person.fullName.split(" ").pop() + " " + winPitcherStats.inningsPitched + "IP, " + winPitcherStats.strikeOuts + "K, " + (winPitcherStats.earnedRuns || 0) + " ER");
+            if (losePitcher && losePitcherStats) lines.push("L: " + losePitcher.person.fullName.split(" ").pop() + " " + losePitcherStats.inningsPitched + "IP, " + losePitcherStats.strikeOuts + "K, " + (losePitcherStats.earnedRuns || 0) + " ER");
+            if (savePitcher) lines.push("S: " + savePitcher.person.fullName.split(" ").pop());
+            hrHitters.multi.forEach(function(h) {
+              lines.push(h.name + " " + h.hrs + "HR");
+            });
+            hrHitters.single.forEach(function(name) {
+              lines.push(name + " HR");
+            });
+            if (lines.length) playerHighlight = " \xB7 " + lines.join(" \xB7 ");
+          } catch (e) {
+          }
+          try {
+            var pbResp = await fetch(MLB_BASE + "/game/" + g.gamePk + "/playByPlay");
+            if (!pbResp.ok) throw new Error(pbResp.status);
+            var pb = await pbResp.json();
+            var plays = pb.allPlays || [];
+            var lastPlay = plays[plays.length - 1];
+            if (lastPlay && lastPlay.about && lastPlay.about.isScoringPlay && lastPlay.result) {
+              var evt = lastPlay.result.event || "";
+              if (evt.indexOf("Home Run") !== -1 && lastPlay.about.inning >= 9 && Math.abs(ws - ls) <= 1) {
+                sigPlay = " \xB7 Walk-off HR!";
+              } else if (evt.indexOf("Grand Slam") !== -1) {
+                sigPlay = " \xB7 Grand slam!";
+              }
+            }
+            var allHits = { away: 0, home: 0 };
+            plays.forEach(function(p) {
+              if (p.result && ["Single", "Double", "Triple", "Home Run"].indexOf(p.result.event) !== -1) {
+                var half = (p.about.halfInning || "Top").toLowerCase();
+                allHits[half === "top" ? "away" : "home"]++;
+              }
+            });
+            if (allHits.away === 0 || allHits.home === 0) {
+              sigPlay = " \xB7 No-hitter!";
+            }
+          } catch (e) {
+          }
+          var headline = "On this day in " + yr + ": " + winner + " beat " + loser + " " + ws + "-" + ls + playerHighlight + sigPlay;
+          state.onThisDayCache.push({ id: "otd_" + yr + "_" + g.gamePk, icon: "\u{1F4C5}", headline, sub: g.venue ? g.venue.name : "", gamePk: g.gamePk, ts: new Date(g.gameDate || Date.now()) });
+        }
+      } catch (e) {
+      }
+    }
+  }
+  async function loadYdForDate2(dateStr) {
+    var result = [];
+    try {
+      var r = await fetch(MLB_BASE + "/schedule?date=" + dateStr + "&sportId=1&hydrate=linescore,team");
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      var games = (d.dates || []).flatMap(function(dt) {
+        return dt.games || [];
+      }).filter(function(g2) {
+        if (g2.status.abstractGameState !== "Final") return false;
+        var detailed = g2.status.detailedState || "";
+        if (detailed === "Postponed" || detailed === "Cancelled" || detailed === "Suspended") return false;
+        return true;
+      });
+      for (var i = 0; i < games.length; i++) {
+        var g = games[i];
+        var away = g.teams.away, home = g.teams.home;
+        var winner = away.score > home.score ? away.team.abbreviation : home.team.abbreviation;
+        var loser = away.score > home.score ? home.team.abbreviation : away.team.abbreviation;
+        var ws = Math.max(away.score || 0, home.score || 0), ls = Math.min(away.score || 0, home.score || 0);
+        var linescore = g.linescore || {};
+        var dur = linescore.gameDurationMinutes ? " \xB7 " + Math.floor(linescore.gameDurationMinutes / 60) + "h " + String(linescore.gameDurationMinutes % 60).padStart(2, "0") + "m" : "";
+        var playerHighlight = "", sigPlay = "";
+        try {
+          var bs = await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(g.gamePk) : null);
+          var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
+          var topBatter = null, topBatterStats = null;
+          Object.values(allPlayers).forEach(function(p) {
+            if (!p.stats || !p.stats.batting) return;
+            var bat = p.stats.batting;
+            if (!bat.hits || bat.atBats < 2) return;
+            if (!topBatter || bat.hits / bat.atBats > topBatterStats.hits / topBatterStats.atBats) {
+              topBatter = p;
+              topBatterStats = bat;
+            }
+          });
+          var winPitcher = null, winPitcherStats = null, losePitcher = null, losePitcherStats = null, savePitcher = null;
+          var allPitchers = [];
+          Object.values(allPlayers).forEach(function(p) {
+            if (!p.stats || !p.stats.pitching) return;
+            var pit = p.stats.pitching;
+            if (p.gameStatus) {
+              if (p.gameStatus.isWinningPitcher) {
+                winPitcher = p;
+                winPitcherStats = pit;
+              }
+              if (p.gameStatus.isLosingPitcher) {
+                losePitcher = p;
+                losePitcherStats = pit;
+              }
+              if (p.gameStatus.isSavePitcher) savePitcher = p;
+            }
+            if (parseFloat(pit.inningsPitched || 0) > 0) allPitchers.push({ p, stats: pit });
+          });
+          if (!winPitcher || !losePitcher) {
+            allPitchers.sort(function(a, b) {
+              return parseFloat(b.stats.inningsPitched || 0) - parseFloat(a.stats.inningsPitched || 0);
+            });
+            if (!winPitcher && allPitchers.length) {
+              winPitcher = allPitchers[0].p;
+              winPitcherStats = allPitchers[0].stats;
+            }
+            if (!losePitcher && allPitchers.length > 1) {
+              losePitcher = allPitchers[1].p;
+              losePitcherStats = allPitchers[1].stats;
+            }
+          }
+          var lines = [];
+          if (topBatter && topBatterStats) {
+            var bline = topBatter.person.fullName.split(" ").pop() + " " + topBatterStats.hits + "-" + topBatterStats.atBats;
+            if (topBatterStats.homeRuns > 0) bline += " " + topBatterStats.homeRuns + "HR";
+            if (topBatterStats.rbi > 0) bline += " " + topBatterStats.rbi + "RBI";
+            lines.push(bline);
+          }
+          if (winPitcher && winPitcherStats) lines.push("W: " + winPitcher.person.fullName.split(" ").pop() + " " + winPitcherStats.inningsPitched + "IP, " + winPitcherStats.strikeOuts + "K, " + (winPitcherStats.earnedRuns || 0) + " ER");
+          if (losePitcher && losePitcherStats) lines.push("L: " + losePitcher.person.fullName.split(" ").pop() + " " + losePitcherStats.inningsPitched + "IP, " + losePitcherStats.strikeOuts + "K, " + (losePitcherStats.earnedRuns || 0) + " ER");
+          if (savePitcher) lines.push("S: " + savePitcher.person.fullName.split(" ").pop());
+          if (lines.length) playerHighlight = " \xB7 " + lines.join(" \xB7 ");
+        } catch (e) {
+        }
+        try {
+          var pbResp2 = await fetch(MLB_BASE + "/game/" + g.gamePk + "/playByPlay");
+          if (!pbResp2.ok) throw new Error(pbResp2.status);
+          var pb = await pbResp2.json();
+          var plays = pb.allPlays || [];
+          var lastPlay = plays[plays.length - 1];
+          if (lastPlay && lastPlay.about && lastPlay.about.isScoringPlay && lastPlay.result) {
+            var evt = lastPlay.result.event || "";
+            if (evt.indexOf("Home Run") !== -1 && lastPlay.about.inning >= 9 && Math.abs(ws - ls) <= 1) {
+              sigPlay = " \xB7 Walk-off HR!";
+            } else if (evt.indexOf("Grand Slam") !== -1) {
+              sigPlay = " \xB7 Grand slam!";
+            }
+          }
+          var allHits = { away: 0, home: 0 };
+          plays.forEach(function(p) {
+            if (p.result && ["Single", "Double", "Triple", "Home Run"].indexOf(p.result.event) !== -1) {
+              var half = (p.about.halfInning || "Top").toLowerCase();
+              allHits[half === "top" ? "away" : "home"]++;
+            }
+          });
+          if (allHits.away === 0 || allHits.home === 0) {
+            sigPlay = " \xB7 No-hitter!";
+          }
+        } catch (e) {
+        }
+        var headline = winner + " beat " + loser + " " + ws + "-" + ls + playerHighlight + sigPlay;
+        var videoTitle = null;
+        try {
+          var cr = await fetch(MLB_BASE + "/game/" + g.gamePk + "/content");
+          if (cr.ok) {
+            var cd = await cr.json();
+            var items = cd.highlights && cd.highlights.highlights && cd.highlights.highlights.items || [];
+            if (items.length && items[0].headline) videoTitle = items[0].headline;
+          }
+        } catch (e) {
+        }
+        result.push({ id: "yday_" + g.gamePk + "_result", icon: "\u2705", headline: videoTitle || headline, sub: videoTitle ? headline : (g.venue ? g.venue.name : "") + dur, gamePk: g.gamePk, ts: new Date(g.gameDate || Date.now()) });
+      }
+    } catch (e) {
+    }
+    return result;
+  }
+  async function loadYesterdayCache() {
+    state.yesterdayCache = [];
+    var yd = /* @__PURE__ */ new Date();
+    yd.setDate(yd.getDate() - 1);
+    var dateStr = yd.getFullYear() + "-" + String(yd.getMonth() + 1).padStart(2, "0") + "-" + String(yd.getDate()).padStart(2, "0");
+    state.yesterdayCache = await loadYdForDate2(dateStr);
+    state.yesterdayCache.forEach(function(item) {
+      item.headline = "Yesterday: " + item.headline;
+    });
+    if (carouselCallbacks.updateFeedEmpty) carouselCallbacks.updateFeedEmpty();
+  }
   async function loadLiveWPCache() {
     var livePks = Object.keys(state.gameStates).filter(function(pk) {
       var g = state.gameStates[pk];
@@ -1497,6 +1968,9 @@
   // src/feed/render.js
   var DEBUG2 = false;
   var feedCallbacks = { localDateStr: null };
+  function setFeedCallbacks(callbacks) {
+    Object.assign(feedCallbacks, callbacks);
+  }
   function baseDiamondSvg(on1, on2, on3) {
     var litStyle = "fill:#ffd000;filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))";
     var dimStyle = "fill:var(--muted,#9aa0a8);opacity:0.4";
@@ -1574,8 +2048,8 @@
       var seed = state.pollDateStr ? state.pollDateStr.split("-").map(Number) : null;
       var nextDate = seed ? new Date(seed[0], seed[1] - 1, seed[2]) : /* @__PURE__ */ new Date();
       nextDate.setDate(nextDate.getDate() + 1);
-      var localDateStr = feedCallbacks.localDateStr;
-      var ts = localDateStr ? localDateStr(nextDate) : nextDate.toISOString().split("T")[0];
+      var localDateStr2 = feedCallbacks.localDateStr;
+      var ts = localDateStr2 ? localDateStr2(nextDate) : nextDate.toISOString().split("T")[0];
       var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + ts + "&hydrate=team");
       if (!r.ok) throw new Error(r.status);
       var d = await r.json();
@@ -1691,6 +2165,77 @@
     el.innerHTML = html;
     if (hero.gameDateMs) startCountdown(hero.gameDateMs);
   }
+  function addFeedItem(gamePk, data) {
+    var item = { gamePk, data, ts: data.playTime || /* @__PURE__ */ new Date() };
+    var idx = state.feedItems.findIndex(function(fi) {
+      return fi.ts <= item.ts;
+    });
+    if (idx === -1) state.feedItems.push(item);
+    else state.feedItems.splice(idx, 0, item);
+    if (state.feedItems.length > 600) state.feedItems.length = 600;
+    var el = buildFeedEl(item);
+    el.dataset.ts = item.ts.getTime();
+    if (!state.enabledGames.has(+gamePk)) el.classList.add("feed-hidden");
+    var feed = document.getElementById("feed");
+    var tsMs = item.ts.getTime();
+    var sibling = Array.from(feed.children).find(function(c) {
+      return +c.dataset.ts < tsMs;
+    });
+    feed.insertBefore(el, sibling || null);
+    updateFeedEmpty();
+  }
+  function buildFeedEl(item) {
+    var el = document.createElement("div"), g = state.gameStates[item.gamePk], d = item.data;
+    if (d.type === "status") {
+      el.className = "feed-item status-change";
+      el.setAttribute("data-gamepk", item.gamePk);
+      el.innerHTML = '<div class="status-row"><span class="status-icon">' + d.icon + '</span><span class="status-label">' + d.label + '</span><span class="status-sub">' + d.sub + "</span></div>";
+      return el;
+    }
+    var cls = "feed-item";
+    if (d.playClass === "homerun") cls += " homerun";
+    else if (d.playClass === "scoring") cls += " scoring";
+    else if (d.playClass === "risp") cls += " risp";
+    el.className = cls;
+    el.setAttribute("data-gamepk", item.gamePk);
+    var half = d.halfInning === "top" ? "\u25B2" : "\u25BC";
+    var innStr = half + ordinal(d.inning), outsStr = d.outs === 1 ? "1 out" : d.outs + " outs";
+    var timeStr = item.ts.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    var metaHtml = '<div class="feed-meta"><span class="feed-game-tag"><span class="feed-team-dot" style="background:' + g.awayPrimary + '"></span>' + g.awayAbbr + "&nbsp;<strong>" + d.awayScore + '</strong></span><span class="feed-sep">\xB7</span><span class="feed-game-tag"><strong>' + d.homeScore + "</strong>&nbsp;" + g.homeAbbr + '<span class="feed-team-dot" style="background:' + g.homePrimary + '"></span></span><span class="feed-sep">\xB7</span><span>' + innStr + '</span><span class="feed-sep">\xB7</span><span>' + outsStr + '</span><span class="feed-time">' + timeStr + "</span></div>";
+    var icon = d.event === "Home Run" ? "\u{1F4A5} " : d.scoring ? "\u{1F7E2} " : "";
+    var scoreBadge = "";
+    if (d.scoring) {
+      var awayScores = d.halfInning === "top";
+      var awayHtml = awayScores ? '<span class="feed-score-scorer">' + g.awayAbbr + "&thinsp;" + d.awayScore + "</span>" : g.awayAbbr + "&thinsp;" + d.awayScore;
+      var homeHtml = !awayScores ? '<span class="feed-score-scorer">' + d.homeScore + "&thinsp;" + g.homeAbbr + "</span>" : d.homeScore + "&thinsp;" + g.homeAbbr;
+      scoreBadge = '<span class="feed-score-badge">' + awayHtml + '<span class="feed-score-sep">\xB7</span>' + homeHtml + "</span>";
+    }
+    var rispBadge = d.risp ? '<span class="risp-tag">\u26A1 RISP</span>' : "";
+    var evt = d.event || "", playBadge = "";
+    if (evt === "Single") playBadge = '<span class="play-tag hit-tag">1B</span>';
+    else if (evt === "Double") playBadge = '<span class="play-tag hit-tag">2B</span>';
+    else if (evt === "Triple") playBadge = '<span class="play-tag hit-tag">3B</span>';
+    else if (evt === "Walk" || evt === "Intent Walk") playBadge = '<span class="play-tag walk-tag">BB</span>';
+    else if (evt === "Strikeout") playBadge = '<span class="play-tag k-tag">K</span>';
+    else if (evt.indexOf("Error") !== -1) playBadge = '<span class="play-tag err-tag">E</span>';
+    else if (evt.indexOf("Triple Play") !== -1) playBadge = '<span class="play-tag tp-tag">TP</span>';
+    else if (evt.indexOf("Double Play") !== -1 || evt.indexOf("Grounded Into DP") !== -1) playBadge = '<span class="play-tag dp-tag">DP</span>';
+    el.innerHTML = metaHtml + '<div class="feed-play">' + icon + d.desc + rispBadge + playBadge + scoreBadge + "</div>";
+    return el;
+  }
+  function renderFeed() {
+    var feed = document.getElementById("feed");
+    if (!feed) return;
+    feed.innerHTML = "";
+    state.feedItems.forEach(function(item) {
+      if (state.demoMode && item.ts.getTime() > state.demoCurrentTime) return;
+      var el = buildFeedEl(item);
+      el.dataset.ts = item.ts.getTime();
+      if (!state.enabledGames.has(+item.gamePk)) el.classList.add("feed-hidden");
+      feed.appendChild(el);
+    });
+    updateFeedEmpty();
+  }
   function renderTicker() {
     var ticker = document.getElementById("gameTicker"), states = Object.values(state.gameStates);
     states = states.filter(function(g) {
@@ -1736,6 +2281,69 @@
       }
     });
     ticker.innerHTML = html;
+  }
+  function renderSideRailGames() {
+    var upcomingHtml = "", completedHtml = "";
+    var upcomingGames = [], completedGames = [];
+    var localDateStr2 = feedCallbacks.localDateStr;
+    var filterDate = state.demoMode && localDateStr2 ? localDateStr2(state.demoDate) : localDateStr2 ? localDateStr2(/* @__PURE__ */ new Date()) : null;
+    if (state.demoMode && DEBUG2) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(state.gameStates).length, "total games");
+    Object.values(state.gameStates).forEach(function(g) {
+      if (state.demoMode && localDateStr2 && localDateStr2(new Date(g.gameDateMs)) !== filterDate) return;
+      if (g.status === "Live") return;
+      if (g.status === "Final") completedGames.push(g);
+      else upcomingGames.push(g);
+    });
+    upcomingGames.sort(function(a, b) {
+      return (a.gameDateMs || 0) - (b.gameDateMs || 0);
+    });
+    completedGames.sort(function(a, b) {
+      return (b.gameDateMs || 0) - (a.gameDateMs || 0);
+    });
+    if (upcomingGames.length) {
+      upcomingHtml += '<div class="side-rail-section-header"><span class="side-rail-section-title">Upcoming Today</span><span class="game-count">' + upcomingGames.length + "</span></div>";
+      upcomingHtml += '<div class="side-rail-games-container">';
+      upcomingGames.forEach(function(g) {
+        var time = g.gameTime || "TBD";
+        upcomingHtml += '<div class="side-rail-game" onclick="showLiveGame(' + g.gamePk + ')"><span class="side-rail-game-time-badge">' + time + '</span><span class="side-rail-game-dot" style="background:' + g.awayPrimary + '"></span><span class="side-rail-game-abbr">' + g.awayAbbr + '</span><span class="side-rail-game-vs">@</span><span class="side-rail-game-dot" style="background:' + g.homePrimary + '"></span><span class="side-rail-game-abbr">' + g.homeAbbr + "</span></div>";
+      });
+      upcomingHtml += "</div>";
+    }
+    if (completedGames.length) {
+      completedHtml += '<div class="side-rail-section-header"><span class="side-rail-section-title">Completed</span><span class="game-count">' + completedGames.length + "</span></div>";
+      completedHtml += '<div class="side-rail-games-container">';
+      completedGames.forEach(function(g) {
+        var isPostponed = g.detailedState === "Postponed" || g.detailedState === "Cancelled" || g.detailedState === "Suspended";
+        var scoreStr = isPostponed ? "PPD" : g.awayScore + "-" + g.homeScore;
+        completedHtml += '<div class="side-rail-game" onclick="showLiveGame(' + g.gamePk + ')"><span class="side-rail-game-score-badge">' + scoreStr + '</span><span class="side-rail-game-dot" style="background:' + g.awayPrimary + '"></span><span class="side-rail-game-abbr">' + g.awayAbbr + '</span><span class="side-rail-game-vs">@</span><span class="side-rail-game-dot" style="background:' + g.homePrimary + '"></span><span class="side-rail-game-abbr">' + g.homeAbbr + "</span></div>";
+      });
+      completedHtml += "</div>";
+    }
+    var gamesHtml = upcomingHtml + completedHtml;
+    if (!gamesHtml) gamesHtml = '<div style="color:var(--muted);font-size:.75rem;padding:12px;text-align:center;">No games today</div>';
+    document.getElementById("sideRailGames").innerHTML = gamesHtml;
+  }
+  function showAlert(opts) {
+    var icon = opts.icon || "\u{1F514}", evtLabel = opts.event || "", desc = opts.desc || "", color = opts.color || "#e03030", duration = opts.duration || 5e3;
+    var stack = document.getElementById("alertStack"), el = document.createElement("div");
+    el.className = "alert-toast";
+    el.style.borderLeftColor = color;
+    el.style.setProperty("--toast-duration", duration + "ms");
+    el.innerHTML = '<span class="alert-icon">' + icon + '</span><div class="alert-body"><div class="alert-event">' + evtLabel + '</div><div class="alert-desc">' + desc + '</div></div><div class="alert-progress"></div>';
+    el.addEventListener("click", function() {
+      dismissAlert(el);
+    });
+    stack.appendChild(el);
+    setTimeout(function() {
+      dismissAlert(el);
+    }, duration);
+  }
+  function dismissAlert(el) {
+    if (!el.parentNode) return;
+    el.classList.add("dismissing");
+    setTimeout(function() {
+      el.remove();
+    }, 300);
   }
 
   // src/radio/stations.js
@@ -1943,6 +2551,19 @@
   var _playSound = null;
   var _showPlayerCard = null;
   var _rotateStory = null;
+  var _localDateStr = null;
+  function setDemoCallbacks(callbacks) {
+    _addFeedItem = callbacks.addFeedItem;
+    _renderTicker = callbacks.renderTicker;
+    _renderSideRailGames = callbacks.renderSideRailGames;
+    _buildStoryPool = callbacks.buildStoryPool;
+    _updateFeedEmpty = callbacks.updateFeedEmpty;
+    _showAlert = callbacks.showAlert;
+    _playSound = callbacks.playSound;
+    _showPlayerCard = callbacks.showPlayerCard;
+    _rotateStory = callbacks.rotateStory;
+    _localDateStr = callbacks.localDateStr;
+  }
   async function loadDailyEventsJSON() {
     try {
       var r = await fetch("./daily-events.json");
@@ -2368,6 +2989,32 @@
     if (score >= state.devTuning.focus_high) return { label: "HIGH", color: "#f59e0b" };
     return { label: "NORMAL", color: "#9aa0a8" };
   }
+  function selectFocusGame() {
+    var liveGames = Object.values(state.gameStates).filter(function(g) {
+      return g.status === "Live" && g.detailedState === "In Progress";
+    });
+    if (!liveGames.length) return;
+    var scored = liveGames.map(function(g) {
+      return { g, score: calcFocusScore(g) };
+    });
+    scored.sort(function(a, b) {
+      return b.score - a.score;
+    });
+    var best = scored[0];
+    if (!state.focusGamePk || !state.gameStates[state.focusGamePk] || state.gameStates[state.focusGamePk].status !== "Live") {
+      state.focusIsManual = false;
+      setFocusGame(best.g.gamePk);
+      return;
+    }
+    if (best.g.gamePk !== state.focusGamePk && best.score - calcFocusScore(state.gameStates[state.focusGamePk]) >= state.devTuning.focus_switch_margin) {
+      var now = Date.now();
+      if (!state.focusAlertShown[best.g.gamePk] || now - state.focusAlertShown[best.g.gamePk] > state.devTuning.focus_alert_cooldown) {
+        state.focusAlertShown[best.g.gamePk] = now;
+        var tension = getTensionInfo(best.score);
+        showFocusAlert(best.g.gamePk, tension.label + " \xB7 " + best.g.awayAbbr + " @ " + best.g.homeAbbr);
+      }
+    }
+  }
   function setFocusGame(pk) {
     if (!pk) return;
     state.focusGamePk = pk;
@@ -2628,6 +3275,12 @@
     });
     card.innerHTML = window.FocusCard.renderOverlay(data);
   }
+  function showFocusAlert(pk, reason) {
+    var el = document.getElementById("focusAlertBanner");
+    if (!el) return;
+    el.style.display = "";
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:6px;margin:6px 0;font-size:.75rem"><span>\u26A1 <strong style="color:var(--text)">' + reason + '</strong></span><div style="display:flex;gap:6px;flex-shrink:0"><button onclick="setFocusGame(' + pk + ');dismissFocusAlert()" style="padding:3px 10px;background:#f59e0b;border:none;border-radius:4px;color:#000;font-weight:700;font-size:11px;cursor:pointer">Switch</button><button onclick="dismissFocusAlert()" style="padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:11px;cursor:pointer">\u2715</button></div></div>';
+  }
   function dismissFocusAlert() {
     var el = document.getElementById("focusAlertBanner");
     if (el) el.style.display = "none";
@@ -2635,6 +3288,9 @@
 
   // src/carousel/rotation.js
   var rotationCallbacks = { refreshDebugPanel: null };
+  function setRotationCallbacks(callbacks) {
+    Object.assign(rotationCallbacks, callbacks);
+  }
   async function buildStoryPool() {
     var now = Date.now();
     if (now - state.dailyLeadersLastFetch > 5 * 6e4) {
@@ -2768,6 +3424,15 @@
     });
     showStoryCard(state.storyPool[idx >= state.storyPool.length - 1 ? 0 : idx + 1]);
   }
+  function onStoryVisibilityChange() {
+    if (document.hidden) {
+      clearInterval(state.storyRotateTimer);
+      state.storyRotateTimer = null;
+    } else if (state.pulseInitialized && state.storyPool.length) {
+      rotateStory();
+      state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
+    }
+  }
 
   // src/sections/loaders.js
   var sectionCallbacks = {
@@ -2777,6 +3442,9 @@
     teamCapImg: null,
     capImgError: null
   };
+  function setSectionCallbacks(cb) {
+    Object.assign(sectionCallbacks, cb);
+  }
   function clearHomeTimer() {
     if (homeLiveTimer) {
       clearInterval(homeLiveTimer);
@@ -2805,6 +3473,166 @@
   var MLB_FALLBACK_UC2 = "UCoLrcjPV5PbUrUyXq5mjc_A";
   var LEAGUE_HIT_STATS = [{ label: "HR", cats: "homeRuns", decimals: 0 }, { label: "AVG", cats: "battingAverage", decimals: 3, noLeadZero: true }, { label: "OPS", cats: "onBasePlusSlugging", decimals: 3, noLeadZero: true }, { label: "RBI", cats: "runsBattedIn", decimals: 0 }, { label: "SB", cats: "stolenBases", decimals: 0 }, { label: "BB", cats: "walks", decimals: 0 }];
   var LEAGUE_PIT_STATS = [{ label: "SO", cats: "strikeouts", decimals: 0 }, { label: "WHIP", cats: "walksAndHitsPerInningPitched", decimals: 2 }, { label: "ERA", cats: "earnedRunAverage", decimals: 2 }, { label: "W", cats: "wins", decimals: 0 }, { label: "SV", cats: "saves", decimals: 0 }, { label: "IP", cats: "inningsPitched", decimals: 1 }];
+  async function loadTodayGame() {
+    if (homeLiveTimer) {
+      clearInterval(homeLiveTimer);
+      homeLiveTimer = null;
+    }
+    var now = /* @__PURE__ */ new Date(), today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    document.getElementById("todayGame").innerHTML = '<div class="loading">Loading next game...</div>';
+    try {
+      var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + today + "&teamId=" + state.activeTeam.id + "&hydrate=linescore,team,seriesStatus,gameInfo");
+      var d = await r.json(), todayGames = d.dates && d.dates[0] && d.dates[0].games ? d.dates[0].games : [];
+      var liveGame = todayGames.find(function(g) {
+        return g.status.abstractGameState === "Live" && g.status.detailedState !== "Warmup" && g.status.detailedState !== "Pre-Game";
+      });
+      var upcomingToday = todayGames.find(function(g) {
+        return g.status.abstractGameState === "Preview" || g.status.abstractGameState === "Scheduled" || g.status.abstractGameState === "Live" && (g.status.detailedState === "Warmup" || g.status.detailedState === "Pre-Game");
+      });
+      var gameToRender = liveGame || upcomingToday;
+      if (gameToRender && !state.scheduleData.length) {
+        try {
+          var gd = new Date(gameToRender.gameDate), s7 = new Date(gd);
+          s7.setDate(gd.getDate() - 7);
+          var e7 = new Date(gd);
+          e7.setDate(gd.getDate() + 7);
+          var fmtD = function(d3) {
+            return d3.getFullYear() + "-" + String(d3.getMonth() + 1).padStart(2, "0") + "-" + String(d3.getDate()).padStart(2, "0");
+          };
+          var sr = await fetch(MLB_BASE + "/schedule?sportId=1&startDate=" + fmtD(s7) + "&endDate=" + fmtD(e7) + "&teamId=" + state.activeTeam.id + "&hydrate=team,linescore");
+          var srd = await sr.json();
+          (srd.dates || []).forEach(function(dt) {
+            dt.games.forEach(function(g) {
+              state.scheduleData.push(g);
+            });
+          });
+        } catch (e) {
+        }
+      }
+      if (liveGame) {
+        document.getElementById("todayGame").innerHTML = sectionCallbacks.renderNextGame(liveGame, "TODAY");
+        homeLiveTimer = setInterval(loadTodayGame, TIMING.HOME_LIVE_MS);
+        return;
+      }
+      if (upcomingToday) {
+        document.getElementById("todayGame").innerHTML = sectionCallbacks.renderNextGame(upcomingToday, "TODAY");
+        return;
+      }
+      var end = /* @__PURE__ */ new Date();
+      end.setDate(end.getDate() + 14);
+      var endStr = end.getFullYear() + "-" + String(end.getMonth() + 1).padStart(2, "0") + "-" + String(end.getDate()).padStart(2, "0");
+      var r2 = await fetch(MLB_BASE + "/schedule?sportId=1&startDate=" + today + "&endDate=" + endStr + "&teamId=" + state.activeTeam.id + "&hydrate=linescore,team,seriesStatus,gameInfo");
+      var d2 = await r2.json(), nextGame = null;
+      for (var i = 0; i < (d2.dates || []).length; i++) {
+        var u = (d2.dates[i].games || []).find(function(g) {
+          return g.status.abstractGameState === "Preview" || g.status.abstractGameState === "Scheduled";
+        });
+        if (u) {
+          nextGame = u;
+          break;
+        }
+      }
+      if (!nextGame) {
+        document.getElementById("todayGame").innerHTML = '<div class="game-big surface-hero"><div class="card-title">NEXT GAME</div><div class="empty-state">No upcoming games found</div></div>';
+        return;
+      }
+      var gd = new Date(nextGame.gameDate), label = gd.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }).toUpperCase();
+      document.getElementById("todayGame").innerHTML = sectionCallbacks.renderNextGame(nextGame, label);
+    } catch (e) {
+      document.getElementById("todayGame").innerHTML = '<div class="error">Could not load next game</div>';
+    }
+  }
+  async function loadNextGame() {
+    document.getElementById("nextGame").innerHTML = '<div class="loading">Loading next series...</div>';
+    try {
+      var now = /* @__PURE__ */ new Date(), today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+      var end = /* @__PURE__ */ new Date();
+      end.setDate(end.getDate() + 28);
+      var endStr = end.getFullYear() + "-" + String(end.getMonth() + 1).padStart(2, "0") + "-" + String(end.getDate()).padStart(2, "0");
+      var r = await fetch(MLB_BASE + "/schedule?sportId=1&startDate=" + today + "&endDate=" + endStr + "&teamId=" + state.activeTeam.id + "&hydrate=team,linescore,venue,probablePitcher");
+      var d = await r.json(), allGames = [];
+      (d.dates || []).forEach(function(dt) {
+        dt.games.forEach(function(g) {
+          allGames.push(g);
+        });
+      });
+      var seriesList = [], used = /* @__PURE__ */ new Set();
+      allGames.forEach(function(g) {
+        if (used.has(g.gamePk)) return;
+        var oppId = g.teams.home.team.id === state.activeTeam.id ? g.teams.away.team.id : g.teams.home.team.id;
+        var venueId = g.venue && g.venue.id, gDate = new Date(g.gameDate);
+        var group = allGames.filter(function(s) {
+          if (used.has(s.gamePk)) return false;
+          var sOpp = s.teams.home.team.id === state.activeTeam.id ? s.teams.away.team.id : s.teams.home.team.id;
+          var sVenue = s.venue && s.venue.id, daysDiff = Math.abs((new Date(s.gameDate) - gDate) / 864e5);
+          return sOpp === oppId && sVenue === venueId && daysDiff <= 4;
+        }).sort(function(a, b) {
+          return new Date(a.gameDate) - new Date(b.gameDate);
+        });
+        group.forEach(function(s) {
+          used.add(s.gamePk);
+        });
+        seriesList.push(group);
+      });
+      var currentIdx = -1;
+      for (var i = 0; i < seriesList.length; i++) {
+        if (seriesList[i].some(function(g) {
+          return g.status.abstractGameState !== "Final";
+        })) {
+          currentIdx = i;
+          break;
+        }
+      }
+      var nextSeries = currentIdx >= 0 && currentIdx + 1 < seriesList.length ? seriesList[currentIdx + 1] : null;
+      if (!nextSeries || !nextSeries.length) {
+        document.getElementById("nextGame").innerHTML = '<div class="game-big surface-hero"><div class="card-title">NEXT SERIES</div><div class="empty-state">No upcoming series found</div></div>';
+        return;
+      }
+      var first = nextSeries[0], teamHome = first.teams.home.team.id === state.activeTeam.id, oppTeam = teamHome ? first.teams.away.team : first.teams.home.team;
+      var oppD = TEAMS.find(function(t) {
+        return t.id === oppTeam.id;
+      }) || {};
+      var oppPrimary = oppD.primary || "#333", oppSecondary = oppD.secondary || "#fff";
+      var d1 = new Date(nextSeries[0].gameDate), d2 = new Date(nextSeries[nextSeries.length - 1].gameDate);
+      var dateRange = d1.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+      if (nextSeries.length > 1) dateRange += " \u2014 " + d2.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+      var venue = first.venue && first.venue.name ? first.venue.name : "";
+      var numGames = nextSeries.length;
+      var html = '<div class="game-big surface-hero has-ghost">';
+      html += sectionCallbacks.teamCapImg(oppTeam.id, oppTeam.teamName, oppSecondary, oppPrimary, "series-ghost");
+      html += '<div class="hero-content">';
+      html += '<div class="hero-top-row">';
+      html += '<div class="eyebrow eyebrow--accent">NEXT SERIES</div>';
+      html += '<div class="hero-meta-right">' + dateRange + "</div></div>";
+      html += '<div class="hero-opp-row">';
+      html += sectionCallbacks.teamCapImg(oppTeam.id, oppTeam.teamName, oppPrimary, oppSecondary);
+      html += '<div><div class="eyebrow">' + (teamHome ? "VS" : "AT") + "</div>";
+      html += '<div class="hero-opp-name">' + oppTeam.teamName.toUpperCase() + "</div>";
+      html += '<div class="hero-opp-meta">' + (venue ? venue + " \xB7 " : "") + numGames + " game" + (teamHome ? " home series" : " road series") + "</div>";
+      html += "</div></div>";
+      html += '<div class="hero-day-strip">';
+      nextSeries.forEach(function(g) {
+        var status = g.status.abstractGameState, gDate = new Date(g.gameDate);
+        var dayLabel = gDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+        var myT = g.teams.home.team.id === state.activeTeam.id ? g.teams.home : g.teams.away, oppT = g.teams.home.team.id === state.activeTeam.id ? g.teams.away : g.teams.home;
+        html += '<div class="hero-day-cell">';
+        html += '<div class="hero-day-label">' + dayLabel + "</div>";
+        if (status === "Final") {
+          var w = myT.isWinner;
+          html += '<span class="badge ' + (w ? "badge-w" : "badge-l") + '" style="font-size:.62rem">' + (w ? "W" : "L") + " " + myT.score + "-" + oppT.score + "</span>";
+        } else if (status === "Live") {
+          html += '<div class="hero-day-live"><span class="matchup-live-dot"></span>LIVE</div><div class="hero-day-score">' + myT.score + "-" + oppT.score + "</div>";
+        } else {
+          html += '<div class="hero-day-time">' + gDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) + "</div>";
+        }
+        html += "</div>";
+      });
+      html += "</div></div></div>";
+      document.getElementById("nextGame").innerHTML = html;
+    } catch (e) {
+      document.getElementById("nextGame").innerHTML = '<div class="error">Could not load next series</div>';
+    }
+  }
   async function loadHomeYoutubeWidget() {
     var uc = state.activeTeam.youtubeUC || MLB_FALLBACK_UC2, teamName = state.activeTeam.youtubeUC ? state.activeTeam.name : "MLB", channelUrl = "https://www.youtube.com/channel/" + uc;
     var themeTeam = state.themeOverride || state.activeTeam, bannerColor = state.themeInvert ? themeTeam.secondary : themeTeam.primary;
@@ -3900,6 +4728,9 @@
 
   // src/collection/sync.js
   var syncCallbacks = { loadCollection: null, saveCollection: null, updateCollectionUI: null };
+  function setSyncCallbacks(callbacks) {
+    Object.assign(syncCallbacks, callbacks);
+  }
   var DEBUG3 = false;
   async function syncCollection() {
     if (!state.mlbSessionToken) return;
@@ -3920,6 +4751,55 @@
     } catch (e) {
       console.error("[Sync] Collection error", e);
     }
+  }
+  async function mergeCollectionOnSignIn() {
+    if (!state.mlbSessionToken) return;
+    try {
+      const r = await fetch((window.API_BASE || API_BASE || "") + "/api/collection/sync?token=" + state.mlbSessionToken);
+      if (r.ok) {
+        const data = await r.json();
+        if (data.collection && Object.keys(data.collection).length > 0) {
+          const local = syncCallbacks.loadCollection ? syncCallbacks.loadCollection() : {};
+          const merged = mergeCollectionSlots(local, data.collection);
+          if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(merged);
+          if (syncCallbacks.updateCollectionUI) syncCallbacks.updateCollectionUI();
+          if (DEBUG3) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
+        }
+      }
+    } catch (e) {
+      console.error("[Sync] Merge error", e);
+    }
+  }
+  function mergeCollectionSlots(local, remote) {
+    function tierRank2(t) {
+      const ranks = { legendary: 4, epic: 3, rare: 2, common: 1 };
+      return ranks[t] || 0;
+    }
+    const merged = { ...local, ...remote };
+    Object.keys(local).forEach((k) => {
+      if (remote[k]) {
+        const lr = tierRank2(local[k].tier), rr = tierRank2(remote[k].tier);
+        if (lr > rr) {
+          merged[k] = local[k];
+        } else if (rr > lr) {
+          merged[k] = remote[k];
+        } else {
+          const newer = local[k].collectedAt >= remote[k].collectedAt ? local[k] : remote[k];
+          const em = /* @__PURE__ */ new Map();
+          (local[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
+          (remote[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
+          const events = Array.from(em.values()).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+          merged[k] = { ...newer, events };
+        }
+      }
+    });
+    return merged;
+  }
+  function startSyncInterval() {
+    if (state.mlbSyncInterval) return;
+    state.mlbSyncInterval = setInterval(async () => {
+      syncCollection();
+    }, TIMING.SYNC_INTERVAL_MS);
   }
 
   // src/auth/oauth.js
@@ -4056,6 +4936,398 @@
       }
     }
     return state.boxscoreCache[gamePk];
+  }
+  function getEffectiveDate() {
+    return state.demoMode && state.demoDate ? state.demoDate : /* @__PURE__ */ new Date();
+  }
+  function initLeaguePulse() {
+    devTrace("pulse", "initLeaguePulse \xB7 first nav to Pulse");
+    initReal();
+  }
+  function initReal() {
+    setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore, localDateStr, getEffectiveDate, tcLookup });
+    setRotationCallbacks({ refreshDebugPanel });
+    setSyncCallbacks({ loadCollection, saveCollection, updateCollectionUI });
+    setThemeCallbacks({ loadTodayGame, loadNextGame, loadNews, loadStandings, loadRoster, loadHomeYoutubeWidget, applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
+    setFeedCallbacks({ localDateStr });
+    setSectionCallbacks({ renderNextGame, getSeriesInfo, localDateStr, teamCapImg, capImgError });
+    var mockBar = document.getElementById("mockBar");
+    if (mockBar) {
+      mockBar.style.display = "none";
+      mockBar.style.setProperty("display", "none", "important");
+    }
+    if (!state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6) {
+      var _d = /* @__PURE__ */ new Date();
+      _d.setDate(_d.getDate() - 1);
+      state.pollDateStr = localDateStr(_d);
+    } else {
+      state.pollDateStr = localDateStr(getEffectiveDate());
+    }
+    loadRoster();
+    loadOnThisDayCache();
+    loadYesterdayCache();
+    loadTransactionsCache();
+    loadHighLowCache();
+    document.removeEventListener("visibilitychange", onStoryVisibilityChange);
+    document.addEventListener("visibilitychange", onStoryVisibilityChange);
+    pollLeaguePulse().then(function() {
+      buildStoryPool();
+      setFocusGame(state.focusGamePk);
+    });
+    state.pulseTimer = setInterval(pollLeaguePulse, TIMING.PULSE_POLL_MS);
+    if (state.storyPoolTimer) {
+      clearInterval(state.storyPoolTimer);
+      state.storyPoolTimer = null;
+    }
+    state.storyPoolTimer = setInterval(buildStoryPool, TIMING.STORY_POOL_MS);
+    if (state.videoClipPollTimer) {
+      clearInterval(state.videoClipPollTimer);
+      state.videoClipPollTimer = null;
+    }
+    state.videoClipPollTimer = setInterval(pollPendingVideoClips, 30 * 1e3);
+    if (state.yesterdayRefreshTimer) {
+      clearInterval(state.yesterdayRefreshTimer);
+      state.yesterdayRefreshTimer = null;
+    }
+    state.yesterdayRefreshTimer = setInterval(function() {
+      loadYesterdayCache().then(function() {
+        var ydCard = document.getElementById("yesterdayCard");
+        if (ydCard && ydCard.offsetParent !== null) renderYesterdayRecap();
+      });
+    }, TIMING.YESTERDAY_REFRESH_MS);
+  }
+  async function pollLeaguePulse() {
+    if (state.pulseAbortCtrl) {
+      state.pulseAbortCtrl.abort();
+    }
+    state.pulseAbortCtrl = new AbortController();
+    var sig = state.pulseAbortCtrl.signal;
+    var hasLive = Object.values(state.gameStates).some(function(g) {
+      return g.status === "Live";
+    });
+    devTrace("poll", "pollLeaguePulse start \xB7 hasLive=" + hasLive + " \xB7 pollDate=" + state.pollDateStr + " \xB7 games=" + Object.keys(state.gameStates).length + " \xB7 enabled=" + state.enabledGames.size);
+    var isMidnightWindow = !state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6;
+    if (!hasLive) {
+      var hasGamesFromCurrentDate = state.pollDateStr && Object.values(state.gameStates).some(function(g) {
+        return g.gameDateMs && localDateStr(new Date(g.gameDateMs)) === state.pollDateStr;
+      });
+      if (!hasGamesFromCurrentDate && !isMidnightWindow) {
+        state.pollDateStr = localDateStr(getEffectiveDate());
+      } else if (!isMidnightWindow && isPostSlate()) {
+        var todayStr = localDateStr(getEffectiveDate());
+        if (state.pollDateStr < todayStr) {
+          pruneStaleGames(todayStr);
+          state.pollDateStr = todayStr;
+        }
+      }
+    }
+    var dateStr = state.pollDateStr;
+    try {
+      var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + dateStr + "&hydrate=linescore,team,probablePitcher", { signal: sig });
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      var games = (d.dates || []).flatMap(function(dt) {
+        return dt.games || [];
+      });
+      devTrace("poll", "schedule fetch \xB7 date=" + dateStr + " \xB7 games=" + games.length);
+      var hasLiveInFetch = games.some(function(g) {
+        return g.status.abstractGameState === "Live";
+      });
+      if ((!games.length || isMidnightWindow && !hasLiveInFetch) && !hasLive) {
+        var yesterday = /* @__PURE__ */ new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        var yDateStr = localDateStr(yesterday);
+        var yr = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + yDateStr + "&hydrate=linescore,team,probablePitcher", { signal: sig });
+        if (!yr.ok) throw new Error(yr.status);
+        var yd = await yr.json();
+        var yGames = (yd.dates || []).flatMap(function(dt) {
+          return dt.games || [];
+        });
+        if (yGames.length) {
+          games = yGames;
+          dateStr = yDateStr;
+          state.pollDateStr = dateStr;
+        }
+      }
+      state.storyCarouselRawGameData = {};
+      games.forEach(function(g) {
+        state.storyCarouselRawGameData[g.gamePk] = g;
+      });
+      var pendingFinalItems = {};
+      games.forEach(function(g) {
+        var pk = g.gamePk, newStatus = g.status.abstractGameState, detailed = g.status.detailedState || "";
+        var away = g.teams.away, home = g.teams.home;
+        var awayTc = tcLookup(away.team.id), homeTc = tcLookup(home.team.id);
+        var ls = g.linescore || {}, gameTime = null, gameDateMs = null;
+        if (g.gameDate) {
+          try {
+            var gd = new Date(g.gameDate);
+            gameTime = gd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+            gameDateMs = gd.getTime();
+          } catch (e) {
+          }
+        }
+        if (!state.gameStates[pk]) {
+          state.gameStates[pk] = {
+            gamePk: pk,
+            awayId: away.team.id,
+            homeId: home.team.id,
+            awayAbbr: away.team.abbreviation,
+            homeAbbr: home.team.abbreviation,
+            awayName: away.team.name,
+            homeName: home.team.name,
+            awayPrimary: awayTc.primary,
+            homePrimary: homeTc.primary,
+            awayScore: away.score || 0,
+            homeScore: home.score || 0,
+            awayW: away.leagueRecord ? away.leagueRecord.wins : null,
+            awayL: away.leagueRecord ? away.leagueRecord.losses : null,
+            homeW: home.leagueRecord ? home.leagueRecord.wins : null,
+            homeL: home.leagueRecord ? home.leagueRecord.losses : null,
+            status: newStatus,
+            detailedState: detailed,
+            inning: ls.currentInning || 1,
+            halfInning: (ls.inningHalf || "Top").toLowerCase(),
+            outs: ls.outs || 0,
+            awayHits: ls.teams && ls.teams.away ? ls.teams.away.hits || 0 : 0,
+            homeHits: ls.teams && ls.teams.home ? ls.teams.home.hits || 0 : 0,
+            playCount: 0,
+            lastTimestamp: null,
+            gameTime,
+            gameDateMs,
+            venueName: g.venue ? g.venue.name : null,
+            onFirst: !!(ls.offense && ls.offense.first),
+            onSecond: !!(ls.offense && ls.offense.second),
+            onThird: !!(ls.offense && ls.offense.third)
+          };
+          if (!state.myTeamLens || state.gameStates[pk].awayId === state.activeTeam.id || state.gameStates[pk].homeId === state.activeTeam.id) state.enabledGames.add(pk);
+          var g0 = state.gameStates[pk], ts0 = gameDateMs ? new Date(gameDateMs) : /* @__PURE__ */ new Date();
+          if (newStatus === "Final") {
+            var isHistPpd = detailed === "Postponed" || detailed === "Cancelled" || detailed === "Suspended";
+            if (isHistPpd) {
+              if (!gameDateMs || Date.now() >= gameDateMs) addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Postponed", sub: g0.awayAbbr + " @ " + g0.homeAbbr, playTime: ts0 });
+            } else {
+              var durLabel = ls.gameDurationMinutes ? "  \xB7  " + Math.floor(ls.gameDurationMinutes / 60) + "h " + String(ls.gameDurationMinutes % 60).padStart(2, "0") + "m" : "";
+              pendingFinalItems[pk] = { sub: g0.awayAbbr + " " + (away.score || 0) + ", " + g0.homeAbbr + " " + (home.score || 0) + durLabel };
+            }
+          } else if (newStatus === "Live" && detailed === "In Progress") {
+            addFeedItem(pk, { type: "status", icon: "\u26BE", label: "Game underway!", sub: g0.awayAbbr + " @ " + g0.homeAbbr, playTime: ts0 });
+          } else if (detailed.toLowerCase().indexOf("delay") !== -1) {
+            addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Delayed", sub: g0.awayAbbr + " @ " + g0.homeAbbr + " \xB7 " + detailed, playTime: ts0 });
+          }
+        } else {
+          var prev = state.gameStates[pk];
+          if (gameTime) prev.gameTime = gameTime;
+          if (gameDateMs) prev.gameDateMs = gameDateMs;
+          if (prev.detailedState !== "In Progress" && detailed === "In Progress") {
+            addFeedItem(pk, { type: "status", icon: "\u26BE", label: "Game underway!", sub: prev.awayAbbr + " @ " + prev.homeAbbr });
+            playSound("gameStart");
+          }
+          if (prev.status !== "Final" && newStatus === "Final") {
+            devTrace("poll", "game final \xB7 " + prev.awayAbbr + " @ " + prev.homeAbbr + " \xB7 " + prev.awayScore + "-" + prev.homeScore);
+            var isGamePostponed = detailed === "Postponed" || detailed === "Cancelled" || detailed === "Suspended";
+            if (isGamePostponed) {
+              addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Postponed", sub: prev.awayAbbr + " @ " + prev.homeAbbr });
+            } else {
+              addFeedItem(pk, { type: "status", icon: "\u{1F3C1}", label: "Game Final", sub: prev.awayAbbr + " " + (away.score || 0) + ", " + prev.homeAbbr + " " + (home.score || 0) });
+              playSound("gameEnd");
+            }
+            delete state.perfectGameTracker[pk];
+          }
+          if (detailed.toLowerCase().indexOf("delay") !== -1 && prev.detailedState.toLowerCase().indexOf("delay") === -1) {
+            addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Delayed", sub: prev.awayAbbr + " @ " + prev.homeAbbr + " \xB7 " + detailed });
+          }
+          prev.detailedState = detailed;
+          prev.status = newStatus;
+          prev.awayScore = away.score || 0;
+          prev.homeScore = home.score || 0;
+          prev.inning = ls.currentInning || prev.inning;
+          prev.halfInning = (ls.inningHalf || "Top").toLowerCase();
+          prev.outs = ls.outs || 0;
+          if (ls.teams && ls.teams.away) prev.awayHits = ls.teams.away.hits || 0;
+          if (ls.teams && ls.teams.home) prev.homeHits = ls.teams.home.hits || 0;
+          prev.onFirst = !!(ls.offense && ls.offense.first);
+          prev.onSecond = !!(ls.offense && ls.offense.second);
+          prev.onThird = !!(ls.offense && ls.offense.third);
+        }
+      });
+      var liveGames = games.filter(function(g) {
+        return g.status.abstractGameState === "Live" || pendingFinalItems[g.gamePk];
+      });
+      await Promise.all(liveGames.map(function(g) {
+        return pollGamePlays(g.gamePk);
+      }));
+      Object.keys(pendingFinalItems).forEach(function(pk) {
+        var pf = pendingFinalItems[pk];
+        var gamePlays = state.feedItems.filter(function(fi) {
+          return fi.gamePk == pk && fi.data && fi.data.type === "play";
+        });
+        if (gamePlays.length > 0) addFeedItem(+pk, { type: "status", icon: "\u{1F3C1}", label: "Game Final", sub: pf.sub, playTime: new Date(gamePlays[0].ts.getTime() + 6e4) });
+      });
+      if (state.isFirstPoll && state.feedItems.length > 0) {
+        state.feedItems.sort(function(a, b) {
+          return b.ts - a.ts;
+        });
+        renderFeed();
+      }
+      state.isFirstPoll = false;
+      updateInningStates();
+      renderTicker();
+      updateFeedEmpty();
+      renderSideRailGames();
+      pollPendingVideoClips();
+      selectFocusGame();
+      refreshDebugPanel();
+      var live = Object.values(state.gameStates).filter(function(g) {
+        return g.status === "Live" && g.detailedState === "In Progress";
+      }).length;
+      var final = Object.values(state.gameStates).filter(function(g) {
+        return g.status === "Final";
+      }).length;
+      devTrace("poll", "pollLeaguePulse end \xB7 live=" + live + " \xB7 final=" + final + " \xB7 games=" + Object.keys(state.gameStates).length + " \xB7 enabled=" + state.enabledGames.size + " \xB7 state.feedItems=" + state.feedItems.length);
+    } catch (e) {
+      if (e.name !== "AbortError") console.error("poll error", e);
+    }
+  }
+  async function pollGamePlays(gamePk) {
+    try {
+      var g = state.gameStates[gamePk];
+      if (!g) return;
+      var tsResp = await fetch(MLB_BASE_V1_1 + "/game/" + gamePk + "/feed/live/timestamps");
+      if (!tsResp.ok) throw new Error(tsResp.status);
+      var tsData = await tsResp.json();
+      var latestTs = Array.isArray(tsData) ? tsData[tsData.length - 1] : null;
+      if (latestTs && latestTs === g.lastTimestamp) return;
+      if (latestTs) g.lastTimestamp = latestTs;
+      var r = await fetch(MLB_BASE + "/game/" + gamePk + "/playByPlay");
+      if (!r.ok) throw new Error(r.status);
+      var data = await r.json();
+      var plays = (data.allPlays || []).filter(function(p) {
+        return p.about && p.about.isComplete;
+      });
+      var lastCount = g.playCount || 0, isHistory = lastCount === 0 && plays.length > 0 || state.tabHiddenAt !== null;
+      plays.slice(lastCount).forEach(function(play) {
+        var event = play.result && play.result.event || "";
+        var isScoringP = play.about && play.about.isScoringPlay || false;
+        var aScore = play.result && play.result.awayScore != null ? play.result.awayScore : g.awayScore;
+        var hScore = play.result && play.result.homeScore != null ? play.result.homeScore : g.homeScore;
+        var inning = play.about && play.about.inning || g.inning;
+        var halfInning = play.about && play.about.halfInning || g.halfInning;
+        var outs = play.count && play.count.outs || 0;
+        var desc = play.result && play.result.description || "\u2014";
+        var batterId = play.matchup && play.matchup.batter && play.matchup.batter.id || null;
+        var batterName = play.matchup && play.matchup.batter && play.matchup.batter.fullName || "";
+        var runners = play.runners || [];
+        if (event.indexOf("Stolen Base") !== -1) {
+          if (!isHistory) {
+            var sbRunner = runners.find(function(r2) {
+              return r2.details && r2.details.eventType && r2.details.eventType.indexOf("stolen_base") !== -1;
+            });
+            var sbRunnerId = sbRunner && sbRunner.details && sbRunner.details.runner && sbRunner.details.runner.id || batterId;
+            var sbRunnerName = sbRunner && sbRunner.details && sbRunner.details.runner && sbRunner.details.runner.fullName || batterName;
+            var sbBase = event.indexOf("Home") !== -1 ? "home" : event.indexOf("3B") !== -1 ? "3B" : "2B";
+            var sbKey = gamePk + "_" + (play.about && play.about.atBatIndex != null ? play.about.atBatIndex : g.playCount + plays.indexOf(play));
+            if (!state.stolenBaseEvents.some(function(e) {
+              return e.key === sbKey;
+            })) {
+              state.stolenBaseEvents.push({ key: sbKey, gamePk, runnerId: sbRunnerId, runnerName: sbRunnerName, base: sbBase, inning, halfInning, awayAbbr: g.awayAbbr, homeAbbr: g.homeAbbr, ts: playTime || /* @__PURE__ */ new Date() });
+            }
+          }
+          return;
+        }
+        var hasRISP = outs < 3 && runners.some(function(r2) {
+          return r2.movement && !r2.movement.isOut && (r2.movement.end === "2B" || r2.movement.end === "3B");
+        });
+        var playClass = event === "Home Run" ? "homerun" : isScoringP ? "scoring" : hasRISP ? "risp" : "normal";
+        var playTime = null;
+        if (play.about && play.about.startTime) {
+          try {
+            playTime = new Date(play.about.startTime);
+          } catch (e) {
+          }
+        }
+        var pitcherId = play.matchup && play.matchup.pitcher && play.matchup.pitcher.id || null;
+        var pitcherName = play.matchup && play.matchup.pitcher && play.matchup.pitcher.fullName || "";
+        var hrDistance = event === "Home Run" && play.hitData && play.hitData.totalDistance > 0 ? Math.round(play.hitData.totalDistance) : null;
+        addFeedItem(gamePk, { type: "play", event, desc, scoring: isScoringP, awayScore: aScore, homeScore: hScore, inning, halfInning, outs, risp: hasRISP, playClass, playTime, batterId, batterName, pitcherName, distance: hrDistance });
+        var isHitEvt = ["Single", "Double", "Triple", "Home Run"].indexOf(event) !== -1;
+        if (state.perfectGameTracker[gamePk] === void 0) state.perfectGameTracker[gamePk] = true;
+        if (["Walk", "Hit By Pitch", "Intentional Walk", "Error", "Fielders Choice", "Catcher Interference"].indexOf(event) !== -1) state.perfectGameTracker[gamePk] = false;
+        if (isHitEvt) state.perfectGameTracker[gamePk] = false;
+        if (isHitEvt && batterId) {
+          var dh = state.dailyHitsTracker[batterId] || { name: batterName, hits: 0, hrs: 0, gamePk };
+          dh.hits++;
+          if (event === "Home Run") dh.hrs++;
+          dh.name = batterName || dh.name;
+          dh.gamePk = gamePk;
+          state.dailyHitsTracker[batterId] = dh;
+        }
+        if (event === "Strikeout" && pitcherId) {
+          var kkey = gamePk + "_" + pitcherId;
+          var ke = state.dailyPitcherKs[kkey] || { name: pitcherName, ks: 0, gamePk };
+          ke.ks++;
+          ke.name = pitcherName || ke.name;
+          state.dailyPitcherKs[kkey] = ke;
+        }
+        if (!isHistory) {
+          var teamColor = halfInning === "top" ? g.awayPrimary : g.homePrimary;
+          var gameVisible = state.enabledGames.has(gamePk);
+          if (event === "Home Run") {
+            playSound("hr");
+            if (batterId && gameVisible) {
+              var _hrRbi = play.result && play.result.rbi != null ? play.result.rbi : 1;
+              var _badge = getHRBadge(_hrRbi, halfInning, inning, aScore, hScore);
+              showPlayerCard(batterId, batterName, g.awayId, g.homeId, halfInning, null, desc, _badge, gamePk);
+            }
+          } else if (isScoringP) {
+            var _rbi = play.result && play.result.rbi != null ? play.result.rbi : 0;
+            var _rs = calcRBICardScore(_rbi, event, aScore, hScore, inning, halfInning);
+            var _rbiOk = Date.now() - (state.rbiCardCooldowns[gamePk] || 0) >= state.devTuning.rbiCooldown;
+            if (_rbi > 0 && _rs >= state.devTuning.rbiThreshold && gameVisible && batterId && _rbiOk) {
+              state.rbiCardCooldowns[gamePk] = Date.now();
+              showRBICard(batterId, batterName, g.awayId, g.homeId, halfInning, _rbi, event, aScore, hScore, inning, gamePk);
+            } else {
+              if (gameVisible) showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + aScore + ", " + g.homeAbbr + " " + hScore, desc, color: teamColor, duration: 4e3 });
+            }
+            playSound("run");
+          } else if (event.indexOf("Triple Play") !== -1) {
+            if (gameVisible) showAlert({ icon: "\u{1F500}", event: "TRIPLE PLAY \xB7 " + g.awayAbbr + " @ " + g.homeAbbr, desc, color: "#9b59b6", duration: 5e3 });
+            playSound("tp");
+          } else if (event.indexOf("Double Play") !== -1 || event.indexOf("Grounded Into DP") !== -1) {
+            playSound("dp");
+          } else if (event.indexOf("Error") !== -1) {
+            playSound("error");
+          } else if (hasRISP) {
+            playSound("risp");
+          }
+          if (outs === 3) {
+            var _rk = gamePk + "_" + inning + "_" + halfInning.toLowerCase();
+            if (!state.inningRecapsFired.has(_rk)) state.inningRecapsPending[_rk] = { gamePk, inning, halfInning: halfInning.toLowerCase() };
+          }
+        }
+      });
+      plays.forEach(function(play) {
+        if (play.result && play.result.event === "Home Run") {
+          var newDesc = play.result.description || "";
+          var pt = null;
+          try {
+            if (play.about && play.about.startTime) pt = new Date(play.about.startTime);
+          } catch (e) {
+          }
+          var found = state.feedItems.find(function(i) {
+            return i.gamePk === gamePk && i.data && i.data.event === "Home Run" && pt && i.ts && Math.abs(i.ts.getTime() - pt.getTime()) < 5e3;
+          });
+          if (found) {
+            if (!found.data.distance && play.hitData && play.hitData.totalDistance > 0) found.data.distance = Math.round(play.hitData.totalDistance);
+            if (newDesc.match(/\(\d+\)/) && !(found.data.desc || "").match(/\(\d+\)/)) found.data.desc = newDesc;
+          }
+        }
+      });
+      g.playCount = plays.length;
+    } catch (e) {
+    }
+  }
+  function updateInningStates() {
   }
   function refreshDebugPanel() {
     var panel = document.getElementById("debugPanel");
@@ -5477,6 +6749,9 @@
     }
     alert("Collection reset");
   }
+  function localDateStr(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
   function toggleGame(gamePk) {
     gamePk = +gamePk;
     if (state.enabledGames.has(gamePk)) {
@@ -5529,6 +6804,21 @@
   }
   function toggleMyTeamLens() {
     applyMyTeamLens(!state.myTeamLens);
+  }
+  function pruneStaleGames(beforeDateStr) {
+    Object.keys(state.gameStates).forEach(function(pk) {
+      var g = state.gameStates[pk];
+      if (g.status !== "Final" || !g.gameDateMs) return;
+      var gDate = localDateStr(new Date(g.gameDateMs));
+      if (gDate < beforeDateStr) {
+        delete state.gameStates[pk];
+        state.enabledGames.delete(+pk);
+      }
+    });
+    state.feedItems = state.feedItems.filter(function(fi) {
+      return state.gameStates[fi.gamePk] !== void 0;
+    });
+    renderFeed();
   }
   async function resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk) {
     var battingTeamId = halfInning === "top" ? awayTeamId : homeTeamId;
@@ -5669,6 +6959,39 @@
       overlay.classList.remove("open", "closing");
       document.getElementById("playerCard").innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
     }, TIMING.CARD_CLOSE_ANIM_MS);
+  }
+  function getHRBadge(rbi, halfInning, inning, aScore, hScore) {
+    var battingAfter = halfInning === "bottom" ? hScore : aScore;
+    var fieldingScore = halfInning === "bottom" ? aScore : hScore;
+    var battingBefore = battingAfter - rbi;
+    var deficitBefore = fieldingScore - battingBefore;
+    var marginAfter = battingAfter - fieldingScore;
+    var isWalkoff = halfInning === "bottom" && inning >= 9 && deficitBefore >= 0 && marginAfter > 0;
+    var isGoAhead = deficitBefore >= 0 && marginAfter > 0;
+    var isGrandSlam = rbi === 4;
+    if (isWalkoff && isGrandSlam) return "WALK-OFF GRAND SLAM!";
+    if (isWalkoff) return "WALK-OFF HOME RUN!";
+    if (isGrandSlam) return "GRAND SLAM!";
+    if (isGoAhead) return "GO-AHEAD HOME RUN!";
+    return "\u{1F4A5} HOME RUN!";
+  }
+  function calcRBICardScore(rbi, event, aScore, hScore, inning, halfInning) {
+    if (!rbi || rbi < 1) return 0;
+    var base = rbi === 1 ? 10 : rbi === 2 ? 25 : rbi === 3 ? 40 : 55;
+    var hitMult = event === "Double" ? 1.5 : event === "Triple" ? 2 : ["Sac Fly", "Sac Bunt", "Walk", "Hit By Pitch", "Grounded Into DP", "Field's Choice"].indexOf(event) !== -1 ? 0.7 : 1;
+    var battingAfter = halfInning === "top" ? aScore : hScore;
+    var fieldingScore = halfInning === "top" ? hScore : aScore;
+    var battingBefore = battingAfter - rbi;
+    var deficitBefore = fieldingScore - battingBefore;
+    var marginAfter = battingAfter - fieldingScore;
+    var ctx = 0;
+    if (deficitBefore >= 0 && marginAfter > 0) ctx += 30;
+    else if (deficitBefore > 0 && marginAfter === 0) ctx += 25;
+    if (deficitBefore >= 3 && marginAfter >= -1) ctx += 20;
+    if (marginAfter - rbi >= 5) ctx -= 15;
+    var innMult = inning <= 3 ? 0.4 : inning <= 6 ? 0.75 : inning <= 8 ? 1 : inning === 9 ? 1.4 : 1.6;
+    var score = (base * hitMult + ctx) * innMult;
+    return score;
   }
   function getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter) {
     var lm = { "Single": "SINGLE", "Double": "DOUBLE", "Triple": "TRIPLE", "Sac Fly": "SAC FLY", "Walk": "WALK", "Hit By Pitch": "HBP" };
@@ -7463,6 +8786,16 @@
     }
     document.getElementById("lockThemeToggle").checked = state.devColorLocked;
   }
+  function capImgError(el, primary, secondary, letter) {
+    el.onerror = null;
+    var p = (primary || "#333").replace(/#/g, "%23"), s = (secondary || "#fff").replace(/#/g, "%23");
+    el.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="' + p + '"/><text x="32" y="41" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="' + s + '">' + letter + "</text></svg>";
+  }
+  function teamCapImg(teamId, name, primary, secondary, cls) {
+    var letter = (name || "?")[0].toUpperCase();
+    var p = encodeURIComponent(primary || "#333"), s = encodeURIComponent(secondary || "#fff");
+    return '<img src="https://www.mlbstatic.com/team-logos/' + teamId + '.svg" class="' + (cls || "card-cap") + `" onerror="capImgError(this,'` + primary + "','" + secondary + "','" + letter + `')">`;
+  }
   function signOut() {
     if (!confirm("Sign out and disconnect sync?")) return;
     state.mlbSessionToken = null;
@@ -7547,6 +8880,271 @@
     } else if (id === "stats") loadLeaders();
     if (id === "league") loadLeagueView();
     if (id === "news") loadNews();
+  }
+  function getSeriesInfo(g) {
+    var sn = g.seriesGameNumber || g.seriesSummary && g.seriesSummary.seriesGameNumber;
+    var total = g.gamesInSeries || g.seriesSummary && g.seriesSummary.gamesInSeries;
+    var desc = g.seriesSummary && g.seriesSummary.seriesStatus ? g.seriesSummary.seriesStatus : null;
+    if (sn && total && desc) return "Game " + sn + " of " + total + " \xB7 " + desc;
+    if (!state.scheduleData.length) return sn && total ? "Game " + sn + " of " + total : null;
+    var oppId = g.teams.home.team.id === state.activeTeam.id ? g.teams.away.team.id : g.teams.home.team.id;
+    var venueId = g.venue && g.venue.id, gameDateStr = g.gameDate.split("T")[0];
+    var series = state.scheduleData.filter(function(s) {
+      var sOpp = s.teams.home.team.id === state.activeTeam.id ? s.teams.away.team.id : s.teams.home.team.id;
+      var sVenue = s.venue && s.venue.id, daysDiff = Math.abs((new Date(s.gameDate.split("T")[0]) - new Date(gameDateStr)) / 864e5);
+      return sOpp === oppId && sVenue === venueId && daysDiff <= 4;
+    }).sort(function(a, b) {
+      return new Date(a.gameDate) - new Date(b.gameDate);
+    });
+    if (!sn && series.length < 2) return null;
+    var gameNum = sn || series.findIndex(function(s) {
+      return s.gamePk === g.gamePk;
+    }) + 1;
+    var gameTotal = total || series.length, myW = 0, oppW = 0;
+    series.forEach(function(s) {
+      if (s.status.abstractGameState !== "Final") return;
+      var myT = s.teams.home.team.id === state.activeTeam.id ? s.teams.home : s.teams.away;
+      if (myT.isWinner) myW++;
+      else oppW++;
+    });
+    var recStr = "";
+    if (myW > oppW) recStr = " \xB7 " + state.activeTeam.short + " lead " + myW + "-" + oppW;
+    else if (oppW > myW) {
+      var oN = g.teams.home.team.id === state.activeTeam.id ? g.teams.away.team.teamName : g.teams.home.team.teamName;
+      recStr = " \xB7 " + oN + " lead " + oppW + "-" + myW;
+    } else if (myW > 0) recStr = " \xB7 Tied " + myW + "-" + myW;
+    return "Game " + gameNum + " of " + gameTotal + recStr;
+  }
+  function renderNextGame(g, label) {
+    var home = g.teams.home, away = g.teams.away, teamHome = home.team.id === state.activeTeam.id;
+    var opp = teamHome ? away : home, my = teamHome ? home : away;
+    var status = g.status.abstractGameState, seriesInfo = getSeriesInfo(g);
+    var oppD = TEAMS.find(function(t) {
+      return t.id === opp.team.id;
+    }) || {};
+    var myD = TEAMS.find(function(t) {
+      return t.id === my.team.id;
+    }) || {};
+    var showScores = status === "Live" || status === "Final";
+    var oppScore = showScores ? opp.score != null ? opp.score : 0 : "";
+    var myScore = showScores ? my.score != null ? my.score : 0 : "";
+    var oppKicker = teamHome ? "VS" : "AT";
+    var myKicker = teamHome ? "HOME" : "AWAY";
+    var topBadge = "";
+    if (status === "Live") {
+      var inn = g.linescore && g.linescore.currentInning ? (g.linescore.inningHalf === "Bottom" ? "\u25BC " : "\u25B2 ") + g.linescore.currentInning + " \xB7 " : "";
+      topBadge = '<span class="hero-live-meta">' + inn + '<span class="hero-live-dot"></span>LIVE</span>';
+    } else if (status === "Final") {
+      var mW = my.isWinner;
+      topBadge = '<span class="badge badge-final">FINAL</span> <span class="badge ' + (mW ? "badge-w" : "badge-l") + '">' + (mW ? "W" : "L") + "</span>";
+    }
+    var bottomRight = "";
+    if (status === "Live") {
+      bottomRight = '<button onclick="showLiveGame(' + g.gamePk + ')" class="btn-primary">\u25B6 Watch Live</button>';
+    } else if (status !== "Final") {
+      bottomRight = '<div class="hero-meta-strong">' + (teamHome ? "\u{1F3DF}\uFE0F Home" : "\u2708\uFE0F Away") + " \xB7 " + fmtDateTime(g.gameDate) + "</div>";
+    }
+    var themeTeamMy = state.themeOverride || myD;
+    var myPrimaryForClash = state.themeInvert ? themeTeamMy.secondary || state.activeTeam.primary : themeTeamMy.primary || state.activeTeam.primary;
+    var oppPrimary = pickOppColor(oppD.primary || "#333", oppD.secondary, myPrimaryForClash);
+    var html = '<div class="game-big surface-hero has-opp-tint" style="--opp-primary:' + oppPrimary + '">';
+    html += '<div class="hero-kicker-row"><span class="eyebrow eyebrow--accent">' + label + "</span>";
+    if (topBadge) html += " " + topBadge;
+    html += "</div>";
+    html += '<div class="ng-grid">';
+    html += teamCapImg(opp.team.id, opp.team.teamName, oppPrimary, oppD.secondary || "#fff");
+    html += '<div class="ng-team-left"><div class="eyebrow">' + oppKicker + '</div><div class="ng-name">' + opp.team.teamName + "</div>" + (showScores ? '<div class="ng-score">' + oppScore + "</div>" : "") + "</div>";
+    html += '<div class="hero-divider">\u2014</div>';
+    html += '<div class="ng-team-right"><div class="eyebrow">' + myKicker + '</div><div class="ng-name">' + my.team.teamName + "</div>" + (showScores ? '<div class="ng-score">' + myScore + "</div>" : "") + "</div>";
+    html += teamCapImg(my.team.id, my.team.teamName, myD.primary || "#333", myD.secondary || "#fff");
+    html += "</div>";
+    html += '<div class="hero-bottom-row">';
+    html += '<div class="hero-meta">' + (seriesInfo || "") + "</div>";
+    html += bottomRight;
+    html += "</div></div>";
+    return html;
+  }
+  (async function() {
+    var sv = function(k) {
+      return localStorage.getItem(k);
+    };
+    state.mlbSessionToken = sv("mlb_session_token");
+    state.mlbAuthUser = sv("mlb_auth_user");
+    const params = new URLSearchParams(window.location.search);
+    const authToken = params.get("auth_token"), authMethod = params.get("auth_method");
+    if (authToken && authMethod) {
+      state.mlbSessionToken = authToken;
+      localStorage.setItem("mlb_session_token", authToken);
+      if (authMethod === "github") {
+        state.mlbAuthUser = params.get("github_login") || "GitHub User";
+      } else if (authMethod === "email") {
+        state.mlbAuthUser = params.get("email") || "Email User";
+      }
+      localStorage.setItem("mlb_auth_user", state.mlbAuthUser);
+      window.history.replaceState({}, "", window.location.pathname);
+      await mergeCollectionOnSignIn();
+      startSyncInterval();
+    } else if (state.mlbSessionToken) {
+      startSyncInterval();
+    }
+    if (sv("mlb_team")) state.activeTeam = TEAMS.find((t) => t.id === parseInt(sv("mlb_team"))) || state.activeTeam;
+    var storedTheme = sv("mlb_theme");
+    if (!storedTheme || storedTheme === "-1") {
+      state.themeOverride = MLB_THEME;
+    } else if (storedTheme === "0") {
+      state.themeOverride = null;
+    } else {
+      state.themeOverride = TEAMS.find((t) => t.id === parseInt(storedTheme)) || null;
+    }
+    if (sv("mlb_invert") === "true") state.themeInvert = true;
+    if (sv("mlb_theme_scope") === "nav") state.themeScope = "nav";
+    buildTeamSelect();
+    buildThemeSelect();
+    updatePulseToggle();
+    document.getElementById("themeSelect").value = storedTheme || "-1";
+    if (sv("mlb_theme_scope")) document.getElementById("themeScopeSelect").value = sv("mlb_theme_scope");
+    if (state.themeInvert) {
+      var it = document.getElementById("invertToggle"), ik = document.getElementById("invertToggleKnob");
+      it.style.background = "var(--primary)";
+      ik.style.left = "21px";
+    }
+    if (sv("mlb_push") === "1") {
+      var pt = document.getElementById("pushToggle"), pk = document.getElementById("pushToggleKnob");
+      if (pt) {
+        pt.style.background = "var(--secondary)";
+        pk.style.left = "21px";
+      }
+      document.getElementById("pushStatusText").textContent = "On";
+    }
+    applyTeamTheme(state.activeTeam);
+    loadTodayGame();
+    loadNextGame();
+    loadNews();
+    loadStandings();
+    loadRoster();
+    loadHomeYoutubeWidget();
+    updateCollectionUI();
+    updateSyncUI();
+    setDemoCallbacks({
+      addFeedItem,
+      renderTicker,
+      renderSideRailGames,
+      buildStoryPool,
+      updateFeedEmpty,
+      showAlert,
+      playSound,
+      showPlayerCard,
+      rotateStory,
+      localDateStr
+    });
+    state.pulseInitialized = true;
+    initLeaguePulse();
+    state.savedThemeForPulse = state.themeOverride;
+    applyPulseMLBTheme();
+    requestScreenWakeLock();
+    applyMyTeamLens(state.myTeamLens);
+  })();
+  document.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+      state.tabHiddenAt = Date.now();
+      releaseScreenWakeLock();
+      if (state.pulseTimer) {
+        clearInterval(state.pulseTimer);
+        state.pulseTimer = null;
+      }
+      if (state.storyPoolTimer) {
+        clearInterval(state.storyPoolTimer);
+        state.storyPoolTimer = null;
+      }
+      if (state.focusFastTimer) {
+        clearInterval(state.focusFastTimer);
+        state.focusFastTimer = null;
+      }
+      clearHomeTimer();
+      clearLeagueTimer();
+    } else {
+      if (state.pulseInitialized && !state.demoMode) {
+        pollLeaguePulse().finally(function() {
+          state.tabHiddenAt = null;
+        });
+        state.pulseTimer = setInterval(pollLeaguePulse, TIMING.PULSE_POLL_MS);
+        state.storyPoolTimer = setInterval(buildStoryPool, TIMING.STORY_POOL_MS);
+        if (state.focusGamePk) state.focusFastTimer = setInterval(pollFocusLinescore, TIMING.FOCUS_POLL_MS);
+      } else {
+        state.tabHiddenAt = null;
+      }
+    }
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && state.focusOverlayOpen) {
+      closeFocusOverlay();
+      return;
+    }
+    if (e.shiftKey && e.key === "M") {
+      toggleDemoMode();
+    }
+    if (e.shiftKey && e.key === "H") {
+      replayHRCard();
+    }
+    if (e.shiftKey && e.key === "B") {
+      replayRBICard();
+    }
+    if (e.shiftKey && e.key === "V") {
+      window.PulseCard.demo();
+    }
+    if (e.shiftKey && e.key === "D") {
+      toggleDevTools();
+    }
+    if (e.shiftKey && e.key === "F") {
+      window.FocusCard && window.FocusCard.demo();
+    }
+    if (e.shiftKey && e.key === "G") {
+      generateTestCard();
+    }
+    if (e.shiftKey && e.key === "C") {
+      window.CollectionCard && window.CollectionCard.demo();
+    }
+    if (e.shiftKey && e.key === "P") {
+      devTestVideoClip();
+    }
+    if (e.shiftKey && e.key === "N") {
+      openNewsSourceTest();
+    }
+    if (e.shiftKey && e.key === "L") {
+      var p = document.getElementById("devToolsPanel");
+      if (p && p.style.display !== "block") toggleDevTools();
+      var det = document.getElementById("logCaptureDetails");
+      if (det) {
+        det.open = true;
+        renderLogCapture();
+        det.scrollIntoView({ block: "nearest" });
+      }
+    }
+    if (e.shiftKey && e.key === "S") {
+      var p = document.getElementById("devToolsPanel");
+      if (p && p.style.display !== "block") toggleDevTools();
+      var det = document.getElementById("appStateDetails");
+      if (det) {
+        det.open = true;
+        renderAppState();
+        det.scrollIntoView({ block: "nearest" });
+      }
+    }
+    if (e.shiftKey && e.key === "I") {
+      copyDiagnosticSnapshot();
+    }
+  });
+  document.addEventListener("click", onSoundPanelClickOutside);
+  setupSettingsClickOutside();
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").then(
+      function(reg) {
+        devTrace("sw", "registered \xB7 scope=" + reg.scope);
+      },
+      function(err) {
+        devTrace("sw", "registration FAILED \xB7 " + (err && err.message || err));
+      }
+    );
   }
   Object.assign(window, {
     // Navigation + section dispatch

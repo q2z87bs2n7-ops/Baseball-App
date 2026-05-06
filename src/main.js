@@ -3595,6 +3595,130 @@ function renderNextGame(g,label){
   return html;
 }
 
+// ── Boot IIFE ────────────────────────────────────────────────────────────────
+(async function(){
+  var sv=function(k){return localStorage.getItem(k);};
+  // soundSettings is hydrated from localStorage inside ./ui/sound.js on import.
+  // Restore session token
+  state.mlbSessionToken=sv('mlb_session_token');state.mlbAuthUser=sv('mlb_auth_user');
+  // Handle auth from OAuth redirect
+  const params=new URLSearchParams(window.location.search);
+  const authToken=params.get('auth_token'),authMethod=params.get('auth_method');
+  if(authToken&&authMethod){
+    state.mlbSessionToken=authToken;
+    localStorage.setItem('mlb_session_token',authToken);
+    if(authMethod==='github'){state.mlbAuthUser=params.get('github_login')||'GitHub User';}
+    else if(authMethod==='email'){state.mlbAuthUser=params.get('email')||'Email User';}
+    localStorage.setItem('mlb_auth_user',state.mlbAuthUser);
+    // Clean up URL
+    window.history.replaceState({},'',window.location.pathname);
+    await mergeCollectionOnSignIn();
+    startSyncInterval();
+  }else if(state.mlbSessionToken){
+    startSyncInterval();
+  }
+  if(sv('mlb_team'))state.activeTeam=TEAMS.find(t=>t.id===parseInt(sv('mlb_team')))||state.activeTeam;
+  var storedTheme=sv('mlb_theme');
+  if(!storedTheme||storedTheme==='-1'){state.themeOverride=MLB_THEME;}
+  else if(storedTheme==='0'){state.themeOverride=null;}
+  else{state.themeOverride=TEAMS.find(t=>t.id===parseInt(storedTheme))||null;}
+  if(sv('mlb_invert')==='true')state.themeInvert=true;
+  if(sv('mlb_theme_scope')==='nav')state.themeScope='nav';
+  buildTeamSelect();buildThemeSelect();updatePulseToggle();
+  document.getElementById('themeSelect').value=storedTheme||'-1';
+  if(sv('mlb_theme_scope'))document.getElementById('themeScopeSelect').value=sv('mlb_theme_scope');
+  if(state.themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
+  if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
+  applyTeamTheme(state.activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
+  updateCollectionUI();
+  updateSyncUI();
+  // Wire up demo mode callbacks so the module can call core render/feed functions
+  setDemoCallbacks({
+    addFeedItem: addFeedItem,
+    renderTicker: renderTicker,
+    renderSideRailGames: renderSideRailGames,
+    buildStoryPool: buildStoryPool,
+    updateFeedEmpty: updateFeedEmpty,
+    showAlert: showAlert,
+    playSound: playSound,
+    showPlayerCard: showPlayerCard,
+    rotateStory: rotateStory,
+    localDateStr: localDateStr,
+  });
+  state.pulseInitialized=true;initLeaguePulse();
+  // Pulse-first cold-open: mirror showSection('pulse') side-effects so theme + wake-lock match the active landing section
+  state.savedThemeForPulse=state.themeOverride;
+  applyPulseMLBTheme();
+  requestScreenWakeLock();
+  applyMyTeamLens(state.myTeamLens);
+})();
+
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){
+    state.tabHiddenAt=Date.now();
+    releaseScreenWakeLock();
+    // Pause data polling while tab is hidden
+    if(state.pulseTimer){clearInterval(state.pulseTimer);state.pulseTimer=null;}
+    if(state.storyPoolTimer){clearInterval(state.storyPoolTimer);state.storyPoolTimer=null;}
+    if(state.focusFastTimer){clearInterval(state.focusFastTimer);state.focusFastTimer=null;}
+    clearHomeTimer();
+    clearLeagueTimer();
+  } else {
+    if(state.pulseInitialized&&!state.demoMode){
+      // Keep state.tabHiddenAt set during catch-up so pollGamePlays treats missed plays as history
+      // (suppresses HR/RBI cards and sounds for plays that fired while tab was hidden).
+      // Clear it only after the catch-up poll completes.
+      pollLeaguePulse().finally(function(){state.tabHiddenAt=null;});
+      state.pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
+      state.storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
+      if(state.focusGamePk) state.focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
+    } else {
+      state.tabHiddenAt=null;
+    }
+  }
+});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&state.focusOverlayOpen) { closeFocusOverlay(); return; }
+  // Mnemonics: M=deMo, H=Home run, B=rBi, V=Variants, D=Dev tools, F=Focus,
+  // G=Generate test card, C=Collection demo, P=Play clip, N=News, L=Log,
+  // S=State, I=Info dump (snapshot)
+  if(e.shiftKey && e.key === 'M') { toggleDemoMode(); }
+  if(e.shiftKey && e.key === 'H') { replayHRCard(); }
+  if(e.shiftKey && e.key === 'B') { replayRBICard(); }
+  if(e.shiftKey && e.key === 'V') { window.PulseCard.demo(); }
+  if(e.shiftKey && e.key === 'D') { toggleDevTools(); }
+  if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
+  if(e.shiftKey && e.key === 'G') { generateTestCard(); }
+  if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
+  if(e.shiftKey && e.key === 'P') { devTestVideoClip(); }
+  if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
+  if(e.shiftKey && e.key === 'L') {
+    var p=document.getElementById('devToolsPanel');
+    if(p && p.style.display!=='block') toggleDevTools();
+    var det=document.getElementById('logCaptureDetails');
+    if(det){det.open=true;renderLogCapture();det.scrollIntoView({block:'nearest'});}
+  }
+  if(e.shiftKey && e.key === 'S') {
+    var p=document.getElementById('devToolsPanel');
+    if(p && p.style.display!=='block') toggleDevTools();
+    var det=document.getElementById('appStateDetails');
+    if(det){det.open=true;renderAppState();det.scrollIntoView({block:'nearest'});}
+  }
+  if(e.shiftKey && e.key === 'I') { copyDiagnosticSnapshot(); }
+});
+
+document.addEventListener('click',onSoundPanelClickOutside);
+
+setupSettingsClickOutside();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(
+    function(reg){devTrace('sw','registered · scope='+reg.scope);},
+    function(err){devTrace('sw','registration FAILED · '+(err&&err.message||err));}
+  );
+}
+
 // ── window-global bridge ─────────────────────────────────────────────────────
 // esbuild bundles this file as an IIFE, which hides top-level function
 // declarations from HTML inline handlers (onclick=, onchange=, etc.) and from
