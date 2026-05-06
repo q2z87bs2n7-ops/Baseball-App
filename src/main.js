@@ -93,6 +93,18 @@ import {
   replayHRCard, replayRBICard,
 } from './cards/playerCard.js';
 import {
+  setPollCallbacks, getEffectiveDate, pollLeaguePulse, pollGamePlays,
+} from './pulse/poll.js';
+import {
+  setTuningCallbacks, toggleDevTools, updateTuning, resetTuning,
+  updateColorOverride, captureCurrentTheme, toggleColorLock,
+  confirmDevToolsChanges, initDevToolsClickDelegator,
+} from './dev/tuning.js';
+import { signOut, updateSyncUI, showSignInCTA } from './auth/session.js';
+import {
+  myTeamGamePks, applyMyTeamLens, toggleMyTeamLens, toggleGame,
+} from './ui/lens.js';
+import {
   toggleDemoMode, setDemoSpeed, toggleDemoPause, backDemoPlay, forwardDemoPlay,
   demoNextHR, exitDemo, loadDemoGames, buildDemoPlayQueue, setDemoCallbacks,
 } from './demo/mode.js';
@@ -185,11 +197,6 @@ async function fetchBoxscore(gamePk){
   return state.boxscoreCache[gamePk];
 }
 
-// ── League Pulse functions ────────────────────────────────────────────────────
-function getEffectiveDate(){
-  return state.demoMode&&state.demoDate?state.demoDate:new Date();
-}
-
 function initLeaguePulse() {
   devTrace('pulse','initLeaguePulse · first nav to Pulse');
   initReal();
@@ -205,6 +212,7 @@ function initReal() {
   setYoutubeDebugCallbacks({ loadHomeYoutubeWidget: loadHomeYoutubeWidget });
   setPanelsCallbacks({ buildStoryPool: buildStoryPool });
   initPanelsLazyRendering();
+  initDevToolsClickDelegator();
   setOverlayCallbacks({ flashCollectionRailMessage: flashCollectionRailMessage });
   setBookCallbacks({
     showSignInCTA: showSignInCTA,
@@ -215,6 +223,16 @@ function initReal() {
   setPlayerCardCallbacks({
     fetchBoxscore: fetchBoxscore,
     collectCard: collectCard,
+  });
+  setPollCallbacks({
+    pruneStaleGames: pruneStaleGames,
+    refreshDebugPanel: refreshDebugPanel,
+    updateInningStates: updateInningStates,
+    localDateStr: localDateStr,
+  });
+  setTuningCallbacks({
+    refreshDebugPanel: refreshDebugPanel,
+    devTuningDefaults: devTuningDefaults,
   });
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
@@ -241,228 +259,6 @@ function initReal() {
   },TIMING.YESTERDAY_REFRESH_MS);
 }
 
-async function pollLeaguePulse() {
-  if(state.pulseAbortCtrl){state.pulseAbortCtrl.abort();}
-  state.pulseAbortCtrl=new AbortController();
-  var sig=state.pulseAbortCtrl.signal;
-  var hasLive=Object.values(state.gameStates).some(function(g){return g.status==='Live';});
-  devTrace('poll','pollLeaguePulse start · hasLive='+hasLive+' · pollDate='+state.pollDateStr+' · games='+Object.keys(state.gameStates).length+' · enabled='+state.enabledGames.size);
-  // Hoist isMidnightWindow so both the date-flip guard and the yesterday fallback can use it
-  var isMidnightWindow=!state.demoMode&&(new Date().getHours())<6;
-  if (!hasLive) {
-    // Fix 1: don't flip date while games from the current poll date are still in state.gameStates
-    var hasGamesFromCurrentDate=state.pollDateStr&&Object.values(state.gameStates).some(function(g){
-      return g.gameDateMs&&localDateStr(new Date(g.gameDateMs))===state.pollDateStr;
-    });
-    // Fix 3: safety net — don't advance past midnight until 6 AM local (skip in demo mode)
-    if (!hasGamesFromCurrentDate&&!isMidnightWindow) {
-      state.pollDateStr=localDateStr(getEffectiveDate());
-    }
-    // Day rollover: post-slate past midnight window → prune yesterday + advance to today.
-    // Guard state.pollDateStr<todayStr so PPD-only days don't keep advancing into the future.
-    else if (!isMidnightWindow&&isPostSlate()) {
-      var todayStr=localDateStr(getEffectiveDate());
-      if (state.pollDateStr<todayStr) {
-        pruneStaleGames(todayStr);
-        state.pollDateStr=todayStr;
-      }
-    }
-  }
-  var dateStr=state.pollDateStr;
-  try {
-    // Fetch from primary date
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher',{signal:sig});
-    if(!r.ok) throw new Error(r.status);
-    var d=await r.json();
-    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
-    devTrace('poll','schedule fetch · date='+dateStr+' · games='+games.length);
-
-    // Try yesterday if: (a) no games at all, OR (b) midnight window with no live games in fetch
-    var hasLiveInFetch=games.some(function(g){return g.status.abstractGameState==='Live';});
-    if ((!games.length||(isMidnightWindow&&!hasLiveInFetch)) && !hasLive) {
-      var yesterday=new Date();
-      yesterday.setDate(yesterday.getDate()-1);
-      var yDateStr=localDateStr(yesterday);
-      var yr=await fetch(MLB_BASE+'/schedule?sportId=1&date='+yDateStr+'&hydrate=linescore,team,probablePitcher',{signal:sig});
-      if(!yr.ok) throw new Error(yr.status);
-      var yd=await yr.json();
-      var yGames=(yd.dates||[]).flatMap(function(dt){return dt.games||[]});
-      if (yGames.length) {
-        games=yGames;
-        dateStr=yDateStr;
-        state.pollDateStr=dateStr;
-      }
-    }
-    state.storyCarouselRawGameData={};
-    games.forEach(function(g){state.storyCarouselRawGameData[g.gamePk]=g;});
-    var pendingFinalItems={};
-    games.forEach(function(g) {
-      var pk=g.gamePk, newStatus=g.status.abstractGameState, detailed=g.status.detailedState||'';
-      var away=g.teams.away, home=g.teams.home;
-      var awayTc=tcLookup(away.team.id), homeTc=tcLookup(home.team.id);
-      var ls=g.linescore||{}, gameTime=null, gameDateMs=null;
-      if (g.gameDate) {
-        try { var gd=new Date(g.gameDate); gameTime=gd.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); gameDateMs=gd.getTime(); } catch(e){}
-      }
-      if (!state.gameStates[pk]) {
-        state.gameStates[pk]={
-          gamePk:pk, awayId:away.team.id, homeId:home.team.id,
-          awayAbbr:away.team.abbreviation, homeAbbr:home.team.abbreviation,
-          awayName:away.team.name, homeName:home.team.name,
-          awayPrimary:awayTc.primary, homePrimary:homeTc.primary,
-          awayScore:away.score||0, homeScore:home.score||0,
-          awayW:away.leagueRecord?away.leagueRecord.wins:null, awayL:away.leagueRecord?away.leagueRecord.losses:null,
-          homeW:home.leagueRecord?home.leagueRecord.wins:null, homeL:home.leagueRecord?home.leagueRecord.losses:null,
-          status:newStatus, detailedState:detailed,
-          inning:ls.currentInning||1, halfInning:(ls.inningHalf||'Top').toLowerCase(), outs:ls.outs||0,
-          awayHits:ls.teams&&ls.teams.away?ls.teams.away.hits||0:0, homeHits:ls.teams&&ls.teams.home?ls.teams.home.hits||0:0,
-          playCount:0, lastTimestamp:null, gameTime:gameTime, gameDateMs:gameDateMs,
-          venueName:g.venue?g.venue.name:null,
-          onFirst:!!(ls.offense&&ls.offense.first), onSecond:!!(ls.offense&&ls.offense.second), onThird:!!(ls.offense&&ls.offense.third),
-        };
-        if (!state.myTeamLens || state.gameStates[pk].awayId===state.activeTeam.id || state.gameStates[pk].homeId===state.activeTeam.id) state.enabledGames.add(pk);
-        // Synthesise historical status items so they appear on first load (no sounds/alerts)
-        var g0=state.gameStates[pk], ts0=gameDateMs?new Date(gameDateMs):new Date();
-        if (newStatus==='Final') {
-          var isHistPpd=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
-          if (isHistPpd) {
-            if (!gameDateMs||Date.now()>=gameDateMs) addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
-          } else {
-            var durLabel=ls.gameDurationMinutes?'  ·  '+Math.floor(ls.gameDurationMinutes/60)+'h '+String(ls.gameDurationMinutes%60).padStart(2,'0')+'m':'';
-            pendingFinalItems[pk]={sub:g0.awayAbbr+' '+(away.score||0)+', '+g0.homeAbbr+' '+(home.score||0)+durLabel};
-          }
-        } else if (newStatus==='Live'&&detailed==='In Progress') {
-          addFeedItem(pk,{type:'status',icon:'⚾',label:'Game underway!',sub:g0.awayAbbr+' @ '+g0.homeAbbr,playTime:ts0});
-        } else if (detailed.toLowerCase().indexOf('delay')!==-1) {
-          addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:g0.awayAbbr+' @ '+g0.homeAbbr+' · '+detailed,playTime:ts0});
-        }
-      } else {
-        var prev=state.gameStates[pk];
-        if (gameTime) prev.gameTime=gameTime; if (gameDateMs) prev.gameDateMs=gameDateMs;
-        if (prev.detailedState!=='In Progress'&&detailed==='In Progress') {
-          addFeedItem(pk,{type:'status',icon:'⚾',label:'Game underway!',sub:prev.awayAbbr+' @ '+prev.homeAbbr});
-          playSound('gameStart');
-        }
-        if (prev.status!=='Final'&&newStatus==='Final') {
-          devTrace('poll','game final · '+prev.awayAbbr+' @ '+prev.homeAbbr+' · '+prev.awayScore+'-'+prev.homeScore);
-          var isGamePostponed=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
-          if(isGamePostponed){addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:prev.awayAbbr+' @ '+prev.homeAbbr});}
-          else{addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:prev.awayAbbr+' '+(away.score||0)+', '+prev.homeAbbr+' '+(home.score||0)});playSound('gameEnd');}
-          delete state.perfectGameTracker[pk];
-        }
-        if (detailed.toLowerCase().indexOf('delay')!==-1&&prev.detailedState.toLowerCase().indexOf('delay')===-1) {
-          addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Delayed',sub:prev.awayAbbr+' @ '+prev.homeAbbr+' · '+detailed});
-        }
-        prev.detailedState=detailed; prev.status=newStatus;
-        prev.awayScore=away.score||0; prev.homeScore=home.score||0;
-        prev.inning=ls.currentInning||prev.inning; prev.halfInning=(ls.inningHalf||'Top').toLowerCase();
-        prev.outs=ls.outs||0;
-        if (ls.teams&&ls.teams.away) prev.awayHits=ls.teams.away.hits||0;
-        if (ls.teams&&ls.teams.home) prev.homeHits=ls.teams.home.hits||0;
-        prev.onFirst=!!(ls.offense&&ls.offense.first); prev.onSecond=!!(ls.offense&&ls.offense.second); prev.onThird=!!(ls.offense&&ls.offense.third);
-      }
-    });
-    var liveGames=games.filter(function(g){return g.status.abstractGameState==='Live'||pendingFinalItems[g.gamePk];});
-    await Promise.all(liveGames.map(function(g){return pollGamePlays(g.gamePk);}));
-    Object.keys(pendingFinalItems).forEach(function(pk) {
-      var pf=pendingFinalItems[pk];
-      var gamePlays=state.feedItems.filter(function(fi){return fi.gamePk==pk&&fi.data&&fi.data.type==='play';});
-      if (gamePlays.length>0) addFeedItem(+pk,{type:'status',icon:'🏁',label:'Game Final',sub:pf.sub,playTime:new Date(gamePlays[0].ts.getTime()+60000)});
-    });
-    if (state.isFirstPoll&&state.feedItems.length>0){state.feedItems.sort(function(a,b){return b.ts-a.ts;});renderFeed();}
-    state.isFirstPoll=false;
-    updateInningStates();
-    renderTicker(); updateFeedEmpty();
-    renderSideRailGames();
-    pollPendingVideoClips();
-    selectFocusGame();
-    refreshDebugPanel();
-    var live=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';}).length;
-    var final=Object.values(state.gameStates).filter(function(g){return g.status==='Final';}).length;
-    devTrace('poll','pollLeaguePulse end · live='+live+' · final='+final+' · games='+Object.keys(state.gameStates).length+' · enabled='+state.enabledGames.size+' · state.feedItems='+state.feedItems.length);
-  } catch(e){if(e.name!=='AbortError')console.error('poll error',e);}
-}
-
-async function pollGamePlays(gamePk) {
-  try {
-    var g=state.gameStates[gamePk]; if (!g) return;
-    var tsResp=await fetch(MLB_BASE_V1_1+'/game/'+gamePk+'/feed/live/timestamps');
-    if(!tsResp.ok) throw new Error(tsResp.status);
-    var tsData=await tsResp.json();
-    var latestTs=Array.isArray(tsData)?tsData[tsData.length-1]:null;
-    if (latestTs&&latestTs===g.lastTimestamp) return;
-    if (latestTs) g.lastTimestamp=latestTs;
-    var r=await fetch(MLB_BASE+'/game/'+gamePk+'/playByPlay');
-    if(!r.ok) throw new Error(r.status);
-    var data=await r.json();
-    var plays=(data.allPlays||[]).filter(function(p){return p.about&&p.about.isComplete;});
-    var lastCount=g.playCount||0, isHistory=(lastCount===0&&plays.length>0)||state.tabHiddenAt!==null;
-    plays.slice(lastCount).forEach(function(play) {
-      var event=(play.result&&play.result.event)||'';
-      var isScoringP=(play.about&&play.about.isScoringPlay)||false;
-      var aScore=(play.result&&play.result.awayScore!=null)?play.result.awayScore:g.awayScore;
-      var hScore=(play.result&&play.result.homeScore!=null)?play.result.homeScore:g.homeScore;
-      var inning=(play.about&&play.about.inning)||g.inning;
-      var halfInning=(play.about&&play.about.halfInning)||g.halfInning;
-      var outs=(play.count&&play.count.outs)||0;
-      var desc=(play.result&&play.result.description)||'—';
-      var batterId=(play.matchup&&play.matchup.batter&&play.matchup.batter.id)||null;
-      var batterName=(play.matchup&&play.matchup.batter&&play.matchup.batter.fullName)||'';
-      var runners=play.runners||[];
-      if (event.indexOf('Stolen Base')!==-1) {
-        if (!isHistory) {
-          var sbRunner=runners.find(function(r){return r.details&&r.details.eventType&&r.details.eventType.indexOf('stolen_base')!==-1;});
-          var sbRunnerId=(sbRunner&&sbRunner.details&&sbRunner.details.runner&&sbRunner.details.runner.id)||batterId;
-          var sbRunnerName=(sbRunner&&sbRunner.details&&sbRunner.details.runner&&sbRunner.details.runner.fullName)||batterName;
-          var sbBase=event.indexOf('Home')!==-1?'home':event.indexOf('3B')!==-1?'3B':'2B';
-          var sbKey=gamePk+'_'+(play.about&&play.about.atBatIndex!=null?play.about.atBatIndex:g.playCount+plays.indexOf(play));
-          if (!state.stolenBaseEvents.some(function(e){return e.key===sbKey;})) {
-            state.stolenBaseEvents.push({key:sbKey,gamePk:gamePk,runnerId:sbRunnerId,runnerName:sbRunnerName,base:sbBase,inning:inning,halfInning:halfInning,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,ts:playTime||new Date()});
-          }
-        }
-        return; // carousel only — skip feed item
-      }
-      var hasRISP=outs<3&&runners.some(function(r){return r.movement&&!r.movement.isOut&&(r.movement.end==='2B'||r.movement.end==='3B');});
-      var playClass=event==='Home Run'?'homerun':isScoringP?'scoring':hasRISP?'risp':'normal';
-      var playTime=null; if (play.about&&play.about.startTime){try{playTime=new Date(play.about.startTime);}catch(e){}}
-      var pitcherId=(play.matchup&&play.matchup.pitcher&&play.matchup.pitcher.id)||null;
-      var pitcherName=(play.matchup&&play.matchup.pitcher&&play.matchup.pitcher.fullName)||'';
-      var hrDistance=(event==='Home Run'&&play.hitData&&play.hitData.totalDistance>0)?Math.round(play.hitData.totalDistance):null;
-      addFeedItem(gamePk,{type:'play',event:event,desc:desc,scoring:isScoringP,awayScore:aScore,homeScore:hScore,inning:inning,halfInning:halfInning,outs:outs,risp:hasRISP,playClass:playClass,playTime:playTime,batterId:batterId,batterName:batterName,pitcherName:pitcherName,distance:hrDistance});
-      var isHitEvt=['Single','Double','Triple','Home Run'].indexOf(event)!==-1;
-      if(state.perfectGameTracker[gamePk]===undefined) state.perfectGameTracker[gamePk]=true;
-      if(['Walk','Hit By Pitch','Intentional Walk','Error','Fielders Choice','Catcher Interference'].indexOf(event)!==-1) state.perfectGameTracker[gamePk]=false;
-      if(isHitEvt) state.perfectGameTracker[gamePk]=false;
-      if (isHitEvt&&batterId){var dh=state.dailyHitsTracker[batterId]||{name:batterName,hits:0,hrs:0,gamePk:gamePk};dh.hits++;if(event==='Home Run')dh.hrs++;dh.name=batterName||dh.name;dh.gamePk=gamePk;state.dailyHitsTracker[batterId]=dh;}
-      if (event==='Strikeout'&&pitcherId){var kkey=gamePk+'_'+pitcherId;var ke=state.dailyPitcherKs[kkey]||{name:pitcherName,ks:0,gamePk:gamePk};ke.ks++;ke.name=pitcherName||ke.name;state.dailyPitcherKs[kkey]=ke;}
-      if (!isHistory) {
-        var teamColor=halfInning==='top'?g.awayPrimary:g.homePrimary;
-        var gameVisible=state.enabledGames.has(gamePk);
-        if (event==='Home Run'){playSound('hr');if(batterId&&gameVisible){var _hrRbi=(play.result&&play.result.rbi!=null)?play.result.rbi:1;var _badge=getHRBadge(_hrRbi,halfInning,inning,aScore,hScore);showPlayerCard(batterId,batterName,g.awayId,g.homeId,halfInning,null,desc,_badge,gamePk);}}
-        else if (isScoringP){var _rbi=(play.result&&play.result.rbi!=null)?play.result.rbi:0;var _rs=calcRBICardScore(_rbi,event,aScore,hScore,inning,halfInning);var _rbiOk=(Date.now()-(state.rbiCardCooldowns[gamePk]||0))>=state.devTuning.rbiCooldown;
-if(_rbi>0&&_rs>=state.devTuning.rbiThreshold&&gameVisible&&batterId&&_rbiOk){state.rbiCardCooldowns[gamePk]=Date.now();showRBICard(batterId,batterName,g.awayId,g.homeId,halfInning,_rbi,event,aScore,hScore,inning,gamePk);}else{if(gameVisible)showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+aScore+', '+g.homeAbbr+' '+hScore,desc:desc,color:teamColor,duration:4000});}playSound('run');}
-        else if (event.indexOf('Triple Play')!==-1){if(gameVisible)showAlert({icon:'🔀',event:'TRIPLE PLAY · '+g.awayAbbr+' @ '+g.homeAbbr,desc:desc,color:'#9b59b6',duration:5000});playSound('tp');}
-        else if (event.indexOf('Double Play')!==-1||event.indexOf('Grounded Into DP')!==-1){playSound('dp');}
-        else if (event.indexOf('Error')!==-1){playSound('error');}
-        else if (hasRISP){playSound('risp');}
-        if(outs===3){var _rk=gamePk+'_'+inning+'_'+halfInning.toLowerCase();if(!state.inningRecapsFired.has(_rk))state.inningRecapsPending[_rk]={gamePk:gamePk,inning:inning,halfInning:halfInning.toLowerCase()};}
-      }
-    });
-    // Patch Statcast distance and HR number into existing HR feed items once the data arrives
-    plays.forEach(function(play){
-      if(play.result&&play.result.event==='Home Run'){
-        var newDesc=(play.result.description)||'';
-        var pt=null;try{if(play.about&&play.about.startTime)pt=new Date(play.about.startTime);}catch(e){}
-        var found=state.feedItems.find(function(i){return i.gamePk===gamePk&&i.data&&i.data.event==='Home Run'&&pt&&i.ts&&Math.abs(i.ts.getTime()-pt.getTime())<5000;});
-        if(found){
-          if(!found.data.distance&&play.hitData&&play.hitData.totalDistance>0) found.data.distance=Math.round(play.hitData.totalDistance);
-          if(newDesc.match(/\(\d+\)/)&&!(found.data.desc||'').match(/\(\d+\)/)) found.data.desc=newDesc;
-        }
-      }
-    });
-    g.playCount=plays.length;
-  } catch(e){}
-}
 
 // ── Demo State Export ────────────────────────────────────────────────────────────
 function exportPulseStateAsSnapshot(){
@@ -580,47 +376,6 @@ function localDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padSt
 
 function scrollToGame(gamePk){var el=document.querySelector('[data-gamepk="'+gamePk+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}
 
-function toggleGame(gamePk) {
-  gamePk=+gamePk;
-  if (state.enabledGames.has(gamePk)){
-    state.enabledGames.delete(gamePk);
-    document.querySelectorAll('[data-gamepk="'+gamePk+'"]').forEach(function(el){el.classList.add('feed-hidden');});
-  } else {
-    state.enabledGames.add(gamePk);
-    document.querySelectorAll('[data-gamepk="'+gamePk+'"]').forEach(function(el){el.classList.remove('feed-hidden');});
-  }
-  updateFeedEmpty(); renderTicker();
-}
-
-function myTeamGamePks() {
-  var out=new Set();
-  Object.values(state.gameStates).forEach(function(g){
-    if (g.awayId===state.activeTeam.id||g.homeId===state.activeTeam.id) out.add(g.gamePk);
-  });
-  return out;
-}
-function applyMyTeamLens(on) {
-  state.myTeamLens=!!on;
-  localStorage.setItem('mlb_my_team_lens', state.myTeamLens?'1':'0');
-  var btn=document.getElementById('myTeamLensBtn'),knob=document.getElementById('myTeamLensKnob');
-  if (btn) btn.classList.toggle('on', state.myTeamLens);
-  if (knob) knob.style.left=state.myTeamLens?'21px':'2px';
-  if (state.myTeamLens) {
-    var keep=myTeamGamePks();
-    state.enabledGames=new Set();
-    keep.forEach(function(pk){ state.enabledGames.add(pk); });
-    document.querySelectorAll('[data-gamepk]').forEach(function(el){
-      var pk=+el.getAttribute('data-gamepk');
-      el.classList.toggle('feed-hidden', !keep.has(pk));
-    });
-  } else {
-    Object.keys(state.gameStates).forEach(function(pk){ state.enabledGames.add(+pk); });
-    document.querySelectorAll('[data-gamepk]').forEach(function(el){ el.classList.remove('feed-hidden'); });
-  }
-  if (typeof renderTicker==='function') renderTicker();
-  updateFeedEmpty();
-}
-function toggleMyTeamLens(){ applyMyTeamLens(!state.myTeamLens); }
 
 function pruneStaleGames(beforeDateStr) {
   Object.keys(state.gameStates).forEach(function(pk) {
@@ -638,181 +393,6 @@ function pruneStaleGames(beforeDateStr) {
 
 
 
-function confirmDevToolsChanges(){
-  var fields=[
-    ['rotateMs','tuneRotateMs'],['rbiThreshold','tuneRbiThreshold'],['rbiCooldown','tuneRbiCooldown'],
-    ['hr_priority','tuneHRPriority'],['hr_cooldown','tuneHRCooldown'],
-    ['biginning_priority','tuneBigInningPriority'],['biginning_threshold','tuneBigInningThreshold'],
-    ['walkoff_priority','tuneWalkoffPriority'],['nohitter_inning_floor','tuneNohitterFloor'],
-    ['basesloaded_priority','tuneBasesLoadedPriority'],
-    ['hitstreak_floor','tuneHitstreakFloor'],['hitstreak_priority','tuneHitstreakPriority'],
-    ['roster_priority_il','tuneRosterPriorityIL'],['roster_priority_trade','tuneRosterPriorityTrade'],
-    ['wp_leverage_floor','tuneWPLeverageFloor'],['wp_extreme_floor','tuneWPExtremeFloor'],
-    ['livewp_priority','tuneLiveWPPriority'],['livewp_refresh_ms','tuneLiveWPRefresh'],
-    ['focus_critical','tuneFocusCritical'],['focus_high','tuneFocusHigh'],
-    ['focus_switch_margin','tuneFocusSwitchMargin'],['focus_alert_cooldown','tuneFocusAlertCooldown']
-  ];
-  fields.forEach(function(f){var el=document.getElementById(f[1]);if(el&&el.value!=='')updateTuning(f[0],el.value);});
-  var btn=document.getElementById('devConfirmBtn');
-  btn.textContent='✓ Applied!';btn.classList.add('applied');
-  setTimeout(function(){btn.textContent='Confirm Changes';btn.classList.remove('applied');},1500);
-}
-// toggleSoundPanel imported from ./ui/sound.js
-// MLB Stats API teamId → primary flagship radio broadcast (extracted from radio.net)
-// `format`: 'hls' uses Hls.js (or native Safari); 'direct' is plain <audio> AAC/MP3
-// Radio engine imported from src/radio/engine.js
-
-// ── 🔍 Radio Check (v3.39.26) ─── EXTRACTED to radio/check.js
-// Functions imported: openRadioCheck, closeRadioCheck, radioCheckPlay,
-// radioCheckTryCustom, radioCheckStop, radioCheckSet, radioCheckSetNote,
-// radioCheckReset, radioCheckCopy
-
-// ── 📺 YouTube Debug (v3.39.27) ─── EXTRACTED to dev/youtube-debug.js
-// Functions imported: openYoutubeDebug, closeYoutubeDebug, ytDebugFetchCustom,
-// ytDebugApplyToTeam, runYoutubeDebugAll, runYoutubeDebugOne, ytDebugReset,
-// ytDebugCopy
-
-// ── 🛠️ Dev Tools Panels (v3.39.29) ─── EXTRACTED to dev/panels.js
-// Subsystems: Log Capture, App State Inspector, Network Trace, localStorage Inspector,
-// Service Worker Inspector, Test Notification, Live Controls (Force Focus + Force Recap),
-// Diagnostic Snapshot. All functions imported below.
-
-// ── Video Debug (v3.39.29) ─── EXTRACTED to dev/video-debug.js
-// Functions imported: openVideoDebugPanel, closeVideoDebugPanel, refreshVideoDebugPanel, copyVideoDebug
-
-// ── 🔬 News Source Test (v3.39.28) ─── EXTRACTED to dev/news-test.js
-// Functions imported: openNewsSourceTest, closeNewsSourceTest, runNewsSourceTest,
-// copyNewsSourceTest
-
-function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=state.devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=state.devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=state.devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=state.devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=state.devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=state.devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=state.devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=state.devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=state.devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=state.devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=state.devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=state.devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=state.devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=state.devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=state.devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=state.devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=state.devTuning.wp_extreme_floor||85;var tLP=document.getElementById('tuneLiveWPPriority');if(tLP)tLP.value=state.devTuning.livewp_priority||30;var tLR=document.getElementById('tuneLiveWPRefresh');if(tLR)tLR.value=state.devTuning.livewp_refresh_ms||90000;document.getElementById('tuneFocusCritical').value=state.devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=state.devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=state.devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=state.devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=state.devColorLocked;}}
-
-// Delegated click handler for Dev Tools panel — replaces 11 inline onclick attributes (M3)
-document.addEventListener('DOMContentLoaded',function(){
-  var panel=document.getElementById('devToolsPanel');
-  if(!panel)return;
-  panel.addEventListener('click',function(e){
-    var btn=e.target.closest('[data-dt-action]');
-    if(!btn)return;
-    var action=btn.dataset.dtAction;
-    if(action==='close'){toggleDevTools();}
-    else if(action==='demo'){toggleDemoMode();toggleDevTools();}
-    else if(action==='replayHR'){replayHRCard();toggleDevTools();}
-    else if(action==='replayRBI'){replayRBICard();toggleDevTools();}
-    else if(action==='cardVariants'){window.PulseCard.demo();toggleDevTools();}
-    else if(action==='testCard'){generateTestCard();toggleDevTools();}
-    else if(action==='testClip'){devTestVideoClip();toggleDevTools();}
-    else if(action==='resetCollection'){resetCollection();}
-    else if(action==='newsTest'){openNewsSourceTest();toggleDevTools();}
-    else if(action==='youtubeDebug'){openYoutubeDebug();toggleDevTools();}
-    else if(action==='videoDebug'){openVideoDebugPanel();toggleDevTools();}
-    else if(action==='resetTuning'){resetTuning();}
-    else if(action==='captureApp'){captureCurrentTheme('app');}
-    else if(action==='capturePulse'){captureCurrentTheme('pulse');}
-    else if(action==='refreshDebug'){refreshDebugPanel();}
-    else if(action==='copyLog'){copyLogAsMarkdown();}
-    else if(action==='clearLog'){clearDevLog();}
-    else if(action==='refreshLog'){renderLogCapture();}
-    else if(action==='copyState'){copyAppStateAsMarkdown();}
-    else if(action==='refreshState'){renderAppState();}
-    else if(action==='copyStateContext'){_copyToClipboard(_stateAsMarkdownContext());}
-    else if(action==='copyStatePulse'){_copyToClipboard(_stateAsMarkdownPulse());}
-    else if(action==='copyStateFocus'){_copyToClipboard(_stateAsMarkdownFocus());}
-    else if(action==='copyStateGames'){_copyToClipboard(_stateAsMarkdownGames());}
-    else if(action==='copyStateFeed'){_copyToClipboard(_stateAsMarkdownFeed(50));}
-    else if(action==='copyStateStories'){_copyToClipboard(_stateAsMarkdownStories());}
-    else if(action==='copyNet'){copyNetTraceAsMarkdown();}
-    else if(action==='clearNet'){clearNetTrace();}
-    else if(action==='refreshNet'){renderNetTrace();}
-    else if(action==='copyStorage'){copyStorageAsMarkdown();}
-    else if(action==='refreshStorage'){renderStorageInspector();}
-    else if(action==='clearLsKey'){clearLsKey(btn.dataset.lsKey);}
-    else if(action==='copySW'){copySWStateAsMarkdown();}
-    else if(action==='swUpdate'){swForceUpdate();}
-    else if(action==='swUnregister'){swUnregisterAndReload();}
-    else if(action==='testNotif'){testLocalNotification();}
-    else if(action==='forceFocusGo'){forceFocusGo();}
-    else if(action==='forceRecapGo'){forceRecapGo();}
-    else if(action==='copySnapshot'){copyDiagnosticSnapshot();}
-    else if(action==='confirm'){confirmDevToolsChanges();}
-  });
-});
-
-function updateTuning(param,val){
-  if(param==='basesloaded_enable'){
-    state.devTuning[param]=val==='true';
-    if(DEBUG) console.log('✓ Bases Loaded '+(state.devTuning[param]?'enabled':'disabled'));
-    return;
-  }
-  var parsed=parseInt(val,10);
-  if(isNaN(parsed)||parsed<1)return;
-  state.devTuning[param]=parsed;
-  if(param==='rotateMs'){
-    if(state.storyRotateTimer){clearInterval(state.storyRotateTimer);state.storyRotateTimer=null;}
-    if(state.pulseInitialized&&!state.demoMode)state.storyRotateTimer=setInterval(rotateStory,state.devTuning.rotateMs);
-    if(DEBUG) console.log('✓ Carousel rotation updated to '+parsed+'ms');
-  }else{
-    if(DEBUG) console.log('✓ '+param+' updated to '+parsed);
-  }
-}
-
-function resetTuning(){
-  state.devTuning=Object.assign({},devTuningDefaults);
-  document.getElementById('tuneRotateMs').value=devTuningDefaults.rotateMs;
-  document.getElementById('tuneRbiThreshold').value=devTuningDefaults.rbiThreshold;
-  document.getElementById('tuneRbiCooldown').value=devTuningDefaults.rbiCooldown;
-  document.getElementById('tuneHRPriority').value=devTuningDefaults.hr_priority;
-  document.getElementById('tuneHRCooldown').value=devTuningDefaults.hr_cooldown;
-  document.getElementById('tuneBigInningPriority').value=devTuningDefaults.biginning_priority;
-  document.getElementById('tuneBigInningThreshold').value=devTuningDefaults.biginning_threshold;
-  document.getElementById('tuneWalkoffPriority').value=devTuningDefaults.walkoff_priority;
-  document.getElementById('tuneNohitterFloor').value=devTuningDefaults.nohitter_inning_floor;
-  document.getElementById('tuneBasesLoadedEnable').checked=devTuningDefaults.basesloaded_enable;
-  document.getElementById('tuneBasesLoadedPriority').value=devTuningDefaults.basesloaded_priority;
-  document.getElementById('tuneFocusCritical').value=devTuningDefaults.focus_critical;
-  document.getElementById('tuneFocusHigh').value=devTuningDefaults.focus_high;
-  document.getElementById('tuneFocusSwitchMargin').value=devTuningDefaults.focus_switch_margin;
-  document.getElementById('tuneFocusAlertCooldown').value=devTuningDefaults.focus_alert_cooldown;
-  if(state.storyRotateTimer){clearInterval(state.storyRotateTimer);state.storyRotateTimer=null;}
-  if(state.pulseInitialized&&!state.demoMode)state.storyRotateTimer=setInterval(rotateStory,state.devTuning.rotateMs);
-  if(DEBUG) console.log('✓ Dev tuning reset to defaults');
-}
-
-function updateColorOverride(context,colorVar,value){
-  state.devColorOverrides[context][colorVar]=value;
-  if(state.devColorLocked){
-    if(context==='app') applyTeamTheme(state.activeTeam);
-    else applyPulseMLBTheme();
-  }
-  if(DEBUG) console.log('✓ '+context+' theme.'+colorVar+' → '+value);
-}
-
-function captureCurrentTheme(context){
-  var cssVarMap={dark:'--dark',card:'--card',card2:'--card2',border:'--border',primary:'--primary',secondary:'--secondary',accent:'--accent',accentText:'--accent-text',headerText:'--header-text'};
-  var root=document.documentElement;
-  Object.keys(cssVarMap).forEach(function(v){
-    var cssVal=getComputedStyle(root).getPropertyValue(cssVarMap[v]).trim();
-    state.devColorOverrides[context][v]=cssVal;
-    var elId='color'+context.charAt(0).toUpperCase()+context.slice(1)+v.charAt(0).toUpperCase()+v.slice(1);
-    var el=document.getElementById(elId);
-    if(el) el.value=cssVal;
-  });
-  if(DEBUG) console.log('✓ Captured current '+context+' theme colors');
-}
-
-function toggleColorLock(enable){
-  state.devColorLocked=enable;
-  if(enable){
-    if(!state.devColorOverrides.app.primary) captureCurrentTheme('app');
-    if(!state.devColorOverrides.pulse.primary) captureCurrentTheme('pulse');
-    applyTeamTheme(state.activeTeam);
-    if(DEBUG) console.log('✓ Theme lock enabled — auto-switching disabled');
-  }else{
-    applyTeamTheme(state.activeTeam);
-    applyPulseMLBTheme();
-    if(DEBUG) console.log('✓ Theme lock disabled — auto-switching restored');
-  }
-  document.getElementById('lockThemeToggle').checked=state.devColorLocked;
-}
 
 // Sound system (setSoundPref, playSound, audio primitives, per-event sounds)
 // imported from ./ui/sound.js
@@ -828,42 +408,6 @@ function teamCapImg(teamId,name,primary,secondary,cls){var letter=(name||'?')[0]
 
 // ── Session & Sync Functions ──────────────────────────────────────────────────
 // signInWithGitHub + signInWithEmail imported from ./auth/oauth.js
-function signOut(){
-  if(!confirm('Sign out and disconnect sync?'))return;
-  state.mlbSessionToken=null;state.mlbAuthUser=null;
-  localStorage.removeItem('mlb_session_token');localStorage.removeItem('mlb_auth_user');
-  clearInterval(state.mlbSyncInterval);state.mlbSyncInterval=null;
-  updateSyncUI();
-}
-function updateSyncUI(){
-  var panel=document.getElementById('syncStatus');
-  if(!panel)return;
-  if(state.mlbSessionToken&&state.mlbAuthUser){
-    panel.innerHTML='<div style="font-size:.72rem;color:var(--text)">✓ Synced · '+state.mlbAuthUser+'</div><button onclick="signOut()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer">Sign Out</button>';
-  }else{
-    panel.innerHTML='<button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">🔐 Sign in with GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;margin-top:6px;text-align:left">✉️ Sign in with Email</button>';
-  }
-}
-// ── Collection Sync (v3.39.20) ─── EXTRACTED to collection/sync.js
-// Functions imported: syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval
-function showSignInCTA(){
-  if(state.mlbSessionToken||state.shownSignInCTA)return;
-  state.signInCTACardCount++;
-  if(state.signInCTACardCount<3)return;
-  state.shownSignInCTA=true;
-  var el=document.getElementById('signInCTA');
-  el.style.display='block';
-  el.style.pointerEvents='auto';
-  // Slide-up + fade-in on next frame
-  requestAnimationFrame(function(){
-    el.style.opacity='1';
-    el.style.transform='translateX(-50%) translateY(0)';
-    // Progress bar shrink over 8s
-    var bar=document.getElementById('signInCTABar');
-    if(bar){requestAnimationFrame(function(){bar.style.transform='scaleX(0)'});}
-  });
-  state.signInCTATimer=setTimeout(closeSignInCTA,TIMING.SIGNIN_CTA_MS);
-}
 // closeSignInCTA moved to ui/overlays.js
 
 // requestScreenWakeLock + releaseScreenWakeLock imported from ./ui/wakelock.js
