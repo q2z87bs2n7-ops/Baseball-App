@@ -10,6 +10,10 @@ import {
   NEWS_SOURCE_LABELS, NEWS_SOURCE_ICONS,
   TIMING,
 } from './config/constants.js';
+import {
+  tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
+} from './utils/format.js';
+import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from './utils/news.js';
 
 const DEBUG=false; // Set true locally to enable verbose console logging
 devTrace('boot','app.js loaded · '+new Date().toISOString());
@@ -169,7 +173,7 @@ function getYdActiveCache(){return ydDisplayCache!==null?ydDisplayCache:(yesterd
 let demoMode=false,demoGamesCache=[],demoPlayQueue=[],demoPlayIdx=0,demoTimer=null,demoStartTime=0,demoDate=null,demoCurrentTime=0;
 const NEWS_ROTATE_MS=30000;
 
-function tcLookup(id){var t=TEAMS.find(function(t){return t.id===id;});return t?{primary:t.primary,abbr:t.short,name:t.name}:{primary:'#444',abbr:'???',name:'Unknown'};}
+// tcLookup imported from ./utils/format.js
 async function fetchBoxscore(gamePk){
   if(!boxscoreCache[gamePk]){
     try{var bsR=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore');if(!bsR.ok)throw new Error(bsR.status);boxscoreCache[gamePk]=await bsR.json();}
@@ -5721,9 +5725,7 @@ function playGameStartSound(){try{var ctx=_makeCtx();_osc(ctx,523,0,0.14,0.16,'t
 function playGameEndSound(){try{var ctx=_makeCtx();_osc(ctx,784,0,0.65,0.15,'sine');_osc(ctx,659,0.38,0.65,0.15,'sine');_osc(ctx,523,0.76,0.80,0.15,'sine');_closeCtx(ctx,1.8);}catch(e){}}
 function playErrorSound(){try{var ctx=_makeCtx();_ns(ctx,0,0.18,0.22,0.003,'lowpass',160,1.5);_osc(ctx,130,0.02,0.16,0.10,'sine');_closeCtx(ctx,0.5);}catch(e){}}
 
-function fmt(v,d){d=d===undefined?3:d;if(v==null||v==='')return'—';var n=parseFloat(v);if(isNaN(n))return v;return n.toFixed(d);}
-function fmtRate(v,d){d=d===undefined?3:d;if(v==null||v==='')return'—';var n=parseFloat(v);if(isNaN(n))return v;var s=n.toFixed(d);return(n>0&&n<1)?s.slice(1):s;}
-function fmtDateTime(ds){var d=new Date(ds);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+// fmt, fmtRate, fmtDateTime imported from ./utils/format.js
 function capImgError(el,primary,secondary,letter){el.onerror=null;var p=(primary||'#333').replace(/#/g,'%23'),s=(secondary||'#fff').replace(/#/g,'%23');el.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="'+p+'"/><text x="32" y="41" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="'+s+'">'+letter+'</text></svg>';}
 function teamCapImg(teamId,name,primary,secondary,cls){var letter=(name||'?')[0].toUpperCase();var p=encodeURIComponent(primary||'#333'),s=encodeURIComponent(secondary||'#fff');return'<img src="https://www.mlbstatic.com/team-logos/'+teamId+'.svg" class="'+(cls||'card-cap')+'" onerror="capImgError(this,\''+primary+'\',\''+secondary+'\',\''+letter+'\')">';}
 
@@ -6098,18 +6100,7 @@ function showSection(id,btn){
 // Returns the opp color most distinct from myPrimary. Falls back to oppSecondary
 // when oppPrimary is too close (RGB Euclidean distance < 60), or to oppPrimary
 // unchanged when both opp colors are too similar (e.g., Yankees navy/navy vs Mets blue).
-function pickOppColor(oppPrimary,oppSecondary,myPrimary){
-  function rgbDist(a,b){
-    a=(a||'').replace('#','');b=(b||'').replace('#','');
-    if(a.length<6||b.length<6)return 999;
-    var ar=parseInt(a.substr(0,2),16),ag=parseInt(a.substr(2,2),16),ab=parseInt(a.substr(4,2),16);
-    var br=parseInt(b.substr(0,2),16),bg=parseInt(b.substr(2,2),16),bb=parseInt(b.substr(4,2),16);
-    return Math.sqrt(Math.pow(ar-br,2)+Math.pow(ag-bg,2)+Math.pow(ab-bb,2));
-  }
-  if(rgbDist(oppPrimary,myPrimary)>=60)return oppPrimary;
-  if(oppSecondary&&rgbDist(oppSecondary,myPrimary)>=60)return oppSecondary;
-  return oppPrimary;
-}
+// pickOppColor imported from ./utils/format.js
 function getSeriesInfo(g){
   var sn=g.seriesGameNumber||(g.seriesSummary&&g.seriesSummary.seriesGameNumber);
   var total=g.gamesInSeries||(g.seriesSummary&&g.seriesSummary.gamesInSeries);
@@ -6619,10 +6610,9 @@ function escapeNewsHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,functi
 function forceHttps(url){return url?url.replace(/^http:/,'https:'):url;}
 // Only load images from known news CDN domains — prevents browser requests to unexpected
 // third-party hosts (e.g. podcast avatars in RSS feeds) which can trigger corporate firewalls.
-var NEWS_IMAGE_HOSTS=/\.(mlb\.com|mlbstatic\.com|espn\.com|espncdn\.com|cbssports\.com|cbsi\.com|fangraphs\.com|mlbtraderumors\.com|wp\.com|wordpress\.com|cloudfront\.net|fastly\.net|akamaized\.net|amazonaws\.com|imgix\.net|twimg\.com)$/;
-function isSafeNewsImage(url){if(!url)return false;try{return NEWS_IMAGE_HOSTS.test(new URL(url).hostname);}catch(e){return false;}}
+// NEWS_IMAGE_HOSTS + isSafeNewsImage imported from ./utils/news.js
 function decodeNewsHtml(s){var map={'&quot;':'"','&amp;':'&','&lt;':'<','&gt;':'>','&#39;':"'",'&apos;':"'"};return String(s||'').replace(/&(?:#\d+|#x[0-9a-f]+|quot|amp|lt|gt|apos?);/gi,function(e){return map[e.toLowerCase()]||e;}).replace(/&#(\d+);/g,function(m,code){return String.fromCharCode(parseInt(code,10));}).replace(/&#x([0-9a-f]+);/gi,function(m,code){return String.fromCharCode(parseInt(code,16));}); }
-function fmtNewsDate(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+// fmtNewsDate imported from ./utils/format.js
 function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var headline=escapeNewsHtml(decodeNewsHtml(a.headline||''));return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
 function mkProxyNewsRow(item){
   var icon=NEWS_SOURCE_ICONS[item.source]||'📰';

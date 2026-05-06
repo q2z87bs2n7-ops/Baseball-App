@@ -153,6 +153,63 @@
     // background collection sync
   };
 
+  // src/utils/format.js
+  function tcLookup(id) {
+    var t = TEAMS.find(function(t2) {
+      return t2.id === id;
+    });
+    return t ? { primary: t.primary, abbr: t.short, name: t.name } : { primary: "#444", abbr: "???", name: "Unknown" };
+  }
+  function fmt(v, d) {
+    d = d === void 0 ? 3 : d;
+    if (v == null || v === "") return "\u2014";
+    var n = parseFloat(v);
+    if (isNaN(n)) return v;
+    return n.toFixed(d);
+  }
+  function fmtRate(v, d) {
+    d = d === void 0 ? 3 : d;
+    if (v == null || v === "") return "\u2014";
+    var n = parseFloat(v);
+    if (isNaN(n)) return v;
+    var s = n.toFixed(d);
+    return n > 0 && n < 1 ? s.slice(1) : s;
+  }
+  function fmtDateTime(ds) {
+    var d = new Date(ds);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  }
+  function fmtNewsDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  function pickOppColor(oppPrimary, oppSecondary, myPrimary) {
+    function rgbDist(a, b) {
+      a = (a || "").replace("#", "");
+      b = (b || "").replace("#", "");
+      if (a.length < 6 || b.length < 6) return 999;
+      var ar = parseInt(a.substr(0, 2), 16), ag = parseInt(a.substr(2, 2), 16), ab = parseInt(a.substr(4, 2), 16);
+      var br = parseInt(b.substr(0, 2), 16), bg = parseInt(b.substr(2, 2), 16), bb = parseInt(b.substr(4, 2), 16);
+      return Math.sqrt(Math.pow(ar - br, 2) + Math.pow(ag - bg, 2) + Math.pow(ab - bb, 2));
+    }
+    if (rgbDist(oppPrimary, myPrimary) >= 60) return oppPrimary;
+    if (oppSecondary && rgbDist(oppSecondary, myPrimary) >= 60) return oppSecondary;
+    return oppPrimary;
+  }
+
+  // src/utils/news.js
+  var NEWS_IMAGE_HOSTS = /\.(mlb\.com|mlbstatic\.com|espn\.com|espncdn\.com|cbssports\.com|cbsi\.com|fangraphs\.com|mlbtraderumors\.com|wp\.com|wordpress\.com|cloudfront\.net|fastly\.net|akamaized\.net|amazonaws\.com|imgix\.net|twimg\.com)$/;
+  function isSafeNewsImage(url) {
+    if (!url) return false;
+    try {
+      return NEWS_IMAGE_HOSTS.test(new URL(url).hostname);
+    } catch (e) {
+      return false;
+    }
+  }
+
   // src/main.js
   var DEBUG2 = false;
   devTrace("boot", "app.js loaded \xB7 " + (/* @__PURE__ */ new Date()).toISOString());
@@ -362,12 +419,6 @@
   var demoStartTime = 0;
   var demoDate = null;
   var demoCurrentTime = 0;
-  function tcLookup(id) {
-    var t = TEAMS.find(function(t2) {
-      return t2.id === id;
-    });
-    return t ? { primary: t.primary, abbr: t.short, name: t.name } : { primary: "#444", abbr: "???", name: "Unknown" };
-  }
   async function fetchBoxscore(gamePk) {
     if (!boxscoreCache[gamePk]) {
       try {
@@ -6853,25 +6904,6 @@
     } catch (e) {
     }
   }
-  function fmt(v, d) {
-    d = d === void 0 ? 3 : d;
-    if (v == null || v === "") return "\u2014";
-    var n = parseFloat(v);
-    if (isNaN(n)) return v;
-    return n.toFixed(d);
-  }
-  function fmtRate(v, d) {
-    d = d === void 0 ? 3 : d;
-    if (v == null || v === "") return "\u2014";
-    var n = parseFloat(v);
-    if (isNaN(n)) return v;
-    var s = n.toFixed(d);
-    return n > 0 && n < 1 ? s.slice(1) : s;
-  }
-  function fmtDateTime(ds) {
-    var d = new Date(ds);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  }
   function teamCapImg(teamId, name, primary, secondary, cls) {
     var letter = (name || "?")[0].toUpperCase();
     var p = encodeURIComponent(primary || "#333"), s = encodeURIComponent(secondary || "#fff");
@@ -7400,19 +7432,6 @@
     } else if (id === "stats") loadLeaders();
     if (id === "league") loadLeagueView();
     if (id === "news") loadNews();
-  }
-  function pickOppColor(oppPrimary, oppSecondary, myPrimary) {
-    function rgbDist(a, b) {
-      a = (a || "").replace("#", "");
-      b = (b || "").replace("#", "");
-      if (a.length < 6 || b.length < 6) return 999;
-      var ar = parseInt(a.substr(0, 2), 16), ag = parseInt(a.substr(2, 2), 16), ab = parseInt(a.substr(4, 2), 16);
-      var br = parseInt(b.substr(0, 2), 16), bg = parseInt(b.substr(2, 2), 16), bb = parseInt(b.substr(4, 2), 16);
-      return Math.sqrt(Math.pow(ar - br, 2) + Math.pow(ag - bg, 2) + Math.pow(ab - bb, 2));
-    }
-    if (rgbDist(oppPrimary, myPrimary) >= 60) return oppPrimary;
-    if (oppSecondary && rgbDist(oppSecondary, myPrimary) >= 60) return oppSecondary;
-    return oppPrimary;
   }
   function getSeriesInfo(g) {
     var sn = g.seriesGameNumber || g.seriesSummary && g.seriesSummary.seriesGameNumber;
@@ -8254,15 +8273,6 @@
   function forceHttps(url) {
     return url ? url.replace(/^http:/, "https:") : url;
   }
-  var NEWS_IMAGE_HOSTS = /\.(mlb\.com|mlbstatic\.com|espn\.com|espncdn\.com|cbssports\.com|cbsi\.com|fangraphs\.com|mlbtraderumors\.com|wp\.com|wordpress\.com|cloudfront\.net|fastly\.net|akamaized\.net|amazonaws\.com|imgix\.net|twimg\.com)$/;
-  function isSafeNewsImage(url) {
-    if (!url) return false;
-    try {
-      return NEWS_IMAGE_HOSTS.test(new URL(url).hostname);
-    } catch (e) {
-      return false;
-    }
-  }
   function decodeNewsHtml(s) {
     var map = { "&quot;": '"', "&amp;": "&", "&lt;": "<", "&gt;": ">", "&#39;": "'", "&apos;": "'" };
     return String(s || "").replace(/&(?:#\d+|#x[0-9a-f]+|quot|amp|lt|gt|apos?);/gi, function(e) {
@@ -8272,12 +8282,6 @@
     }).replace(/&#x([0-9a-f]+);/gi, function(m, code) {
       return String.fromCharCode(parseInt(code, 16));
     });
-  }
-  function fmtNewsDate(iso) {
-    if (!iso) return "";
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   }
   function mkEspnRow(a) {
     var pub = a.published ? new Date(a.published).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
