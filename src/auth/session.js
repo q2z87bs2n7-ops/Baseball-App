@@ -22,9 +22,11 @@ export function updateSyncUI() {
   var panel = document.getElementById('syncStatus');
   if (!panel) return;
   if (state.mlbSessionToken && state.mlbAuthUser) {
-    panel.innerHTML = '<div style="font-size:.72rem;color:var(--text)">✓ Synced · ' + state.mlbAuthUser + '</div><button onclick="signOut()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer">Sign Out</button>';
+    var isEmail = state.mlbAuthUser.indexOf('@') !== -1;
+    var btnLabel = isEmail ? '✉️ Email — Sign Out' : '🐙 GitHub — Sign Out';
+    panel.innerHTML = '<button onclick="signOut()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">' + btnLabel + '</button>';
   } else {
-    panel.innerHTML = '<button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">🔐 Sign in with GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;margin-top:6px;text-align:left">✉️ Sign in with Email</button>';
+    panel.innerHTML = '<div style="display:flex;gap:6px"><button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 10px;border-radius:8px;cursor:pointer;flex:1;text-align:center">🐙 GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 10px;border-radius:8px;cursor:pointer;flex:1;text-align:center">✉️ Email</button></div>';
   }
 }
 

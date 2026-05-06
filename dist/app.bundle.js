@@ -8883,9 +8883,11 @@
     var panel = document.getElementById("syncStatus");
     if (!panel) return;
     if (state.mlbSessionToken && state.mlbAuthUser) {
-      panel.innerHTML = '<div style="font-size:.72rem;color:var(--text)">\u2713 Synced \xB7 ' + state.mlbAuthUser + '</div><button onclick="signOut()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:5px 10px;border-radius:8px;cursor:pointer">Sign Out</button>';
+      var isEmail = state.mlbAuthUser.indexOf("@") !== -1;
+      var btnLabel = isEmail ? "\u2709\uFE0F Email \u2014 Sign Out" : "\u{1F419} GitHub \u2014 Sign Out";
+      panel.innerHTML = '<button onclick="signOut()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">' + btnLabel + "</button>";
     } else {
-      panel.innerHTML = '<button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">\u{1F510} Sign in with GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;margin-top:6px;text-align:left">\u2709\uFE0F Sign in with Email</button>';
+      panel.innerHTML = '<div style="display:flex;gap:6px"><button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 10px;border-radius:8px;cursor:pointer;flex:1;text-align:center">\u{1F419} GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 10px;border-radius:8px;cursor:pointer;flex:1;text-align:center">\u2709\uFE0F Email</button></div>';
     }
   }
   function showSignInCTA() {
