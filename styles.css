@@ -927,6 +927,13 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
   65%  { transform:scale(1.15); }
   100% { transform:scale(1);    color:#34d399; }
 }
+@keyframes hero-ticker-scroll {
+  0% { transform:translateX(0); }
+  100% { transform:translateX(-100%); }
+}
+#homeHeroTicker.animate {
+  animation:hero-ticker-scroll 25s linear infinite;
+}
 .pc-loading { padding:32px; text-align:center; color:var(--muted); font-size:.9rem; background:var(--card); }
 /* Dev Tools panel utility classes (extracted from inline styles — M2 tech debt) */
 .dt-label-muted{font-size:.6rem;color:var(--muted)}

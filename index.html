@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.34.12</title>
+<title>MLB Pulse v3.34.13</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -86,7 +86,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.34.12</div>
+        <div class="settings-version">v3.34.13</div>
       </div>
     </div>
   </div>
@@ -99,6 +99,11 @@
     <div id="todayGame"><div class="loading">Loading next game...</div></div>
     <div id="nextGame"><div class="loading">Loading next series...</div></div>
   </div>
+
+  <div id="homeHeroTickerContainer" style="margin-bottom:16px;overflow:hidden;border-radius:10px;background:var(--card);display:none">
+    <div id="homeHeroTicker" style="display:flex;gap:0.75rem;padding:12px 16px;overflow-x:hidden;white-space:nowrap"></div>
+  </div>
+
   <div class="grid2">
     <div class="card">
       <div class="card-title" id="homeDivTitle">Division Snapshot</div>

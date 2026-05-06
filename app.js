@@ -4741,7 +4741,7 @@ function toggleInvert(){
   t.style.background=themeInvert?'var(--primary)':'var(--border)';
   k.style.left=themeInvert?'21px':'3px';
   applyTeamTheme(activeTeam);
-  loadTodayGame();loadNextGame();
+  loadTodayGame();loadNextGame();loadHomeHeroTicker();
 }
 
 // ── Session & Sync Functions ──────────────────────────────────────────────────
@@ -4872,7 +4872,7 @@ function switchTeam(teamId){
   document.getElementById('settingsPanel').classList.remove('open');
   scheduleData=[];scheduleLoaded=false;rosterData={hitting:[],pitching:[],fielding:[]};statsCache={hitting:[],pitching:[]};selectedPlayer=null;
   document.getElementById('playerStats').innerHTML='<div style="color:var(--muted);font-size:.9rem;padding:20px 0;text-align:center">Select a player to view stats</div>';
-  loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
+  loadTodayGame();loadNextGame();loadHomeHeroTicker();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
   if(document.getElementById('schedule').classList.contains('active'))loadSchedule();
   if(myTeamLens) applyMyTeamLens(true);
 }
@@ -5092,6 +5092,43 @@ async function loadNextGame(){
     html+='</div></div></div>';
     document.getElementById('nextGame').innerHTML=html;
   }catch(e){document.getElementById('nextGame').innerHTML='<div class="error">Could not load next series</div>';}
+}
+
+// --- HOME HERO TICKER (POC) ---
+async function loadHomeHeroTicker(){
+  var container=document.getElementById('homeHeroTicker');
+  var containerWrap=document.getElementById('homeHeroTickerContainer');
+  if(!container) return;
+  try{
+    var ydCache=getYdActiveCache();
+    if(!ydCache||!ydCache.length){containerWrap.style.display='none';return;}
+    // Fetch all yesterday content
+    await Promise.all(ydCache.map(function(item){return fetchGameContent(item.gamePk);}));
+    // Build clips array (same logic as buildTopHighlightsCarousel)
+    var clips=[];
+    ydCache.forEach(function(game){
+      var content=yesterdayContentCache[game.gamePk];
+      if(!content) return;
+      var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+      var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
+      playable.slice(2,5).forEach(function(clip){clips.push(clip);});
+    });
+    if(!clips.length){containerWrap.style.display='none';return;}
+    // Render chips as ticker strip
+    var chips=clips.map(function(clip){
+      var thumb=pickHeroImage(clip)||'';
+      var title=(clip.headline||clip.blurb||'Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return '<div class="yd-clip-chip" style="flex-shrink:0">'
+        +'<div class="yd-chip-thumb"><span style="font-size:1.1rem;color:var(--muted)">▶</span>'
+        +(thumb?'<img src="'+thumb+'" onerror="this.style.display=\'none\'" alt="">':'')
+        +'</div>'
+        +'<div class="yd-chip-text">'+title+'</div>'
+        +'</div>';
+    }).join('');
+    container.innerHTML=chips+chips;
+    container.classList.add('animate');
+    containerWrap.style.display='block';
+  }catch(e){containerWrap.style.display='none';}
 }
 
 var calMonth=new Date().getMonth(),calYear=new Date().getFullYear(),selectedGamePk=null;
@@ -5756,7 +5793,7 @@ function togglePush(){
   if(sv('mlb_theme_scope'))document.getElementById('themeScopeSelect').value=sv('mlb_theme_scope');
   if(themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
-  applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
+  applyTeamTheme(activeTeam);loadTodayGame();loadNextGame();loadHomeHeroTicker();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
   updateCollectionUI();
   updateSyncUI();
   pulseInitialized=true;initLeaguePulse();
