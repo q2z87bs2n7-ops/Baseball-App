@@ -194,7 +194,7 @@ For the full breakdown of architecture, every API endpoint, every CSS variable, 
 
 ## Status & roadmap
 
-**Current version:** v3.37.2 (May 2026).
+**Current version:** v3.37.3 (May 2026).
 
 The app is feature-complete for personal use and stable in daily operation. Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh.
 
