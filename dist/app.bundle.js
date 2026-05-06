@@ -8982,10 +8982,13 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
-    }).then((r) => r.json()).then((d) => {
+    }).then((r) => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then((d) => {
       if (d.error) alert("Error: " + d.error);
       else alert(d.message);
-    }).catch((e) => alert("Network error"));
+    }).catch((e) => alert("Network error: " + (e && e.message || e)));
   }
 
   // src/push/push.js
@@ -9002,11 +9005,12 @@
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
-      await fetch((API_BASE || "") + "/api/subscribe", {
+      var r = await fetch((API_BASE || "") + "/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sub)
       });
+      if (!r.ok) throw new Error("HTTP " + r.status + ": subscription failed");
       localStorage.setItem("mlb_push", "1");
       document.getElementById("pushStatusText").textContent = "On";
     } catch (err) {
@@ -9021,11 +9025,12 @@
       var sub = await reg.pushManager.getSubscription();
       if (sub) {
         await sub.unsubscribe();
-        await fetch((API_BASE || "") + "/api/subscribe", {
+        var r = await fetch((API_BASE || "") + "/api/subscribe", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endpoint: sub.endpoint })
         });
+        if (!r.ok) throw new Error("HTTP " + r.status + ": unsubscription failed");
       }
     } catch (e) {
     }

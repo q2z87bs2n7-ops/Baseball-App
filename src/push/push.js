@@ -24,11 +24,12 @@ export async function subscribeToPush() {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
-    await fetch((API_BASE || '') + '/api/subscribe', {
+    var r = await fetch((API_BASE || '') + '/api/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sub),
     });
+    if (!r.ok) throw new Error('HTTP ' + r.status + ': subscription failed');
     localStorage.setItem('mlb_push', '1');
     document.getElementById('pushStatusText').textContent = 'On';
   } catch (err) {
@@ -44,11 +45,12 @@ export async function unsubscribeFromPush() {
     var sub = await reg.pushManager.getSubscription();
     if (sub) {
       await sub.unsubscribe();
-      await fetch((API_BASE || '') + '/api/subscribe', {
+      var r = await fetch((API_BASE || '') + '/api/subscribe', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint: sub.endpoint }),
       });
+      if (!r.ok) throw new Error('HTTP ' + r.status + ': unsubscription failed');
     }
   } catch (e) {}
   localStorage.removeItem('mlb_push');

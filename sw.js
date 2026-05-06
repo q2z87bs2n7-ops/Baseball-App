@@ -20,7 +20,12 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
-  e.respondWith(caches.match(e.request).then(function(r) { return r || fetch(e.request); }));
+  e.respondWith(caches.match(e.request).then(function(r) {
+    return r || fetch(e.request).then(function(resp) {
+      if (!resp || !resp.ok) return resp;
+      return resp;
+    });
+  }));
 });
 
 self.addEventListener('push', function(e) {

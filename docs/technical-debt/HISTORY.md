@@ -8,6 +8,39 @@ None. To start one, say **"Start tech debt sprint"** in conversation with Claude
 
 ## Completed Sprints
 
+### Sprint: 2026-05-06-baseball-app
+**Status:** ✅ COMPLETE
+**Branch:** `claude/tech-debt-sprint-e6fO0`
+**Merged:** 2026-05-06
+
+**Issues fixed:**
+- HIGH: 2 (H2 — fetch .ok validation at 2 call sites, H3 — promise error handling at 1 call site)
+- MEDIUM: 1 (M3 — accessibility aria-labels on 4 custom toggles)
+- Deferred: 24 (H1 var→const refactor, H4 AbortController coverage complete, M2–M4, L1–L15)
+
+**Result:** 4 issues fixed, 0 regressions, 35/35 QA checks passed, UAT passed.
+
+**Code Changes:**
+- `src/push/push.js`: 2 .ok checks added
+- `src/auth/oauth.js`: 1 .ok check + error message improvement
+- `sw.js`: 1 response validation check
+- `index.html`: 4 aria-label attributes added, v3.43.3 (no version bump needed)
+- Bundle rebuild: 479KB (no size change)
+
+**Reports:**
+- [Full Audit](./audits/audit-2026-05-06-full-codebase.md) — Full codebase (11,255 LOC), 28 issues identified
+- [Remediation & Code Changes](./remediation/remediation-2026-05-06-baseball-app.md)
+- [QA Test Results](./qa/qa-2026-05-06-baseball-app.md)
+- [Sprint Summary](./sprints/sprint-2026-05-06-baseball-app.md)
+
+**Known issues that remain open:**
+- H1: ~1,629 `var` declarations across src/ — High-value modernization, deferred to next sprint
+- M2: ~40 onclick handlers in index.html — Phase 2, deferred
+- M4: ~80 magic numbers across src/ — Tuning-related, deferred
+- L1–L15: Code cleanup items (unused code, JSDoc, etc.) — Nice-to-have
+
+---
+
 ### Sprint: 2026-05-04-baseball-app
 **Status:** ✅ COMPLETE
 **Branch:** `claude/tech-debt-audit-e5E4H`
