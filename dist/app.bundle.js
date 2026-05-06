@@ -2237,6 +2237,257 @@
     } catch (e) {
     }
   }
+  async function loadOnThisDayCache() {
+    state.onThisDayCache = [];
+    var today = /* @__PURE__ */ new Date();
+    var mm = String(today.getMonth() + 1).padStart(2, "0");
+    var dd = String(today.getDate()).padStart(2, "0");
+    for (var i = 1; i <= 3; i++) {
+      var yr = SEASON - i;
+      try {
+        var r = await fetch(MLB_BASE + "/schedule?date=" + yr + "-" + mm + "-" + dd + "&sportId=1&hydrate=linescore,team");
+        if (!r.ok) throw new Error(r.status);
+        var d = await r.json();
+        var games = (d.dates || []).flatMap(function(dt) {
+          return dt.games || [];
+        }).filter(function(g2) {
+          return g2.status.abstractGameState === "Final";
+        });
+        for (var j = 0; j < games.length; j++) {
+          var g = games[j];
+          var away = g.teams.away, home = g.teams.home;
+          var winner = away.score > home.score ? away.team.abbreviation : home.team.abbreviation;
+          var loser = away.score > home.score ? home.team.abbreviation : away.team.abbreviation;
+          var ws = Math.max(away.score || 0, home.score || 0), ls = Math.min(away.score || 0, home.score || 0);
+          var playerHighlight = "", sigPlay = "";
+          try {
+            var bs = await fetchBoxscore(g.gamePk);
+            var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
+            var topBatter = null, topBatterStats = null;
+            var hrHitters = { multi: [], single: [] };
+            Object.values(allPlayers).forEach(function(p) {
+              if (!p.stats || !p.stats.batting) return;
+              var bat = p.stats.batting;
+              if (!bat.hits || bat.atBats < 2) return;
+              if (!topBatter || bat.hits / bat.atBats > topBatterStats.hits / topBatterStats.atBats) {
+                topBatter = p;
+                topBatterStats = bat;
+              }
+              if (bat.homeRuns && bat.homeRuns >= 2) hrHitters.multi.push({ name: p.person.fullName.split(" ").pop(), hrs: bat.homeRuns });
+              else if (bat.homeRuns === 1) hrHitters.single.push(p.person.fullName.split(" ").pop());
+            });
+            var winPitcher = null, winPitcherStats = null, losePitcher = null, losePitcherStats = null, savePitcher = null;
+            var allPitchers = [];
+            Object.values(allPlayers).forEach(function(p) {
+              if (!p.stats || !p.stats.pitching) return;
+              var pit = p.stats.pitching;
+              if (p.gameStatus) {
+                if (p.gameStatus.isWinningPitcher) {
+                  winPitcher = p;
+                  winPitcherStats = pit;
+                }
+                if (p.gameStatus.isLosingPitcher) {
+                  losePitcher = p;
+                  losePitcherStats = pit;
+                }
+                if (p.gameStatus.isSavePitcher) savePitcher = p;
+              }
+              if (parseFloat(pit.inningsPitched || 0) > 0) allPitchers.push({ p, stats: pit });
+            });
+            if (!winPitcher || !losePitcher) {
+              allPitchers.sort(function(a, b) {
+                return parseFloat(b.stats.inningsPitched || 0) - parseFloat(a.stats.inningsPitched || 0);
+              });
+              if (!winPitcher && allPitchers.length) {
+                winPitcher = allPitchers[0].p;
+                winPitcherStats = allPitchers[0].stats;
+              }
+              if (!losePitcher && allPitchers.length > 1) {
+                losePitcher = allPitchers[1].p;
+                losePitcherStats = allPitchers[1].stats;
+              }
+            }
+            var lines = [];
+            if (topBatter && topBatterStats) lines.push(topBatter.person.fullName.split(" ").pop() + " " + topBatterStats.hits + "-" + topBatterStats.atBats);
+            if (winPitcher && winPitcherStats) lines.push("W: " + winPitcher.person.fullName.split(" ").pop() + " " + winPitcherStats.inningsPitched + "IP, " + winPitcherStats.strikeOuts + "K, " + (winPitcherStats.earnedRuns || 0) + " ER");
+            if (losePitcher && losePitcherStats) lines.push("L: " + losePitcher.person.fullName.split(" ").pop() + " " + losePitcherStats.inningsPitched + "IP, " + losePitcherStats.strikeOuts + "K, " + (losePitcherStats.earnedRuns || 0) + " ER");
+            if (savePitcher) lines.push("S: " + savePitcher.person.fullName.split(" ").pop());
+            hrHitters.multi.forEach(function(h) {
+              lines.push(h.name + " " + h.hrs + "HR");
+            });
+            hrHitters.single.forEach(function(name) {
+              lines.push(name + " HR");
+            });
+            if (lines.length) playerHighlight = " \xB7 " + lines.join(" \xB7 ");
+          } catch (e) {
+          }
+          try {
+            var pbResp = await fetch(MLB_BASE + "/game/" + g.gamePk + "/playByPlay");
+            if (!pbResp.ok) throw new Error(pbResp.status);
+            var pb = await pbResp.json();
+            var plays = pb.allPlays || [];
+            var lastPlay = plays[plays.length - 1];
+            if (lastPlay && lastPlay.about && lastPlay.about.isScoringPlay && lastPlay.result) {
+              var evt = lastPlay.result.event || "";
+              if (evt.indexOf("Home Run") !== -1 && lastPlay.about.inning >= 9 && Math.abs(ws - ls) <= 1) {
+                sigPlay = " \xB7 Walk-off HR!";
+              } else if (evt.indexOf("Grand Slam") !== -1) {
+                sigPlay = " \xB7 Grand slam!";
+              }
+            }
+            var allHits = { away: 0, home: 0 };
+            plays.forEach(function(p) {
+              if (p.result && ["Single", "Double", "Triple", "Home Run"].indexOf(p.result.event) !== -1) {
+                var half = (p.about.halfInning || "Top").toLowerCase();
+                allHits[half === "top" ? "away" : "home"]++;
+              }
+            });
+            if (allHits.away === 0 || allHits.home === 0) {
+              sigPlay = " \xB7 No-hitter!";
+            }
+          } catch (e) {
+          }
+          var headline = "On this day in " + yr + ": " + winner + " beat " + loser + " " + ws + "-" + ls + playerHighlight + sigPlay;
+          state.onThisDayCache.push({ id: "otd_" + yr + "_" + g.gamePk, icon: "\u{1F4C5}", headline, sub: g.venue ? g.venue.name : "", gamePk: g.gamePk, ts: new Date(g.gameDate || Date.now()) });
+        }
+      } catch (e) {
+      }
+    }
+  }
+  async function loadYdForDate2(dateStr) {
+    var result = [];
+    try {
+      var r = await fetch(MLB_BASE + "/schedule?date=" + dateStr + "&sportId=1&hydrate=linescore,team");
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      var games = (d.dates || []).flatMap(function(dt) {
+        return dt.games || [];
+      }).filter(function(g2) {
+        if (g2.status.abstractGameState !== "Final") return false;
+        var detailed = g2.status.detailedState || "";
+        if (detailed === "Postponed" || detailed === "Cancelled" || detailed === "Suspended") return false;
+        return true;
+      });
+      for (var i = 0; i < games.length; i++) {
+        var g = games[i];
+        var away = g.teams.away, home = g.teams.home;
+        var winner = away.score > home.score ? away.team.abbreviation : home.team.abbreviation;
+        var loser = away.score > home.score ? home.team.abbreviation : away.team.abbreviation;
+        var ws = Math.max(away.score || 0, home.score || 0), ls = Math.min(away.score || 0, home.score || 0);
+        var linescore = g.linescore || {};
+        var dur = linescore.gameDurationMinutes ? " \xB7 " + Math.floor(linescore.gameDurationMinutes / 60) + "h " + String(linescore.gameDurationMinutes % 60).padStart(2, "0") + "m" : "";
+        var playerHighlight = "", sigPlay = "";
+        try {
+          var bs = await fetchBoxscore(g.gamePk);
+          var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
+          var topBatter = null, topBatterStats = null;
+          Object.values(allPlayers).forEach(function(p) {
+            if (!p.stats || !p.stats.batting) return;
+            var bat = p.stats.batting;
+            if (!bat.hits || bat.atBats < 2) return;
+            if (!topBatter || bat.hits / bat.atBats > topBatterStats.hits / topBatterStats.atBats) {
+              topBatter = p;
+              topBatterStats = bat;
+            }
+          });
+          var winPitcher = null, winPitcherStats = null, losePitcher = null, losePitcherStats = null, savePitcher = null;
+          var allPitchers = [];
+          Object.values(allPlayers).forEach(function(p) {
+            if (!p.stats || !p.stats.pitching) return;
+            var pit = p.stats.pitching;
+            if (p.gameStatus) {
+              if (p.gameStatus.isWinningPitcher) {
+                winPitcher = p;
+                winPitcherStats = pit;
+              }
+              if (p.gameStatus.isLosingPitcher) {
+                losePitcher = p;
+                losePitcherStats = pit;
+              }
+              if (p.gameStatus.isSavePitcher) savePitcher = p;
+            }
+            if (parseFloat(pit.inningsPitched || 0) > 0) allPitchers.push({ p, stats: pit });
+          });
+          if (!winPitcher || !losePitcher) {
+            allPitchers.sort(function(a, b) {
+              return parseFloat(b.stats.inningsPitched || 0) - parseFloat(a.stats.inningsPitched || 0);
+            });
+            if (!winPitcher && allPitchers.length) {
+              winPitcher = allPitchers[0].p;
+              winPitcherStats = allPitchers[0].stats;
+            }
+            if (!losePitcher && allPitchers.length > 1) {
+              losePitcher = allPitchers[1].p;
+              losePitcherStats = allPitchers[1].stats;
+            }
+          }
+          var lines = [];
+          if (topBatter && topBatterStats) {
+            var bline = topBatter.person.fullName.split(" ").pop() + " " + topBatterStats.hits + "-" + topBatterStats.atBats;
+            if (topBatterStats.homeRuns > 0) bline += " " + topBatterStats.homeRuns + "HR";
+            if (topBatterStats.rbi > 0) bline += " " + topBatterStats.rbi + "RBI";
+            lines.push(bline);
+          }
+          if (winPitcher && winPitcherStats) lines.push("W: " + winPitcher.person.fullName.split(" ").pop() + " " + winPitcherStats.inningsPitched + "IP, " + winPitcherStats.strikeOuts + "K, " + (winPitcherStats.earnedRuns || 0) + " ER");
+          if (losePitcher && losePitcherStats) lines.push("L: " + losePitcher.person.fullName.split(" ").pop() + " " + losePitcherStats.inningsPitched + "IP, " + losePitcherStats.strikeOuts + "K, " + (losePitcherStats.earnedRuns || 0) + " ER");
+          if (savePitcher) lines.push("S: " + savePitcher.person.fullName.split(" ").pop());
+          if (lines.length) playerHighlight = " \xB7 " + lines.join(" \xB7 ");
+        } catch (e) {
+        }
+        try {
+          var pbResp2 = await fetch(MLB_BASE + "/game/" + g.gamePk + "/playByPlay");
+          if (!pbResp2.ok) throw new Error(pbResp2.status);
+          var pb = await pbResp2.json();
+          var plays = pb.allPlays || [];
+          var lastPlay = plays[plays.length - 1];
+          if (lastPlay && lastPlay.about && lastPlay.about.isScoringPlay && lastPlay.result) {
+            var evt = lastPlay.result.event || "";
+            if (evt.indexOf("Home Run") !== -1 && lastPlay.about.inning >= 9 && Math.abs(ws - ls) <= 1) {
+              sigPlay = " \xB7 Walk-off HR!";
+            } else if (evt.indexOf("Grand Slam") !== -1) {
+              sigPlay = " \xB7 Grand slam!";
+            }
+          }
+          var allHits = { away: 0, home: 0 };
+          plays.forEach(function(p) {
+            if (p.result && ["Single", "Double", "Triple", "Home Run"].indexOf(p.result.event) !== -1) {
+              var half = (p.about.halfInning || "Top").toLowerCase();
+              allHits[half === "top" ? "away" : "home"]++;
+            }
+          });
+          if (allHits.away === 0 || allHits.home === 0) {
+            sigPlay = " \xB7 No-hitter!";
+          }
+        } catch (e) {
+        }
+        var headline = winner + " beat " + loser + " " + ws + "-" + ls + playerHighlight + sigPlay;
+        var videoTitle = null;
+        try {
+          var cr = await fetch(MLB_BASE + "/game/" + g.gamePk + "/content");
+          if (cr.ok) {
+            var cd = await cr.json();
+            var items = cd.highlights && cd.highlights.highlights && cd.highlights.highlights.items || [];
+            if (items.length && items[0].headline) videoTitle = items[0].headline;
+          }
+        } catch (e) {
+        }
+        result.push({ id: "yday_" + g.gamePk + "_result", icon: "\u2705", headline: videoTitle || headline, sub: videoTitle ? headline : (g.venue ? g.venue.name : "") + dur, gamePk: g.gamePk, ts: new Date(g.gameDate || Date.now()) });
+      }
+    } catch (e) {
+    }
+    return result;
+  }
+  async function loadYesterdayCache() {
+    state.yesterdayCache = [];
+    var yd = /* @__PURE__ */ new Date();
+    yd.setDate(yd.getDate() - 1);
+    var dateStr = yd.getFullYear() + "-" + String(yd.getMonth() + 1).padStart(2, "0") + "-" + String(yd.getDate()).padStart(2, "0");
+    state.yesterdayCache = await loadYdForDate2(dateStr);
+    state.yesterdayCache.forEach(function(item) {
+      item.headline = "Yesterday: " + item.headline;
+    });
+    updateFeedEmpty();
+  }
   async function loadLiveWPCache() {
     var livePks = Object.keys(state.gameStates).filter(function(pk) {
       var g = state.gameStates[pk];
@@ -2829,7 +3080,7 @@
       state.isFirstPoll = false;
       updateInningStates();
       renderTicker();
-      updateFeedEmpty();
+      updateFeedEmpty2();
       renderSideRailGames();
       pollPendingVideoClips();
       selectFocusGame();
@@ -4536,7 +4787,7 @@
         el.classList.remove("feed-hidden");
       });
     }
-    updateFeedEmpty();
+    updateFeedEmpty2();
     renderTicker();
   }
   function myTeamGamePks() {
@@ -4571,12 +4822,12 @@
       });
     }
     if (typeof renderTicker === "function") renderTicker();
-    updateFeedEmpty();
+    updateFeedEmpty2();
   }
   function toggleMyTeamLens() {
     applyMyTeamLens(!state.myTeamLens);
   }
-  function updateFeedEmpty() {
+  function updateFeedEmpty2() {
     var feed = document.getElementById("feed");
     var hasVisible = !!feed.querySelector(".feed-item:not(.feed-hidden)");
     var hasAnyGames = Object.keys(state.gameStates).length > 0;
@@ -4770,7 +5021,7 @@
       return +c.dataset.ts < tsMs;
     });
     feed.insertBefore(el, sibling || null);
-    updateFeedEmpty();
+    updateFeedEmpty2();
   }
   function buildFeedEl(item) {
     var el = document.createElement("div"), g = state.gameStates[item.gamePk], d = item.data;
@@ -4822,7 +5073,7 @@
       if (!state.enabledGames.has(+item.gamePk)) el.classList.add("feed-hidden");
       feed.appendChild(el);
     });
-    updateFeedEmpty();
+    updateFeedEmpty2();
   }
   function showAlert(opts) {
     var icon = opts.icon || "\u{1F514}", evtLabel = opts.event || "", desc = opts.desc || "", color = opts.color || "#e03030", duration = opts.duration || 5e3;
@@ -8710,7 +8961,7 @@
       renderTicker,
       renderSideRailGames,
       buildStoryPool,
-      updateFeedEmpty,
+      updateFeedEmpty: updateFeedEmpty2,
       showAlert,
       playSound,
       showPlayerCard,

@@ -40,6 +40,9 @@ import {
   buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots,
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
+import {
+  loadOnThisDayCache, loadYesterdayCache,
+} from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
