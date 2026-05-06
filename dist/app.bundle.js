@@ -8982,10 +8982,13 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email })
-    }).then((r) => r.json()).then((d) => {
+    }).then((r) => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then((d) => {
       if (d.error) alert("Error: " + d.error);
       else alert(d.message);
-    }).catch((e) => alert("Network error"));
+    }).catch((e) => alert("Network error: " + (e && e.message || e)));
   }
 
   // src/push/push.js
