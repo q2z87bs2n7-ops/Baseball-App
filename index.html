@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.38.3</title>
+<title>MLB Pulse v3.38.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -86,7 +86,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.38.3</div>
+        <div class="settings-version">v3.38.4</div>
       </div>
     </div>
   </div>
@@ -579,6 +579,17 @@
       <div style="display:flex;gap:6px;margin-top:8px">
         <button id="appStateCopyBtn" data-dt-action="copyState" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy All State</button>
         <button data-dt-action="refreshState" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄 Refresh</button>
+      </div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details id="netTraceDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🌐 Network <span id="netTraceCount" style="color:var(--muted);font-weight:500">(0)</span></summary>
+      <div id="netTraceList" class="dt-mono" style="margin-top:0.625rem;max-height:240px;overflow-y:auto;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 8px"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button id="netTraceCopyBtn" data-dt-action="copyNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>
+        <button data-dt-action="clearNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">Clear</button>
+        <button data-dt-action="refreshNet" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:6px;border-radius:6px;cursor:pointer;font-weight:600">🔄</button>
       </div>
     </details>
   </div>

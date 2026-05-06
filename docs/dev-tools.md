@@ -67,6 +67,35 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
 
+## 🌐 Network Trace (added v3.38.4)
+
+Wraps `window.fetch` once at boot to capture metadata about every HTTP request the app makes. Surfaced as the "🌐 Network" collapsible in Dev Tools, between App State and Log Capture.
+
+**Captured per request:** `{ts, method, url, status, ok, ms, sizeBytes, errorMsg}`. Ring buffer cap is 50 (`DEV_NET_CAP`).
+
+**Important:** the wrap is metadata-only. It never touches `response.body` — the original `Response` is returned unchanged so consumers that read JSON, text, or stream the body see no behaviour change. `sizeBytes` is read from the `Content-Length` response header and may be `null` for chunked / cross-origin responses (correctness over completeness).
+
+**Side effect:** non-2xx responses also flow into Log Capture as `[net]` warn entries; network failures (DNS, offline, CORS preflight failures) flow in as `[net]` errors. This means even when the Network details panel is closed you'll see slow/broken endpoints in the log.
+
+**Collapsible UI:**
+- One row per request, newest first. Color: red if `!ok` or status ≥ 400, amber if 3xx.
+- Format: `time · METHOD STATUS · ms · size · shortened-url`. Hovering a row shows the full URL via `title=` attribute.
+- 📋 Copy — Markdown table of every entry; appends a "Failed requests" section listing any non-OK rows for fast triage.
+- Clear / 🔄 — empty buffer / re-render.
+
+**Limitations:**
+- Service worker (`sw.js`) fetches and any pre-`app.js` scripts (`pulse-card-templates.js`, `focusCard.js`, `collectionCard.js`) are not wrapped. Those modules don't make network calls today.
+- `XMLHttpRequest` is not wrapped — the app uses `fetch` exclusively.
+
+**Functions** (all in `app.js`):
+- IIFE `wrapFetch()` at top of file installs the wrap before any fetches run
+- `renderNetTrace()` — table renderer
+- `copyNetTraceAsMarkdown()` — clipboard export
+- `clearNetTrace()` — buffer reset + re-render
+- `_shortUrl(u)`, `_fmtBytes(n)` — render helpers
+
+**Globals:** `devNetLog` (ring buffer array), `DEV_NET_CAP` (50).
+
 ## 📊 App State Inspector (added v3.38.3)
 
 Read-only views over the major in-memory state globals. Lives as a collapsible "📊 App State" section directly above Log Capture in the Dev Tools panel. Lazy: nothing renders until the `<details>` is opened (`toggle` event listener installed at `DOMContentLoaded`).

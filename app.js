@@ -48,6 +48,45 @@ function devTrace(src){
 }
 devTrace('boot','app.js loaded · '+new Date().toISOString());
 
+// ── 🌐 Network trace ─────────────────────────────────────────────────────────
+// Wraps fetch() to capture {ts, method, url, status, ok, ms, sizeBytes, errorMsg}
+// into a small ring buffer. Pure metadata — never reads the response body, so
+// downstream consumers see an unmodified Response. Surfaced in Dev Tools →
+// Network. Service worker (sw.js) and any pre-app.js scripts are not affected.
+const DEV_NET_CAP = 50;
+var devNetLog = [];
+(function wrapFetch(){
+  if(typeof window==='undefined' || !window.fetch) return;
+  var origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    var t0 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+    var url = (typeof input==='string') ? input : (input && input.url) || '';
+    var method = (init && init.method) || (input && input.method) || 'GET';
+    var entry = {ts: Date.now(), method: method.toUpperCase(), url: url, status: null, ok: null, ms: null, sizeBytes: null, errorMsg: null};
+    devNetLog.push(entry);
+    if(devNetLog.length > DEV_NET_CAP) devNetLog.splice(0, devNetLog.length - DEV_NET_CAP);
+    return origFetch(input, init).then(function(res){
+      var t1 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      entry.ms = Math.round(t1 - t0);
+      entry.status = res.status;
+      entry.ok = res.ok;
+      try{
+        var cl = res.headers && res.headers.get && res.headers.get('content-length');
+        if(cl) entry.sizeBytes = parseInt(cl,10);
+      }catch(e){}
+      if(!res.ok) pushDevLog('warn','net', [method.toUpperCase()+' '+res.status+' · '+url+' · '+entry.ms+'ms']);
+      return res;
+    }, function(err){
+      var t1 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+      entry.ms = Math.round(t1 - t0);
+      entry.ok = false;
+      entry.errorMsg = (err && err.message) ? err.message : String(err);
+      pushDevLog('error','net', [method.toUpperCase()+' FAILED · '+url+' · '+entry.errorMsg]);
+      throw err;
+    });
+  };
+})();
+
 // ── Naming conventions ────────────────────────────────────────────────────────
 // load*()    — fetch + cache + render a full section (loadTodayGame, loadSchedule)
 // fetch*()   — async data fetch with session cache, returns data or null (fetchBoxscore, fetchCareerStats)
@@ -5030,10 +5069,81 @@ function copyAppStateAsMarkdown(){
   ];
   _copyToClipboard(parts.join('\n'),'appStateCopyBtn');
 }
+
+// ── 🌐 Network Trace (Dev Tools) ────────────────────────────────────────────
+function _shortUrl(u){
+  if(!u) return '?';
+  try{
+    var parsed=new URL(u, window.location.href);
+    var host=parsed.host || '';
+    // Trim known noisy bases for readability — full URL still visible on hover/copy
+    var path=parsed.pathname.replace(/^\/api\/v1(\.1)?/, '/v1$1');
+    var q=parsed.search ? (parsed.search.length>40?parsed.search.slice(0,40)+'…':parsed.search) : '';
+    return (host?host+' ':'')+path+q;
+  }catch(e){
+    return u.length>120 ? u.slice(0,120)+'…' : u;
+  }
+}
+function _fmtBytes(n){
+  if(n==null) return '-';
+  if(n<1024) return n+'b';
+  if(n<1048576) return (n/1024).toFixed(1)+'k';
+  return (n/1048576).toFixed(2)+'M';
+}
+function renderNetTrace(){
+  var list=document.getElementById('netTraceList');
+  var count=document.getElementById('netTraceCount');
+  if(!list) return;
+  if(count) count.textContent='('+devNetLog.length+')';
+  if(!devNetLog.length){
+    list.innerHTML='<div class="dt-label-muted" style="padding:4px 0">No fetches captured yet.</div>';
+    return;
+  }
+  // Newest first
+  list.innerHTML = devNetLog.slice().reverse().map(function(e){
+    var ts=_fmtLogTs(e.ts);
+    var st=(e.status==null)?(e.ok===false?'ERR':'…'):e.status;
+    var cls='dt-log-row';
+    if(e.ok===false) cls+=' lv-error';
+    else if(e.status>=400) cls+=' lv-error';
+    else if(e.status>=300) cls+=' lv-warn';
+    var ms=e.ms!=null?e.ms+'ms':'-';
+    var size=_fmtBytes(e.sizeBytes);
+    var err=e.errorMsg?'<div style="margin-left:24px;color:#ff6b6b">'+escapeHtml(e.errorMsg)+'</div>':'';
+    return '<div class="'+cls+'" title="'+escapeHtml(e.url||'')+'"><span class="lv-ts">'+ts+'</span><span class="lv-tag">'+escapeHtml(e.method)+' '+st+'</span><span class="lv-ts">'+ms+' · '+size+'</span> '+escapeHtml(_shortUrl(e.url))+err+'</div>';
+  }).join('');
+}
+function copyNetTraceAsMarkdown(){
+  var lines=['# MLB Pulse — Network Trace','Captured: '+new Date().toISOString(),'Total entries: '+devNetLog.length+' (cap '+DEV_NET_CAP+')',''];
+  if(!devNetLog.length){lines.push('_(empty)_');}
+  else{
+    lines.push('| time | method | status | ms | size | url |');
+    lines.push('|---|---|---|---|---|---|');
+    devNetLog.forEach(function(e){
+      var url=(e.url||'').replace(/\|/g,'\\|');
+      var status=(e.status==null)?(e.ok===false?'ERR':'-'):e.status;
+      var ms=e.ms!=null?e.ms:'-';
+      var size=_fmtBytes(e.sizeBytes);
+      lines.push('| '+_fmtLogTs(e.ts)+' | '+e.method+' | '+status+' | '+ms+' | '+size+' | '+url+' |');
+    });
+    var failed=devNetLog.filter(function(e){return e.ok===false;});
+    if(failed.length){
+      lines.push('','## Failed requests ('+failed.length+')','');
+      failed.forEach(function(e){lines.push('- `'+e.method+' '+(e.status||'ERR')+'` '+e.url+(e.errorMsg?' — '+e.errorMsg:''));});
+    }
+  }
+  _copyToClipboard(lines.join('\n'),'netTraceCopyBtn');
+}
+function clearNetTrace(){
+  devNetLog.length=0;
+  renderNetTrace();
+}
 // Lazy: render only when the details element is opened, then live-refresh on filter input.
 document.addEventListener('DOMContentLoaded',function(){
   var stateDet=document.getElementById('appStateDetails');
   if(stateDet) stateDet.addEventListener('toggle',function(){if(stateDet.open)renderAppState();});
+  var netDet=document.getElementById('netTraceDetails');
+  if(netDet) netDet.addEventListener('toggle',function(){if(netDet.open)renderNetTrace();});
   var det=document.getElementById('logCaptureDetails');
   if(!det)return;
   det.addEventListener('toggle',function(){if(det.open)renderLogCapture();});
@@ -5156,6 +5266,9 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='copyStateGames'){_copyToClipboard(_stateAsMarkdownGames());}
     else if(action==='copyStateFeed'){_copyToClipboard(_stateAsMarkdownFeed(50));}
     else if(action==='copyStateStories'){_copyToClipboard(_stateAsMarkdownStories());}
+    else if(action==='copyNet'){copyNetTraceAsMarkdown();}
+    else if(action==='clearNet'){clearNetTrace();}
+    else if(action==='refreshNet'){renderNetTrace();}
     else if(action==='confirm'){confirmDevToolsChanges();}
   });
 });
