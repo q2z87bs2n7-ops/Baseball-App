@@ -28,6 +28,8 @@ export const state = {
   newsFeedMode: 'mlb',
   newsSourceFilter: 'all',
   newsArticlesCache: [],
+  pulseNewsArticles: [],
+  pulseNewsIndex: 0,
 
   // ── League Pulse State ───────────────────────────────────────────────────
   pulseInitialized: false,
