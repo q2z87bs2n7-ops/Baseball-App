@@ -3,7 +3,7 @@
 // showing response status, item count, sample data, and error diagnostics.
 
 import { API_BASE } from '../config/constants.js';
-import { isSafeNewsImage } from '../utils/news.js';
+import { isSafeNewsImage, NEWS_IMAGE_HOSTS } from '../utils/news.js';
 
 const NEWS_TEST_SOURCES = ['fangraphs', 'mlbtraderumors', 'cbssports', 'yahoo', 'sbnation_mets', 'baseballamerica', 'mlb_direct', 'reddit_baseball', 'espn_news'];
 let newsTestResults = {};
@@ -66,7 +66,9 @@ function renderNewsSourceTest() {
           var afterHttps = escapeHtml(a.imageAfterHttps || a.image);
           var domain = escapeHtml(a.imageDomain || '?');
           imageLine = '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)"><b>Image:</b> [' + safe + '] domain: ' + domain + '</div>'
-            + (a.image !== (a.imageAfterHttps || a.image) ? '<div style="margin-top:2px;font-size:.65rem;color:#b0a0ff">forceHttps: ' + original + ' → ' + afterHttps + '</div>' : '');
+            + '<div style="margin-top:2px;font-size:.65rem;color:var(--muted);word-break:break-all">URL: ' + original + '</div>'
+            + (a.image !== (a.imageAfterHttps || a.image) ? '<div style="margin-top:2px;font-size:.65rem;color:#b0a0ff">forceHttps: ' + original + ' → ' + afterHttps + '</div>' : '')
+            + (a.safeReason ? '<div style="margin-top:2px;font-size:.65rem;color:#ff8888">Reason: ' + escapeHtml(a.safeReason) + '</div>' : '');
         } else {
           imageLine = '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)"><b>Image:</b> (none)</div>';
         }
@@ -75,6 +77,9 @@ function renderNewsSourceTest() {
           + imageLine
           + '</div>';
       });
+      if (carouselDiagnostics.allowlistSource) {
+        html += '<div style="padding:10px;border-bottom:1px solid var(--border);font-size:.65rem;color:var(--muted)"><b>Allowlist regex:</b> <code style="word-break:break-all">' + escapeHtml(carouselDiagnostics.allowlistSource) + '</code></div>';
+      }
     }
   }
   list.innerHTML = html;
@@ -133,15 +138,26 @@ function fetchCarouselDiagnostics() {
           var imgDomain = null;
           var imgSafe = false;
           var imgAfterHttps = null;
-          if (img) {
+          var safeReason = null;
+          var suggestedEntry = null;
+          if (!img) {
+            safeReason = 'no image URL';
+          } else {
             try {
               var url = new URL(img);
               imgDomain = url.hostname;
               imgSafe = isSafeNewsImage(img);
               imgAfterHttps = forceHttps(img);
+              if (!imgSafe) {
+                // Compute likely parent registrable domain (last two labels) — e.g. sportshub.cbsistatic.com → cbsistatic.com
+                var parts = imgDomain.split('.');
+                suggestedEntry = parts.length >= 2 ? parts.slice(-2).join('.') : imgDomain;
+                safeReason = 'hostname "' + imgDomain + '" not in NEWS_IMAGE_HOSTS allowlist (add "' + suggestedEntry + '" to fix)';
+              }
             } catch (e) {
               imgDomain = '(invalid URL)';
               imgAfterHttps = img;
+              safeReason = 'malformed URL: ' + (e && e.message || e);
             }
           }
           return {
@@ -149,9 +165,12 @@ function fetchCarouselDiagnostics() {
             image: img,
             imageDomain: imgDomain,
             imageSafe: imgSafe,
-            imageAfterHttps: imgAfterHttps
+            imageAfterHttps: imgAfterHttps,
+            safeReason: safeReason,
+            suggestedEntry: suggestedEntry
           };
-        })
+        }),
+        allowlistSource: NEWS_IMAGE_HOSTS.source
       };
       renderNewsSourceTest();
     })
