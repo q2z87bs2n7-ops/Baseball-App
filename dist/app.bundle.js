@@ -210,6 +210,30 @@
     }
   }
 
+  // src/ui/wakelock.js
+  var screenWakeLock = null;
+  async function requestScreenWakeLock() {
+    if (!navigator.wakeLock) return;
+    try {
+      screenWakeLock = await navigator.wakeLock.request("screen");
+      screenWakeLock.addEventListener("release", () => {
+        screenWakeLock = null;
+      });
+    } catch (e) {
+      console.warn("Wake lock request failed:", e);
+    }
+  }
+  async function releaseScreenWakeLock() {
+    if (screenWakeLock) {
+      try {
+        await screenWakeLock.release();
+        screenWakeLock = null;
+      } catch (e) {
+        console.warn("Wake lock release failed:", e);
+      }
+    }
+  }
+
   // src/main.js
   var DEBUG2 = false;
   devTrace("boot", "app.js loaded \xB7 " + (/* @__PURE__ */ new Date()).toISOString());
@@ -242,7 +266,6 @@
   var focusAbortCtrl = null;
   var liveAbortCtrl = null;
   var soundSettings = { master: false, hr: true, run: true, risp: true, dp: true, tp: true, gameStart: true, gameEnd: true, error: true };
-  var screenWakeLock = null;
   var mlbSessionToken = null;
   var mlbAuthUser = null;
   var mlbSyncInterval = null;
@@ -7366,27 +7389,6 @@
     loadHomeYoutubeWidget();
     if (document.getElementById("schedule").classList.contains("active")) loadSchedule();
     if (myTeamLens) applyMyTeamLens(true);
-  }
-  async function requestScreenWakeLock() {
-    if (!navigator.wakeLock) return;
-    try {
-      screenWakeLock = await navigator.wakeLock.request("screen");
-      screenWakeLock.addEventListener("release", () => {
-        screenWakeLock = null;
-      });
-    } catch (e) {
-      console.warn("Wake lock request failed:", e);
-    }
-  }
-  async function releaseScreenWakeLock() {
-    if (screenWakeLock) {
-      try {
-        await screenWakeLock.release();
-        screenWakeLock = null;
-      } catch (e) {
-        console.warn("Wake lock release failed:", e);
-      }
-    }
   }
   function onSoundPanelClickOutside(e) {
     var panel = document.getElementById("soundPanel"), btn = document.getElementById("ptbSoundBtn");

@@ -14,6 +14,7 @@ import {
   tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
 } from './utils/format.js';
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from './utils/news.js';
+import { requestScreenWakeLock, releaseScreenWakeLock } from './ui/wakelock.js';
 
 const DEBUG=false; // Set true locally to enable verbose console logging
 devTrace('boot','app.js loaded · '+new Date().toISOString());
@@ -56,7 +57,7 @@ let myTeamLens=(localStorage.getItem('mlb_my_team_lens')==='1');
 let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
 let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
-let screenWakeLock=null;
+// screenWakeLock state encapsulated inside ./ui/wakelock.js
 
 // ── Session Storage & Sync globals ────────────────────────────────────────────
 let mlbSessionToken=null;
@@ -6044,26 +6045,7 @@ function switchTeam(teamId){
   if(myTeamLens) applyMyTeamLens(true);
 }
 
-async function requestScreenWakeLock(){
-  if(!navigator.wakeLock)return;
-  try{
-    screenWakeLock=await navigator.wakeLock.request('screen');
-    screenWakeLock.addEventListener('release',()=>{screenWakeLock=null;});
-  }catch(e){
-    console.warn('Wake lock request failed:',e);
-  }
-}
-
-async function releaseScreenWakeLock(){
-  if(screenWakeLock){
-    try{
-      await screenWakeLock.release();
-      screenWakeLock=null;
-    }catch(e){
-      console.warn('Wake lock release failed:',e);
-    }
-  }
-}
+// requestScreenWakeLock + releaseScreenWakeLock imported from ./ui/wakelock.js
 
 function onSoundPanelClickOutside(e){
   var panel=document.getElementById('soundPanel'),btn=document.getElementById('ptbSoundBtn');
