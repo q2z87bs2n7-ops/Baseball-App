@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.39.6
+**Current version:** v3.39.7
+
+**v3.39.7** — Extract radio station data to `src/radio/stations.js`. Pure-data extraction (no behavior change): `MLB_TEAM_RADIO` (30 flagship stations + URLs + format), `FALLBACK_RADIO` (Fox Sports), `APPROVED_RADIO_TEAM_IDS` (the 9-team `Set` for focus pairing), `RADIO_CHECK_DEFAULT_NOTES` (seeded-once default annotations for the Radio Check sweep tool). The radio ENGINE (`pickRadioForFocus`, `toggleRadio`, `loadRadioStream`, `setRadioUI`, `updateRadioForFocus`) stays in `main.js` for now because it reads `focusGamePk` + `gameStates` (hot mutable state); will move once `state.js` is in place. Net: src/main.js drops ~80 lines; modular code now 626 lines across 10 files.
 
 **v3.39.6** — Extract sound system to `src/ui/sound.js`. Moves `soundSettings`, the audio primitives (`_makeCtx`, `_closeCtx`, `_osc`, `_ns`), the eight per-event sound players (HR, run, RISP, DP, TP, gameStart, gameEnd, error), `playSound` dispatcher, `setSoundPref` settings setter, `toggleSoundPanel` UI toggle, and `onSoundPanelClickOutside` click-outside handler out of `main.js`. `soundSettings` localStorage hydration moved into the module's import-time init (Object.assign over the defaults instead of reassigning the binding) so importers always see a consistent object reference. `setSoundPref`/`toggleSoundPanel`/`onSoundPanelClickOutside` remain on the window bridge for HTML inline handlers + the global click listener. Boot IIFE in main.js no longer needs the `mlb_sound_settings` restore line — handled inside the sound module on import. Net: src/main.js drops ~25 lines; total modular code now 466 lines across 9 files.
 
