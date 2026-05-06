@@ -4809,8 +4809,231 @@ function clearDevLog(){
   devLog.length=0;
   renderLogCapture();
 }
+
+// ── 📊 App State Inspector (Dev Tools) ──────────────────────────────────────
+// Read-only views over the major in-memory state globals: gameStates, feedItems,
+// focusState, storyPool, plus a flat "context" row. Each subsection has its own
+// 📋 button; the parent has a "Copy All State" that bundles everything as
+// Markdown for pasting to Claude.
+function _stateGameRow(g){
+  if(!g)return '—';
+  var matchup=(g.awayAbbr||'?')+' '+g.awayScore+' @ '+(g.homeAbbr||'?')+' '+g.homeScore;
+  var inn=g.status==='Live' ? ' · '+(g.halfInning||'')+' '+(g.inning||'?')+' ('+g.outs+'o)' : '';
+  var bases=(g.onFirst||g.onSecond||g.onThird) ? ' · 🏃'+(g.onFirst?'1':'·')+(g.onSecond?'2':'·')+(g.onThird?'3':'·') : '';
+  return matchup+' · '+g.status+(g.detailedState&&g.detailedState!==g.status?' ('+g.detailedState+')':'')+inn+bases;
+}
+function _stateContext(){
+  var t=(typeof activeTeam!=='undefined'&&activeTeam)||{};
+  var section='?';
+  try{var s=document.querySelector('.section.active');if(s) section=s.id;}catch(e){}
+  return {
+    version: (function(){try{return (document.title.match(/v[\d.]+/)||['?'])[0];}catch(e){return '?';}})(),
+    timestamp: new Date().toISOString(),
+    activeTeam: t.id ? (t.short+' (id:'+t.id+')') : '?',
+    section: section,
+    demoMode: typeof demoMode!=='undefined' ? !!demoMode : '?',
+    pulseInitialized: typeof pulseInitialized!=='undefined' ? !!pulseInitialized : '?',
+    pulseColorScheme: typeof pulseColorScheme!=='undefined' ? pulseColorScheme : '?',
+    themeScope: typeof themeScope!=='undefined' ? themeScope : '?',
+    themeOverride: typeof themeOverride!=='undefined' && themeOverride ? (themeOverride.short||'set') : null,
+    themeInvert: typeof themeInvert!=='undefined' ? !!themeInvert : '?',
+    devColorLocked: typeof devColorLocked!=='undefined' ? !!devColorLocked : '?',
+    radioCurrentTeamId: typeof radioCurrentTeamId!=='undefined' ? radioCurrentTeamId : null,
+    focusGamePk: typeof focusGamePk!=='undefined' ? focusGamePk : null,
+    focusIsManual: typeof focusIsManual!=='undefined' ? !!focusIsManual : '?',
+    counts: {
+      gameStates: typeof gameStates!=='undefined' ? Object.keys(gameStates).length : 0,
+      feedItems: typeof feedItems!=='undefined' ? feedItems.length : 0,
+      storyPool: typeof storyPool!=='undefined' ? storyPool.length : 0,
+      enabledGames: typeof enabledGames!=='undefined' ? enabledGames.size : 0,
+      devLog: devLog.length,
+    },
+    viewport: window.innerWidth+'×'+window.innerHeight,
+    userAgent: navigator.userAgent,
+  };
+}
+function _stateGameStatesArr(){
+  if(typeof gameStates==='undefined') return [];
+  return Object.keys(gameStates).map(function(pk){
+    var g=gameStates[pk];
+    return {
+      gamePk:+pk, status:g.status, detailedState:g.detailedState,
+      matchup:(g.awayAbbr||'?')+'@'+(g.homeAbbr||'?'),
+      score:(g.awayScore||0)+'-'+(g.homeScore||0),
+      inning:(g.halfInning||'')+(g.inning||''), outs:g.outs,
+      bases:(g.onFirst?'1':'')+(g.onSecond?'2':'')+(g.onThird?'3':''),
+      hits:(g.awayHits||0)+'-'+(g.homeHits||0),
+      enabled: typeof enabledGames!=='undefined' ? enabledGames.has(+pk) : null,
+    };
+  }).sort(function(a,b){
+    var rank=function(s){return s==='Live'?0:s==='Preview'||s==='Scheduled'?1:2;};
+    return rank(a.status)-rank(b.status);
+  });
+}
+function _stateFeedItemsArr(limit){
+  if(typeof feedItems==='undefined') return [];
+  return feedItems.slice(0, limit||50).map(function(fi){
+    var d=fi.data||{};
+    return {
+      ts: fi.ts ? fi.ts.toISOString() : null,
+      gamePk: fi.gamePk,
+      type: d.type,
+      label: d.label || d.event || '',
+      desc: (d.desc||d.sub||'').slice(0, 200),
+      scoring: !!d.scoring,
+      score: (d.awayScore!=null?d.awayScore:'')+(d.homeScore!=null?'-'+d.homeScore:''),
+      inning: d.halfInning ? (d.halfInning+' '+(d.inning||'')) : null,
+    };
+  });
+}
+function _stateStoryPoolArr(){
+  if(typeof storyPool==='undefined') return [];
+  return storyPool.map(function(s){
+    var cdRem=null;
+    if(s.lastShown && s.cooldownMs){
+      var rem=s.cooldownMs-(Date.now()-s.lastShown);
+      cdRem=rem>0?Math.round(rem/1000)+'s':'ready';
+    }
+    return {
+      id:s.id, type:s.type, tier:s.tier, priority:s.priority,
+      headline:s.headline, gamePk:s.gamePk, cooldownRem:cdRem,
+      lastShownAgo: s.lastShown ? Math.round((Date.now()-s.lastShown)/1000)+'s' : null,
+      isShown: s.id===storyShownId,
+    };
+  }).sort(function(a,b){return (b.priority||0)-(a.priority||0);});
+}
+function _stateFocusObj(){
+  return {
+    focusGamePk: typeof focusGamePk!=='undefined' ? focusGamePk : null,
+    focusIsManual: typeof focusIsManual!=='undefined' ? !!focusIsManual : '?',
+    focusedGame: (typeof focusGamePk!=='undefined' && focusGamePk && typeof gameStates!=='undefined' && gameStates[focusGamePk])
+      ? _stateGameRow(gameStates[focusGamePk]) : null,
+  };
+}
+function _kvList(obj){
+  return Object.keys(obj).map(function(k){
+    var v=obj[k];
+    var disp=(v==null)?'—':(typeof v==='object')?JSON.stringify(v):String(v);
+    if(disp.length>200) disp=disp.slice(0,200)+'…';
+    return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">'+escapeHtml(k)+'</span><span>'+escapeHtml(disp)+'</span></div>';
+  }).join('');
+}
+function _miniCopyBtn(action){
+  return '<button data-dt-action="'+action+'" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer;font-weight:600">📋</button>';
+}
+function _section(title, action, body){
+  return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="dt-label">'+title+'</span>'+_miniCopyBtn(action)+'</div>'+body+'</div>';
+}
+function renderAppState(){
+  var body=document.getElementById('appStateBody');
+  if(!body) return;
+  var ctx=_stateContext();
+  var c=document.getElementById('appStateCounts');
+  if(c) c.textContent='('+ctx.counts.gameStates+'g · '+ctx.counts.feedItems+'f · '+ctx.counts.storyPool+'s)';
+
+  var gs=_stateGameStatesArr();
+  var gsBody=gs.length
+    ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">'+gs.map(function(g){
+        return '<div class="dt-log-row">'+escapeHtml(g.matchup)+' · '+escapeHtml(g.status)+' · '+escapeHtml(g.score)+(g.inning?' · '+escapeHtml(g.inning)+' ('+g.outs+'o)':'')+(g.bases?' · 🏃'+escapeHtml(g.bases):'')+(g.enabled===false?' <span class="lv-tag">[hidden]</span>':'')+'</div>';
+      }).join('')+'</div>'
+    : '<div class="dt-label-muted">No games loaded.</div>';
+
+  var fi=_stateFeedItemsArr(30);
+  var fiBody=fi.length
+    ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">'+fi.map(function(f){
+        var ts=f.ts?f.ts.slice(11,19):'';
+        return '<div class="dt-log-row"><span class="lv-ts">'+escapeHtml(ts)+'</span><span class="lv-tag">['+escapeHtml(String(f.type||'?'))+']</span>'+escapeHtml(f.label||f.desc||'')+(f.scoring?' ⭐':'')+'</div>';
+      }).join('')+'</div>'
+    : '<div class="dt-label-muted">Feed empty.</div>';
+
+  var sp=_stateStoryPoolArr();
+  var spBody=sp.length
+    ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">'+sp.map(function(s){
+        return '<div class="dt-log-row'+(s.isShown?' lv-warn':'')+'"><span class="lv-tag">p'+(s.priority||0)+'</span><span class="lv-tag">['+escapeHtml(String(s.type||'?'))+']</span>'+escapeHtml(s.headline||'')+(s.cooldownRem?' <span class="lv-ts">('+escapeHtml(s.cooldownRem)+')</span>':'')+(s.isShown?' ◀ shown':'')+'</div>';
+      }).join('')+'</div>'
+    : '<div class="dt-label-muted">Story pool empty.</div>';
+
+  var ctxBody='<div style="font-size:.65rem">'+_kvList({
+    version: ctx.version, section: ctx.section, activeTeam: ctx.activeTeam,
+    demoMode: ctx.demoMode, pulseInitialized: ctx.pulseInitialized,
+    pulseColorScheme: ctx.pulseColorScheme, themeScope: ctx.themeScope,
+    themeOverride: ctx.themeOverride, themeInvert: ctx.themeInvert,
+    devColorLocked: ctx.devColorLocked, radioCurrentTeamId: ctx.radioCurrentTeamId,
+    focusGamePk: ctx.focusGamePk, focusIsManual: ctx.focusIsManual,
+    viewport: ctx.viewport,
+  })+'</div>';
+
+  var focusBody='<div style="font-size:.65rem">'+_kvList(_stateFocusObj())+'</div>';
+
+  body.innerHTML =
+    _section('Context','copyStateContext', ctxBody) +
+    _section('🎯 Focus','copyStateFocus', focusBody) +
+    _section('🎮 gameStates ('+gs.length+')','copyStateGames', gsBody) +
+    _section('📰 feedItems (showing '+fi.length+' of '+ctx.counts.feedItems+')','copyStateFeed', fiBody) +
+    _section('📖 storyPool ('+sp.length+')','copyStateStories', spBody);
+}
+function _copyToClipboard(text, btnId){
+  var btn=btnId?document.getElementById(btnId):null;
+  function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;btn.style.background='#1f7a3a';setTimeout(function(){btn.textContent=orig;btn.style.background='';},1500);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');},function(){fallbackCopy(text);flash('✓ Copied (fb)');});
+  }else{
+    fallbackCopy(text);flash('✓ Copied (fb)');
+  }
+}
+function _stateAsMarkdownContext(){
+  var c=_stateContext();
+  return '## Context\n\n```json\n'+JSON.stringify(c,null,2)+'\n```\n';
+}
+function _stateAsMarkdownGames(){
+  var gs=_stateGameStatesArr();
+  if(!gs.length) return '## gameStates\n\n_(empty)_\n';
+  var lines=['## gameStates ('+gs.length+')','','| gamePk | matchup | status | score | inning | bases | hits | enabled |','|---|---|---|---|---|---|---|---|'];
+  gs.forEach(function(g){
+    lines.push('| '+g.gamePk+' | '+g.matchup+' | '+g.status+(g.detailedState&&g.detailedState!==g.status?' ('+g.detailedState+')':'')+' | '+g.score+' | '+(g.inning||'-')+(g.outs!=null?' '+g.outs+'o':'')+' | '+(g.bases||'-')+' | '+g.hits+' | '+(g.enabled==null?'-':g.enabled?'y':'n')+' |');
+  });
+  return lines.join('\n')+'\n';
+}
+function _stateAsMarkdownFeed(limit){
+  var fi=_stateFeedItemsArr(limit||50);
+  if(!fi.length) return '## feedItems\n\n_(empty)_\n';
+  var lines=['## feedItems ('+fi.length+(typeof feedItems!=='undefined'&&feedItems.length>fi.length?' of '+feedItems.length:'')+')','','| time | gamePk | type | label/desc | scoring |','|---|---|---|---|---|'];
+  fi.forEach(function(f){
+    var ts=f.ts?f.ts.slice(11,19):'-';
+    var msg=(f.label||f.desc||'').replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+    lines.push('| '+ts+' | '+f.gamePk+' | '+(f.type||'-')+' | '+msg+' | '+(f.scoring?'y':'')+' |');
+  });
+  return lines.join('\n')+'\n';
+}
+function _stateAsMarkdownStories(){
+  var sp=_stateStoryPoolArr();
+  if(!sp.length) return '## storyPool\n\n_(empty)_\n';
+  var lines=['## storyPool ('+sp.length+')','','| priority | type | tier | headline | cooldown | shown |','|---|---|---|---|---|---|'];
+  sp.forEach(function(s){
+    lines.push('| '+(s.priority||0)+' | '+(s.type||'-')+' | '+(s.tier||'-')+' | '+(s.headline||'').replace(/\|/g,'\\|')+' | '+(s.cooldownRem||'-')+' | '+(s.isShown?'◀':'')+' |');
+  });
+  return lines.join('\n')+'\n';
+}
+function _stateAsMarkdownFocus(){
+  return '## Focus\n\n```json\n'+JSON.stringify(_stateFocusObj(),null,2)+'\n```\n';
+}
+function copyAppStateAsMarkdown(){
+  var parts=[
+    '# MLB Pulse — App State Snapshot',
+    'Captured: '+new Date().toISOString(),
+    '',
+    _stateAsMarkdownContext(),
+    _stateAsMarkdownFocus(),
+    _stateAsMarkdownGames(),
+    _stateAsMarkdownFeed(50),
+    _stateAsMarkdownStories(),
+  ];
+  _copyToClipboard(parts.join('\n'),'appStateCopyBtn');
+}
 // Lazy: render only when the details element is opened, then live-refresh on filter input.
 document.addEventListener('DOMContentLoaded',function(){
+  var stateDet=document.getElementById('appStateDetails');
+  if(stateDet) stateDet.addEventListener('toggle',function(){if(stateDet.open)renderAppState();});
   var det=document.getElementById('logCaptureDetails');
   if(!det)return;
   det.addEventListener('toggle',function(){if(det.open)renderLogCapture();});
@@ -4926,6 +5149,13 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='copyLog'){copyLogAsMarkdown();}
     else if(action==='clearLog'){clearDevLog();}
     else if(action==='refreshLog'){renderLogCapture();}
+    else if(action==='copyState'){copyAppStateAsMarkdown();}
+    else if(action==='refreshState'){renderAppState();}
+    else if(action==='copyStateContext'){_copyToClipboard(_stateAsMarkdownContext());}
+    else if(action==='copyStateFocus'){_copyToClipboard(_stateAsMarkdownFocus());}
+    else if(action==='copyStateGames'){_copyToClipboard(_stateAsMarkdownGames());}
+    else if(action==='copyStateFeed'){_copyToClipboard(_stateAsMarkdownFeed(50));}
+    else if(action==='copyStateStories'){_copyToClipboard(_stateAsMarkdownStories());}
     else if(action==='confirm'){confirmDevToolsChanges();}
   });
 });

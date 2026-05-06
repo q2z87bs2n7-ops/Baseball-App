@@ -67,6 +67,29 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
 
+## 📊 App State Inspector (added v3.38.3)
+
+Read-only views over the major in-memory state globals. Lives as a collapsible "📊 App State" section directly above Log Capture in the Dev Tools panel. Lazy: nothing renders until the `<details>` is opened (`toggle` event listener installed at `DOMContentLoaded`).
+
+**Subsections:** Each rendered into a `.dt-box` with its own mini 📋 button:
+- **Context** — version, section, activeTeam, demoMode, pulseInitialized, pulseColorScheme, themeScope, themeOverride, themeInvert, devColorLocked, radioCurrentTeamId, focusGamePk, focusIsManual, viewport
+- **🎯 Focus** — `focusGamePk`, `focusIsManual`, plus pretty-printed focused-game line if available
+- **🎮 gameStates** — one row per game: matchup · status · score · inning/outs · base runners · enabled/hidden flag. Sorted Live → Upcoming → Final.
+- **📰 feedItems** — most recent 30 (DOM); mini-Copy exports up to 50 to clipboard. Columns: time · type · label/desc · scoring star.
+- **📖 storyPool** — sorted by priority. Columns: priority · type · headline · cooldown remaining · `◀ shown` indicator on the currently-displayed story.
+
+**📋 Copy All State** at the bottom dumps all five subsections as one Markdown report — the workhorse paste-to-Claude action. Top-of-doc `## Context` is JSON-fenced; gameStates / feedItems / storyPool are Markdown tables; Focus is JSON-fenced.
+
+**Functions** (all in `app.js`):
+- `renderAppState()` — top-level renderer
+- `copyAppStateAsMarkdown()` — full snapshot to clipboard
+- `_stateContext()`, `_stateGameStatesArr()`, `_stateFeedItemsArr(limit)`, `_stateStoryPoolArr()`, `_stateFocusObj()` — pure data shapers
+- `_stateAsMarkdownContext()`, `_stateAsMarkdownGames()`, `_stateAsMarkdownFeed()`, `_stateAsMarkdownStories()`, `_stateAsMarkdownFocus()` — per-section serializers used by mini-Copy buttons and Copy All
+- `_kvList(obj)`, `_section(title,action,body)`, `_miniCopyBtn(action)` — render helpers
+- `_copyToClipboard(text, btnId)` — shared clipboard helper used by App State + future inspectors (Phases 3–6)
+
+The inspector reads everything via `typeof X !== 'undefined'` guards so it stays safe even if a state global is renamed or removed.
+
 ## 🔍 Log Capture (added v3.38.1)
 
 In-memory ring buffer (`devLog`, cap 500) populated by a `console.log/warn/error/info` wrap installed at the top of `app.js`. Also captures uncaught errors via `window.error` and `window.unhandledrejection` listeners. Surfaced in Dev Tools as a collapsible "🔍 Log Capture" section between the existing tuning panels and Story Carousel Debug.
