@@ -141,7 +141,30 @@ export function parseRssItems(xml, sourceKey) {
 }
 
 export default async function handler(req, res) {
-  const { feed = 'mlb' } = req.query;
+  const { feed = 'mlb', debug } = req.query;
+
+  // Debug endpoint: test all feeds from server
+  if (debug === 'all') {
+    const results = { ok: [], errors: [] };
+    for (const [key, url] of Object.entries(MLB_RSS_FEEDS)) {
+      const start = Date.now();
+      try {
+        const response = await fetch(url, { timeout: 8000 });
+        const elapsed = Date.now() - start;
+        if (!response.ok) {
+          results.errors.push({ feed: key, url, status: response.status, elapsed });
+        } else {
+          const xml = await response.text();
+          const itemCount = (xml.match(/<item>/g) || []).length;
+          results.ok.push({ feed: key, url, status: response.status, itemCount, elapsed, size: xml.length });
+        }
+      } catch (e) {
+        const elapsed = Date.now() - start;
+        results.errors.push({ feed: key, url, error: e.message, elapsed });
+      }
+    }
+    return res.status(200).json(results);
+  }
 
   const feedUrl = MLB_RSS_FEEDS[feed];
   if (!feedUrl) {
