@@ -67,6 +67,42 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
 
+## 📋 Diagnostic Snapshot (added v3.38.7)
+
+The headline feature for the v3.38 enhancement series: a single button that bundles **everything** the inspectors capture into one Markdown document and writes it to the clipboard. Drop it into a Claude chat and the agent has full context — version, section, active team, focus state, every game's status, last 50 feed events, story pool with priorities and cooldowns, last 50 log entries, last 50 network calls (with a separate "Failed" section), localStorage sizes, and Service Worker state.
+
+Lives in its own footer block above the existing "Confirm Changes" button so it's visible without expanding any collapsible.
+
+**Why it matters:** the 5 individual inspectors are great when you know which one to look at. The snapshot is for "something's weird, let me show you everything." It's the answer to "open DevTools and screenshot these 6 tabs" — except it works on iPad and the output is text, not an image, so Claude can actually read it.
+
+**Format outline:**
+```
+# MLB Pulse — Diagnostic Snapshot
+Generated: <ISO>
+Version: vX · Section: pulse · Active team: Mets (id:121)
+demoMode: false · pulseInitialized: true · pulseColorScheme: dark · themeScope: full
+Focus: gamePk=824934 · manual=false · radioCurrentTeamId: 121
+Viewport: 1280×800
+UA: ...
+
+## Counts
+- gameStates: 12 · feedItems: 247 · storyPool: 18 · enabledGames: 12 · devLog: 312 · devNetLog: 46
+
+## Context              ← JSON-fenced
+## Focus                ← JSON-fenced
+## gameStates           ← Markdown table
+## feedItems (50)       ← Markdown table
+## storyPool            ← Markdown table
+## Service Worker       ← bullet list
+## localStorage sizes   ← bullet list
+## Last 50 logs         ← Markdown table
+## Last N network calls ← Markdown table + Failed section
+```
+
+Calls `_refreshSWState()` asynchronously after copy so the next snapshot picks up fresh SW data without slowing this one down. Reuses every existing inspector serializer (`_stateAsMarkdownContext()` / `_stateAsMarkdownFocus()` / `_stateAsMarkdownGames()` / `_stateAsMarkdownFeed(50)` / `_stateAsMarkdownStories()`) so format consistency is automatic.
+
+**Function:** `copyDiagnosticSnapshot()` in `app.js`.
+
 ## 🔔 Test Notification + 🎯 Live Controls (added v3.38.6)
 
 ### 🔔 Test Notification

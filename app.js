@@ -5354,6 +5354,97 @@ function forceFocusGo(){
   pushDevLog('log','focus',['Force Focus applied · gamePk='+pk]);
   renderLiveControls();
 }
+// ── 📋 Diagnostic Snapshot ──────────────────────────────────────────────────
+// One-tap bundle of every inspector's output as a single Markdown report — the
+// paste-to-Claude workhorse. Bundles: context · focus · gameStates · feedItems(50)
+// · storyPool · last 50 logs · last 50 network calls · localStorage sizes.
+function copyDiagnosticSnapshot(){
+  var ctx=_stateContext();
+  var lsKeys=_lsKeys();
+  var lsSizes=lsKeys.map(function(k){var e=_lsEntry(k);return '- `'+k+'`: '+_fmtBytes(e.bytes)+(e.isJson?' (json)':'');}).join('\n')||'_(none)_';
+  var swSummary='_not yet fetched_';
+  if(_swState && (_swState.scope||_swState.error)){
+    swSummary=[
+      '- Scope: '+(_swState.scope||'-'),
+      '- Active: '+(_swState.scriptURL||'-'),
+      '- Controller: '+(_swState.controller||'(uncontrolled)'),
+      '- Update waiting: '+(_swState.hasUpdate?'YES':'no'),
+      _swState.error?'- Error: '+_swState.error:null
+    ].filter(Boolean).join('\n');
+  }
+  var counts=ctx.counts;
+  var logSummary=devLog.length
+    ? (function(){
+        var rows=devLog.slice(-50);
+        var lines=['| time | level | src | message |','|---|---|---|---|'];
+        rows.forEach(function(e){
+          var msg=e.msg.replace(/\|/g,'\\|').replace(/\n/g,' ↵ ');
+          if(msg.length>200) msg=msg.slice(0,200)+'…';
+          lines.push('| '+_fmtLogTs(e.ts)+' | '+e.level+' | '+(e.src||'-')+' | '+msg+' |');
+        });
+        return lines.join('\n');
+      })()
+    : '_(empty)_';
+  var netSummary=devNetLog.length
+    ? (function(){
+        var lines=['| time | method | status | ms | size | url |','|---|---|---|---|---|---|'];
+        devNetLog.forEach(function(e){
+          var url=(e.url||'').replace(/\|/g,'\\|');
+          var status=(e.status==null)?(e.ok===false?'ERR':'-'):e.status;
+          lines.push('| '+_fmtLogTs(e.ts)+' | '+e.method+' | '+status+' | '+(e.ms||'-')+' | '+_fmtBytes(e.sizeBytes)+' | '+url+' |');
+        });
+        var failed=devNetLog.filter(function(e){return e.ok===false;});
+        if(failed.length){
+          lines.push('','**Failed:** '+failed.length);
+          failed.forEach(function(e){lines.push('- `'+e.method+' '+(e.status||'ERR')+'` '+e.url+(e.errorMsg?' — '+e.errorMsg:''));});
+        }
+        return lines.join('\n');
+      })()
+    : '_(empty)_';
+
+  var parts=[
+    '# MLB Pulse — Diagnostic Snapshot',
+    'Generated: '+new Date().toISOString(),
+    'Version: '+ctx.version+' · Section: '+ctx.section+' · Active team: '+ctx.activeTeam,
+    'demoMode: '+ctx.demoMode+' · pulseInitialized: '+ctx.pulseInitialized+' · pulseColorScheme: '+ctx.pulseColorScheme+' · themeScope: '+ctx.themeScope,
+    'Focus: gamePk='+(ctx.focusGamePk||'(auto)')+' · manual='+ctx.focusIsManual+' · radioCurrentTeamId='+(ctx.radioCurrentTeamId||'-'),
+    'Viewport: '+ctx.viewport,
+    'UA: '+ctx.userAgent,
+    '',
+    '## Counts',
+    '- gameStates: '+counts.gameStates,
+    '- feedItems: '+counts.feedItems,
+    '- storyPool: '+counts.storyPool,
+    '- enabledGames: '+counts.enabledGames,
+    '- devLog: '+counts.devLog,
+    '- devNetLog: '+devNetLog.length,
+    '',
+    _stateAsMarkdownContext(),
+    _stateAsMarkdownFocus(),
+    _stateAsMarkdownGames(),
+    _stateAsMarkdownFeed(50),
+    _stateAsMarkdownStories(),
+    '## Service Worker',
+    '',
+    swSummary,
+    '',
+    '## localStorage sizes',
+    '',
+    lsSizes,
+    '',
+    '## Last 50 logs',
+    '',
+    logSummary,
+    '',
+    '## Last '+devNetLog.length+' network calls',
+    '',
+    netSummary,
+  ];
+  // Refresh SW state asynchronously so the next snapshot has fresh data
+  _refreshSWState().catch(function(){});
+  _copyToClipboard(parts.join('\n'),'diagSnapshotBtn');
+}
+
 function forceRecapGo(){
   var sel=document.getElementById('forceRecapGame'),
       half=document.getElementById('forceRecapHalf'),
@@ -5516,6 +5607,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='testNotif'){testLocalNotification();}
     else if(action==='forceFocusGo'){forceFocusGo();}
     else if(action==='forceRecapGo'){forceRecapGo();}
+    else if(action==='copySnapshot'){copyDiagnosticSnapshot();}
     else if(action==='confirm'){confirmDevToolsChanges();}
   });
 });
