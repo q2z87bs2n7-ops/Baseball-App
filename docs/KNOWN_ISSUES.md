@@ -10,7 +10,7 @@ Project-management issues tracked here. For AI editing gotchas (bugs that could 
 
 3. **allorigins.win proxy** — no SLA, free service. Retry logic (3 attempts, 1s gap) mitigates failures but a paid or self-hosted proxy would be more reliable.
 
-4. **YouTube channel IDs** — 27 of 30 `youtubeUC` values unverified. QC needed each offseason; teams may rebrand or change channels.
+4. **YouTube channel IDs** — All 30 teams + MLB fallback verified as of v3.38.11 (May 2026). Re-verify each offseason if teams rebrand or change channels. Root cause of prior failures: 13 teams were using YouTube TV IDs (no RSS) instead of official team channels. Fixed by scraping official team pages.
 
 5. **Hls.js CDN dependency** — `hls.light.min.js@1.5.18` loaded from `cdn.jsdelivr.net` (not stored in repo, not in `sw.js` SHELL cache). If the CDN goes down, all `format:'hls'` radio streams break in non-Safari browsers; Safari users keep working via native HLS. Worth bundling locally if the CDN ever becomes unreliable.
 
