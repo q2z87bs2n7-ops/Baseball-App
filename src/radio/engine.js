@@ -113,3 +113,7 @@ export function updateRadioForFocus() {
 export function getCurrentTeamId() {
   return radioCurrentTeamId;
 }
+
+export function getRadioAudio() {
+  return radioAudio;
+}
