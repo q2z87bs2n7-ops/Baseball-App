@@ -8690,6 +8690,9 @@
         } else if (action === "videoDebug") {
           openVideoDebugPanel();
           toggleDevTools();
+        } else if (action === "radioCheck") {
+          openRadioCheck();
+          toggleDevTools();
         } else if (action === "resetTuning") {
           resetTuning();
         } else if (action === "captureApp") {
