@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.39.8
+**Current version:** v3.39.9
+
+**v3.39.9** — Adds `docs/refactor-status.md` — durable session-resume document that summarizes current state of the modularize-app.js work, lists every extracted module with line counts and import semantics, audits the ~30 hot-state reassignment sites still blocking deeper extraction, and captures the Path A (single state-object container) vs Path B (per-subsystem state colocation + event bus) decision the user is choosing between. Recommended for any fresh Claude Code session picking up the work — eliminates the need to re-explore the codebase and re-derive context from the chat scrollback. Resume prompt included at the bottom of the file. No source code changes.
 
 **v3.39.8** — Extract OAuth/email sign-in initiators to `src/auth/oauth.js`. `signInWithGitHub` (redirect to GitHub OAuth flow with random state token) and `signInWithEmail` (POST to `/api/auth/email-request` for magic-link). Both are stateless fire-and-forget functions; the session-token state, `signOut`, sync interval, `mergeCollectionOnSignIn`, and `updateSyncUI` stay in `main.js` for now because they depend on the still-monolithic Card Collection module. Imports `API_BASE` from `config/constants.js`. Bridge exposure unchanged.
 
