@@ -6274,6 +6274,61 @@
     );
   }
 
+  // src/ui/overlays.js
+  var _flashCollectionRailMessage = null;
+  function setOverlayCallbacks(cbs) {
+    if (cbs.flashCollectionRailMessage) _flashCollectionRailMessage = cbs.flashCollectionRailMessage;
+  }
+  function openVideoOverlay(url, title) {
+    var ov = document.getElementById("videoOverlay");
+    var vid = document.getElementById("videoOverlayPlayer");
+    var ttl = document.getElementById("videoOverlayTitle");
+    if (!ov || !vid) return;
+    if (ttl) ttl.textContent = title || "";
+    vid.src = url;
+    vid.load();
+    vid.play().catch(function() {
+    });
+    ov.style.display = "flex";
+  }
+  function closeVideoOverlay() {
+    var ov = document.getElementById("videoOverlay");
+    var vid = document.getElementById("videoOverlayPlayer");
+    if (vid) {
+      vid.pause();
+      vid.src = "";
+    }
+    if (ov) ov.style.display = "none";
+  }
+  function dismissPlayerCard() {
+    var overlay = document.getElementById("playerCardOverlay");
+    if (!overlay || !overlay.classList.contains("open")) return;
+    if (_flashCollectionRailMessage) _flashCollectionRailMessage();
+    if (window._playerCardTimer) {
+      clearTimeout(window._playerCardTimer);
+      window._playerCardTimer = null;
+    }
+    overlay.classList.add("closing");
+    setTimeout(function() {
+      overlay.classList.remove("open", "closing");
+      document.getElementById("playerCard").innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
+    }, TIMING.CARD_CLOSE_ANIM_MS);
+  }
+  function closeSignInCTA() {
+    if (state.signInCTATimer) {
+      clearTimeout(state.signInCTATimer);
+      state.signInCTATimer = null;
+    }
+    var el = document.getElementById("signInCTA");
+    if (!el) return;
+    el.style.opacity = "0";
+    el.style.transform = "translateX(-50%) translateY(16px)";
+    el.style.pointerEvents = "none";
+    setTimeout(function() {
+      el.style.display = "none";
+    }, 260);
+  }
+
   // src/demo/mode.js
   var demoPaused = false;
   var demoSpeedMs = 1e4;
@@ -7082,6 +7137,7 @@
       openCardFromKey,
       loadYdForDate
     });
+    setOverlayCallbacks({ flashCollectionRailMessage });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -7777,27 +7833,6 @@
       return null;
     }
   }
-  function openVideoOverlay(url, title) {
-    var ov = document.getElementById("videoOverlay");
-    var vid = document.getElementById("videoOverlayPlayer");
-    var ttl = document.getElementById("videoOverlayTitle");
-    if (!ov || !vid) return;
-    if (ttl) ttl.textContent = title || "";
-    vid.src = url;
-    vid.load();
-    vid.play().catch(function() {
-    });
-    ov.style.display = "flex";
-  }
-  function closeVideoOverlay() {
-    var ov = document.getElementById("videoOverlay");
-    var vid = document.getElementById("videoOverlayPlayer");
-    if (vid) {
-      vid.pause();
-      vid.src = "";
-    }
-    if (ov) ov.style.display = "none";
-  }
   async function devTestVideoClip() {
     if (state.lastVideoClip && pickPlayback2(state.lastVideoClip.playbacks)) {
       openVideoOverlay(pickPlayback2(state.lastVideoClip.playbacks), state.lastVideoClip.headline || state.lastVideoClip.blurb || "Highlight");
@@ -8471,20 +8506,6 @@
       });
     }
   }
-  function dismissPlayerCard() {
-    var overlay = document.getElementById("playerCardOverlay");
-    if (!overlay || !overlay.classList.contains("open")) return;
-    flashCollectionRailMessage();
-    if (window._playerCardTimer) {
-      clearTimeout(window._playerCardTimer);
-      window._playerCardTimer = null;
-    }
-    overlay.classList.add("closing");
-    setTimeout(function() {
-      overlay.classList.remove("open", "closing");
-      document.getElementById("playerCard").innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
-    }, TIMING.CARD_CLOSE_ANIM_MS);
-  }
   function getHRBadge(rbi, halfInning, inning, aScore, hScore) {
     var battingAfter = halfInning === "bottom" ? hScore : aScore;
     var fieldingScore = halfInning === "bottom" ? aScore : hScore;
@@ -8946,19 +8967,6 @@
       }
     });
     state.signInCTATimer = setTimeout(closeSignInCTA, TIMING.SIGNIN_CTA_MS);
-  }
-  function closeSignInCTA() {
-    if (state.signInCTATimer) {
-      clearTimeout(state.signInCTATimer);
-      state.signInCTATimer = null;
-    }
-    var el = document.getElementById("signInCTA");
-    el.style.opacity = "0";
-    el.style.transform = "translateX(-50%) translateY(16px)";
-    el.style.pointerEvents = "none";
-    setTimeout(function() {
-      el.style.display = "none";
-    }, 260);
   }
   function showSection(id, btn) {
     devTrace("nav", "showSection \xB7 " + id);

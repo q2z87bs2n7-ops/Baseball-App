@@ -74,6 +74,10 @@ import {
 } from './sections/yesterday.js';
 import { loadYdForDate } from './carousel/generators.js';
 import {
+  setOverlayCallbacks,
+  openVideoOverlay, closeVideoOverlay, dismissPlayerCard, closeSignInCTA,
+} from './ui/overlays.js';
+import {
   toggleDemoMode, setDemoSpeed, toggleDemoPause, backDemoPlay, forwardDemoPlay,
   demoNextHR, exitDemo, loadDemoGames, buildDemoPlayQueue, setDemoCallbacks,
 } from './demo/mode.js';
@@ -193,6 +197,7 @@ function initReal() {
     tierRank: tierRank, fetchCareerStats: fetchCareerStats,
     openCardFromKey: openCardFromKey, loadYdForDate: loadYdForDate,
   });
+  setOverlayCallbacks({ flashCollectionRailMessage: flashCollectionRailMessage });
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
   // Midnight window: at 0–5am local, seed state.pollDateStr to yesterday so West Coast games are found
@@ -757,26 +762,8 @@ async function fetchGameContent(gamePk) {
   } catch(e){ state.yesterdayContentCache[gamePk]=null; return null; }
 }
 
-// ── 📽️ Video clip overlay ────────────────────────────────────────────────────
-
-function openVideoOverlay(url, title) {
-  var ov=document.getElementById('videoOverlay');
-  var vid=document.getElementById('videoOverlayPlayer');
-  var ttl=document.getElementById('videoOverlayTitle');
-  if(!ov||!vid) return;
-  if(ttl) ttl.textContent=title||'';
-  vid.src=url;
-  vid.load();
-  vid.play().catch(function(){});
-  ov.style.display='flex';
-}
-
-function closeVideoOverlay() {
-  var ov=document.getElementById('videoOverlay');
-  var vid=document.getElementById('videoOverlayPlayer');
-  if(vid){vid.pause();vid.src='';}
-  if(ov) ov.style.display='none';
-}
+// ── 📽️ Video clip overlay (v3.39.31) ─── EXTRACTED to ui/overlays.js
+// Functions imported: openVideoOverlay, closeVideoOverlay
 
 async function devTestVideoClip() {
   // 1. Use most recent matched live clip
@@ -1407,14 +1394,7 @@ async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, half
   }
 }
 
-function dismissPlayerCard() {
-  var overlay = document.getElementById('playerCardOverlay');
-  if (!overlay || !overlay.classList.contains('open')) return;
-  flashCollectionRailMessage();
-  if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
-  overlay.classList.add('closing');
-  setTimeout(function() { overlay.classList.remove('open','closing'); document.getElementById('playerCard').innerHTML='<div class="pc-loading">Loading player card…</div>'; }, TIMING.CARD_CLOSE_ANIM_MS);
-}
+// dismissPlayerCard moved to ui/overlays.js
 
 function getHRBadge(rbi, halfInning, inning, aScore, hScore) {
   var battingAfter = halfInning === 'bottom' ? hScore : aScore;
@@ -1781,14 +1761,7 @@ function showSignInCTA(){
   });
   state.signInCTATimer=setTimeout(closeSignInCTA,TIMING.SIGNIN_CTA_MS);
 }
-function closeSignInCTA(){
-  if(state.signInCTATimer){clearTimeout(state.signInCTATimer);state.signInCTATimer=null;}
-  var el=document.getElementById('signInCTA');
-  el.style.opacity='0';
-  el.style.transform='translateX(-50%) translateY(16px)';
-  el.style.pointerEvents='none';
-  setTimeout(function(){el.style.display='none';},260);
-}
+// closeSignInCTA moved to ui/overlays.js
 
 // requestScreenWakeLock + releaseScreenWakeLock imported from ./ui/wakelock.js
 
