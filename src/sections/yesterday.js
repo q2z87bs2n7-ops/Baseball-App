@@ -9,28 +9,22 @@ import { state } from '../state.js';
 import { TEAMS, MLB_BASE } from '../config/constants.js';
 import { stopAllMedia } from '../radio/engine.js';
 import { showLiveGame } from '../sections/loaders.js';
+import { pickPlayback, pickHeroImage, fetchGameContent } from '../data/clips.js';
+import { loadYdForDate } from '../carousel/generators.js';
 
-// Callback injection — these are still in main.js
-let _pickPlayback = null;
-let _pickHeroImage = null;
-let _fetchGameContent = null;
+// Callback injection for collection helpers still in main.js
 let _loadCollection = null;
 let _tierRank = null;
 let _fetchCareerStats = null;
 let _openCardFromKey = null;
-let _loadYdForDate = null;
 
 let ydPrevSection = null;
 
 export function setYesterdayCallbacks(cbs) {
-  if (cbs.pickPlayback) _pickPlayback = cbs.pickPlayback;
-  if (cbs.pickHeroImage) _pickHeroImage = cbs.pickHeroImage;
-  if (cbs.fetchGameContent) _fetchGameContent = cbs.fetchGameContent;
   if (cbs.loadCollection) _loadCollection = cbs.loadCollection;
   if (cbs.tierRank) _tierRank = cbs.tierRank;
   if (cbs.fetchCareerStats) _fetchCareerStats = cbs.fetchCareerStats;
   if (cbs.openCardFromKey) _openCardFromKey = cbs.openCardFromKey;
-  if (cbs.loadYdForDate) _loadYdForDate = cbs.loadYdForDate;
 }
 
 function getYdActiveCache(){return state.ydDisplayCache!==null?state.ydDisplayCache:(state.yesterdayCache||[]);}
@@ -68,8 +62,8 @@ export async function ydChangeDate(dir){
   if(heroRegion){heroRegion.dataset.mounted='';heroRegion.innerHTML='';}
   if(state.ydDateOffset===-1){
     state.ydDisplayCache=null;
-  }else if(_loadYdForDate){
-    state.ydDisplayCache=await _loadYdForDate(getYesterdayDateStr());
+  }else if(loadYdForDate){
+    state.ydDisplayCache=await loadYdForDate(getYesterdayDateStr());
   }
   renderYesterdayRecap();
   window.scrollTo(0,0);
@@ -224,16 +218,16 @@ async function loadYesterdayHero() {
   if(!heroRegion) return;
   var marquee=pickMarqueeGame();
   if(!marquee) return;
-  var content=await _fetchGameContent(marquee.gamePk);
+  var content=await fetchGameContent(marquee.gamePk);
   if(!content) return;
   var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
-  var playable=items.filter(function(item){return !!_pickPlayback(item.playbacks);});
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
   if(!playable.length) return;
   var first=playable[2]||playable[0];
   mountSharedPlayer(heroRegion);
   loadClipIntoSharedPlayer(
-    _pickPlayback(first.playbacks),
-    _pickHeroImage(first)||'',
+    pickPlayback(first.playbacks),
+    pickHeroImage(first)||'',
     first.headline||first.blurb||'Top Highlight',
     first.blurb||'',
     'TOP HIGHLIGHT'
@@ -257,7 +251,7 @@ function buildTopHighlightsCarousel() {
     var content=state.yesterdayContentCache[game.gamePk];
     if(!content) return;
     var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
-    var playable=items.filter(function(item){return !!_pickPlayback(item.playbacks);});
+    var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
     playable.slice(2,5).forEach(function(clip){ state.ydHighlightClips.push(clip); });
   });
   if(!state.ydHighlightClips.length) return;
@@ -265,7 +259,7 @@ function buildTopHighlightsCarousel() {
   var existing=document.getElementById('ydClipCarousel');
   if(existing) existing.parentNode.removeChild(existing);
   var chips=state.ydHighlightClips.map(function(clip,i){
-    var thumb=_pickHeroImage(clip)||'';
+    var thumb=pickHeroImage(clip)||'';
     var title=(clip.headline||clip.blurb||'Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     return '<div class="yd-clip-chip'+(i===0?' active':'')+'" onclick="selectYdClip('+i+')">'
       +'<div class="yd-chip-thumb"><span style="font-size:1.1rem;color:var(--muted)">▶</span>'
@@ -280,8 +274,8 @@ function buildTopHighlightsCarousel() {
     +chips+'</div>'
   );
   loadClipIntoSharedPlayer(
-    _pickPlayback(state.ydHighlightClips[0].playbacks),
-    _pickHeroImage(state.ydHighlightClips[0])||'',
+    pickPlayback(state.ydHighlightClips[0].playbacks),
+    pickHeroImage(state.ydHighlightClips[0])||'',
     state.ydHighlightClips[0].headline||state.ydHighlightClips[0].blurb||'Top Highlight',
     state.ydHighlightClips[0].blurb||'',
     'TOP HIGHLIGHT'
@@ -294,8 +288,8 @@ export function selectYdClip(idx) {
   var clip=state.ydHighlightClips[idx];
   if(!clip) return;
   loadClipIntoSharedPlayer(
-    _pickPlayback(clip.playbacks),
-    _pickHeroImage(clip)||'',
+    pickPlayback(clip.playbacks),
+    pickHeroImage(clip)||'',
     clip.headline||clip.blurb||'Highlight',
     clip.blurb||'',
     'NOW PLAYING'
@@ -325,7 +319,7 @@ function loadClipIntoSharedPlayer(url, poster, title, blurb, kicker) {
 async function prefetchAllYesterdayContent() {
   var cache=getYdActiveCache();
   if(!cache||!cache.length) return;
-  await Promise.all(cache.map(function(item){return _fetchGameContent(item.gamePk);}));
+  await Promise.all(cache.map(function(item){return fetchGameContent(item.gamePk);}));
   buildAndRenderYesterdayHeroes();
   buildTopHighlightsCarousel();
 }
@@ -372,7 +366,7 @@ function buildYesterdayHeroes() {
       var clip=pc.clips.find(function(c){return pc.isWalkoff&&((c.headline||'').toLowerCase().indexOf('walk-off')!==-1);});
       if(!clip) clip=pc.clips.find(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home-run'||kw.slug==='home-run';});});
       if(!clip) clip=pc.clips[0];
-      var imgUrl=_pickHeroImage(clip)||'';
+      var imgUrl=pickHeroImage(clip)||'';
       if(!imgUrl) return;
       heroes.push({pid:pid,playerName:pc.name,role:role,hrCount:hrCount,imageUrl:imgUrl,blurb:clip.headline||clip.blurb||'',gamePk:cacheItem.gamePk,isWalkoff:pc.isWalkoff});
     });
@@ -415,11 +409,11 @@ async function loadYesterdayVideoStrip(gamePk) {
   var region=document.getElementById('ydvideo_'+gamePk);
   if(!region||region.dataset.loaded) return;
   region.dataset.loaded='1';
-  var content=await _fetchGameContent(gamePk);
+  var content=await fetchGameContent(gamePk);
   if(!content) return;
   var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
   if(!items.length) return;
-  var playable=items.filter(function(item){return !!_pickPlayback(item.playbacks);});
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
   if(!playable.length) return;
   region.innerHTML=renderHighlightStrip(playable, gamePk);
   var tile=document.getElementById('ydtile_'+gamePk);
@@ -435,7 +429,7 @@ async function loadYesterdayVideoStrip(gamePk) {
 function renderHighlightStrip(items, gamePk) {
   var item=items[0];
   if(!item) return '';
-  var imgUrl=_pickHeroImage(item)||'';
+  var imgUrl=pickHeroImage(item)||'';
   var title=(item.headline||item.blurb||'Game Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return '<div class="yd-game-thumb" onclick="playYesterdayClip('+JSON.stringify(gamePk)+',0)">'
     +(imgUrl
@@ -450,14 +444,14 @@ export function playYesterdayClip(gamePk, itemIndex) {
   var content=state.yesterdayContentCache[gamePk];
   if(!content) return;
   var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
-  var playable=items.filter(function(item){return !!_pickPlayback(item.playbacks);});
+  var playable=items.filter(function(item){return !!pickPlayback(item.playbacks);});
   var item=playable[itemIndex];
   if(!item) return;
   var carousel=document.getElementById('ydClipCarousel');
   if(carousel) carousel.querySelectorAll('.yd-clip-chip').forEach(function(c){c.classList.remove('active');});
   loadClipIntoSharedPlayer(
-    _pickPlayback(item.playbacks),
-    _pickHeroImage(item)||'',
+    pickPlayback(item.playbacks),
+    pickHeroImage(item)||'',
     item.headline||item.blurb||'Game Highlight',
     item.blurb||'',
     'GAME HIGHLIGHT'

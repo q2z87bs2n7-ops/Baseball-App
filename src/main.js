@@ -50,7 +50,7 @@ import {
   openNewsSourceTest, closeNewsSourceTest, runNewsSourceTest, copyNewsSourceTest,
 } from './dev/news-test.js';
 import {
-  setVideoDebugCallbacks, openVideoDebugPanel, closeVideoDebugPanel,
+  openVideoDebugPanel, closeVideoDebugPanel,
   refreshVideoDebugPanel, copyVideoDebug,
 } from './dev/video-debug.js';
 import {
@@ -72,11 +72,14 @@ import {
   openYesterdayRecap, closeYesterdayRecap, ydChangeDate,
   selectYdClip, scrollToYdTile, playYesterdayClip,
 } from './sections/yesterday.js';
-import { loadYdForDate } from './carousel/generators.js';
 import {
   setOverlayCallbacks,
   openVideoOverlay, closeVideoOverlay, dismissPlayerCard, closeSignInCTA,
 } from './ui/overlays.js';
+import {
+  pickPlayback, pickHeroImage, fetchGameContent,
+  patchFeedItemWithClip, pollPendingVideoClips, devTestVideoClip,
+} from './data/clips.js';
 import {
   toggleDemoMode, setDemoSpeed, toggleDemoPause, backDemoPlay, forwardDemoPlay,
   demoNextHR, exitDemo, loadDemoGames, buildDemoPlayQueue, setDemoCallbacks,
@@ -188,14 +191,12 @@ function initReal() {
   setSectionCallbacks({ renderNextGame: renderNextGame, getSeriesInfo: getSeriesInfo, localDateStr: localDateStr, teamCapImg: teamCapImg, capImgError: capImgError });
   setRadioCheckCallbacks({ toggleSettings: toggleSettings });
   setYoutubeDebugCallbacks({ loadHomeYoutubeWidget: loadHomeYoutubeWidget });
-  setVideoDebugCallbacks({ pollPendingVideoClips: pollPendingVideoClips, pickPlayback: pickPlayback });
   setPanelsCallbacks({ buildStoryPool: buildStoryPool });
   initPanelsLazyRendering();
   setYesterdayCallbacks({
-    pickPlayback: pickPlayback, pickHeroImage: pickHeroImage,
-    fetchGameContent: fetchGameContent, loadCollection: loadCollection,
+    loadCollection: loadCollection,
     tierRank: tierRank, fetchCareerStats: fetchCareerStats,
-    openCardFromKey: openCardFromKey, loadYdForDate: loadYdForDate,
+    openCardFromKey: openCardFromKey,
   });
   setOverlayCallbacks({ flashCollectionRailMessage: flashCollectionRailMessage });
   var mockBar=document.getElementById('mockBar');
@@ -752,200 +753,12 @@ function closeCollection() {
 
 // ── Yesterday Recap overlay (v3.19.1) ─────────────────────────────────────────
 
-async function fetchGameContent(gamePk) {
-  if(state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
-  try {
-    var r=await fetch(MLB_BASE+'/game/'+gamePk+'/content');
-    var d=await r.json();
-    state.yesterdayContentCache[gamePk]=d;
-    return d;
-  } catch(e){ state.yesterdayContentCache[gamePk]=null; return null; }
-}
-
-// ── 📽️ Video clip overlay (v3.39.31) ─── EXTRACTED to ui/overlays.js
-// Functions imported: openVideoOverlay, closeVideoOverlay
-
-async function devTestVideoClip() {
-  // 1. Use most recent matched live clip
-  if(state.lastVideoClip&&pickPlayback(state.lastVideoClip.playbacks)){
-    openVideoOverlay(pickPlayback(state.lastVideoClip.playbacks),state.lastVideoClip.headline||state.lastVideoClip.blurb||'Highlight');
-    return;
-  }
-  // 2. Use any cached yesterday content
-  var keys=Object.keys(state.yesterdayContentCache);
-  for(var i=0;i<keys.length;i++){
-    var c=state.yesterdayContentCache[keys[i]];
-    if(!c) continue;
-    var items=(c.highlights&&c.highlights.highlights&&c.highlights.highlights.items)||[];
-    var playable=items.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);});
-    if(playable.length){
-      var clip=playable[2]||playable[0];
-      state.lastVideoClip=clip;
-      openVideoOverlay(pickPlayback(clip.playbacks),clip.headline||clip.blurb||'Highlight');
-      return;
-    }
-  }
-  // 3. Fetch yesterday's first game as fallback
-  try{
-    var yd=new Date(); yd.setDate(yd.getDate()-1);
-    var ds=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
-    var r=await fetch(MLB_BASE+'/schedule?date='+ds+'&sportId=1&hydrate=team');
-    if(!r.ok) throw new Error(r.status);
-    var d=await r.json();
-    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
-    if(!games.length){alert('No clip available — open Yesterday Recap first');return;}
-    var content=await fetchGameContent(games[0].gamePk);
-    if(!content) throw new Error('no content');
-    var items2=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
-    var playable2=items2.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);});
-    if(!playable2.length){alert('No playable clip found for yesterday');return;}
-    state.lastVideoClip=playable2[0];
-    openVideoOverlay(pickPlayback(playable2[0].playbacks),playable2[0].headline||playable2[0].blurb||'Highlight');
-  }catch(e){alert('Could not load clip: '+(e&&e.message||e));}
-}
-
-async function pollPendingVideoClips() {
-  // Scan state.feedItems for HR and scoring plays whose feed element hasn't been patched with a clip yet.
-  var cutoff=Date.now()-2*60*60*1000;
-  var feed=document.getElementById('feed');
-  if(!feed) return;
-  var pending=state.feedItems.filter(function(item){
-    if(!item.data||!item.data.batterId) return false;
-    if(item.data.event!=='Home Run'&&!item.data.scoring) return false;
-    if(!item.ts||item.ts.getTime()<cutoff) return false;
-    var el=feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
-    return el&&!el.dataset.clipPatched;
-  });
-  if(!pending.length) return;
-  var byGame={};
-  pending.forEach(function(item){(byGame[item.gamePk]=byGame[item.gamePk]||[]).push(item);});
-  for(var pk in byGame){
-    var gpk=+pk;
-    var cached=state.liveContentCache[gpk];
-    if(!cached||(Date.now()-cached.fetchedAt)>5*60*1000){
-      try{
-        var r=await fetch(MLB_BASE+'/game/'+gpk+'/content');
-        if(!r.ok) continue;
-        var d=await r.json();
-        var all=(d.highlights&&d.highlights.highlights&&d.highlights.highlights.items)||[];
-        // Keep only playable video clips; exclude data-visualization (darkroom, bat-track, etc.)
-        state.liveContentCache[gpk]={items:all.filter(function(it){
-          if(it.type!=='video'||!pickPlayback(it.playbacks)) return false;
-          return !(it.keywordsAll||[]).some(function(kw){
-            var v=(kw.value||kw.slug||'').toLowerCase();
-            return v==='data-visualization'||v==='data_visualization';
-          });
-        }),fetchedAt:Date.now()};
-      }catch(e){continue;}
-    }
-    var clips=(state.liveContentCache[gpk]&&state.liveContentCache[gpk].items)||[];
-    if(!clips.length) continue;
-    // Exclude Statcast/Savant clips — analysis overlays, not broadcast replays.
-    function isStatcast(clip){
-      var title=(clip.headline||clip.blurb||'').toLowerCase();
-      if(title.indexOf('statcast')!==-1||title.indexOf('savant')!==-1) return true;
-      return (clip.keywordsAll||[]).some(function(kw){
-        var v=(kw.value||kw.slug||'').toLowerCase();
-        return v==='statcast'||v==='savant';
-      });
-    }
-    // Exclude ABS challenge clips — they carry the batter's player_id but are pitch-review
-    // overlays, not batting highlight replays. Their timestamps fall before the actual hit
-    // clip, causing nearest-timestamp matching to pick them over the correct clip.
-    function isABSChallenge(clip){
-      var tax=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';});
-      var hasAbs=tax.some(function(kw){return (kw.value||kw.slug||'').toLowerCase()==='abs';});
-      var hasChallenge=tax.some(function(kw){return (kw.value||kw.slug||'').toLowerCase()==='challenge';});
-      return hasAbs&&hasChallenge;
-    }
-    var broadcastClips=clips.filter(function(c){return !isStatcast(c)&&!isABSChallenge(c);});
-    // Prefer clips tagged home-run / scoring-play / walk-off (API uses hyphens, not underscores).
-    var scoringClips=broadcastClips.filter(function(clip){
-      return (clip.keywordsAll||[]).some(function(kw){
-        var v=kw.value||kw.slug||'';
-        return v==='home-run'||v==='scoring-play'||v==='walk-off';
-      });
-    });
-    byGame[pk].forEach(function(item){
-      var playTs=item.ts.getTime();
-      var bid=String(item.data.batterId);
-      function hasPlayer(clip){
-        return (clip.keywordsAll||[]).some(function(kw){
-          if(kw.type==='player_id') return String(kw.value||'')===bid;
-          if(kw.slug&&kw.slug.startsWith('player_id-')) return kw.slug.split('-')[1]===bid;
-          return false;
-        });
-      }
-      // Only match when the clip carries the batter's player_id.
-      // Timestamp fallback was removed: it confidently patched the wrong play's clip
-      // (e.g. a sac fly clip onto a HR feed item) whenever the real clip wasn't
-      // published yet. No clip is better than the wrong clip — unpatched items retry
-      // on the next 30s poll.
-      var playerFromScoring=scoringClips.filter(hasPlayer);
-      var playerFromBroadcast=broadcastClips.filter(hasPlayer);
-      var pool=playerFromScoring.length?playerFromScoring:playerFromBroadcast;
-      var best=null,bestDiff=Infinity;
-      pool.forEach(function(clip){
-        var clipTs=clip.date?new Date(clip.date).getTime():null;
-        if(!clipTs) return;
-        var diff=Math.abs(clipTs-playTs);
-        if(diff<bestDiff){bestDiff=diff;best=clip;}
-      });
-      if(best){
-        state.lastVideoClip=best;
-        patchFeedItemWithClip(playTs,gpk,best);
-      }
-    });
-  }
-}
+// ── Video Clip Resolution (v3.39.32) ─── EXTRACTED to data/clips.js
+// Functions imported: pickPlayback, pickHeroImage, fetchGameContent,
+// patchFeedItemWithClip, pollPendingVideoClips, devTestVideoClip
 
 // ── Video Debug (v3.39.29) ─── EXTRACTED to dev/video-debug.js
-// Functions imported: openVideoDebugPanel, closeVideoDebugPanel, refreshVideoDebugPanel,
-// copyVideoDebug
-
-
-function patchFeedItemWithClip(feedItemTs,gamePk,clip){
-  var url=pickPlayback(clip.playbacks);
-  var thumb=pickHeroImage(clip);
-  var title=clip.headline||clip.blurb||'Watch Highlight';
-  if(!url) return;
-  var el=document.querySelector('#feed [data-ts="'+feedItemTs+'"][data-gamepk="'+gamePk+'"]');
-  if(!el||el.dataset.clipPatched) return;
-  el.dataset.clipPatched='1';
-  var wrap=document.createElement('div');
-  wrap.style.cssText='margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto';
-  wrap.innerHTML=(thumb?'<img src="'+thumb+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">':'<div style="width:100%;aspect-ratio:16/9;background:#111"></div>')
-    +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'
-    +'<div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">▶</div>'
-    +'</div>';
-  wrap.onclick=function(e){e.stopPropagation();openVideoOverlay(url,title);};
-  el.appendChild(wrap);
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-function pickPlayback(playbacks) {
-  if(!playbacks||!playbacks.length) return null;
-  var mp4=playbacks.find(function(p){return p.name==='mp4Avc';});
-  if(mp4) return mp4.url;
-  var any=playbacks.find(function(p){return p.url&&p.url.endsWith('.mp4');});
-  return any?any.url:null;
-}
-
-function pickHeroImage(item) {
-  if(!item||!item.image) return null;
-  var raw=item.image.cuts;
-  if(!raw) return null;
-  // MLB API returns cuts as array [{src,width,aspectRatio}] or as object {"WxH":{src,...}}
-  var cuts=Array.isArray(raw)?raw:Object.values(raw);
-  if(!cuts.length) return null;
-  var c16=cuts.filter(function(c){return c.aspectRatio==='16:9'&&(c.width||0)>=480;});
-  c16.sort(function(a,b){return (a.width||0)-(b.width||0);});
-  if(c16.length) return c16[0].src||c16[0].url||null;
-  cuts.sort(function(a,b){return (b.width||0)-(a.width||0);});
-  return cuts.length?(cuts[0].src||cuts[0].url||null):null;
-}
+// Functions imported: openVideoDebugPanel, closeVideoDebugPanel, refreshVideoDebugPanel, copyVideoDebug
 
 
 function filterCollection(f) { state.collectionFilter = f; state.collectionPage = 0; renderCollectionBook(); }

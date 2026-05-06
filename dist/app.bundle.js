@@ -3107,15 +3107,273 @@
     }
   }
 
+  // src/ui/overlays.js
+  var _flashCollectionRailMessage = null;
+  function setOverlayCallbacks(cbs) {
+    if (cbs.flashCollectionRailMessage) _flashCollectionRailMessage = cbs.flashCollectionRailMessage;
+  }
+  function openVideoOverlay(url, title) {
+    var ov = document.getElementById("videoOverlay");
+    var vid = document.getElementById("videoOverlayPlayer");
+    var ttl = document.getElementById("videoOverlayTitle");
+    if (!ov || !vid) return;
+    if (ttl) ttl.textContent = title || "";
+    vid.src = url;
+    vid.load();
+    vid.play().catch(function() {
+    });
+    ov.style.display = "flex";
+  }
+  function closeVideoOverlay() {
+    var ov = document.getElementById("videoOverlay");
+    var vid = document.getElementById("videoOverlayPlayer");
+    if (vid) {
+      vid.pause();
+      vid.src = "";
+    }
+    if (ov) ov.style.display = "none";
+  }
+  function dismissPlayerCard() {
+    var overlay = document.getElementById("playerCardOverlay");
+    if (!overlay || !overlay.classList.contains("open")) return;
+    if (_flashCollectionRailMessage) _flashCollectionRailMessage();
+    if (window._playerCardTimer) {
+      clearTimeout(window._playerCardTimer);
+      window._playerCardTimer = null;
+    }
+    overlay.classList.add("closing");
+    setTimeout(function() {
+      overlay.classList.remove("open", "closing");
+      document.getElementById("playerCard").innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
+    }, TIMING.CARD_CLOSE_ANIM_MS);
+  }
+  function closeSignInCTA() {
+    if (state.signInCTATimer) {
+      clearTimeout(state.signInCTATimer);
+      state.signInCTATimer = null;
+    }
+    var el = document.getElementById("signInCTA");
+    if (!el) return;
+    el.style.opacity = "0";
+    el.style.transform = "translateX(-50%) translateY(16px)";
+    el.style.pointerEvents = "none";
+    setTimeout(function() {
+      el.style.display = "none";
+    }, 260);
+  }
+
+  // src/data/clips.js
+  function pickPlayback(playbacks) {
+    if (!playbacks || !playbacks.length) return null;
+    var mp4 = playbacks.find(function(p) {
+      return p.name === "mp4Avc";
+    });
+    if (mp4) return mp4.url;
+    var any = playbacks.find(function(p) {
+      return p.url && p.url.endsWith(".mp4");
+    });
+    return any ? any.url : null;
+  }
+  function pickHeroImage(item) {
+    if (!item || !item.image) return null;
+    var raw = item.image.cuts;
+    if (!raw) return null;
+    var cuts = Array.isArray(raw) ? raw : Object.values(raw);
+    if (!cuts.length) return null;
+    var c16 = cuts.filter(function(c) {
+      return c.aspectRatio === "16:9" && (c.width || 0) >= 480;
+    });
+    c16.sort(function(a, b) {
+      return (a.width || 0) - (b.width || 0);
+    });
+    if (c16.length) return c16[0].src || c16[0].url || null;
+    cuts.sort(function(a, b) {
+      return (b.width || 0) - (a.width || 0);
+    });
+    return cuts.length ? cuts[0].src || cuts[0].url || null : null;
+  }
+  async function fetchGameContent(gamePk) {
+    if (state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
+    try {
+      var r = await fetch(MLB_BASE + "/game/" + gamePk + "/content");
+      var d = await r.json();
+      state.yesterdayContentCache[gamePk] = d;
+      return d;
+    } catch (e) {
+      state.yesterdayContentCache[gamePk] = null;
+      return null;
+    }
+  }
+  function patchFeedItemWithClip(feedItemTs, gamePk, clip) {
+    var url = pickPlayback(clip.playbacks);
+    var thumb = pickHeroImage(clip);
+    var title = clip.headline || clip.blurb || "Watch Highlight";
+    if (!url) return;
+    var el = document.querySelector('#feed [data-ts="' + feedItemTs + '"][data-gamepk="' + gamePk + '"]');
+    if (!el || el.dataset.clipPatched) return;
+    el.dataset.clipPatched = "1";
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto";
+    wrap.innerHTML = (thumb ? '<img src="' + thumb + '" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">' : '<div style="width:100%;aspect-ratio:16/9;background:#111"></div>') + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">\u25B6</div></div>';
+    wrap.onclick = function(e) {
+      e.stopPropagation();
+      openVideoOverlay(url, title);
+    };
+    el.appendChild(wrap);
+  }
+  async function pollPendingVideoClips() {
+    var cutoff = Date.now() - 2 * 60 * 60 * 1e3;
+    var feed = document.getElementById("feed");
+    if (!feed) return;
+    var pending = state.feedItems.filter(function(item) {
+      if (!item.data || !item.data.batterId) return false;
+      if (item.data.event !== "Home Run" && !item.data.scoring) return false;
+      if (!item.ts || item.ts.getTime() < cutoff) return false;
+      var el = feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
+      return el && !el.dataset.clipPatched;
+    });
+    if (!pending.length) return;
+    var byGame = {};
+    pending.forEach(function(item) {
+      (byGame[item.gamePk] = byGame[item.gamePk] || []).push(item);
+    });
+    for (var pk in byGame) {
+      let isStatcast = function(clip) {
+        var title = (clip.headline || clip.blurb || "").toLowerCase();
+        if (title.indexOf("statcast") !== -1 || title.indexOf("savant") !== -1) return true;
+        return (clip.keywordsAll || []).some(function(kw) {
+          var v = (kw.value || kw.slug || "").toLowerCase();
+          return v === "statcast" || v === "savant";
+        });
+      }, isABSChallenge = function(clip) {
+        var tax = (clip.keywordsAll || []).filter(function(kw) {
+          return kw.type === "taxonomy";
+        });
+        var hasAbs = tax.some(function(kw) {
+          return (kw.value || kw.slug || "").toLowerCase() === "abs";
+        });
+        var hasChallenge = tax.some(function(kw) {
+          return (kw.value || kw.slug || "").toLowerCase() === "challenge";
+        });
+        return hasAbs && hasChallenge;
+      };
+      var gpk = +pk;
+      var cached = state.liveContentCache[gpk];
+      if (!cached || Date.now() - cached.fetchedAt > 5 * 60 * 1e3) {
+        try {
+          var r = await fetch(MLB_BASE + "/game/" + gpk + "/content");
+          if (!r.ok) continue;
+          var d = await r.json();
+          var all = d.highlights && d.highlights.highlights && d.highlights.highlights.items || [];
+          state.liveContentCache[gpk] = {
+            items: all.filter(function(it) {
+              if (it.type !== "video" || !pickPlayback(it.playbacks)) return false;
+              return !(it.keywordsAll || []).some(function(kw) {
+                var v = (kw.value || kw.slug || "").toLowerCase();
+                return v === "data-visualization" || v === "data_visualization";
+              });
+            }),
+            fetchedAt: Date.now()
+          };
+        } catch (e) {
+          continue;
+        }
+      }
+      var clips = state.liveContentCache[gpk] && state.liveContentCache[gpk].items || [];
+      if (!clips.length) continue;
+      var broadcastClips = clips.filter(function(c) {
+        return !isStatcast(c) && !isABSChallenge(c);
+      });
+      var scoringClips = broadcastClips.filter(function(clip) {
+        return (clip.keywordsAll || []).some(function(kw) {
+          var v = kw.value || kw.slug || "";
+          return v === "home-run" || v === "scoring-play" || v === "walk-off";
+        });
+      });
+      byGame[pk].forEach(function(item) {
+        var playTs = item.ts.getTime();
+        var bid = String(item.data.batterId);
+        function hasPlayer(clip) {
+          return (clip.keywordsAll || []).some(function(kw) {
+            if (kw.type === "player_id") return String(kw.value || "") === bid;
+            if (kw.slug && kw.slug.startsWith("player_id-")) return kw.slug.split("-")[1] === bid;
+            return false;
+          });
+        }
+        var playerFromScoring = scoringClips.filter(hasPlayer);
+        var playerFromBroadcast = broadcastClips.filter(hasPlayer);
+        var pool = playerFromScoring.length ? playerFromScoring : playerFromBroadcast;
+        var best = null, bestDiff = Infinity;
+        pool.forEach(function(clip) {
+          var clipTs = clip.date ? new Date(clip.date).getTime() : null;
+          if (!clipTs) return;
+          var diff = Math.abs(clipTs - playTs);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = clip;
+          }
+        });
+        if (best) {
+          state.lastVideoClip = best;
+          patchFeedItemWithClip(playTs, gpk, best);
+        }
+      });
+    }
+  }
+  async function devTestVideoClip() {
+    if (state.lastVideoClip && pickPlayback(state.lastVideoClip.playbacks)) {
+      openVideoOverlay(pickPlayback(state.lastVideoClip.playbacks), state.lastVideoClip.headline || state.lastVideoClip.blurb || "Highlight");
+      return;
+    }
+    var keys = Object.keys(state.yesterdayContentCache);
+    for (var i = 0; i < keys.length; i++) {
+      var c = state.yesterdayContentCache[keys[i]];
+      if (!c) continue;
+      var items = c.highlights && c.highlights.highlights && c.highlights.highlights.items || [];
+      var playable = items.filter(function(it) {
+        return it.type === "video" && pickPlayback(it.playbacks);
+      });
+      if (playable.length) {
+        var clip = playable[2] || playable[0];
+        state.lastVideoClip = clip;
+        openVideoOverlay(pickPlayback(clip.playbacks), clip.headline || clip.blurb || "Highlight");
+        return;
+      }
+    }
+    try {
+      var yd = /* @__PURE__ */ new Date();
+      yd.setDate(yd.getDate() - 1);
+      var ds = yd.getFullYear() + "-" + String(yd.getMonth() + 1).padStart(2, "0") + "-" + String(yd.getDate()).padStart(2, "0");
+      var r = await fetch(MLB_BASE + "/schedule?date=" + ds + "&sportId=1&hydrate=team");
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      var games = (d.dates || []).flatMap(function(dt) {
+        return dt.games || [];
+      });
+      if (!games.length) {
+        alert("No clip available \u2014 open Yesterday Recap first");
+        return;
+      }
+      var content = await fetchGameContent(games[0].gamePk);
+      if (!content) throw new Error("no content");
+      var items2 = content.highlights && content.highlights.highlights && content.highlights.highlights.items || [];
+      var playable2 = items2.filter(function(it) {
+        return it.type === "video" && pickPlayback(it.playbacks);
+      });
+      if (!playable2.length) {
+        alert("No playable clip found for yesterday");
+        return;
+      }
+      state.lastVideoClip = playable2[0];
+      openVideoOverlay(pickPlayback(playable2[0].playbacks), playable2[0].headline || playable2[0].blurb || "Highlight");
+    } catch (e) {
+      alert("Could not load clip: " + (e && e.message || e));
+    }
+  }
+
   // src/dev/video-debug.js
-  var _pollPendingVideoClips = null;
-  var _pickPlayback = null;
   function escHtml2(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-  function setVideoDebugCallbacks(cbs) {
-    if (cbs.pollPendingVideoClips) _pollPendingVideoClips = cbs.pollPendingVideoClips;
-    if (cbs.pickPlayback) _pickPlayback = cbs.pickPlayback;
   }
   function openVideoDebugPanel() {
     var p = document.getElementById("videoDebugPanel");
@@ -3133,7 +3391,7 @@
       btn.textContent = "\u23F3 Fetching...";
       btn.disabled = true;
     }
-    if (_pollPendingVideoClips) await _pollPendingVideoClips();
+    await pollPendingVideoClips();
     renderVideoDebugPanel();
     if (btn) {
       btn.textContent = "\u21BB Fetch Now";
@@ -3202,7 +3460,7 @@
           }).map(function(kw) {
             return kw.type === "player_id" ? kw.value : kw.slug.split("-")[1];
           });
-          var hasPlayback = _pickPlayback ? !!_pickPlayback(clip.playbacks) : false;
+          var hasPlayback = !!pickPlayback(clip.playbacks);
           var clipTs = clip.date ? new Date(clip.date).getTime() : null;
           var clipAge = clipTs ? Math.round((Date.now() - clipTs) / 6e4) + "m ago" : "no date";
           var statcastBadge = isStatcast2 ? '<span style="background:rgba(220,60,60,.25);color:#f87171;padding:1px 5px;border-radius:4px">\u{1F6AB}SC</span>' : '<span style="background:rgba(34,197,94,.15);color:#4ade80;padding:1px 5px;border-radius:4px">\u2713bc</span>';
@@ -3270,7 +3528,7 @@
           });
           return { id: clip.id, headline: clip.headline || clip.blurb, date: clip.date, isStatcast, hasScoringKw: taxonomy.some(function(v) {
             return v === "home-run" || v === "scoring-play" || v === "walk-off";
-          }), playerIds, taxonomy, hasPlayback: _pickPlayback ? !!_pickPlayback(clip.playbacks) : false };
+          }), playerIds, taxonomy, hasPlayback: !!pickPlayback(clip.playbacks) };
         })
       };
     });
@@ -4943,7 +5201,7 @@
     });
     return t + "</tbody></table></div></div>";
   }
-  function pickPlayback(playbacks) {
+  function pickPlayback2(playbacks) {
     return playbacks && playbacks.length ? playbacks.find(function(p) {
       return p.name === "mp4";
     }) || playbacks[0] : null;
@@ -5002,7 +5260,7 @@
     var responses = await Promise.all([fetch(MLB_BASE + "/game/" + g.gamePk + "/linescore"), fetch(MLB_BASE + "/game/" + g.gamePk + "/boxscore"), fetch(MLB_BASE + "/game/" + g.gamePk + "/content")]);
     var ls = await responses[0].json(), bs = await responses[1].json(), content = await responses[2].json();
     var highlight = content.highlights && content.highlights.highlights && content.highlights.highlights.items && content.highlights.highlights.items[0] ? content.highlights.highlights.items[0] : null;
-    var highlightUrl = highlight ? pickPlayback(highlight.playbacks) : null;
+    var highlightUrl = highlight ? pickPlayback2(highlight.playbacks) : null;
     var thumbCuts = highlight && highlight.image && highlight.image.cuts ? highlight.image.cuts : [];
     var thumbCut = thumbCuts.find(function(c) {
       return c.width >= 640 && c.width <= 960;
@@ -5816,24 +6074,16 @@
   }
 
   // src/sections/yesterday.js
-  var _pickPlayback2 = null;
-  var _pickHeroImage = null;
-  var _fetchGameContent = null;
   var _loadCollection = null;
   var _tierRank = null;
   var _fetchCareerStats = null;
   var _openCardFromKey = null;
-  var _loadYdForDate = null;
   var ydPrevSection = null;
   function setYesterdayCallbacks(cbs) {
-    if (cbs.pickPlayback) _pickPlayback2 = cbs.pickPlayback;
-    if (cbs.pickHeroImage) _pickHeroImage = cbs.pickHeroImage;
-    if (cbs.fetchGameContent) _fetchGameContent = cbs.fetchGameContent;
     if (cbs.loadCollection) _loadCollection = cbs.loadCollection;
     if (cbs.tierRank) _tierRank = cbs.tierRank;
     if (cbs.fetchCareerStats) _fetchCareerStats = cbs.fetchCareerStats;
     if (cbs.openCardFromKey) _openCardFromKey = cbs.openCardFromKey;
-    if (cbs.loadYdForDate) _loadYdForDate = cbs.loadYdForDate;
   }
   function getYdActiveCache() {
     return state.ydDisplayCache !== null ? state.ydDisplayCache : state.yesterdayCache || [];
@@ -5879,8 +6129,8 @@
     }
     if (state.ydDateOffset === -1) {
       state.ydDisplayCache = null;
-    } else if (_loadYdForDate) {
-      state.ydDisplayCache = await _loadYdForDate(getYesterdayDateStr());
+    } else if (loadYdForDate) {
+      state.ydDisplayCache = await loadYdForDate(getYesterdayDateStr());
     }
     renderYesterdayRecap2();
     window.scrollTo(0, 0);
@@ -6031,18 +6281,18 @@
     if (!heroRegion) return;
     var marquee = pickMarqueeGame();
     if (!marquee) return;
-    var content = await _fetchGameContent(marquee.gamePk);
+    var content = await fetchGameContent(marquee.gamePk);
     if (!content) return;
     var items = content.highlights && content.highlights.highlights && content.highlights.highlights.items || [];
     var playable = items.filter(function(item) {
-      return !!_pickPlayback2(item.playbacks);
+      return !!pickPlayback(item.playbacks);
     });
     if (!playable.length) return;
     var first = playable[2] || playable[0];
     mountSharedPlayer(heroRegion);
     loadClipIntoSharedPlayer(
-      _pickPlayback2(first.playbacks),
-      _pickHeroImage(first) || "",
+      pickPlayback(first.playbacks),
+      pickHeroImage(first) || "",
       first.headline || first.blurb || "Top Highlight",
       first.blurb || "",
       "TOP HIGHLIGHT"
@@ -6066,7 +6316,7 @@
       if (!content) return;
       var items = content.highlights && content.highlights.highlights && content.highlights.highlights.items || [];
       var playable = items.filter(function(item) {
-        return !!_pickPlayback2(item.playbacks);
+        return !!pickPlayback(item.playbacks);
       });
       playable.slice(2, 5).forEach(function(clip) {
         state.ydHighlightClips.push(clip);
@@ -6077,7 +6327,7 @@
     var existing = document.getElementById("ydClipCarousel");
     if (existing) existing.parentNode.removeChild(existing);
     var chips = state.ydHighlightClips.map(function(clip, i) {
-      var thumb = _pickHeroImage(clip) || "";
+      var thumb = pickHeroImage(clip) || "";
       var title = (clip.headline || clip.blurb || "Highlight").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       return '<div class="yd-clip-chip' + (i === 0 ? " active" : "") + '" onclick="selectYdClip(' + i + ')"><div class="yd-chip-thumb"><span style="font-size:1.1rem;color:var(--muted)">\u25B6</span>' + (thumb ? '<img src="' + thumb + `" onerror="this.style.display='none'" alt="">` : "") + '</div><div class="yd-chip-text">' + title + "</div></div>";
     }).join("");
@@ -6086,8 +6336,8 @@
       '<div id="ydClipCarousel" class="yd-playlist yd-clip-strip"><div class="yd-playlist-kicker">TOP PLAYS</div>' + chips + "</div>"
     );
     loadClipIntoSharedPlayer(
-      _pickPlayback2(state.ydHighlightClips[0].playbacks),
-      _pickHeroImage(state.ydHighlightClips[0]) || "",
+      pickPlayback(state.ydHighlightClips[0].playbacks),
+      pickHeroImage(state.ydHighlightClips[0]) || "",
       state.ydHighlightClips[0].headline || state.ydHighlightClips[0].blurb || "Top Highlight",
       state.ydHighlightClips[0].blurb || "",
       "TOP HIGHLIGHT"
@@ -6101,8 +6351,8 @@
     var clip = state.ydHighlightClips[idx];
     if (!clip) return;
     loadClipIntoSharedPlayer(
-      _pickPlayback2(clip.playbacks),
-      _pickHeroImage(clip) || "",
+      pickPlayback(clip.playbacks),
+      pickHeroImage(clip) || "",
       clip.headline || clip.blurb || "Highlight",
       clip.blurb || "",
       "NOW PLAYING"
@@ -6131,7 +6381,7 @@
     var cache = getYdActiveCache();
     if (!cache || !cache.length) return;
     await Promise.all(cache.map(function(item) {
-      return _fetchGameContent(item.gamePk);
+      return fetchGameContent(item.gamePk);
     }));
     buildAndRenderYesterdayHeroes();
     buildTopHighlightsCarousel();
@@ -6192,7 +6442,7 @@
           });
         });
         if (!clip) clip = pc.clips[0];
-        var imgUrl = _pickHeroImage(clip) || "";
+        var imgUrl = pickHeroImage(clip) || "";
         if (!imgUrl) return;
         heroes.push({ pid, playerName: pc.name, role, hrCount, imageUrl: imgUrl, blurb: clip.headline || clip.blurb || "", gamePk: cacheItem.gamePk, isWalkoff: pc.isWalkoff });
       });
@@ -6227,12 +6477,12 @@
     var region = document.getElementById("ydvideo_" + gamePk);
     if (!region || region.dataset.loaded) return;
     region.dataset.loaded = "1";
-    var content = await _fetchGameContent(gamePk);
+    var content = await fetchGameContent(gamePk);
     if (!content) return;
     var items = content.highlights && content.highlights.highlights && content.highlights.highlights.items || [];
     if (!items.length) return;
     var playable = items.filter(function(item) {
-      return !!_pickPlayback2(item.playbacks);
+      return !!pickPlayback(item.playbacks);
     });
     if (!playable.length) return;
     region.innerHTML = renderHighlightStrip(playable, gamePk);
@@ -6248,7 +6498,7 @@
   function renderHighlightStrip(items, gamePk) {
     var item = items[0];
     if (!item) return "";
-    var imgUrl = _pickHeroImage(item) || "";
+    var imgUrl = pickHeroImage(item) || "";
     var title = (item.headline || item.blurb || "Game Highlight").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return '<div class="yd-game-thumb" onclick="playYesterdayClip(' + JSON.stringify(gamePk) + ',0)">' + (imgUrl ? '<img src="' + imgUrl + '" loading="lazy" alt="">' : '<div style="width:100%;height:140px;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem">\u25B6</div>') + '<div class="yd-game-thumb-play"><span>\u25B6</span></div><div class="yd-game-thumb-label">' + title + "</div></div>";
   }
@@ -6257,7 +6507,7 @@
     if (!content) return;
     var items = content.highlights && content.highlights.highlights && content.highlights.highlights.items || [];
     var playable = items.filter(function(item2) {
-      return !!_pickPlayback2(item2.playbacks);
+      return !!pickPlayback(item2.playbacks);
     });
     var item = playable[itemIndex];
     if (!item) return;
@@ -6266,67 +6516,12 @@
       c.classList.remove("active");
     });
     loadClipIntoSharedPlayer(
-      _pickPlayback2(item.playbacks),
-      _pickHeroImage(item) || "",
+      pickPlayback(item.playbacks),
+      pickHeroImage(item) || "",
       item.headline || item.blurb || "Game Highlight",
       item.blurb || "",
       "GAME HIGHLIGHT"
     );
-  }
-
-  // src/ui/overlays.js
-  var _flashCollectionRailMessage = null;
-  function setOverlayCallbacks(cbs) {
-    if (cbs.flashCollectionRailMessage) _flashCollectionRailMessage = cbs.flashCollectionRailMessage;
-  }
-  function openVideoOverlay(url, title) {
-    var ov = document.getElementById("videoOverlay");
-    var vid = document.getElementById("videoOverlayPlayer");
-    var ttl = document.getElementById("videoOverlayTitle");
-    if (!ov || !vid) return;
-    if (ttl) ttl.textContent = title || "";
-    vid.src = url;
-    vid.load();
-    vid.play().catch(function() {
-    });
-    ov.style.display = "flex";
-  }
-  function closeVideoOverlay() {
-    var ov = document.getElementById("videoOverlay");
-    var vid = document.getElementById("videoOverlayPlayer");
-    if (vid) {
-      vid.pause();
-      vid.src = "";
-    }
-    if (ov) ov.style.display = "none";
-  }
-  function dismissPlayerCard() {
-    var overlay = document.getElementById("playerCardOverlay");
-    if (!overlay || !overlay.classList.contains("open")) return;
-    if (_flashCollectionRailMessage) _flashCollectionRailMessage();
-    if (window._playerCardTimer) {
-      clearTimeout(window._playerCardTimer);
-      window._playerCardTimer = null;
-    }
-    overlay.classList.add("closing");
-    setTimeout(function() {
-      overlay.classList.remove("open", "closing");
-      document.getElementById("playerCard").innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
-    }, TIMING.CARD_CLOSE_ANIM_MS);
-  }
-  function closeSignInCTA() {
-    if (state.signInCTATimer) {
-      clearTimeout(state.signInCTATimer);
-      state.signInCTATimer = null;
-    }
-    var el = document.getElementById("signInCTA");
-    if (!el) return;
-    el.style.opacity = "0";
-    el.style.transform = "translateX(-50%) translateY(16px)";
-    el.style.pointerEvents = "none";
-    setTimeout(function() {
-      el.style.display = "none";
-    }, 260);
   }
 
   // src/demo/mode.js
@@ -7124,18 +7319,13 @@
     setSectionCallbacks({ renderNextGame, getSeriesInfo, localDateStr, teamCapImg, capImgError });
     setRadioCheckCallbacks({ toggleSettings });
     setYoutubeDebugCallbacks({ loadHomeYoutubeWidget });
-    setVideoDebugCallbacks({ pollPendingVideoClips, pickPlayback: pickPlayback2 });
     setPanelsCallbacks({ buildStoryPool });
     initPanelsLazyRendering();
     setYesterdayCallbacks({
-      pickPlayback: pickPlayback2,
-      pickHeroImage,
-      fetchGameContent,
       loadCollection,
       tierRank,
       fetchCareerStats,
-      openCardFromKey,
-      loadYdForDate
+      openCardFromKey
     });
     setOverlayCallbacks({ flashCollectionRailMessage });
     var mockBar = document.getElementById("mockBar");
@@ -7820,210 +8010,6 @@
   function closeCollection() {
     var el = document.getElementById("collectionOverlay");
     if (el) el.style.display = "none";
-  }
-  async function fetchGameContent(gamePk) {
-    if (state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
-    try {
-      var r = await fetch(MLB_BASE + "/game/" + gamePk + "/content");
-      var d = await r.json();
-      state.yesterdayContentCache[gamePk] = d;
-      return d;
-    } catch (e) {
-      state.yesterdayContentCache[gamePk] = null;
-      return null;
-    }
-  }
-  async function devTestVideoClip() {
-    if (state.lastVideoClip && pickPlayback2(state.lastVideoClip.playbacks)) {
-      openVideoOverlay(pickPlayback2(state.lastVideoClip.playbacks), state.lastVideoClip.headline || state.lastVideoClip.blurb || "Highlight");
-      return;
-    }
-    var keys = Object.keys(state.yesterdayContentCache);
-    for (var i = 0; i < keys.length; i++) {
-      var c = state.yesterdayContentCache[keys[i]];
-      if (!c) continue;
-      var items = c.highlights && c.highlights.highlights && c.highlights.highlights.items || [];
-      var playable = items.filter(function(it) {
-        return it.type === "video" && pickPlayback2(it.playbacks);
-      });
-      if (playable.length) {
-        var clip = playable[2] || playable[0];
-        state.lastVideoClip = clip;
-        openVideoOverlay(pickPlayback2(clip.playbacks), clip.headline || clip.blurb || "Highlight");
-        return;
-      }
-    }
-    try {
-      var yd = /* @__PURE__ */ new Date();
-      yd.setDate(yd.getDate() - 1);
-      var ds = yd.getFullYear() + "-" + String(yd.getMonth() + 1).padStart(2, "0") + "-" + String(yd.getDate()).padStart(2, "0");
-      var r = await fetch(MLB_BASE + "/schedule?date=" + ds + "&sportId=1&hydrate=team");
-      if (!r.ok) throw new Error(r.status);
-      var d = await r.json();
-      var games = (d.dates || []).flatMap(function(dt) {
-        return dt.games || [];
-      });
-      if (!games.length) {
-        alert("No clip available \u2014 open Yesterday Recap first");
-        return;
-      }
-      var content = await fetchGameContent(games[0].gamePk);
-      if (!content) throw new Error("no content");
-      var items2 = content.highlights && content.highlights.highlights && content.highlights.highlights.items || [];
-      var playable2 = items2.filter(function(it) {
-        return it.type === "video" && pickPlayback2(it.playbacks);
-      });
-      if (!playable2.length) {
-        alert("No playable clip found for yesterday");
-        return;
-      }
-      state.lastVideoClip = playable2[0];
-      openVideoOverlay(pickPlayback2(playable2[0].playbacks), playable2[0].headline || playable2[0].blurb || "Highlight");
-    } catch (e) {
-      alert("Could not load clip: " + (e && e.message || e));
-    }
-  }
-  async function pollPendingVideoClips() {
-    var cutoff = Date.now() - 2 * 60 * 60 * 1e3;
-    var feed = document.getElementById("feed");
-    if (!feed) return;
-    var pending = state.feedItems.filter(function(item) {
-      if (!item.data || !item.data.batterId) return false;
-      if (item.data.event !== "Home Run" && !item.data.scoring) return false;
-      if (!item.ts || item.ts.getTime() < cutoff) return false;
-      var el = feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
-      return el && !el.dataset.clipPatched;
-    });
-    if (!pending.length) return;
-    var byGame = {};
-    pending.forEach(function(item) {
-      (byGame[item.gamePk] = byGame[item.gamePk] || []).push(item);
-    });
-    for (var pk in byGame) {
-      let isStatcast = function(clip) {
-        var title = (clip.headline || clip.blurb || "").toLowerCase();
-        if (title.indexOf("statcast") !== -1 || title.indexOf("savant") !== -1) return true;
-        return (clip.keywordsAll || []).some(function(kw) {
-          var v = (kw.value || kw.slug || "").toLowerCase();
-          return v === "statcast" || v === "savant";
-        });
-      }, isABSChallenge = function(clip) {
-        var tax = (clip.keywordsAll || []).filter(function(kw) {
-          return kw.type === "taxonomy";
-        });
-        var hasAbs = tax.some(function(kw) {
-          return (kw.value || kw.slug || "").toLowerCase() === "abs";
-        });
-        var hasChallenge = tax.some(function(kw) {
-          return (kw.value || kw.slug || "").toLowerCase() === "challenge";
-        });
-        return hasAbs && hasChallenge;
-      };
-      var gpk = +pk;
-      var cached = state.liveContentCache[gpk];
-      if (!cached || Date.now() - cached.fetchedAt > 5 * 60 * 1e3) {
-        try {
-          var r = await fetch(MLB_BASE + "/game/" + gpk + "/content");
-          if (!r.ok) continue;
-          var d = await r.json();
-          var all = d.highlights && d.highlights.highlights && d.highlights.highlights.items || [];
-          state.liveContentCache[gpk] = { items: all.filter(function(it) {
-            if (it.type !== "video" || !pickPlayback2(it.playbacks)) return false;
-            return !(it.keywordsAll || []).some(function(kw) {
-              var v = (kw.value || kw.slug || "").toLowerCase();
-              return v === "data-visualization" || v === "data_visualization";
-            });
-          }), fetchedAt: Date.now() };
-        } catch (e) {
-          continue;
-        }
-      }
-      var clips = state.liveContentCache[gpk] && state.liveContentCache[gpk].items || [];
-      if (!clips.length) continue;
-      var broadcastClips = clips.filter(function(c) {
-        return !isStatcast(c) && !isABSChallenge(c);
-      });
-      var scoringClips = broadcastClips.filter(function(clip) {
-        return (clip.keywordsAll || []).some(function(kw) {
-          var v = kw.value || kw.slug || "";
-          return v === "home-run" || v === "scoring-play" || v === "walk-off";
-        });
-      });
-      byGame[pk].forEach(function(item) {
-        var playTs = item.ts.getTime();
-        var bid = String(item.data.batterId);
-        function hasPlayer(clip) {
-          return (clip.keywordsAll || []).some(function(kw) {
-            if (kw.type === "player_id") return String(kw.value || "") === bid;
-            if (kw.slug && kw.slug.startsWith("player_id-")) return kw.slug.split("-")[1] === bid;
-            return false;
-          });
-        }
-        var playerFromScoring = scoringClips.filter(hasPlayer);
-        var playerFromBroadcast = broadcastClips.filter(hasPlayer);
-        var pool = playerFromScoring.length ? playerFromScoring : playerFromBroadcast;
-        var best = null, bestDiff = Infinity;
-        pool.forEach(function(clip) {
-          var clipTs = clip.date ? new Date(clip.date).getTime() : null;
-          if (!clipTs) return;
-          var diff = Math.abs(clipTs - playTs);
-          if (diff < bestDiff) {
-            bestDiff = diff;
-            best = clip;
-          }
-        });
-        if (best) {
-          state.lastVideoClip = best;
-          patchFeedItemWithClip(playTs, gpk, best);
-        }
-      });
-    }
-  }
-  function patchFeedItemWithClip(feedItemTs, gamePk, clip) {
-    var url = pickPlayback2(clip.playbacks);
-    var thumb = pickHeroImage(clip);
-    var title = clip.headline || clip.blurb || "Watch Highlight";
-    if (!url) return;
-    var el = document.querySelector('#feed [data-ts="' + feedItemTs + '"][data-gamepk="' + gamePk + '"]');
-    if (!el || el.dataset.clipPatched) return;
-    el.dataset.clipPatched = "1";
-    var wrap = document.createElement("div");
-    wrap.style.cssText = "margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto";
-    wrap.innerHTML = (thumb ? '<img src="' + thumb + '" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">' : '<div style="width:100%;aspect-ratio:16/9;background:#111"></div>') + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">\u25B6</div></div>';
-    wrap.onclick = function(e) {
-      e.stopPropagation();
-      openVideoOverlay(url, title);
-    };
-    el.appendChild(wrap);
-  }
-  function pickPlayback2(playbacks) {
-    if (!playbacks || !playbacks.length) return null;
-    var mp4 = playbacks.find(function(p) {
-      return p.name === "mp4Avc";
-    });
-    if (mp4) return mp4.url;
-    var any = playbacks.find(function(p) {
-      return p.url && p.url.endsWith(".mp4");
-    });
-    return any ? any.url : null;
-  }
-  function pickHeroImage(item) {
-    if (!item || !item.image) return null;
-    var raw = item.image.cuts;
-    if (!raw) return null;
-    var cuts = Array.isArray(raw) ? raw : Object.values(raw);
-    if (!cuts.length) return null;
-    var c16 = cuts.filter(function(c) {
-      return c.aspectRatio === "16:9" && (c.width || 0) >= 480;
-    });
-    c16.sort(function(a, b) {
-      return (a.width || 0) - (b.width || 0);
-    });
-    if (c16.length) return c16[0].src || c16[0].url || null;
-    cuts.sort(function(a, b) {
-      return (b.width || 0) - (a.width || 0);
-    });
-    return cuts.length ? cuts[0].src || cuts[0].url || null : null;
   }
   async function renderCollectionBook() {
     var book = document.getElementById("collectionBook");

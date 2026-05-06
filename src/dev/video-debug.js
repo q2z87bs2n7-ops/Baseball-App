@@ -5,18 +5,14 @@
 // (statcast filter, scoring keyword presence, playback URL availability, taxonomy)
 
 import { state } from '../state.js';
-
-let _pollPendingVideoClips = null;
-let _pickPlayback = null;
+import { pickPlayback, pollPendingVideoClips } from '../data/clips.js';
 
 function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export function setVideoDebugCallbacks(cbs) {
-  if (cbs.pollPendingVideoClips) _pollPendingVideoClips = cbs.pollPendingVideoClips;
-  if (cbs.pickPlayback) _pickPlayback = cbs.pickPlayback;
-}
+// Kept for backward compatibility; no longer needed since clips.js is imported directly.
+export function setVideoDebugCallbacks(cbs) {}
 
 export function openVideoDebugPanel() {
   var p = document.getElementById('videoDebugPanel');
@@ -36,7 +32,7 @@ export async function refreshVideoDebugPanel() {
     btn.textContent = '⏳ Fetching...';
     btn.disabled = true;
   }
-  if (_pollPendingVideoClips) await _pollPendingVideoClips();
+  await pollPendingVideoClips();
   renderVideoDebugPanel();
   if (btn) {
     btn.textContent = '↻ Fetch Now';
@@ -101,7 +97,7 @@ function renderVideoDebugPanel() {
           (clip.keywordsAll || []).some(function(kw) { var v = (kw.value || kw.slug || '').toLowerCase(); return v === 'statcast' || v === 'savant'; });
         var hasScoringKw = (clip.keywordsAll || []).some(function(kw) { var v = kw.value || kw.slug || ''; return v === 'home-run' || v === 'scoring-play' || v === 'walk-off'; });
         var playerIds = (clip.keywordsAll || []).filter(function(kw) { return kw.type === 'player_id' || (kw.slug && kw.slug.startsWith('player_id-')); }).map(function(kw) { return kw.type === 'player_id' ? kw.value : kw.slug.split('-')[1]; });
-        var hasPlayback = _pickPlayback ? !!_pickPlayback(clip.playbacks) : false;
+        var hasPlayback = !!pickPlayback(clip.playbacks);
         var clipTs = clip.date ? new Date(clip.date).getTime() : null;
         var clipAge = clipTs ? Math.round((Date.now() - clipTs) / 60000) + 'm ago' : 'no date';
         var statcastBadge = isStatcast2 ? '<span style="background:rgba(220,60,60,.25);color:#f87171;padding:1px 5px;border-radius:4px">🚫SC</span>' : '<span style="background:rgba(34,197,94,.15);color:#4ade80;padding:1px 5px;border-radius:4px">✓bc</span>';
@@ -147,7 +143,7 @@ export function copyVideoDebug() {
         var playerIds = (clip.keywordsAll || []).filter(function(kw) { return kw.type === 'player_id' || (kw.slug && kw.slug.startsWith('player_id-')); }).map(function(kw) { return kw.type === 'player_id' ? kw.value : kw.slug.split('-')[1]; });
         var taxonomy = (clip.keywordsAll || []).filter(function(kw) { return kw.type === 'taxonomy'; }).map(function(kw) { return kw.value || kw.slug; });
         var isStatcast = (clip.headline || clip.blurb || '').toLowerCase().indexOf('statcast') !== -1 || taxonomy.some(function(v) { return v === 'statcast' || v === 'savant'; });
-        return { id: clip.id, headline: clip.headline || clip.blurb, date: clip.date, isStatcast: isStatcast, hasScoringKw: taxonomy.some(function(v) { return v === 'home-run' || v === 'scoring-play' || v === 'walk-off'; }), playerIds: playerIds, taxonomy: taxonomy, hasPlayback: _pickPlayback ? !!_pickPlayback(clip.playbacks) : false };
+        return { id: clip.id, headline: clip.headline || clip.blurb, date: clip.date, isStatcast: isStatcast, hasScoringKw: taxonomy.some(function(v) { return v === 'home-run' || v === 'scoring-play' || v === 'walk-off'; }), playerIds: playerIds, taxonomy: taxonomy, hasPlayback: !!pickPlayback(clip.playbacks) };
       })
     };
   });
