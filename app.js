@@ -339,6 +339,7 @@ async function pollLeaguePulse() {
   pulseAbortCtrl=new AbortController();
   var sig=pulseAbortCtrl.signal;
   var hasLive=Object.values(gameStates).some(function(g){return g.status==='Live';});
+  devTrace('poll','pollLeaguePulse start · hasLive='+hasLive+' · pollDate='+pollDateStr+' · games='+Object.keys(gameStates).length+' · enabled='+enabledGames.size);
   // Hoist isMidnightWindow so both the date-flip guard and the yesterday fallback can use it
   var isMidnightWindow=!demoMode&&(new Date().getHours())<6;
   if (!hasLive) {
@@ -367,6 +368,7 @@ async function pollLeaguePulse() {
     if(!r.ok) throw new Error(r.status);
     var d=await r.json();
     var games=(d.dates||[]).flatMap(function(dt){return dt.games||[]});
+    devTrace('poll','schedule fetch · date='+dateStr+' · games='+games.length);
 
     // Try yesterday if: (a) no games at all, OR (b) midnight window with no live games in fetch
     var hasLiveInFetch=games.some(function(g){return g.status.abstractGameState==='Live';});
@@ -435,6 +437,7 @@ async function pollLeaguePulse() {
           playSound('gameStart');
         }
         if (prev.status!=='Final'&&newStatus==='Final') {
+          devTrace('poll','game final · '+prev.awayAbbr+' @ '+prev.homeAbbr+' · '+prev.awayScore+'-'+prev.homeScore);
           var isGamePostponed=detailed==='Postponed'||detailed==='Cancelled'||detailed==='Suspended';
           if(isGamePostponed){addFeedItem(pk,{type:'status',icon:'🌧️',label:'Game Postponed',sub:prev.awayAbbr+' @ '+prev.homeAbbr});}
           else{addFeedItem(pk,{type:'status',icon:'🏁',label:'Game Final',sub:prev.awayAbbr+' '+(away.score||0)+', '+prev.homeAbbr+' '+(home.score||0)});playSound('gameEnd');}
@@ -467,6 +470,9 @@ async function pollLeaguePulse() {
     pollPendingVideoClips();
     selectFocusGame();
     refreshDebugPanel();
+    var live=Object.values(gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';}).length;
+    var final=Object.values(gameStates).filter(function(g){return g.status==='Final';}).length;
+    devTrace('poll','pollLeaguePulse end · live='+live+' · final='+final+' · games='+Object.keys(gameStates).length+' · enabled='+enabledGames.size+' · feedItems='+feedItems.length);
   } catch(e){if(e.name!=='AbortError')console.error('poll error',e);}
 }
 
@@ -3963,6 +3969,7 @@ function renderEmptyState(postSlate, intermission) {
     return true;
   });
   upcoming.sort(function(a,b){var aMs=a.gameDateMs||0,bMs=b.gameDateMs||0;if(aMs!==bMs)return aMs-bMs;return a.awayAbbr.localeCompare(b.awayAbbr);});
+  devTrace('empty','renderEmptyState · upcoming='+upcoming.length+' · postSlate='+postSlate+' · intermission='+intermission);
   if (!upcoming.length){
     el.className='';
     if (postSlate) {
