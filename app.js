@@ -2894,15 +2894,25 @@ async function pollPendingVideoClips() {
     }
     var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
     if(!clips.length) continue;
-    // Prefer clips tagged as scoring plays; fall back to all playable clips if
-    // the taxonomy keywords aren't present on this game's content.
-    var scoringClips=clips.filter(function(clip){
+    // Exclude Statcast/Savant clips — they share timestamps with the play but
+    // are analysis overlays, not broadcast replays. Check both keywords and title.
+    function isStatcast(clip){
+      var title=(clip.headline||clip.blurb||'').toLowerCase();
+      if(title.indexOf('statcast')!==-1||title.indexOf('savant')!==-1) return true;
+      return (clip.keywordsAll||[]).some(function(kw){
+        var v=(kw.value||kw.slug||'').toLowerCase();
+        return v==='statcast'||v==='savant';
+      });
+    }
+    var broadcastClips=clips.filter(function(c){return !isStatcast(c);});
+    // Prefer clips tagged as scoring plays; fall back to all non-Statcast clips.
+    var scoringClips=broadcastClips.filter(function(clip){
       return (clip.keywordsAll||[]).some(function(kw){
         var v=kw.value||kw.slug||'';
         return v==='home_run'||v==='scoring_play'||v==='walk_off';
       });
     });
-    var candidatePool=scoringClips.length?scoringClips:clips;
+    var candidatePool=scoringClips.length?scoringClips:broadcastClips;
     byGame[pk].forEach(function(item){
       var playTs=item.ts.getTime();
       var bid=String(item.data.batterId);
