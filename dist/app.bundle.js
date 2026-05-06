@@ -7795,10 +7795,14 @@
     var article = state.pulseNewsArticles[state.pulseNewsIndex];
     var img = "";
     if (article.image && isSafeNewsImage(article.image)) {
-      img = '<img src="' + article.image + '" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:8px">';
+      var imgUrl = forceHttps2(article.image);
+      img = '<img src="' + imgUrl + `" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block" onerror="this.style.display='none'">`;
     }
     var html = '<div style="padding:12px;display:flex;flex-direction:column;gap:8px">' + img + '<div style="font-size:.8rem;font-weight:600;color:var(--text);line-height:1.35">' + article.headline + '</div><div style="font-size:.65rem;color:var(--muted)">' + fmtNewsDate(article.pubDate) + "</div></div>";
     container.innerHTML = html;
+  }
+  function forceHttps2(url) {
+    return url ? url.replace(/^http:/, "https:") : url;
   }
   function nextNewsCard() {
     if (!state.pulseNewsArticles.length) return;
