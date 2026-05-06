@@ -11,21 +11,12 @@ import { stopAllMedia } from '../radio/engine.js';
 import { showLiveGame } from '../sections/loaders.js';
 import { pickPlayback, pickHeroImage, fetchGameContent } from '../data/clips.js';
 import { loadYdForDate } from '../carousel/generators.js';
-
-// Callback injection for collection helpers still in main.js
-let _loadCollection = null;
-let _tierRank = null;
-let _fetchCareerStats = null;
-let _openCardFromKey = null;
+import { loadCollection, tierRank, fetchCareerStats } from '../collection/book.js';
 
 let ydPrevSection = null;
 
-export function setYesterdayCallbacks(cbs) {
-  if (cbs.loadCollection) _loadCollection = cbs.loadCollection;
-  if (cbs.tierRank) _tierRank = cbs.tierRank;
-  if (cbs.fetchCareerStats) _fetchCareerStats = cbs.fetchCareerStats;
-  if (cbs.openCardFromKey) _openCardFromKey = cbs.openCardFromKey;
-}
+// Kept for backward compat; collection helpers now imported directly.
+export function setYesterdayCallbacks(cbs) {}
 
 function getYdActiveCache(){return state.ydDisplayCache!==null?state.ydDisplayCache:(state.yesterdayCache||[]);}
 
@@ -95,11 +86,11 @@ function getYesterdayDisplayStr() {
 function getYesterdayCollectedCards() {
   var ydStr=getYesterdayDateStr();
   try {
-    var col=_loadCollection();
+    var col=loadCollection();
     var slots=Object.values(col).filter(function(s){
       return s.events&&s.events.some(function(ev){return ev.date===ydStr;});
     });
-    slots.sort(function(a,b){return _tierRank(b.tier)-_tierRank(a.tier);});
+    slots.sort(function(a,b){return tierRank(b.tier)-tierRank(a.tier);});
     return slots.slice(0,5);
   } catch(e){ return []; }
 }
@@ -120,7 +111,7 @@ async function renderYesterdayRecap() {
     await Promise.all(ydCards.map(function(s){
       return state.collectionCareerStatsCache[s.playerId]
         ? Promise.resolve()
-        : _fetchCareerStats(s.playerId, s.position).then(function(cs){ if(cs) state.collectionCareerStatsCache[s.playerId]=cs; });
+        : fetchCareerStats(s.playerId, s.position).then(function(cs){ if(cs) state.collectionCareerStatsCache[s.playerId]=cs; });
     }));
     var miniCards=ydCards.map(function(s){
       var key=s.playerId+'_'+s.eventType;

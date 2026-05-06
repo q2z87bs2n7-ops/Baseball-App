@@ -6073,18 +6073,572 @@
     }
   }
 
-  // src/sections/yesterday.js
-  var _loadCollection = null;
-  var _tierRank = null;
-  var _fetchCareerStats = null;
-  var _openCardFromKey = null;
-  var ydPrevSection = null;
-  function setYesterdayCallbacks(cbs) {
-    if (cbs.loadCollection) _loadCollection = cbs.loadCollection;
-    if (cbs.tierRank) _tierRank = cbs.tierRank;
-    if (cbs.fetchCareerStats) _fetchCareerStats = cbs.fetchCareerStats;
-    if (cbs.openCardFromKey) _openCardFromKey = cbs.openCardFromKey;
+  // src/collection/sync.js
+  var syncCallbacks = { loadCollection: null, saveCollection: null, updateCollectionUI: null };
+  function setSyncCallbacks(callbacks) {
+    Object.assign(syncCallbacks, callbacks);
   }
+  var DEBUG3 = false;
+  async function syncCollection() {
+    if (!state.mlbSessionToken) return;
+    try {
+      const local = syncCallbacks.loadCollection ? syncCallbacks.loadCollection() : {};
+      const r = await fetch((window.API_BASE || API_BASE || "") + "/api/collection-sync", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.mlbSessionToken },
+        body: JSON.stringify({ localCollection: local })
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.collection) {
+          if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(data.collection);
+          if (DEBUG3) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
+        }
+      }
+    } catch (e) {
+      console.error("[Sync] Collection error", e);
+    }
+  }
+  async function mergeCollectionOnSignIn() {
+    if (!state.mlbSessionToken) return;
+    try {
+      const r = await fetch((window.API_BASE || API_BASE || "") + "/api/collection/sync?token=" + state.mlbSessionToken);
+      if (r.ok) {
+        const data = await r.json();
+        if (data.collection && Object.keys(data.collection).length > 0) {
+          const local = syncCallbacks.loadCollection ? syncCallbacks.loadCollection() : {};
+          const merged = mergeCollectionSlots(local, data.collection);
+          if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(merged);
+          if (syncCallbacks.updateCollectionUI) syncCallbacks.updateCollectionUI();
+          if (DEBUG3) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
+        }
+      }
+    } catch (e) {
+      console.error("[Sync] Merge error", e);
+    }
+  }
+  function mergeCollectionSlots(local, remote) {
+    function tierRank2(t) {
+      const ranks = { legendary: 4, epic: 3, rare: 2, common: 1 };
+      return ranks[t] || 0;
+    }
+    const merged = { ...local, ...remote };
+    Object.keys(local).forEach((k) => {
+      if (remote[k]) {
+        const lr = tierRank2(local[k].tier), rr = tierRank2(remote[k].tier);
+        if (lr > rr) {
+          merged[k] = local[k];
+        } else if (rr > lr) {
+          merged[k] = remote[k];
+        } else {
+          const newer = local[k].collectedAt >= remote[k].collectedAt ? local[k] : remote[k];
+          const em = /* @__PURE__ */ new Map();
+          (local[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
+          (remote[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
+          const events = Array.from(em.values()).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+          merged[k] = { ...newer, events };
+        }
+      }
+    });
+    return merged;
+  }
+  function startSyncInterval() {
+    if (state.mlbSyncInterval) return;
+    state.mlbSyncInterval = setInterval(async () => {
+      syncCollection();
+    }, TIMING.SYNC_INTERVAL_MS);
+  }
+
+  // src/collection/book.js
+  var _showSignInCTA = null;
+  var _showPlayerCard = null;
+  var _showRBICard = null;
+  var _getLeagueLeadersCache = null;
+  function setBookCallbacks(cbs) {
+    if (cbs.showSignInCTA) _showSignInCTA = cbs.showSignInCTA;
+    if (cbs.showPlayerCard) _showPlayerCard = cbs.showPlayerCard;
+    if (cbs.showRBICard) _showRBICard = cbs.showRBICard;
+    if (cbs.getLeagueLeadersCache) _getLeagueLeadersCache = cbs.getLeagueLeadersCache;
+  }
+  function tierRank(t) {
+    return { legendary: 4, epic: 3, rare: 2, common: 1 }[t] || 0;
+  }
+  function getCardTier(badge, eventType, rbi) {
+    if (eventType === "HR") {
+      if (badge.includes("WALK-OFF GRAND SLAM")) return "legendary";
+      if (badge.includes("WALK-OFF") || badge.includes("GRAND SLAM")) return "epic";
+      if (badge.includes("GO-AHEAD")) return "rare";
+      return "common";
+    } else {
+      if (badge.includes("WALK-OFF") && (rbi || 0) >= 2) return "legendary";
+      if (badge.includes("WALK-OFF") || (rbi || 0) >= 3) return "epic";
+      if (badge.includes("GO-AHEAD") || badge.includes("TIES IT")) return "rare";
+      return "common";
+    }
+  }
+  function loadCollection() {
+    try {
+      return JSON.parse(localStorage.getItem("mlb_card_collection") || "{}");
+    } catch (e) {
+      return {};
+    }
+  }
+  function saveCollection(obj) {
+    try {
+      localStorage.setItem("mlb_card_collection", JSON.stringify(obj));
+    } catch (e) {
+    }
+  }
+  function showCollectedToast(type, playerName, eventType, tier) {
+    var el = document.getElementById("cardCollectedToast");
+    if (!el) return;
+    var tierColor = { legendary: "#e03030", epic: "#f59e0b", rare: "#3b82f6", common: "#9aa0a8" }[tier] || "#9aa0a8";
+    var lastName = playerName.split(" ").pop();
+    var prefix, msg;
+    if (type === "new") {
+      if (tier === "legendary") {
+        prefix = "\u{1F534}";
+        msg = "LEGENDARY PULL! " + lastName + " " + eventType;
+      } else if (tier === "epic") {
+        prefix = "\u{1F7E0}";
+        msg = "EPIC CARD! " + lastName + " " + eventType;
+      } else if (tier === "rare") {
+        prefix = "\u{1F48E}";
+        msg = "Rare find \u2014 " + lastName + " " + eventType;
+      } else {
+        prefix = "\u{1F3B4}";
+        msg = "Card collected \u2014 " + lastName + " " + eventType;
+      }
+    } else if (type === "upgrade") {
+      if (tier === "legendary") {
+        prefix = "\u{1F534}";
+        msg = "UPGRADED TO LEGENDARY! " + lastName;
+      } else if (tier === "epic") {
+        prefix = "\u26A1";
+        msg = "Upgraded to Epic! " + lastName + " " + eventType;
+      } else if (tier === "rare") {
+        prefix = "\u{1F48E}";
+        msg = "Upgraded to Rare \u2014 " + lastName + " " + eventType;
+      } else {
+        prefix = "\u2B06";
+        msg = "Upgraded \u2014 " + lastName + " " + eventType;
+      }
+    } else {
+      if (tier === "legendary") {
+        prefix = "\u{1F451}";
+        msg = "Another legendary " + lastName + " moment!";
+      } else if (tier === "epic") {
+        prefix = "\u{1F525}";
+        msg = "Epic variant added \u2014 " + lastName;
+      } else if (tier === "rare") {
+        prefix = "\u{1F48E}";
+        msg = "Rare event added \u2014 " + lastName + " " + eventType;
+      } else {
+        prefix = "\u2713";
+        msg = lastName + "'s " + eventType + " card updated";
+      }
+    }
+    el.style.borderColor = tierColor + "99";
+    el.style.boxShadow = tier === "legendary" || tier === "epic" ? "0 0 14px " + tierColor + "55" : "";
+    el.innerHTML = '<span style="color:' + tierColor + ';font-weight:800;">' + prefix + "</span> " + msg;
+    var duration = tier === "legendary" || tier === "epic" ? 2800 : 2100;
+    el.style.animationDuration = duration + "ms";
+    el.style.display = "block";
+    el.classList.remove("show");
+    void el.offsetWidth;
+    el.classList.add("show");
+    setTimeout(function() {
+      el.style.display = "none";
+      el.classList.remove("show");
+    }, duration);
+  }
+  function collectCard(data, force) {
+    var playerId = data.playerId, playerName = data.playerName, teamAbbr = data.teamAbbr;
+    var teamPrimary = data.teamPrimary, teamSecondary = data.teamSecondary, position = data.position || "";
+    var eventType = data.eventType, badge = data.badge || "", rbi = data.rbi || 0;
+    var key = playerId + "_" + eventType;
+    var tier = getCardTier(badge, eventType, rbi);
+    devTrace("collect", (playerName || "?") + " \xB7 " + eventType + " \xB7 tier=" + tier + (rbi ? " \xB7 rbi=" + rbi : "") + (force ? " [forced]" : ""));
+    if (state.demoMode && !force) {
+      var demoCol = loadCollection();
+      var demoEx = demoCol[key];
+      if (!demoEx) {
+        state.lastCollectionResult = { type: "new", playerName, eventType, tier };
+      } else {
+        var dRank = tierRank(tier), dExRank = tierRank(demoEx.tier);
+        state.lastCollectionResult = {
+          type: dRank > dExRank ? "upgrade" : "dup",
+          playerName,
+          eventType,
+          tier
+        };
+      }
+      return;
+    }
+    var col = loadCollection();
+    var eventCtx = {
+      badge,
+      date: (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA"),
+      inning: data.inning || 0,
+      halfInning: data.halfInning || "top",
+      awayAbbr: data.awayAbbr || "",
+      homeAbbr: data.homeAbbr || "",
+      awayScore: data.awayScore || 0,
+      homeScore: data.homeScore || 0
+    };
+    if (!col[key]) {
+      col[key] = {
+        playerId,
+        playerName,
+        teamAbbr,
+        teamPrimary,
+        teamSecondary,
+        position,
+        eventType,
+        tier,
+        collectedAt: Date.now(),
+        events: [eventCtx]
+      };
+      state.lastCollectionResult = { type: "new", playerName, eventType, tier };
+      showCollectedToast("new", playerName, eventType, tier);
+    } else {
+      var existing = col[key];
+      var newRank = tierRank(tier), existRank = tierRank(existing.tier);
+      if (newRank > existRank) {
+        existing.tier = tier;
+        existing.events = [eventCtx];
+        existing.collectedAt = Date.now();
+        existing.teamPrimary = teamPrimary;
+        existing.teamSecondary = teamSecondary;
+        existing.position = position || existing.position;
+        state.lastCollectionResult = { type: "upgrade", playerName, eventType, tier };
+        showCollectedToast("upgrade", playerName, eventType, tier);
+      } else if (newRank === existRank) {
+        if (existing.events.length < 10) existing.events.push(eventCtx);
+        state.lastCollectionResult = { type: "dup", playerName, eventType, tier };
+        showCollectedToast("dup", playerName, eventType, tier);
+      }
+    }
+    saveCollection(col);
+    updateCollectionUI();
+    if (state.mlbSessionToken) syncCollection();
+    else if (_showSignInCTA) _showSignInCTA();
+  }
+  async function fetchCareerStats(playerId, position) {
+    if (state.collectionCareerStatsCache[playerId]) return state.collectionCareerStatsCache[playerId];
+    var isPitcher = ["SP", "RP", "CP", "P"].indexOf((position || "").toUpperCase()) !== -1;
+    var group = isPitcher ? "pitching" : "hitting";
+    try {
+      var r = await fetch(MLB_BASE + "/people/" + playerId + "/stats?stats=career&group=" + group);
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+      if (!stat) return null;
+      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate2(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate2(stat.ops) };
+      state.collectionCareerStatsCache[playerId] = result;
+      return result;
+    } catch (e) {
+      return null;
+    }
+  }
+  function openCollection() {
+    var el = document.getElementById("collectionOverlay");
+    if (!el) return;
+    state.collectionPage = 0;
+    el.style.display = "flex";
+    renderCollectionBook();
+  }
+  function closeCollection() {
+    var el = document.getElementById("collectionOverlay");
+    if (el) el.style.display = "none";
+  }
+  async function renderCollectionBook() {
+    var book = document.getElementById("collectionBook");
+    if (!book) return;
+    var col = loadCollection();
+    var slots = Object.values(col);
+    if (state.collectionFilter !== "all") slots = slots.filter(function(s) {
+      return s.eventType === state.collectionFilter;
+    });
+    var teamContext = null;
+    if (state.collectionSort === "rarity") {
+      slots.sort(function(a, b) {
+        return tierRank(b.tier) - tierRank(a.tier) || b.collectedAt - a.collectedAt;
+      });
+    } else if (state.collectionSort === "team") {
+      var teamAbbrs = [];
+      slots.forEach(function(s) {
+        if (teamAbbrs.indexOf(s.teamAbbr) === -1) teamAbbrs.push(s.teamAbbr);
+      });
+      teamAbbrs.sort();
+      var teamCount = teamAbbrs.length;
+      state.collectionPage = Math.max(0, Math.min(Math.max(0, teamCount - 1), state.collectionPage));
+      var currentAbbr = teamAbbrs[state.collectionPage] || "";
+      slots = slots.filter(function(s) {
+        return s.teamAbbr === currentAbbr;
+      });
+      slots.sort(function(a, b) {
+        return tierRank(b.tier) - tierRank(a.tier);
+      });
+      var td = TEAMS.find(function(t) {
+        return t.short === currentAbbr;
+      });
+      teamContext = {
+        abbr: currentAbbr,
+        primary: td && td.primary || "#444444",
+        secondary: td && td.secondary || "#888888",
+        teamId: td ? td.id : null,
+        teamIdx: state.collectionPage,
+        teamCount
+      };
+    } else {
+      slots.sort(function(a, b) {
+        return b.collectedAt - a.collectedAt;
+      });
+    }
+    if (state.collectionSort !== "team") {
+      var totalPages = Math.max(1, Math.ceil(slots.length / 9));
+      state.collectionPage = Math.min(state.collectionPage, totalPages - 1);
+    }
+    var pageSlots = state.collectionSort === "team" ? slots : slots.slice(state.collectionPage * 9, (state.collectionPage + 1) * 9);
+    var careerStatsMap = Object.assign({}, state.collectionCareerStatsCache);
+    await Promise.all(pageSlots.map(async function(slot) {
+      if (!careerStatsMap[slot.playerId]) {
+        var cs = await fetchCareerStats(slot.playerId, slot.position);
+        if (cs) careerStatsMap[slot.playerId] = cs;
+      }
+    }));
+    state.collectionSlotsDisplay = slots.slice();
+    book.innerHTML = window.CollectionCard.renderBook({
+      slots,
+      filter: state.collectionFilter,
+      sort: state.collectionSort,
+      page: state.collectionPage,
+      careerStatsMap,
+      teamContext
+    });
+  }
+  function openCardFromCollection(idx) {
+    var slot = state.collectionSlotsDisplay[idx];
+    if (!slot || !slot.events || !slot.events.length) return;
+    var ev = slot.events[Math.floor(Math.random() * slot.events.length)];
+    var awayTeam = TEAMS.find(function(t) {
+      return t.short === ev.awayAbbr;
+    });
+    var homeTeam = TEAMS.find(function(t) {
+      return t.short === ev.homeAbbr;
+    });
+    var awayTeamId = awayTeam ? awayTeam.id : 0;
+    var homeTeamId = homeTeam ? homeTeam.id : 0;
+    if (slot.eventType === "HR") {
+      var careerStats = state.collectionCareerStatsCache[slot.playerId];
+      var overrideStats = null;
+      if (careerStats && careerStats.careerHR !== void 0) {
+        overrideStats = {
+          avg: careerStats.careerAVG,
+          ops: careerStats.careerOPS,
+          homeRuns: careerStats.careerHR,
+          rbi: careerStats.careerRBI,
+          _position: slot.position
+        };
+      } else if (slot.position) {
+        overrideStats = { _position: slot.position };
+      }
+      if (_showPlayerCard) _showPlayerCard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, overrideStats, null, ev.badge, null);
+    } else {
+      var badgeUp = (ev.badge || "").toUpperCase();
+      var eventType = "";
+      if (badgeUp.indexOf("SINGLE") !== -1) eventType = "Single";
+      else if (badgeUp.indexOf("DOUBLE") !== -1) eventType = "Double";
+      else if (badgeUp.indexOf("TRIPLE") !== -1) eventType = "Triple";
+      else if (badgeUp.indexOf("SAC FLY") !== -1) eventType = "Sac Fly";
+      else if (badgeUp.indexOf("WALK") !== -1) eventType = "Walk";
+      else if (badgeUp.indexOf("HBP") !== -1) eventType = "HBP";
+      var rbiMatch = badgeUp.match(/^(\d+)-RUN/);
+      var rbi = rbiMatch ? parseInt(rbiMatch[1]) : 1;
+      if (_showRBICard) _showRBICard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, rbi, eventType, ev.awayScore, ev.homeScore, ev.inning, null);
+    }
+  }
+  function openCardFromKey(key) {
+    var col = loadCollection();
+    var slot = col[key];
+    if (!slot || !slot.events || !slot.events.length) return;
+    var sorted = Object.values(col).sort(function(a, b) {
+      return (b.collectedAt || 0) - (a.collectedAt || 0);
+    });
+    state.collectionSlotsDisplay = sorted;
+    var idx = sorted.indexOf(slot);
+    if (idx === -1) {
+      state.collectionSlotsDisplay.push(slot);
+      idx = state.collectionSlotsDisplay.length - 1;
+    }
+    openCardFromCollection(idx);
+  }
+  function updateCollectionUI() {
+    var col = loadCollection();
+    var count = Object.keys(col).length;
+    var countEl = document.getElementById("collectionCountLabel");
+    if (countEl) countEl.textContent = count;
+    renderCollectionRailModule();
+  }
+  function renderCollectionRailModule() {
+    var el = document.getElementById("collectionRailModule");
+    if (!el || !window.CollectionCard) return;
+    var col = loadCollection();
+    var count = Object.keys(col).length;
+    el.innerHTML = window.CollectionCard.renderRailModule(count);
+  }
+  function flashCollectionRailMessage() {
+    if (!state.lastCollectionResult) return;
+    var el = document.getElementById("collectionRailModule");
+    if (!el) return;
+    var r = state.lastCollectionResult;
+    state.lastCollectionResult = null;
+    var tierColor = { legendary: "#e03030", epic: "#f59e0b", rare: "#3b82f6", common: "#9aa0a8" }[r.tier] || "#9aa0a8";
+    var name = r.playerName.split(" ").pop();
+    var label, sublabel;
+    if (r.type === "new") {
+      if (r.tier === "legendary") {
+        label = "\u{1F534} LEGENDARY PULL!";
+        sublabel = name + " " + r.eventType;
+      } else if (r.tier === "epic") {
+        label = "\u26A1 EPIC CARD!";
+        sublabel = name + " " + r.eventType;
+      } else if (r.tier === "rare") {
+        label = "\u{1F48E} Rare Find!";
+        sublabel = name + " " + r.eventType;
+      } else {
+        label = "\u{1F3B4} Card Collected";
+        sublabel = name + " " + r.eventType;
+      }
+    } else if (r.type === "upgrade") {
+      if (r.tier === "legendary") {
+        label = "\u{1F534} LEGENDARY UPGRADE!";
+        sublabel = name + " " + r.eventType;
+      } else if (r.tier === "epic") {
+        label = "\u26A1 Upgraded to Epic!";
+        sublabel = name + " " + r.eventType;
+      } else if (r.tier === "rare") {
+        label = "\u{1F48E} Upgraded to Rare";
+        sublabel = name + " " + r.eventType;
+      } else {
+        label = "\u2B06 Upgraded";
+        sublabel = name + " " + r.eventType;
+      }
+    } else {
+      if (r.tier === "legendary") {
+        label = "\u{1F451} Legendary";
+        sublabel = "Another " + name + " moment!";
+      } else if (r.tier === "epic") {
+        label = "\u{1F525} Epic Variant";
+        sublabel = "Added to collection";
+      } else if (r.tier === "rare") {
+        label = "\u{1F48E} Rare Variant";
+        sublabel = name + " " + r.eventType;
+      } else {
+        label = "\u2713 Already Have";
+        sublabel = name + " " + r.eventType;
+      }
+    }
+    var dotGlow = r.tier === "legendary" || r.tier === "epic" ? ";box-shadow:0 0 6px " + tierColor : "";
+    el.innerHTML = '<div onclick="openCollection()" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-radius:8px;border:1px solid ' + tierColor + "55;background:linear-gradient(90deg," + tierColor + '22,transparent);font-size:.75rem;color:var(--text);white-space:nowrap;overflow:hidden;"><span style="width:8px;height:8px;border-radius:50%;background:' + tierColor + ";flex-shrink:0" + dotGlow + '"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;"><span style="font-weight:700;color:' + tierColor + ';">' + label + '</span> <span style="color:var(--muted);">' + sublabel + '</span></span><span style="color:var(--muted);font-size:11px;flex-shrink:0;">Open \u2192</span></div>';
+    setTimeout(function() {
+      renderCollectionRailModule();
+    }, 4e3);
+  }
+  function generateTestCard() {
+    var rosterEntries = (state.rosterData.hitting || []).map(function(p2) {
+      return {
+        personId: p2.person.id,
+        personName: p2.person.fullName,
+        teamData: state.activeTeam,
+        position: p2.position && p2.position.abbreviation || "OF"
+      };
+    });
+    var seenIds = {};
+    rosterEntries.forEach(function(e) {
+      seenIds[e.personId] = true;
+    });
+    var leaderEntries = [];
+    function addLeadersFromMap(map) {
+      Object.keys(map).forEach(function(cat) {
+        (map[cat] || []).forEach(function(l) {
+          if (!l.person || !l.person.id || seenIds[l.person.id]) return;
+          var td = l.team && l.team.id ? TEAMS.find(function(t) {
+            return t.id === l.team.id;
+          }) : null;
+          if (!td) return;
+          seenIds[l.person.id] = true;
+          leaderEntries.push({
+            personId: l.person.id,
+            personName: l.person.fullName,
+            teamData: td,
+            position: "OF"
+          });
+        });
+      });
+    }
+    var leagueLeadersCache3 = _getLeagueLeadersCache ? _getLeagueLeadersCache() : null;
+    if (leagueLeadersCache3 && leagueLeadersCache3.hitting) addLeadersFromMap(leagueLeadersCache3.hitting);
+    if (state.dailyLeadersCache) {
+      var hitCats = { homeRuns: 1, battingAverage: 1, runsBattedIn: 1, stolenBases: 1 };
+      var hitOnly = {};
+      Object.keys(state.dailyLeadersCache).forEach(function(k) {
+        if (hitCats[k]) hitOnly[k] = state.dailyLeadersCache[k];
+      });
+      addLeadersFromMap(hitOnly);
+    }
+    var fullPool = rosterEntries.concat(leaderEntries);
+    if (!fullPool.length) {
+      showCollectedToast("new", "No roster loaded", "", "common");
+      return;
+    }
+    var p = fullPool[Math.floor(Math.random() * fullPool.length)];
+    var eventType = Math.random() > 0.5 ? "HR" : "RBI";
+    var tiers = ["common", "common", "rare", "epic", "legendary"];
+    var tier = tiers[Math.floor(Math.random() * tiers.length)];
+    var badgeMap = {
+      HR: { legendary: "WALK-OFF GRAND SLAM!", epic: "GRAND SLAM!", rare: "GO-AHEAD HOME RUN!", common: "\u{1F4A5} HOME RUN!" },
+      RBI: { legendary: "WALK-OFF DOUBLE!", epic: "WALK-OFF SINGLE!", rare: "GO-AHEAD SINGLE!", common: "RBI SINGLE!" }
+    };
+    var rbiByTier = { legendary: 2, epic: 1, rare: 1, common: 1 };
+    var innings = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    var halves = ["top", "bottom"];
+    var scores = [0, 1, 2, 3, 4, 5];
+    collectCard({
+      playerId: p.personId,
+      playerName: p.personName,
+      teamAbbr: p.teamData.short,
+      teamPrimary: p.teamData.primary,
+      teamSecondary: p.teamData.secondary,
+      position: p.position,
+      eventType,
+      badge: badgeMap[eventType][tier],
+      rbi: rbiByTier[tier],
+      inning: innings[Math.floor(Math.random() * innings.length)],
+      halfInning: halves[Math.floor(Math.random() * halves.length)],
+      awayAbbr: "NYM",
+      homeAbbr: p.teamData.short,
+      awayScore: scores[Math.floor(Math.random() * scores.length)],
+      homeScore: scores[Math.floor(Math.random() * scores.length)]
+    }, true);
+  }
+  function resetCollection() {
+    if (!confirm("Reset collection? This cannot be undone.")) return;
+    localStorage.removeItem("mlb_card_collection");
+    updateCollectionUI();
+    if (state.mlbSessionToken) {
+      fetch((window.API_BASE || "") + "/api/collection/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.mlbSessionToken }
+      }).catch(function() {
+      });
+    }
+    alert("Collection reset");
+  }
+
+  // src/sections/yesterday.js
+  var ydPrevSection = null;
   function getYdActiveCache() {
     return state.ydDisplayCache !== null ? state.ydDisplayCache : state.yesterdayCache || [];
   }
@@ -6162,14 +6716,14 @@
   function getYesterdayCollectedCards() {
     var ydStr = getYesterdayDateStr();
     try {
-      var col = _loadCollection();
+      var col = loadCollection();
       var slots = Object.values(col).filter(function(s) {
         return s.events && s.events.some(function(ev) {
           return ev.date === ydStr;
         });
       });
       slots.sort(function(a, b) {
-        return _tierRank(b.tier) - _tierRank(a.tier);
+        return tierRank(b.tier) - tierRank(a.tier);
       });
       return slots.slice(0, 5);
     } catch (e) {
@@ -6189,7 +6743,7 @@
     var cardsHtml = "";
     if (ydCards.length && window.CollectionCard) {
       await Promise.all(ydCards.map(function(s) {
-        return state.collectionCareerStatsCache[s.playerId] ? Promise.resolve() : _fetchCareerStats(s.playerId, s.position).then(function(cs) {
+        return state.collectionCareerStatsCache[s.playerId] ? Promise.resolve() : fetchCareerStats(s.playerId, s.position).then(function(cs) {
           if (cs) state.collectionCareerStatsCache[s.playerId] = cs;
         });
       }));
@@ -6524,6 +7078,348 @@
     );
   }
 
+  // src/cards/playerCard.js
+  var _fetchBoxscore = null;
+  var _collectCard = null;
+  function setPlayerCardCallbacks(cbs) {
+    if (cbs.fetchBoxscore) _fetchBoxscore = cbs.fetchBoxscore;
+    if (cbs.collectCard) _collectCard = cbs.collectCard;
+  }
+  function getHRBadge(rbi, halfInning, inning, aScore, hScore) {
+    var battingAfter = halfInning === "bottom" ? hScore : aScore;
+    var fieldingScore = halfInning === "bottom" ? aScore : hScore;
+    var battingBefore = battingAfter - rbi;
+    var deficitBefore = fieldingScore - battingBefore;
+    var marginAfter = battingAfter - fieldingScore;
+    var isWalkoff = halfInning === "bottom" && inning >= 9 && deficitBefore >= 0 && marginAfter > 0;
+    var isGoAhead = deficitBefore >= 0 && marginAfter > 0;
+    var isGrandSlam = rbi === 4;
+    if (isWalkoff && isGrandSlam) return "WALK-OFF GRAND SLAM!";
+    if (isWalkoff) return "WALK-OFF HOME RUN!";
+    if (isGrandSlam) return "GRAND SLAM!";
+    if (isGoAhead) return "GO-AHEAD HOME RUN!";
+    return "\u{1F4A5} HOME RUN!";
+  }
+  function calcRBICardScore(rbi, event, aScore, hScore, inning, halfInning) {
+    if (!rbi || rbi < 1) return 0;
+    var base = rbi === 1 ? 10 : rbi === 2 ? 25 : rbi === 3 ? 40 : 55;
+    var hitMult = event === "Double" ? 1.5 : event === "Triple" ? 2 : ["Sac Fly", "Sac Bunt", "Walk", "Hit By Pitch", "Grounded Into DP", "Field's Choice"].indexOf(event) !== -1 ? 0.7 : 1;
+    var battingAfter = halfInning === "top" ? aScore : hScore;
+    var fieldingScore = halfInning === "top" ? hScore : aScore;
+    var battingBefore = battingAfter - rbi;
+    var deficitBefore = fieldingScore - battingBefore;
+    var marginAfter = battingAfter - fieldingScore;
+    var ctx = 0;
+    if (deficitBefore >= 0 && marginAfter > 0) ctx += 30;
+    else if (deficitBefore > 0 && marginAfter === 0) ctx += 25;
+    if (deficitBefore >= 3 && marginAfter >= -1) ctx += 20;
+    if (marginAfter - rbi >= 5) ctx -= 15;
+    var innMult = inning <= 3 ? 0.4 : inning <= 6 ? 0.75 : inning <= 8 ? 1 : inning === 9 ? 1.4 : 1.6;
+    var score = (base * hitMult + ctx) * innMult;
+    return score;
+  }
+  function getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter) {
+    var lm = { "Single": "SINGLE", "Double": "DOUBLE", "Triple": "TRIPLE", "Sac Fly": "SAC FLY", "Walk": "WALK", "Hit By Pitch": "HBP" };
+    var label = lm[event] || null;
+    var goAhead = deficitBefore >= 0 && marginAfter > 0;
+    var equalizer = deficitBefore > 0 && marginAfter === 0;
+    if (goAhead && halfInning === "bottom" && inning >= 9 && label) return "WALK-OFF " + label + "!";
+    if (goAhead && label) return "GO-AHEAD " + label + "!";
+    if (equalizer && label) return label + " TIES IT!";
+    if (rbi >= 2 && label) return rbi + "-RUN " + label;
+    if (label) return "RBI " + label + "!";
+    return "RBI!";
+  }
+  async function resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk) {
+    var battingTeamId = halfInning === "top" ? awayTeamId : homeTeamId;
+    var teamData = TEAMS.find(function(t) {
+      return t.id === battingTeamId;
+    }) || {};
+    var stat = null, jerseyNumber = null, position = null;
+    if (overrideStats) {
+      stat = overrideStats;
+    } else {
+      var cached = (state.statsCache.hitting || []).find(function(e) {
+        return e.player && e.player.id === batterId;
+      });
+      if (cached) {
+        stat = cached.stat;
+      }
+      if (!stat) {
+        try {
+          var r = await fetch(MLB_BASE + "/people/" + batterId + "/stats?stats=season&season=" + SEASON + "&group=hitting");
+          if (!r.ok) throw new Error(r.status);
+          var d = await r.json();
+          stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+        } catch (e) {
+          stat = null;
+        }
+      }
+    }
+    if (stat && batterId) state.hrBatterStatsCache[batterId] = stat;
+    var rEntry = (state.rosterData.hitting || []).find(function(p) {
+      return p.person && p.person.id === batterId;
+    });
+    if (!rEntry) rEntry = (state.rosterData.pitching || []).find(function(p) {
+      return p.person && p.person.id === batterId;
+    });
+    if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
+    position = rEntry && rEntry.position && rEntry.position.abbreviation || null;
+    if (!position && overrideStats && overrideStats._position) position = overrideStats._position;
+    if (!jerseyNumber && overrideStats && overrideStats._jersey) jerseyNumber = overrideStats._jersey;
+    if ((!position || !jerseyNumber) && gamePk && _fetchBoxscore) {
+      try {
+        var bs = await _fetchBoxscore(gamePk);
+        var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
+        var playerData = allPlayers.find(function(p) {
+          return p.person && p.person.id === batterId;
+        });
+        if (playerData) {
+          if (!jerseyNumber && playerData.jerseyNumber) jerseyNumber = playerData.jerseyNumber;
+          if (!position && playerData.position && playerData.position.code) {
+            var posCode = playerData.position.code;
+            var posMap = { "1": "P", "2": "C", "3": "1B", "4": "2B", "5": "3B", "6": "SS", "7": "LF", "8": "CF", "9": "RF", "10": "DH" };
+            position = posMap[posCode] || playerData.position.code;
+          }
+        }
+      } catch (e) {
+      }
+    }
+    var hrCount = stat ? stat.homeRuns != null ? stat.homeRuns : "\u2014" : "\u2014";
+    if (descHint) {
+      var _m = descHint.match(/\((\d+)\)/);
+      if (_m) {
+        var _n = parseInt(_m[1], 10);
+        if (typeof hrCount !== "number" || hrCount < _n) hrCount = _n;
+      }
+    }
+    return {
+      batterId,
+      batterName,
+      teamData,
+      teamAbbr: teamData.short || "???",
+      jerseyNumber,
+      position: position || "\u2014",
+      hrCount,
+      hrPrev: typeof hrCount === "number" && hrCount >= 1 ? hrCount - 1 : hrCount,
+      avg: stat ? fmtRate2(stat.avg) : "\u2014",
+      ops: stat ? fmtRate2(stat.ops) : "\u2014",
+      rbi: stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014"
+    };
+  }
+  async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText, gamePk) {
+    var overlay = document.getElementById("playerCardOverlay");
+    var card = document.getElementById("playerCard");
+    if (!overlay || !card) return;
+    card.innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
+    overlay.classList.remove("closing");
+    overlay.classList.add("open");
+    var d = await resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk);
+    card.innerHTML = window.PulseCard.render({
+      batterId: d.batterId,
+      name: d.batterName,
+      team: { short: d.teamAbbr, primary: d.teamData.primary, secondary: d.teamData.secondary },
+      position: d.position,
+      jersey: d.jerseyNumber,
+      badge: badgeText || "HOME RUN",
+      stats: { avg: d.avg, ops: d.ops, hr: d.hrPrev, rbi: d.rbi },
+      highlight: "hr"
+    });
+    if (typeof d.hrCount === "number" && d.hrCount >= 1) {
+      setTimeout(function() {
+        var el = card.querySelector(".pc-hr-val");
+        if (el) {
+          el.textContent = d.hrCount;
+          el.classList.add("counting");
+        }
+      }, 500);
+    }
+    if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
+    window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
+    if (!state.demoMode && _collectCard) {
+      var gs = state.gameStates[gamePk] || {};
+      _collectCard({
+        playerId: d.batterId,
+        playerName: d.batterName,
+        teamAbbr: d.teamAbbr,
+        teamPrimary: d.teamData.primary,
+        teamSecondary: d.teamData.secondary,
+        position: d.position || "",
+        eventType: "HR",
+        badge: badgeText || "\u{1F4A5} HOME RUN!",
+        inning: gs.inning || 0,
+        halfInning,
+        awayAbbr: gs.awayAbbr || "",
+        homeAbbr: gs.homeAbbr || "",
+        awayScore: gs.awayScore || 0,
+        homeScore: gs.homeScore || 0
+      });
+    }
+  }
+  async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInning, rbi, event, aScore, hScore, inning, gamePk) {
+    var overlay = document.getElementById("playerCardOverlay");
+    var card = document.getElementById("playerCard");
+    if (!overlay || !card) return;
+    var battingTeamId = halfInning === "top" ? awayTeamId : homeTeamId;
+    var teamData = TEAMS.find(function(t) {
+      return t.id === battingTeamId;
+    }) || {};
+    var awayData = TEAMS.find(function(t) {
+      return t.id === awayTeamId;
+    }) || {};
+    var homeData = TEAMS.find(function(t) {
+      return t.id === homeTeamId;
+    }) || {};
+    var teamAbbr = teamData.short || "???";
+    var awayAbbr = awayData.short || "AWY";
+    var homeAbbr = homeData.short || "HME";
+    card.innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
+    overlay.classList.remove("closing");
+    overlay.classList.add("open");
+    var stat = null;
+    var cached = (state.statsCache.hitting || []).find(function(e) {
+      return e.player && e.player.id === batterId;
+    });
+    if (cached) stat = cached.stat;
+    if (!stat) {
+      try {
+        var r = await fetch(MLB_BASE + "/people/" + batterId + "/stats?stats=season&season=" + SEASON + "&group=hitting");
+        if (!r.ok) throw new Error(r.status);
+        var d = await r.json();
+        stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+      } catch (e) {
+        stat = null;
+      }
+    }
+    var rbiSeason = stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014";
+    var hits = stat ? stat.hits != null ? stat.hits : "\u2014" : "\u2014";
+    var avg = stat ? fmtRate2(stat.avg) : "\u2014";
+    var ops = stat ? fmtRate2(stat.ops) : "\u2014";
+    var rbiPrev = typeof rbiSeason === "number" && rbiSeason >= rbi ? rbiSeason - rbi : rbiSeason;
+    var battingAfter = halfInning === "top" ? aScore : hScore;
+    var fieldingScore = halfInning === "top" ? hScore : aScore;
+    var deficitBefore = fieldingScore - (battingAfter - rbi);
+    var marginAfter = battingAfter - fieldingScore;
+    var badge = getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter);
+    var rEntry = (state.rosterData.hitting || []).find(function(p) {
+      return p.person && p.person.id === batterId;
+    });
+    if (!rEntry) rEntry = (state.rosterData.pitching || []).find(function(p) {
+      return p.person && p.person.id === batterId;
+    });
+    var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
+    var position = rEntry && rEntry.position && rEntry.position.abbreviation || null;
+    if ((!position || !jerseyNumber) && gamePk && _fetchBoxscore) {
+      try {
+        var bs = await _fetchBoxscore(gamePk);
+        var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
+        var playerData = allPlayers.find(function(p) {
+          return p.person && p.person.id === batterId;
+        });
+        if (playerData) {
+          if (!jerseyNumber && playerData.jerseyNumber) jerseyNumber = playerData.jerseyNumber;
+          if (!position && playerData.position && playerData.position.code) {
+            var posCode = playerData.position.code;
+            var posMap = { "1": "P", "2": "C", "3": "1B", "4": "2B", "5": "3B", "6": "SS", "7": "LF", "8": "CF", "9": "RF", "10": "DH" };
+            position = posMap[posCode] || playerData.position.code;
+          }
+        }
+      } catch (e) {
+      }
+    }
+    position = position || "\u2014";
+    card.innerHTML = window.PulseCard.render({
+      batterId,
+      name: batterName,
+      team: { short: teamAbbr, primary: teamData.primary, secondary: teamData.secondary },
+      position,
+      jersey: jerseyNumber,
+      badge,
+      stats: { avg, ops, h: hits, rbi: rbiPrev },
+      highlight: "rbi"
+    });
+    if (typeof rbiSeason === "number" && rbiSeason >= 1) {
+      setTimeout(function() {
+        var el = card.querySelector(".pc-rbi-val");
+        if (el) {
+          el.textContent = rbiSeason;
+          el.classList.add("counting");
+        }
+      }, 500);
+    }
+    if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
+    window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
+    if (!state.demoMode && _collectCard) {
+      _collectCard({
+        playerId: batterId,
+        playerName: batterName,
+        teamAbbr,
+        teamPrimary: teamData.primary,
+        teamSecondary: teamData.secondary,
+        position: position || "",
+        eventType: "RBI",
+        badge,
+        rbi,
+        inning,
+        halfInning,
+        awayAbbr,
+        homeAbbr,
+        awayScore: aScore,
+        homeScore: hScore
+      });
+    }
+  }
+  function replayHRCard(itemIndex) {
+    var hrs = state.feedItems.filter(function(item2) {
+      return item2.data && item2.data.event === "Home Run";
+    });
+    if (!hrs.length) {
+      alert("No home runs in feed yet");
+      return;
+    }
+    var idx = itemIndex !== void 0 ? itemIndex : 0;
+    if (idx < 0 || idx >= hrs.length) {
+      alert("Index out of range");
+      return;
+    }
+    var item = hrs[idx];
+    var play = item.data;
+    var gs = state.gameStates[item.gamePk];
+    if (!gs) {
+      alert("Game state not found");
+      return;
+    }
+    var batterId = play.batterId;
+    var batterName = play.batterName;
+    var awayTeamId = gs.awayId;
+    var homeTeamId = gs.homeId;
+    var halfInning = play.halfInning || gs.halfInning;
+    var badgeText = play.desc.includes("walk-off") ? "WALK-OFF HOME RUN!" : "\u{1F4A5} HOME RUN!";
+    showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, null, null, badgeText, item.gamePk);
+  }
+  function replayRBICard(itemIndex) {
+    var rbis = state.feedItems.filter(function(item2) {
+      return item2.data && item2.data.scoring && item2.data.event !== "Home Run" && item2.data.batterId;
+    });
+    if (!rbis.length) {
+      alert("No RBI plays in feed yet");
+      return;
+    }
+    var idx = itemIndex !== void 0 ? itemIndex : 0;
+    if (idx < 0 || idx >= rbis.length) {
+      alert("Index out of range");
+      return;
+    }
+    var item = rbis[idx];
+    var play = item.data;
+    var gs = state.gameStates[item.gamePk];
+    if (!gs) {
+      alert("Game state not found");
+      return;
+    }
+    showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning, item.gamePk);
+  }
+
   // src/demo/mode.js
   var demoPaused = false;
   var demoSpeedMs = 1e4;
@@ -6534,7 +7430,7 @@
   var _updateFeedEmpty = null;
   var _showAlert = null;
   var _playSound = null;
-  var _showPlayerCard = null;
+  var _showPlayerCard2 = null;
   var _rotateStory = null;
   var _localDateStr = null;
   function setDemoCallbacks(callbacks) {
@@ -6545,7 +7441,7 @@
     _updateFeedEmpty = callbacks.updateFeedEmpty;
     _showAlert = callbacks.showAlert;
     _playSound = callbacks.playSound;
-    _showPlayerCard = callbacks.showPlayerCard;
+    _showPlayerCard2 = callbacks.showPlayerCard;
     _rotateStory = callbacks.rotateStory;
     _localDateStr = callbacks.localDateStr;
   }
@@ -6862,7 +7758,7 @@
       feedData.playClass = play.playClass;
       if (play.event === "Home Run") {
         _playSound("hr");
-        if (play.batterId) _showPlayerCard(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
+        if (play.batterId) _showPlayerCard2(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
       } else if (play.scoring) {
         _showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + play.awayScore + ", " + g.homeAbbr + " " + play.homeScore, desc: play.desc, color: g.homePrimary, duration: 4e3 });
         _playSound("run");
@@ -7095,82 +7991,6 @@
     }
   }
 
-  // src/collection/sync.js
-  var syncCallbacks = { loadCollection: null, saveCollection: null, updateCollectionUI: null };
-  function setSyncCallbacks(callbacks) {
-    Object.assign(syncCallbacks, callbacks);
-  }
-  var DEBUG3 = false;
-  async function syncCollection() {
-    if (!state.mlbSessionToken) return;
-    try {
-      const local = syncCallbacks.loadCollection ? syncCallbacks.loadCollection() : {};
-      const r = await fetch((window.API_BASE || API_BASE || "") + "/api/collection-sync", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.mlbSessionToken },
-        body: JSON.stringify({ localCollection: local })
-      });
-      if (r.ok) {
-        const data = await r.json();
-        if (data.collection) {
-          if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(data.collection);
-          if (DEBUG3) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
-        }
-      }
-    } catch (e) {
-      console.error("[Sync] Collection error", e);
-    }
-  }
-  async function mergeCollectionOnSignIn() {
-    if (!state.mlbSessionToken) return;
-    try {
-      const r = await fetch((window.API_BASE || API_BASE || "") + "/api/collection/sync?token=" + state.mlbSessionToken);
-      if (r.ok) {
-        const data = await r.json();
-        if (data.collection && Object.keys(data.collection).length > 0) {
-          const local = syncCallbacks.loadCollection ? syncCallbacks.loadCollection() : {};
-          const merged = mergeCollectionSlots(local, data.collection);
-          if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(merged);
-          if (syncCallbacks.updateCollectionUI) syncCallbacks.updateCollectionUI();
-          if (DEBUG3) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
-        }
-      }
-    } catch (e) {
-      console.error("[Sync] Merge error", e);
-    }
-  }
-  function mergeCollectionSlots(local, remote) {
-    function tierRank2(t) {
-      const ranks = { legendary: 4, epic: 3, rare: 2, common: 1 };
-      return ranks[t] || 0;
-    }
-    const merged = { ...local, ...remote };
-    Object.keys(local).forEach((k) => {
-      if (remote[k]) {
-        const lr = tierRank2(local[k].tier), rr = tierRank2(remote[k].tier);
-        if (lr > rr) {
-          merged[k] = local[k];
-        } else if (rr > lr) {
-          merged[k] = remote[k];
-        } else {
-          const newer = local[k].collectedAt >= remote[k].collectedAt ? local[k] : remote[k];
-          const em = /* @__PURE__ */ new Map();
-          (local[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
-          (remote[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
-          const events = Array.from(em.values()).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
-          merged[k] = { ...newer, events };
-        }
-      }
-    });
-    return merged;
-  }
-  function startSyncInterval() {
-    if (state.mlbSyncInterval) return;
-    state.mlbSyncInterval = setInterval(async () => {
-      syncCollection();
-    }, TIMING.SYNC_INTERVAL_MS);
-  }
-
   // src/auth/oauth.js
   function signInWithGitHub() {
     const state2 = Math.random().toString(36).slice(2, 15);
@@ -7321,13 +8141,19 @@
     setYoutubeDebugCallbacks({ loadHomeYoutubeWidget });
     setPanelsCallbacks({ buildStoryPool });
     initPanelsLazyRendering();
-    setYesterdayCallbacks({
-      loadCollection,
-      tierRank,
-      fetchCareerStats,
-      openCardFromKey
-    });
     setOverlayCallbacks({ flashCollectionRailMessage });
+    setBookCallbacks({
+      showSignInCTA,
+      showPlayerCard,
+      showRBICard,
+      getLeagueLeadersCache: function() {
+        return typeof leagueLeadersCache !== "undefined" ? leagueLeadersCache : null;
+      }
+    });
+    setPlayerCardCallbacks({
+      fetchBoxscore,
+      collectCard
+    });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -7767,534 +8593,6 @@
     html += "</div>";
     panel.innerHTML = html;
   }
-  function replayHRCard(itemIndex) {
-    var hrs = state.feedItems.filter(function(item2) {
-      return item2.data && item2.data.event === "Home Run";
-    });
-    if (!hrs.length) {
-      alert("No home runs in feed yet");
-      return;
-    }
-    var idx = itemIndex !== void 0 ? itemIndex : 0;
-    if (idx < 0 || idx >= hrs.length) {
-      alert("Index out of range");
-      return;
-    }
-    var item = hrs[idx];
-    var play = item.data;
-    var gs = state.gameStates[item.gamePk];
-    if (!gs) {
-      alert("Game state not found");
-      return;
-    }
-    var batterId = play.batterId;
-    var batterName = play.batterName;
-    var awayTeamId = gs.awayId;
-    var homeTeamId = gs.homeId;
-    var halfInning = play.halfInning || gs.halfInning;
-    var badgeText = play.desc.includes("walk-off") ? "WALK-OFF HOME RUN!" : "\u{1F4A5} HOME RUN!";
-    showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, null, null, badgeText, item.gamePk);
-    if (DEBUG4) console.log("Replaying HR:", batterName, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
-  }
-  function replayRBICard(itemIndex) {
-    var rbis = state.feedItems.filter(function(item2) {
-      return item2.data && item2.data.scoring && item2.data.event !== "Home Run" && item2.data.batterId;
-    });
-    if (!rbis.length) {
-      alert("No RBI plays in feed yet");
-      return;
-    }
-    var idx = itemIndex !== void 0 ? itemIndex : 0;
-    if (idx < 0 || idx >= rbis.length) {
-      alert("Index out of range");
-      return;
-    }
-    var item = rbis[idx];
-    var play = item.data;
-    var gs = state.gameStates[item.gamePk];
-    if (!gs) {
-      alert("Game state not found");
-      return;
-    }
-    showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning, item.gamePk);
-    if (DEBUG4) console.log("Replaying RBI:", play.batterName, play.event, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
-  }
-  function tierRank(t) {
-    return { legendary: 4, epic: 3, rare: 2, common: 1 }[t] || 0;
-  }
-  function getCardTier(badge, eventType, rbi) {
-    if (eventType === "HR") {
-      if (badge.includes("WALK-OFF GRAND SLAM")) return "legendary";
-      if (badge.includes("WALK-OFF") || badge.includes("GRAND SLAM")) return "epic";
-      if (badge.includes("GO-AHEAD")) return "rare";
-      return "common";
-    } else {
-      if (badge.includes("WALK-OFF") && (rbi || 0) >= 2) return "legendary";
-      if (badge.includes("WALK-OFF") || (rbi || 0) >= 3) return "epic";
-      if (badge.includes("GO-AHEAD") || badge.includes("TIES IT")) return "rare";
-      return "common";
-    }
-  }
-  function loadCollection() {
-    try {
-      return JSON.parse(localStorage.getItem("mlb_card_collection") || "{}");
-    } catch (e) {
-      return {};
-    }
-  }
-  function saveCollection(obj) {
-    try {
-      localStorage.setItem("mlb_card_collection", JSON.stringify(obj));
-    } catch (e) {
-    }
-  }
-  function showCollectedToast(type, playerName, eventType, tier) {
-    var el = document.getElementById("cardCollectedToast");
-    if (!el) return;
-    var tierColor = { legendary: "#e03030", epic: "#f59e0b", rare: "#3b82f6", common: "#9aa0a8" }[tier] || "#9aa0a8";
-    var lastName = playerName.split(" ").pop();
-    var prefix, msg;
-    if (type === "new") {
-      if (tier === "legendary") {
-        prefix = "\u{1F534}";
-        msg = "LEGENDARY PULL! " + lastName + " " + eventType;
-      } else if (tier === "epic") {
-        prefix = "\u{1F7E0}";
-        msg = "EPIC CARD! " + lastName + " " + eventType;
-      } else if (tier === "rare") {
-        prefix = "\u{1F48E}";
-        msg = "Rare find \u2014 " + lastName + " " + eventType;
-      } else {
-        prefix = "\u{1F3B4}";
-        msg = "Card collected \u2014 " + lastName + " " + eventType;
-      }
-    } else if (type === "upgrade") {
-      if (tier === "legendary") {
-        prefix = "\u{1F534}";
-        msg = "UPGRADED TO LEGENDARY! " + lastName;
-      } else if (tier === "epic") {
-        prefix = "\u26A1";
-        msg = "Upgraded to Epic! " + lastName + " " + eventType;
-      } else if (tier === "rare") {
-        prefix = "\u{1F48E}";
-        msg = "Upgraded to Rare \u2014 " + lastName + " " + eventType;
-      } else {
-        prefix = "\u2B06";
-        msg = "Upgraded \u2014 " + lastName + " " + eventType;
-      }
-    } else {
-      if (tier === "legendary") {
-        prefix = "\u{1F451}";
-        msg = "Another legendary " + lastName + " moment!";
-      } else if (tier === "epic") {
-        prefix = "\u{1F525}";
-        msg = "Epic variant added \u2014 " + lastName;
-      } else if (tier === "rare") {
-        prefix = "\u{1F48E}";
-        msg = "Rare event added \u2014 " + lastName + " " + eventType;
-      } else {
-        prefix = "\u2713";
-        msg = lastName + "'s " + eventType + " card updated";
-      }
-    }
-    el.style.borderColor = tierColor + "99";
-    el.style.boxShadow = tier === "legendary" || tier === "epic" ? "0 0 14px " + tierColor + "55" : "";
-    el.innerHTML = '<span style="color:' + tierColor + ';font-weight:800;">' + prefix + "</span> " + msg;
-    var duration = tier === "legendary" || tier === "epic" ? 2800 : 2100;
-    el.style.animationDuration = duration + "ms";
-    el.style.display = "block";
-    el.classList.remove("show");
-    void el.offsetWidth;
-    el.classList.add("show");
-    setTimeout(function() {
-      el.style.display = "none";
-      el.classList.remove("show");
-    }, duration);
-  }
-  function collectCard(data, force) {
-    var playerId = data.playerId, playerName = data.playerName, teamAbbr = data.teamAbbr;
-    var teamPrimary = data.teamPrimary, teamSecondary = data.teamSecondary, position = data.position || "";
-    var eventType = data.eventType, badge = data.badge || "", rbi = data.rbi || 0;
-    var key = playerId + "_" + eventType;
-    var tier = getCardTier(badge, eventType, rbi);
-    devTrace("collect", (playerName || "?") + " \xB7 " + eventType + " \xB7 tier=" + tier + (rbi ? " \xB7 rbi=" + rbi : "") + (force ? " [forced]" : ""));
-    if (state.demoMode && !force) {
-      var demoCol = loadCollection();
-      var demoEx = demoCol[key];
-      if (!demoEx) {
-        state.lastCollectionResult = { type: "new", playerName, eventType, tier };
-      } else {
-        var dRank = tierRank(tier), dExRank = tierRank(demoEx.tier);
-        state.lastCollectionResult = {
-          type: dRank > dExRank ? "upgrade" : "dup",
-          playerName,
-          eventType,
-          tier
-        };
-      }
-      return;
-    }
-    var col = loadCollection();
-    var eventCtx = {
-      badge,
-      date: (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA"),
-      inning: data.inning || 0,
-      halfInning: data.halfInning || "top",
-      awayAbbr: data.awayAbbr || "",
-      homeAbbr: data.homeAbbr || "",
-      awayScore: data.awayScore || 0,
-      homeScore: data.homeScore || 0
-    };
-    if (!col[key]) {
-      col[key] = {
-        playerId,
-        playerName,
-        teamAbbr,
-        teamPrimary,
-        teamSecondary,
-        position,
-        eventType,
-        tier,
-        collectedAt: Date.now(),
-        events: [eventCtx]
-      };
-      state.lastCollectionResult = { type: "new", playerName, eventType, tier };
-      showCollectedToast("new", playerName, eventType, tier);
-    } else {
-      var existing = col[key];
-      var newRank = tierRank(tier), existRank = tierRank(existing.tier);
-      if (newRank > existRank) {
-        existing.tier = tier;
-        existing.events = [eventCtx];
-        existing.collectedAt = Date.now();
-        existing.teamPrimary = teamPrimary;
-        existing.teamSecondary = teamSecondary;
-        existing.position = position || existing.position;
-        state.lastCollectionResult = { type: "upgrade", playerName, eventType, tier };
-        showCollectedToast("upgrade", playerName, eventType, tier);
-      } else if (newRank === existRank) {
-        if (existing.events.length < 10) existing.events.push(eventCtx);
-        state.lastCollectionResult = { type: "dup", playerName, eventType, tier };
-        showCollectedToast("dup", playerName, eventType, tier);
-      }
-    }
-    saveCollection(col);
-    updateCollectionUI();
-    if (state.mlbSessionToken) syncCollection();
-    else showSignInCTA();
-  }
-  async function fetchCareerStats(playerId, position) {
-    if (state.collectionCareerStatsCache[playerId]) return state.collectionCareerStatsCache[playerId];
-    var isPitcher = ["SP", "RP", "CP", "P"].indexOf((position || "").toUpperCase()) !== -1;
-    var group = isPitcher ? "pitching" : "hitting";
-    try {
-      var r = await fetch(MLB_BASE + "/people/" + playerId + "/stats?stats=career&group=" + group);
-      if (!r.ok) throw new Error(r.status);
-      var d = await r.json();
-      var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
-      if (!stat) return null;
-      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate2(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate2(stat.ops) };
-      state.collectionCareerStatsCache[playerId] = result;
-      return result;
-    } catch (e) {
-      return null;
-    }
-  }
-  function openCollection() {
-    var el = document.getElementById("collectionOverlay");
-    if (!el) return;
-    state.collectionPage = 0;
-    el.style.display = "flex";
-    renderCollectionBook();
-  }
-  function closeCollection() {
-    var el = document.getElementById("collectionOverlay");
-    if (el) el.style.display = "none";
-  }
-  async function renderCollectionBook() {
-    var book = document.getElementById("collectionBook");
-    if (!book) return;
-    var col = loadCollection();
-    var slots = Object.values(col);
-    if (state.collectionFilter !== "all") slots = slots.filter(function(s) {
-      return s.eventType === state.collectionFilter;
-    });
-    var teamContext = null;
-    if (state.collectionSort === "rarity") {
-      slots.sort(function(a, b) {
-        return tierRank(b.tier) - tierRank(a.tier) || b.collectedAt - a.collectedAt;
-      });
-    } else if (state.collectionSort === "team") {
-      var teamAbbrs = [];
-      slots.forEach(function(s) {
-        if (teamAbbrs.indexOf(s.teamAbbr) === -1) teamAbbrs.push(s.teamAbbr);
-      });
-      teamAbbrs.sort();
-      var teamCount = teamAbbrs.length;
-      state.collectionPage = Math.max(0, Math.min(Math.max(0, teamCount - 1), state.collectionPage));
-      var currentAbbr = teamAbbrs[state.collectionPage] || "";
-      slots = slots.filter(function(s) {
-        return s.teamAbbr === currentAbbr;
-      });
-      slots.sort(function(a, b) {
-        return tierRank(b.tier) - tierRank(a.tier);
-      });
-      var td = TEAMS.find(function(t) {
-        return t.short === currentAbbr;
-      });
-      teamContext = {
-        abbr: currentAbbr,
-        primary: td && td.primary || "#444444",
-        secondary: td && td.secondary || "#888888",
-        teamId: td ? td.id : null,
-        teamIdx: state.collectionPage,
-        teamCount
-      };
-    } else {
-      slots.sort(function(a, b) {
-        return b.collectedAt - a.collectedAt;
-      });
-    }
-    if (state.collectionSort !== "team") {
-      var totalPages = Math.max(1, Math.ceil(slots.length / 9));
-      state.collectionPage = Math.min(state.collectionPage, totalPages - 1);
-    }
-    var pageSlots = state.collectionSort === "team" ? slots : slots.slice(state.collectionPage * 9, (state.collectionPage + 1) * 9);
-    var careerStatsMap = Object.assign({}, state.collectionCareerStatsCache);
-    await Promise.all(pageSlots.map(async function(slot) {
-      if (!careerStatsMap[slot.playerId]) {
-        var cs = await fetchCareerStats(slot.playerId, slot.position);
-        if (cs) careerStatsMap[slot.playerId] = cs;
-      }
-    }));
-    state.collectionSlotsDisplay = slots.slice();
-    book.innerHTML = window.CollectionCard.renderBook({
-      slots,
-      filter: state.collectionFilter,
-      sort: state.collectionSort,
-      page: state.collectionPage,
-      careerStatsMap,
-      teamContext
-    });
-  }
-  function openCardFromCollection(idx) {
-    var slot = state.collectionSlotsDisplay[idx];
-    if (!slot || !slot.events || !slot.events.length) return;
-    var ev = slot.events[Math.floor(Math.random() * slot.events.length)];
-    var awayTeam = TEAMS.find(function(t) {
-      return t.short === ev.awayAbbr;
-    });
-    var homeTeam = TEAMS.find(function(t) {
-      return t.short === ev.homeAbbr;
-    });
-    var awayTeamId = awayTeam ? awayTeam.id : 0;
-    var homeTeamId = homeTeam ? homeTeam.id : 0;
-    if (slot.eventType === "HR") {
-      var careerStats = state.collectionCareerStatsCache[slot.playerId];
-      var overrideStats = null;
-      if (careerStats && careerStats.careerHR !== void 0) {
-        overrideStats = {
-          avg: careerStats.careerAVG,
-          ops: careerStats.careerOPS,
-          homeRuns: careerStats.careerHR,
-          rbi: careerStats.careerRBI,
-          _position: slot.position
-          // fallback for state.rosterData miss
-        };
-      } else if (slot.position) {
-        overrideStats = { _position: slot.position };
-      }
-      showPlayerCard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, overrideStats, null, ev.badge, null);
-    } else {
-      var badgeUp = (ev.badge || "").toUpperCase();
-      var eventType = "";
-      if (badgeUp.indexOf("SINGLE") !== -1) eventType = "Single";
-      else if (badgeUp.indexOf("DOUBLE") !== -1) eventType = "Double";
-      else if (badgeUp.indexOf("TRIPLE") !== -1) eventType = "Triple";
-      else if (badgeUp.indexOf("SAC FLY") !== -1) eventType = "Sac Fly";
-      else if (badgeUp.indexOf("WALK") !== -1) eventType = "Walk";
-      else if (badgeUp.indexOf("HBP") !== -1) eventType = "HBP";
-      var rbiMatch = badgeUp.match(/^(\d+)-RUN/);
-      var rbi = rbiMatch ? parseInt(rbiMatch[1]) : 1;
-      showRBICard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, rbi, eventType, ev.awayScore, ev.homeScore, ev.inning, null);
-    }
-  }
-  function openCardFromKey(key) {
-    var col = loadCollection();
-    var slot = col[key];
-    if (!slot || !slot.events || !slot.events.length) return;
-    var sorted = Object.values(col).sort(function(a, b) {
-      return (b.collectedAt || 0) - (a.collectedAt || 0);
-    });
-    state.collectionSlotsDisplay = sorted;
-    var idx = sorted.indexOf(slot);
-    if (idx === -1) {
-      state.collectionSlotsDisplay.push(slot);
-      idx = state.collectionSlotsDisplay.length - 1;
-    }
-    openCardFromCollection(idx);
-  }
-  function updateCollectionUI() {
-    var col = loadCollection();
-    var count = Object.keys(col).length;
-    var countEl = document.getElementById("collectionCountLabel");
-    if (countEl) countEl.textContent = count;
-    renderCollectionRailModule();
-  }
-  function renderCollectionRailModule() {
-    var el = document.getElementById("collectionRailModule");
-    if (!el || !window.CollectionCard) return;
-    var col = loadCollection();
-    var count = Object.keys(col).length;
-    el.innerHTML = window.CollectionCard.renderRailModule(count);
-  }
-  function flashCollectionRailMessage() {
-    if (!state.lastCollectionResult) return;
-    var el = document.getElementById("collectionRailModule");
-    if (!el) return;
-    var r = state.lastCollectionResult;
-    state.lastCollectionResult = null;
-    var tierColor = { legendary: "#e03030", epic: "#f59e0b", rare: "#3b82f6", common: "#9aa0a8" }[r.tier] || "#9aa0a8";
-    var name = r.playerName.split(" ").pop();
-    var label, sublabel;
-    if (r.type === "new") {
-      if (r.tier === "legendary") {
-        label = "\u{1F534} LEGENDARY PULL!";
-        sublabel = name + " " + r.eventType;
-      } else if (r.tier === "epic") {
-        label = "\u26A1 EPIC CARD!";
-        sublabel = name + " " + r.eventType;
-      } else if (r.tier === "rare") {
-        label = "\u{1F48E} Rare Find!";
-        sublabel = name + " " + r.eventType;
-      } else {
-        label = "\u{1F3B4} Card Collected";
-        sublabel = name + " " + r.eventType;
-      }
-    } else if (r.type === "upgrade") {
-      if (r.tier === "legendary") {
-        label = "\u{1F534} LEGENDARY UPGRADE!";
-        sublabel = name + " " + r.eventType;
-      } else if (r.tier === "epic") {
-        label = "\u26A1 Upgraded to Epic!";
-        sublabel = name + " " + r.eventType;
-      } else if (r.tier === "rare") {
-        label = "\u{1F48E} Upgraded to Rare";
-        sublabel = name + " " + r.eventType;
-      } else {
-        label = "\u2B06 Upgraded";
-        sublabel = name + " " + r.eventType;
-      }
-    } else {
-      if (r.tier === "legendary") {
-        label = "\u{1F451} Legendary";
-        sublabel = "Another " + name + " moment!";
-      } else if (r.tier === "epic") {
-        label = "\u{1F525} Epic Variant";
-        sublabel = "Added to collection";
-      } else if (r.tier === "rare") {
-        label = "\u{1F48E} Rare Variant";
-        sublabel = name + " " + r.eventType;
-      } else {
-        label = "\u2713 Already Have";
-        sublabel = name + " " + r.eventType;
-      }
-    }
-    var dotGlow = r.tier === "legendary" || r.tier === "epic" ? ";box-shadow:0 0 6px " + tierColor : "";
-    el.innerHTML = '<div onclick="openCollection()" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border-radius:8px;border:1px solid ' + tierColor + "55;background:linear-gradient(90deg," + tierColor + '22,transparent);font-size:.75rem;color:var(--text);white-space:nowrap;overflow:hidden;"><span style="width:8px;height:8px;border-radius:50%;background:' + tierColor + ";flex-shrink:0" + dotGlow + '"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;"><span style="font-weight:700;color:' + tierColor + ';">' + label + '</span> <span style="color:var(--muted);">' + sublabel + '</span></span><span style="color:var(--muted);font-size:11px;flex-shrink:0;">Open \u2192</span></div>';
-    setTimeout(function() {
-      renderCollectionRailModule();
-    }, 4e3);
-  }
-  function generateTestCard() {
-    var rosterEntries = (state.rosterData.hitting || []).map(function(p2) {
-      return {
-        personId: p2.person.id,
-        personName: p2.person.fullName,
-        teamData: state.activeTeam,
-        position: p2.position && p2.position.abbreviation || "OF"
-      };
-    });
-    var seenIds = {};
-    rosterEntries.forEach(function(e) {
-      seenIds[e.personId] = true;
-    });
-    var leaderEntries = [];
-    function addLeadersFromMap(map) {
-      Object.keys(map).forEach(function(cat) {
-        (map[cat] || []).forEach(function(l) {
-          if (!l.person || !l.person.id || seenIds[l.person.id]) return;
-          var td = l.team && l.team.id ? TEAMS.find(function(t) {
-            return t.id === l.team.id;
-          }) : null;
-          if (!td) return;
-          seenIds[l.person.id] = true;
-          leaderEntries.push({
-            personId: l.person.id,
-            personName: l.person.fullName,
-            teamData: td,
-            position: "OF"
-          });
-        });
-      });
-    }
-    if (leagueLeadersCache && leagueLeadersCache.hitting) addLeadersFromMap(leagueLeadersCache.hitting);
-    if (state.dailyLeadersCache) {
-      var hitCats = { homeRuns: 1, battingAverage: 1, runsBattedIn: 1, stolenBases: 1 };
-      var hitOnly = {};
-      Object.keys(state.dailyLeadersCache).forEach(function(k) {
-        if (hitCats[k]) hitOnly[k] = state.dailyLeadersCache[k];
-      });
-      addLeadersFromMap(hitOnly);
-    }
-    var fullPool = rosterEntries.concat(leaderEntries);
-    if (!fullPool.length) {
-      showCollectedToast("new", "No roster loaded", "", "common");
-      return;
-    }
-    var p = fullPool[Math.floor(Math.random() * fullPool.length)];
-    var eventType = Math.random() > 0.5 ? "HR" : "RBI";
-    var tiers = ["common", "common", "rare", "epic", "legendary"];
-    var tier = tiers[Math.floor(Math.random() * tiers.length)];
-    var badgeMap = {
-      HR: { legendary: "WALK-OFF GRAND SLAM!", epic: "GRAND SLAM!", rare: "GO-AHEAD HOME RUN!", common: "\u{1F4A5} HOME RUN!" },
-      RBI: { legendary: "WALK-OFF DOUBLE!", epic: "WALK-OFF SINGLE!", rare: "GO-AHEAD SINGLE!", common: "RBI SINGLE!" }
-    };
-    var rbiByTier = { legendary: 2, epic: 1, rare: 1, common: 1 };
-    var innings = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    var halves = ["top", "bottom"];
-    var scores = [0, 1, 2, 3, 4, 5];
-    collectCard({
-      playerId: p.personId,
-      playerName: p.personName,
-      teamAbbr: p.teamData.short,
-      teamPrimary: p.teamData.primary,
-      teamSecondary: p.teamData.secondary,
-      position: p.position,
-      eventType,
-      badge: badgeMap[eventType][tier],
-      rbi: rbiByTier[tier],
-      inning: innings[Math.floor(Math.random() * innings.length)],
-      halfInning: halves[Math.floor(Math.random() * halves.length)],
-      awayAbbr: "NYM",
-      homeAbbr: p.teamData.short,
-      awayScore: scores[Math.floor(Math.random() * scores.length)],
-      homeScore: scores[Math.floor(Math.random() * scores.length)]
-    }, true);
-  }
-  function resetCollection() {
-    if (!confirm("Reset collection? This cannot be undone.")) return;
-    localStorage.removeItem("mlb_card_collection");
-    updateCollectionUI();
-    if (state.mlbSessionToken) {
-      fetch((window.API_BASE || "") + "/api/collection/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.mlbSessionToken }
-      }).catch(() => {
-      });
-    }
-    alert("Collection reset");
-  }
   function localDateStr(d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
@@ -8365,292 +8663,6 @@
       return state.gameStates[fi.gamePk] !== void 0;
     });
     renderFeed();
-  }
-  async function resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk) {
-    var battingTeamId = halfInning === "top" ? awayTeamId : homeTeamId;
-    var teamData = TEAMS.find(function(t) {
-      return t.id === battingTeamId;
-    }) || {};
-    var stat = null, jerseyNumber = null, position = null;
-    if (overrideStats) {
-      stat = overrideStats;
-    } else {
-      var cached = (state.statsCache.hitting || []).find(function(e) {
-        return e.player && e.player.id === batterId;
-      });
-      if (cached) {
-        stat = cached.stat;
-      }
-      if (!stat) {
-        try {
-          var r = await fetch(MLB_BASE + "/people/" + batterId + "/stats?stats=season&season=" + SEASON + "&group=hitting");
-          if (!r.ok) throw new Error(r.status);
-          var d = await r.json();
-          stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
-        } catch (e) {
-          stat = null;
-        }
-      }
-    }
-    if (stat && batterId) state.hrBatterStatsCache[batterId] = stat;
-    var rEntry = (state.rosterData.hitting || []).find(function(p) {
-      return p.person && p.person.id === batterId;
-    });
-    if (!rEntry) rEntry = (state.rosterData.pitching || []).find(function(p) {
-      return p.person && p.person.id === batterId;
-    });
-    if (rEntry && rEntry.jerseyNumber) jerseyNumber = rEntry.jerseyNumber;
-    position = rEntry && rEntry.position && rEntry.position.abbreviation || null;
-    if (!position && overrideStats && overrideStats._position) position = overrideStats._position;
-    if (!jerseyNumber && overrideStats && overrideStats._jersey) jerseyNumber = overrideStats._jersey;
-    if ((!position || !jerseyNumber) && gamePk) {
-      try {
-        var bs = await fetchBoxscore(gamePk);
-        var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
-        var playerData = allPlayers.find(function(p) {
-          return p.person && p.person.id === batterId;
-        });
-        if (playerData) {
-          if (!jerseyNumber && playerData.jerseyNumber) jerseyNumber = playerData.jerseyNumber;
-          if (!position && playerData.position && playerData.position.code) {
-            var posCode = playerData.position.code;
-            var posMap = { "1": "P", "2": "C", "3": "1B", "4": "2B", "5": "3B", "6": "SS", "7": "LF", "8": "CF", "9": "RF", "10": "DH" };
-            position = posMap[posCode] || playerData.position.code;
-          }
-        }
-      } catch (e) {
-      }
-    }
-    var hrCount = stat ? stat.homeRuns != null ? stat.homeRuns : "\u2014" : "\u2014";
-    if (descHint) {
-      var _m = descHint.match(/\((\d+)\)/);
-      if (_m) {
-        var _n = parseInt(_m[1], 10);
-        if (typeof hrCount !== "number" || hrCount < _n) hrCount = _n;
-      }
-    }
-    return {
-      batterId,
-      batterName,
-      teamData,
-      teamAbbr: teamData.short || "???",
-      jerseyNumber,
-      position: position || "\u2014",
-      hrCount,
-      hrPrev: typeof hrCount === "number" && hrCount >= 1 ? hrCount - 1 : hrCount,
-      avg: stat ? fmtRate2(stat.avg) : "\u2014",
-      ops: stat ? fmtRate2(stat.ops) : "\u2014",
-      rbi: stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014"
-    };
-  }
-  async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, badgeText, gamePk) {
-    var overlay = document.getElementById("playerCardOverlay");
-    var card = document.getElementById("playerCard");
-    if (!overlay || !card) return;
-    card.innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
-    overlay.classList.remove("closing");
-    overlay.classList.add("open");
-    var d = await resolvePlayerCardData(batterId, batterName, awayTeamId, homeTeamId, halfInning, overrideStats, descHint, gamePk);
-    card.innerHTML = window.PulseCard.render({
-      batterId: d.batterId,
-      name: d.batterName,
-      team: { short: d.teamAbbr, primary: d.teamData.primary, secondary: d.teamData.secondary },
-      position: d.position,
-      jersey: d.jerseyNumber,
-      badge: badgeText || "HOME RUN",
-      stats: { avg: d.avg, ops: d.ops, hr: d.hrPrev, rbi: d.rbi },
-      highlight: "hr"
-    });
-    if (typeof d.hrCount === "number" && d.hrCount >= 1) {
-      setTimeout(function() {
-        var el = card.querySelector(".pc-hr-val");
-        if (el) {
-          el.textContent = d.hrCount;
-          el.classList.add("counting");
-        }
-      }, 500);
-    }
-    if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
-    window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
-    if (!state.demoMode) {
-      var gs = state.gameStates[gamePk] || {};
-      collectCard({
-        playerId: d.batterId,
-        playerName: d.batterName,
-        teamAbbr: d.teamAbbr,
-        teamPrimary: d.teamData.primary,
-        teamSecondary: d.teamData.secondary,
-        position: d.position || "",
-        eventType: "HR",
-        badge: badgeText || "\u{1F4A5} HOME RUN!",
-        inning: gs.inning || 0,
-        halfInning,
-        awayAbbr: gs.awayAbbr || "",
-        homeAbbr: gs.homeAbbr || "",
-        awayScore: gs.awayScore || 0,
-        homeScore: gs.homeScore || 0
-      });
-    }
-  }
-  function getHRBadge(rbi, halfInning, inning, aScore, hScore) {
-    var battingAfter = halfInning === "bottom" ? hScore : aScore;
-    var fieldingScore = halfInning === "bottom" ? aScore : hScore;
-    var battingBefore = battingAfter - rbi;
-    var deficitBefore = fieldingScore - battingBefore;
-    var marginAfter = battingAfter - fieldingScore;
-    var isWalkoff = halfInning === "bottom" && inning >= 9 && deficitBefore >= 0 && marginAfter > 0;
-    var isGoAhead = deficitBefore >= 0 && marginAfter > 0;
-    var isGrandSlam = rbi === 4;
-    if (isWalkoff && isGrandSlam) return "WALK-OFF GRAND SLAM!";
-    if (isWalkoff) return "WALK-OFF HOME RUN!";
-    if (isGrandSlam) return "GRAND SLAM!";
-    if (isGoAhead) return "GO-AHEAD HOME RUN!";
-    return "\u{1F4A5} HOME RUN!";
-  }
-  function calcRBICardScore(rbi, event, aScore, hScore, inning, halfInning) {
-    if (!rbi || rbi < 1) return 0;
-    var base = rbi === 1 ? 10 : rbi === 2 ? 25 : rbi === 3 ? 40 : 55;
-    var hitMult = event === "Double" ? 1.5 : event === "Triple" ? 2 : ["Sac Fly", "Sac Bunt", "Walk", "Hit By Pitch", "Grounded Into DP", "Field's Choice"].indexOf(event) !== -1 ? 0.7 : 1;
-    var battingAfter = halfInning === "top" ? aScore : hScore;
-    var fieldingScore = halfInning === "top" ? hScore : aScore;
-    var battingBefore = battingAfter - rbi;
-    var deficitBefore = fieldingScore - battingBefore;
-    var marginAfter = battingAfter - fieldingScore;
-    var ctx = 0;
-    if (deficitBefore >= 0 && marginAfter > 0) ctx += 30;
-    else if (deficitBefore > 0 && marginAfter === 0) ctx += 25;
-    if (deficitBefore >= 3 && marginAfter >= -1) ctx += 20;
-    if (marginAfter - rbi >= 5) ctx -= 15;
-    var innMult = inning <= 3 ? 0.4 : inning <= 6 ? 0.75 : inning <= 8 ? 1 : inning === 9 ? 1.4 : 1.6;
-    var score = (base * hitMult + ctx) * innMult;
-    return score;
-  }
-  function getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter) {
-    var lm = { "Single": "SINGLE", "Double": "DOUBLE", "Triple": "TRIPLE", "Sac Fly": "SAC FLY", "Walk": "WALK", "Hit By Pitch": "HBP" };
-    var label = lm[event] || null;
-    var goAhead = deficitBefore >= 0 && marginAfter > 0;
-    var equalizer = deficitBefore > 0 && marginAfter === 0;
-    if (goAhead && halfInning === "bottom" && inning >= 9 && label) return "WALK-OFF " + label + "!";
-    if (goAhead && label) return "GO-AHEAD " + label + "!";
-    if (equalizer && label) return label + " TIES IT!";
-    if (rbi >= 2 && label) return rbi + "-RUN " + label;
-    if (label) return "RBI " + label + "!";
-    return "RBI!";
-  }
-  async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, halfInning, rbi, event, aScore, hScore, inning, gamePk) {
-    var overlay = document.getElementById("playerCardOverlay");
-    var card = document.getElementById("playerCard");
-    if (!overlay || !card) return;
-    var battingTeamId = halfInning === "top" ? awayTeamId : homeTeamId;
-    var teamData = TEAMS.find(function(t) {
-      return t.id === battingTeamId;
-    }) || {};
-    var awayData = TEAMS.find(function(t) {
-      return t.id === awayTeamId;
-    }) || {};
-    var homeData = TEAMS.find(function(t) {
-      return t.id === homeTeamId;
-    }) || {};
-    var teamAbbr = teamData.short || "???";
-    var awayAbbr = awayData.short || "AWY";
-    var homeAbbr = homeData.short || "HME";
-    card.innerHTML = '<div class="pc-loading">Loading player card\u2026</div>';
-    overlay.classList.remove("closing");
-    overlay.classList.add("open");
-    var stat = null;
-    var cached = (state.statsCache.hitting || []).find(function(e) {
-      return e.player && e.player.id === batterId;
-    });
-    if (cached) stat = cached.stat;
-    if (!stat) {
-      try {
-        var r = await fetch(MLB_BASE + "/people/" + batterId + "/stats?stats=season&season=" + SEASON + "&group=hitting");
-        if (!r.ok) throw new Error(r.status);
-        var d = await r.json();
-        stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
-      } catch (e) {
-        stat = null;
-      }
-    }
-    var rbiSeason = stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014";
-    var hits = stat ? stat.hits != null ? stat.hits : "\u2014" : "\u2014";
-    var avg = stat ? fmtRate2(stat.avg) : "\u2014";
-    var ops = stat ? fmtRate2(stat.ops) : "\u2014";
-    var rbiPrev = typeof rbiSeason === "number" && rbiSeason >= rbi ? rbiSeason - rbi : rbiSeason;
-    var battingAfter = halfInning === "top" ? aScore : hScore;
-    var fieldingScore = halfInning === "top" ? hScore : aScore;
-    var deficitBefore = fieldingScore - (battingAfter - rbi);
-    var marginAfter = battingAfter - fieldingScore;
-    var badge = getRBIBadge(rbi, event, halfInning, inning, deficitBefore, marginAfter);
-    var innLabel = (halfInning === "top" ? "\u25B2" : "\u25BC") + inning;
-    var photoUrl = "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/" + batterId + "/headshot/67/current";
-    var rEntry = (state.rosterData.hitting || []).find(function(p) {
-      return p.person && p.person.id === batterId;
-    });
-    if (!rEntry) rEntry = (state.rosterData.pitching || []).find(function(p) {
-      return p.person && p.person.id === batterId;
-    });
-    var jerseyNumber = rEntry && rEntry.jerseyNumber ? rEntry.jerseyNumber : null;
-    var position = rEntry && rEntry.position && rEntry.position.abbreviation || null;
-    if ((!position || !jerseyNumber) && gamePk) {
-      try {
-        var bs = await fetchBoxscore(gamePk);
-        var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
-        var playerData = allPlayers.find(function(p) {
-          return p.person && p.person.id === batterId;
-        });
-        if (playerData) {
-          if (!jerseyNumber && playerData.jerseyNumber) jerseyNumber = playerData.jerseyNumber;
-          if (!position && playerData.position && playerData.position.code) {
-            var posCode = playerData.position.code;
-            var posMap = { "1": "P", "2": "C", "3": "1B", "4": "2B", "5": "3B", "6": "SS", "7": "LF", "8": "CF", "9": "RF", "10": "DH" };
-            position = posMap[posCode] || playerData.position.code;
-          }
-        }
-      } catch (e) {
-      }
-    }
-    position = position || "\u2014";
-    card.innerHTML = window.PulseCard.render({
-      batterId,
-      name: batterName,
-      team: { short: teamAbbr, primary: teamData.primary, secondary: teamData.secondary },
-      position,
-      jersey: jerseyNumber,
-      badge,
-      stats: { avg, ops, h: hits, rbi: rbiPrev },
-      highlight: "rbi"
-    });
-    if (typeof rbiSeason === "number" && rbiSeason >= 1) {
-      setTimeout(function() {
-        var el = card.querySelector(".pc-rbi-val");
-        if (el) {
-          el.textContent = rbiSeason;
-          el.classList.add("counting");
-        }
-      }, 500);
-    }
-    if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
-    window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
-    if (!state.demoMode) {
-      collectCard({
-        playerId: batterId,
-        playerName: batterName,
-        teamAbbr,
-        teamPrimary: teamData.primary,
-        teamSecondary: teamData.secondary,
-        position: position || "",
-        eventType: "RBI",
-        badge,
-        rbi,
-        inning,
-        halfInning,
-        awayAbbr,
-        homeAbbr,
-        awayScore: aScore,
-        homeScore: hScore
-      });
-    }
   }
   function confirmDevToolsChanges() {
     var fields = [
