@@ -760,9 +760,11 @@ export function copyDiagnosticSnapshot(){
   _copyToClipboard(parts.join('\n'),'diagSnapshotBtn');
 }
 
-// ── DOMContentLoaded handler — wires open-on-toggle for each <details> ─────
+// Wires <details>-toggle and filter-input listeners for each lazy-rendered panel.
+// Bundle is loaded via dynamic <script> append (index.html), so DOMContentLoaded
+// may have already fired by the time this runs — guard with readyState.
 export function initPanelsLazyRendering(){
-  document.addEventListener('DOMContentLoaded',function(){
+  function attach(){
     var stateDet=document.getElementById('appStateDetails');
     if(stateDet) stateDet.addEventListener('toggle',function(){if(stateDet.open)renderAppState();});
     var netDet=document.getElementById('netTraceDetails');
@@ -780,5 +782,7 @@ export function initPanelsLazyRendering(){
     if(lvl) lvl.addEventListener('change',renderLogCapture);
     var f=document.getElementById('logCaptureFilter');
     if(f) f.addEventListener('input',renderLogCapture);
-  });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
+  else attach();
 }

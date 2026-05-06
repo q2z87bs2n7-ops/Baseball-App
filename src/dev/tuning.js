@@ -166,8 +166,11 @@ export function confirmDevToolsChanges() {
 }
 
 // Delegated click handler — replaces ~40 inline onclicks on the Dev Tools panel.
+// IMPORTANT: the bundle is loaded via dynamic <script> insertion (see index.html),
+// which makes it execute async — DOMContentLoaded may have already fired by the
+// time this runs. Guard with readyState so we attach immediately in that case.
 export function initDevToolsClickDelegator() {
-  document.addEventListener('DOMContentLoaded', function() {
+  function attach() {
     var panel = document.getElementById('devToolsPanel');
     if (!panel) return;
     panel.addEventListener('click', function(e) {
@@ -215,5 +218,7 @@ export function initDevToolsClickDelegator() {
       else if (action === 'copySnapshot')      { copyDiagnosticSnapshot(); }
       else if (action === 'confirm')           { confirmDevToolsChanges(); }
     });
-  });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
+  else attach();
 }

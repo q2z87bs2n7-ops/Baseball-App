@@ -4748,7 +4748,7 @@
     _copyToClipboard(parts.join("\n"), "diagSnapshotBtn");
   }
   function initPanelsLazyRendering() {
-    document.addEventListener("DOMContentLoaded", function() {
+    function attach() {
       var stateDet = document.getElementById("appStateDetails");
       if (stateDet) stateDet.addEventListener("toggle", function() {
         if (stateDet.open) renderAppState();
@@ -4778,7 +4778,9 @@
       if (lvl) lvl.addEventListener("change", renderLogCapture);
       var f = document.getElementById("logCaptureFilter");
       if (f) f.addEventListener("input", renderLogCapture);
-    });
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attach);
+    else attach();
   }
 
   // src/sections/loaders.js
@@ -8501,7 +8503,7 @@
     }, 1500);
   }
   function initDevToolsClickDelegator() {
-    document.addEventListener("DOMContentLoaded", function() {
+    function attach() {
       var panel = document.getElementById("devToolsPanel");
       if (!panel) return;
       panel.addEventListener("click", function(e) {
@@ -8599,7 +8601,9 @@
           confirmDevToolsChanges();
         }
       });
-    });
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", attach);
+    else attach();
   }
 
   // src/auth/session.js
