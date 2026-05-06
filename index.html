@@ -52,21 +52,21 @@
               <option value="nav">Nav Only</option>
             </select>
             <span style="font-size:.72rem;color:var(--muted);white-space:nowrap">Invert</span>
-            <div onclick="toggleInvert()" id="invertToggle" class="settings-toggle">
+            <div onclick="toggleInvert()" id="invertToggle" class="settings-toggle" role="checkbox" aria-label="Toggle invert colors">
               <div id="invertToggleKnob" class="settings-toggle-knob"></div>
             </div>
           </div>
         </div>
         <div id="pushRow" class="settings-row">
           <div class="settings-row__label">🔔 Game Start Alerts</div>
-          <div onclick="togglePush()" id="pushToggle" class="settings-toggle">
+          <div onclick="togglePush()" id="pushToggle" class="settings-toggle" role="checkbox" aria-label="Toggle game start alerts">
             <div id="pushToggleKnob" class="settings-toggle-knob"></div>
           </div>
           <div style="display:none" id="pushStatusText">Off</div>
         </div>
         <div id="radioRow" class="settings-row">
           <div class="settings-row__label">📻 Live Game Radio</div>
-          <div onclick="toggleRadio()" id="radioToggle" class="settings-toggle">
+          <div onclick="toggleRadio()" id="radioToggle" class="settings-toggle" role="checkbox" aria-label="Toggle live game radio">
             <div id="radioToggleKnob" class="settings-toggle-knob"></div>
           </div>
           <div style="display:none" id="radioStatusText">Off · Auto-pairs to focus game</div>
@@ -672,7 +672,7 @@
   <div class="sound-rows master-off" id="soundRows">
     <div class="sound-row master-row">
       <div><div class="sound-label">Master</div><div class="sound-sub">Enable all sound alerts</div></div>
-      <label class="sound-toggle"><input type="checkbox" onchange="setSoundPref('master',this.checked)"><span class="sound-knob"></span></label>
+      <label class="sound-toggle"><input type="checkbox" aria-label="Enable all sound alerts" onchange="setSoundPref('master',this.checked)"><span class="sound-knob"></span></label>
     </div>
     <div class="sound-row"><div class="sound-label">💥 Home Run</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('hr',this.checked)"><span class="sound-knob"></span></label></div>
     <div class="sound-row"><div class="sound-label">🟢 Run Scores</div><label class="sound-toggle"><input type="checkbox" checked onchange="setSoundPref('run',this.checked)"><span class="sound-knob"></span></label></div>
