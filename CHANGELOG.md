@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.40.0
+**Current version:** v3.42.1
+
+**v3.42.1** — Fix Demo Mode crash introduced by the modular refactor. `src/carousel/generators.js` referenced `DEBUG` at lines 285, 306, 329, 585 but never declared it locally — the original monolithic `app.js` had a top-level `const DEBUG=false` visible to all functions, but each esbuild module gets its own scope. Other extracted modules (`feed/render.js`, `collection/sync.js`, `dev/tuning.js`) declared their own local copy; `carousel/generators.js` was missed. References sit inside `if(state.demoMode){...}` guards, so the `ReferenceError: DEBUG is not defined` only fired when `initDemo` → `buildStoryPool` → `loadDailyLeaders` / `loadProbablePitcherStats` ran. Fix: add `const DEBUG = false;` to top of `src/carousel/generators.js`.
 
 **v3.40.0** — **Modular refactor complete.** The original 7,127-line `app.js` is now distributed across ~30 ES6 modules under `src/`, with `src/main.js` reduced to ~680 LOC of boot/orchestration glue. All hot mutable state lives in a single `src/state.js` container; importers receive live bindings rather than copying state. Cumulative changes from v3.39.10 → v3.39.35 collapsed below.
 
