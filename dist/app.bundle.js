@@ -2779,7 +2779,7 @@
   // src/dev/youtube-debug.js
   var ytDebugResults = {};
   var _loadHomeYoutubeWidget = null;
-  function escapeHtml(s) {
+  function escapeHtml2(s) {
     return String(s).replace(/[&<>"']/g, function(c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
@@ -2812,11 +2812,11 @@
     var out = document.getElementById("ytCustomResult");
     var p = parseYTChannelInput(raw);
     if (p.error) {
-      if (out) out.innerHTML = '<span style="color:#ff6b6b">' + escapeHtml(p.error) + "</span>";
+      if (out) out.innerHTML = '<span style="color:#ff6b6b">' + escapeHtml2(p.error) + "</span>";
       return;
     }
     var uc = p.uc;
-    if (out) out.innerHTML = '<span style="color:var(--text)">\u23F3 Fetching ' + escapeHtml(uc) + "\u2026</span>";
+    if (out) out.innerHTML = '<span style="color:var(--text)">\u23F3 Fetching ' + escapeHtml2(uc) + "\u2026</span>";
     var t0 = Date.now();
     fetch(API_BASE + "/api/proxy-youtube?channel=" + encodeURIComponent(uc)).then(function(r) {
       return r.json().then(function(j) {
@@ -2826,7 +2826,7 @@
       var ms = Date.now() - t0;
       if (!o.res.ok || !o.j.success || !o.j.videos || !o.j.videos.length) {
         var msg = "HTTP " + o.res.status + (o.j && o.j.error ? " \xB7 " + o.j.error : o.j && o.j.message ? " \xB7 " + o.j.message : "");
-        if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C ' + escapeHtml(msg) + " \xB7 " + ms + "ms</span>";
+        if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C ' + escapeHtml2(msg) + " \xB7 " + ms + "ms</span>";
         return;
       }
       var v = o.j.videos.slice(0, 5);
@@ -2834,14 +2834,14 @@
       var html = '<div style="color:#22c55e;font-weight:700">\u2705 HTTP ' + o.res.status + " \xB7 " + o.j.count + " videos \xB7 " + ms + "ms</div>";
       html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
       v.forEach(function(vid) {
-        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(vid.thumb || "") + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || "") + "</div></div></div>";
+        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml2(vid.thumb || "") + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml2(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml2(vid.date || "") + "</div></div></div>";
       });
       html += "</div>";
-      html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam('` + escapeHtml(uc) + `')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">\u2699 Apply to ` + escapeHtml(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open \u2197</a></div>';
+      html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam('` + escapeHtml2(uc) + `')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">\u2699 Apply to ` + escapeHtml2(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml2(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open \u2197</a></div>';
       if (out) out.innerHTML = html;
     }).catch(function(err) {
       var ms = Date.now() - t0;
-      if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C Network: ' + escapeHtml(err && err.message || "failed") + " \xB7 " + ms + "ms</span>";
+      if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C Network: ' + escapeHtml2(err && err.message || "failed") + " \xB7 " + ms + "ms</span>";
     });
   }
   function ytDebugApplyToTeam(uc) {
@@ -2901,9 +2901,9 @@
       } else {
         icon = "\u274C";
         statusLine = '<span style="color:#e03030;font-weight:700">HTTP ' + (r.status || 0) + '</span><span style="color:var(--muted);font-size:.66rem"> \xB7 ' + r.ms + "ms</span>";
-        if (r.error) extra = '<div style="margin-top:2px;font-size:.66rem;color:#e03030">' + escapeHtml(r.error) + "</div>";
+        if (r.error) extra = '<div style="margin-top:2px;font-size:.66rem;color:#e03030">' + escapeHtml2(r.error) + "</div>";
       }
-      return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">' + icon + '</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text)">' + escapeHtml(e.teamName) + '</span><span style="font-size:.66rem;color:var(--muted)">' + escapeHtml(e.abbr) + '</span></div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px"><span style="font-size:.63rem;color:var(--muted);font-family:monospace">' + escapeHtml(e.channelId) + '</span><span style="color:var(--muted)">\xB7</span>' + statusLine + "</div>" + extra + `</div><button onclick="runYoutubeDebugOne('` + e.key + `')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">\u25B6</button></div>`;
+      return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">' + icon + '</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text)">' + escapeHtml2(e.teamName) + '</span><span style="font-size:.66rem;color:var(--muted)">' + escapeHtml2(e.abbr) + '</span></div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px"><span style="font-size:.63rem;color:var(--muted);font-family:monospace">' + escapeHtml2(e.channelId) + '</span><span style="color:var(--muted)">\xB7</span>' + statusLine + "</div>" + extra + `</div><button onclick="runYoutubeDebugOne('` + e.key + `')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">\u25B6</button></div>`;
     }).join("");
     list.innerHTML = summary + html;
   }
@@ -2987,6 +2987,123 @@
     }
     if (typeof window !== "undefined" && window._copyToClipboard) {
       window._copyToClipboard(lines.join("\n"), "ytDebugCopyBtn");
+    }
+  }
+
+  // src/dev/news-test.js
+  var NEWS_TEST_SOURCES = ["fangraphs", "mlbtraderumors", "cbssports", "yahoo", "sbnation_mets", "baseballamerica", "mlb_direct", "reddit_baseball", "espn_news"];
+  var newsTestResults = {};
+  function escapeHtml3(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function openNewsSourceTest() {
+    document.getElementById("newsSourceTestOverlay").style.display = "flex";
+    renderNewsSourceTest();
+  }
+  function closeNewsSourceTest() {
+    document.getElementById("newsSourceTestOverlay").style.display = "none";
+  }
+  function renderNewsSourceTest() {
+    var list = document.getElementById("newsSourceTestList");
+    if (!list) return;
+    if (!Object.keys(newsTestResults).length) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Click "\u25B6 Run All" to test each source.</div>';
+      return;
+    }
+    var rows = NEWS_TEST_SOURCES.map(function(k) {
+      var r = newsTestResults[k];
+      if (!r) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>' + k + "</b> \xB7 pending</div>";
+      if (r.pending) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>' + k + "</b> \xB7 \u23F3 testing\u2026</div>";
+      var ok = r.ok && r.status >= 200 && r.status < 300 && r.itemCount > 0;
+      var icon = ok ? "\u2705" : "\u274C";
+      var line1 = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:1rem">' + icon + '</span><b style="color:var(--text)">' + k + '</b><span style="color:var(--muted);font-size:.7rem">HTTP ' + (r.status || "?") + " \xB7 " + (r.kind || "?") + " \xB7 " + (r.byteLength || 0) + "b \xB7 " + (r.elapsedMs || 0) + "ms \xB7 " + (r.itemCount || 0) + " items</span></div>";
+      var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml3(r.firstTitle).slice(0, 140) + "</div>" : "";
+      var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml3(r.error) + "</div>" : "";
+      var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml3(r.sample) + "</pre></details>" : "";
+      return '<div style="padding:10px;border-bottom:1px solid var(--border)">' + line1 + line2 + line3 + line4 + "</div>";
+    }).join("");
+    list.innerHTML = rows;
+  }
+  function runNewsSourceTest() {
+    var btn = document.getElementById("newsTestRunBtn");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "\u23F3 Running\u2026";
+    }
+    newsTestResults = {};
+    NEWS_TEST_SOURCES.forEach(function(k) {
+      newsTestResults[k] = { pending: true };
+    });
+    renderNewsSourceTest();
+    var promises = NEWS_TEST_SOURCES.map(function(k) {
+      return fetch(API_BASE + "/api/proxy-test?source=" + encodeURIComponent(k)).then(function(r) {
+        return r.json();
+      }).then(function(j) {
+        newsTestResults[k] = j;
+        renderNewsSourceTest();
+      }).catch(function(e) {
+        newsTestResults[k] = { ok: false, error: "fetch failed: " + (e && e.message || e) };
+        renderNewsSourceTest();
+      });
+    });
+    Promise.all(promises).then(function() {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "\u25B6 Run All";
+      }
+    });
+  }
+  function copyNewsSourceTest() {
+    var lines = ["MLB News Source Test", "Date: " + (/* @__PURE__ */ new Date()).toISOString(), "Proxy: " + API_BASE + "/api/proxy-test", ""];
+    NEWS_TEST_SOURCES.forEach(function(k) {
+      var r = newsTestResults[k];
+      lines.push("\u2500\u2500 " + k + " \u2500\u2500");
+      if (!r || r.pending) {
+        lines.push("  (not tested)");
+        lines.push("");
+        return;
+      }
+      lines.push("  url:        " + (r.url || "?"));
+      lines.push("  status:     " + (r.status || "?") + " \xB7 ok=" + !!r.ok);
+      lines.push("  kind:       " + (r.kind || "?"));
+      lines.push("  contentType:" + (r.contentType || "?"));
+      lines.push("  bytes:      " + (r.byteLength || 0));
+      lines.push("  elapsedMs:  " + (r.elapsedMs || 0));
+      lines.push("  itemCount:  " + (r.itemCount || 0));
+      lines.push("  firstTitle: " + (r.firstTitle || ""));
+      if (r.error) lines.push("  error:      " + r.error);
+      if (r.sample) {
+        lines.push("  sample (first 600 chars):");
+        r.sample.split("\n").forEach(function(ln) {
+          lines.push("    " + ln);
+        });
+      }
+      lines.push("");
+    });
+    var text = lines.join("\n");
+    var btn = document.getElementById("newsTestCopyBtn");
+    function flash(msg) {
+      if (!btn) return;
+      var orig = btn.textContent;
+      btn.textContent = msg;
+      setTimeout(function() {
+        btn.textContent = orig;
+      }, 1800);
+    }
+    if (typeof window !== "undefined" && window._copyToClipboard) {
+      window._copyToClipboard(text);
+      flash("\u2713 Copied!");
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        flash("\u2713 Copied!");
+      }, function() {
+        if (typeof window !== "undefined" && window.fallbackCopy) {
+          window.fallbackCopy(text);
+          flash("\u2713 Copied (fallback)");
+        }
+      });
     }
   }
 
@@ -7658,8 +7775,8 @@
     }
     list.innerHTML = rows.slice().reverse().map(function(e) {
       var cls = "dt-log-row" + (e.level === "error" ? " lv-error" : e.level === "warn" ? " lv-warn" : "");
-      var tag = e.src ? '<span class="lv-tag">[' + escapeHtml2(e.src) + "]</span>" : "";
-      return '<div class="' + cls + '"><span class="lv-ts">' + _fmtLogTs(e.ts) + "</span>" + tag + escapeHtml2(e.msg) + "</div>";
+      var tag = e.src ? '<span class="lv-tag">[' + escapeHtml(e.src) + "]</span>" : "";
+      return '<div class="' + cls + '"><span class="lv-ts">' + _fmtLogTs(e.ts) + "</span>" + tag + escapeHtml(e.msg) + "</div>";
     }).join("");
   }
   function copyLogAsMarkdown() {
@@ -7824,7 +7941,7 @@
       var v = obj[k];
       var disp = v == null ? "\u2014" : typeof v === "object" ? JSON.stringify(v) : String(v);
       if (disp.length > 200) disp = disp.slice(0, 200) + "\u2026";
-      return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">' + escapeHtml2(k) + "</span><span>" + escapeHtml2(disp) + "</span></div>";
+      return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">' + escapeHtml(k) + "</span><span>" + escapeHtml(disp) + "</span></div>";
     }).join("");
   }
   function _miniCopyBtn(action) {
@@ -7841,16 +7958,16 @@
     if (c) c.textContent = "(" + ctx.counts.state.gameStates + "g \xB7 " + ctx.counts.state.feedItems + "f \xB7 " + ctx.counts.state.storyPool + "s)";
     var gs = _stateGameStatesArr();
     var gsBody = gs.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + gs.map(function(g) {
-      return '<div class="dt-log-row">' + escapeHtml2(g.matchup) + " \xB7 " + escapeHtml2(g.status) + " \xB7 " + escapeHtml2(g.score) + (g.inning ? " \xB7 " + escapeHtml2(g.inning) + " (" + g.outs + "o)" : "") + (g.bases ? " \xB7 \u{1F3C3}" + escapeHtml2(g.bases) : "") + (g.enabled === false ? ' <span class="lv-tag">[hidden]</span>' : "") + "</div>";
+      return '<div class="dt-log-row">' + escapeHtml(g.matchup) + " \xB7 " + escapeHtml(g.status) + " \xB7 " + escapeHtml(g.score) + (g.inning ? " \xB7 " + escapeHtml(g.inning) + " (" + g.outs + "o)" : "") + (g.bases ? " \xB7 \u{1F3C3}" + escapeHtml(g.bases) : "") + (g.enabled === false ? ' <span class="lv-tag">[hidden]</span>' : "") + "</div>";
     }).join("") + "</div>" : '<div class="dt-label-muted">No games loaded.</div>';
     var fi = _stateFeedItemsArr(30);
     var fiBody = fi.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + fi.map(function(f) {
       var ts = f.ts ? f.ts.slice(11, 19) : "";
-      return '<div class="dt-log-row"><span class="lv-ts">' + escapeHtml2(ts) + '</span><span class="lv-tag">[' + escapeHtml2(String(f.type || "?")) + "]</span>" + escapeHtml2(f.label || f.desc || "") + (f.scoring ? " \u2B50" : "") + "</div>";
+      return '<div class="dt-log-row"><span class="lv-ts">' + escapeHtml(ts) + '</span><span class="lv-tag">[' + escapeHtml(String(f.type || "?")) + "]</span>" + escapeHtml(f.label || f.desc || "") + (f.scoring ? " \u2B50" : "") + "</div>";
     }).join("") + "</div>" : '<div class="dt-label-muted">Feed empty.</div>';
     var sp = _stateStoryPoolArr();
     var spBody = sp.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + sp.map(function(s) {
-      return '<div class="dt-log-row' + (s.isShown ? " lv-warn" : "") + '"><span class="lv-tag">p' + (s.priority || 0) + '</span><span class="lv-tag">[' + escapeHtml2(String(s.type || "?")) + "]</span>" + escapeHtml2(s.headline || "") + (s.cooldownRem ? ' <span class="lv-ts">(' + escapeHtml2(s.cooldownRem) + ")</span>" : "") + (s.isShown ? " \u25C0 shown" : "") + "</div>";
+      return '<div class="dt-log-row' + (s.isShown ? " lv-warn" : "") + '"><span class="lv-tag">p' + (s.priority || 0) + '</span><span class="lv-tag">[' + escapeHtml(String(s.type || "?")) + "]</span>" + escapeHtml(s.headline || "") + (s.cooldownRem ? ' <span class="lv-ts">(' + escapeHtml(s.cooldownRem) + ")</span>" : "") + (s.isShown ? " \u25C0 shown" : "") + "</div>";
     }).join("") + "</div>" : '<div class="dt-label-muted">Story pool empty.</div>';
     var ctxBody = '<div style="font-size:.65rem">' + _kvList({
       version: ctx.version,
@@ -8063,8 +8180,8 @@
       else if (e.status >= 300) cls += " lv-warn";
       var ms = e.ms != null ? e.ms + "ms" : "-";
       var size = _fmtBytes(e.sizeBytes);
-      var err = e.errorMsg ? '<div style="margin-left:24px;color:#ff6b6b">' + escapeHtml2(e.errorMsg) + "</div>" : "";
-      return '<div class="' + cls + '" title="' + escapeHtml2(e.url || "") + '"><span class="lv-ts">' + ts + '</span><span class="lv-tag">' + escapeHtml2(e.method) + " " + st + '</span><span class="lv-ts">' + ms + " \xB7 " + size + "</span> " + escapeHtml2(_shortUrl(e.url)) + err + "</div>";
+      var err = e.errorMsg ? '<div style="margin-left:24px;color:#ff6b6b">' + escapeHtml(e.errorMsg) + "</div>" : "";
+      return '<div class="' + cls + '" title="' + escapeHtml(e.url || "") + '"><span class="lv-ts">' + ts + '</span><span class="lv-tag">' + escapeHtml(e.method) + " " + st + '</span><span class="lv-ts">' + ms + " \xB7 " + size + "</span> " + escapeHtml(_shortUrl(e.url)) + err + "</div>";
     }).join("");
   }
   function copyNetTraceAsMarkdown() {
@@ -8140,12 +8257,12 @@
       var e = _lsEntry(k);
       var preview;
       if (e.isJson) {
-        preview = '<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml2(JSON.stringify(e.parsed, null, 2)) + "</pre></details>";
+        preview = '<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml(JSON.stringify(e.parsed, null, 2)) + "</pre></details>";
       } else if (e.raw != null) {
         var disp = e.raw.length > 140 ? e.raw.slice(0, 140) + "\u2026" : e.raw;
-        preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">' + escapeHtml2(disp) + "</div>";
+        preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">' + escapeHtml(disp) + "</div>";
       } else preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">(null)</div>';
-      return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">' + escapeHtml2(k) + '</span><span class="dt-label-muted">' + _fmtBytes(e.bytes) + '</span><button data-dt-action="clearLsKey" data-ls-key="' + escapeHtml2(k) + '" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">\u{1F5D1}</button></div>' + preview + "</div>";
+      return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">' + escapeHtml(k) + '</span><span class="dt-label-muted">' + _fmtBytes(e.bytes) + '</span><button data-dt-action="clearLsKey" data-ls-key="' + escapeHtml(k) + '" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">\u{1F5D1}</button></div>' + preview + "</div>";
     }).join("");
   }
   function clearLsKey(key) {
@@ -8342,7 +8459,7 @@
       return;
     }
     var opts = live.map(function(x) {
-      return '<option value="' + x.pk + '">' + escapeHtml2(x.g.awayAbbr + " @ " + x.g.homeAbbr + " \xB7 " + (x.g.halfInning || "") + " " + (x.g.inning || "?") + " \xB7 " + x.g.awayScore + "-" + x.g.homeScore) + "</option>";
+      return '<option value="' + x.pk + '">' + escapeHtml(x.g.awayAbbr + " @ " + x.g.homeAbbr + " \xB7 " + (x.g.halfInning || "") + " " + (x.g.inning || "?") + " \xB7 " + x.g.awayScore + "-" + x.g.homeScore) + "</option>";
     }).join("");
     var curFocus = typeof state.focusGamePk !== "undefined" && state.focusGamePk ? state.focusGamePk : "";
     body.innerHTML = '<div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F3AF} Force Focus</div><div class="dt-label-muted" style="margin-bottom:6px">Override auto-scoring and pin Focus Mode to a specific live game. Resets via the \u21A9 AUTO pill in the focus card.</div><div style="display:flex;gap:6px;align-items:center"><select id="forceFocusSel" class="dt-input" style="flex:1">' + opts + '</select><button data-dt-action="forceFocusGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Apply</button></div>' + (curFocus ? '<div class="dt-label-muted" style="margin-top:4px">Current focus: gamePk ' + curFocus + "</div>" : "") + '</div><div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F4D6} Force Inning Recap</div><div class="dt-label-muted" style="margin-bottom:6px">Queues an inning_recap story so it surfaces in the next pool build. Replaces the manual <code>state.inningRecapsPending[\u2026]</code> + <code>buildStoryPool()</code> console workflow.</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="forceRecapGame" class="dt-input" style="flex:2;min-width:140px">' + opts + '</select><select id="forceRecapHalf" class="dt-input" style="flex:1;min-width:60px"><option value="top">Top</option><option value="bottom">Bottom</option></select><input id="forceRecapInning" type="number" min="1" max="20" placeholder="Inn" class="dt-input" style="flex:0 0 60px"><button data-dt-action="forceRecapGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Queue</button></div></div>';
@@ -8505,119 +8622,6 @@
     var f = document.getElementById("logCaptureFilter");
     if (f) f.addEventListener("input", renderLogCapture);
   });
-  var NEWS_TEST_SOURCES = ["fangraphs", "mlbtraderumors", "cbssports", "yahoo", "sbnation_mets", "baseballamerica", "mlb_direct", "reddit_baseball", "espn_news"];
-  var newsTestResults = {};
-  function openNewsSourceTest() {
-    document.getElementById("newsSourceTestOverlay").style.display = "flex";
-    renderNewsSourceTest();
-  }
-  function closeNewsSourceTest() {
-    document.getElementById("newsSourceTestOverlay").style.display = "none";
-  }
-  function renderNewsSourceTest() {
-    var list = document.getElementById("newsSourceTestList");
-    if (!list) return;
-    if (!Object.keys(newsTestResults).length) {
-      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Click "\u25B6 Run All" to test each source.</div>';
-      return;
-    }
-    var rows = NEWS_TEST_SOURCES.map(function(k) {
-      var r = newsTestResults[k];
-      if (!r) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>' + k + "</b> \xB7 pending</div>";
-      if (r.pending) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>' + k + "</b> \xB7 \u23F3 testing\u2026</div>";
-      var ok = r.ok && r.status >= 200 && r.status < 300 && r.itemCount > 0;
-      var icon = ok ? "\u2705" : "\u274C";
-      var line1 = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:1rem">' + icon + '</span><b style="color:var(--text)">' + k + '</b><span style="color:var(--muted);font-size:.7rem">HTTP ' + (r.status || "?") + " \xB7 " + (r.kind || "?") + " \xB7 " + (r.byteLength || 0) + "b \xB7 " + (r.elapsedMs || 0) + "ms \xB7 " + (r.itemCount || 0) + " items</span></div>";
-      var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml2(r.firstTitle).slice(0, 140) + "</div>" : "";
-      var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml2(r.error) + "</div>" : "";
-      var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml2(r.sample) + "</pre></details>" : "";
-      return '<div style="padding:10px;border-bottom:1px solid var(--border)">' + line1 + line2 + line3 + line4 + "</div>";
-    }).join("");
-    list.innerHTML = rows;
-  }
-  function escapeHtml2(s) {
-    return String(s).replace(/[&<>"']/g, function(c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  }
-  function runNewsSourceTest() {
-    var btn = document.getElementById("newsTestRunBtn");
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "\u23F3 Running\u2026";
-    }
-    newsTestResults = {};
-    NEWS_TEST_SOURCES.forEach(function(k) {
-      newsTestResults[k] = { pending: true };
-    });
-    renderNewsSourceTest();
-    var promises = NEWS_TEST_SOURCES.map(function(k) {
-      return fetch(API_BASE + "/api/proxy-test?source=" + encodeURIComponent(k)).then(function(r) {
-        return r.json();
-      }).then(function(j) {
-        newsTestResults[k] = j;
-        renderNewsSourceTest();
-      }).catch(function(e) {
-        newsTestResults[k] = { ok: false, error: "fetch failed: " + (e && e.message || e) };
-        renderNewsSourceTest();
-      });
-    });
-    Promise.all(promises).then(function() {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "\u25B6 Run All";
-      }
-    });
-  }
-  function copyNewsSourceTest() {
-    var lines = ["MLB News Source Test", "Date: " + (/* @__PURE__ */ new Date()).toISOString(), "Proxy: " + API_BASE + "/api/proxy-test", ""];
-    NEWS_TEST_SOURCES.forEach(function(k) {
-      var r = newsTestResults[k];
-      lines.push("\u2500\u2500 " + k + " \u2500\u2500");
-      if (!r || r.pending) {
-        lines.push("  (not tested)");
-        lines.push("");
-        return;
-      }
-      lines.push("  url:        " + (r.url || "?"));
-      lines.push("  status:     " + (r.status || "?") + " \xB7 ok=" + !!r.ok);
-      lines.push("  kind:       " + (r.kind || "?"));
-      lines.push("  contentType:" + (r.contentType || "?"));
-      lines.push("  bytes:      " + (r.byteLength || 0));
-      lines.push("  elapsedMs:  " + (r.elapsedMs || 0));
-      lines.push("  itemCount:  " + (r.itemCount || 0));
-      lines.push("  firstTitle: " + (r.firstTitle || ""));
-      if (r.error) lines.push("  error:      " + r.error);
-      if (r.sample) {
-        lines.push("  sample (first 600 chars):");
-        r.sample.split("\n").forEach(function(ln) {
-          lines.push("    " + ln);
-        });
-      }
-      lines.push("");
-    });
-    var text = lines.join("\n");
-    var btn = document.getElementById("newsTestCopyBtn");
-    function flash(msg) {
-      if (!btn) return;
-      var orig = btn.textContent;
-      btn.textContent = msg;
-      setTimeout(function() {
-        btn.textContent = orig;
-      }, 1800);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function() {
-        flash("\u2713 Copied!");
-      }, function() {
-        fallbackCopy2(text);
-        flash("\u2713 Copied (fallback)");
-      });
-    } else {
-      fallbackCopy2(text);
-      flash("\u2713 Copied (fallback)");
-    }
-  }
   function toggleDevTools() {
     var p = document.getElementById("devToolsPanel");
     var opening = p.style.display !== "block";

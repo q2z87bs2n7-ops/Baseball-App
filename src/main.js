@@ -47,6 +47,9 @@ import {
   ytDebugReset, ytDebugCopy,
 } from './dev/youtube-debug.js';
 import {
+  openNewsSourceTest, closeNewsSourceTest, runNewsSourceTest, copyNewsSourceTest,
+} from './dev/news-test.js';
+import {
   toggleDemoMode, setDemoSpeed, toggleDemoPause, backDemoPlay, forwardDemoPlay,
   demoNextHR, exitDemo, loadDemoGames, buildDemoPlayQueue, setDemoCallbacks,
 } from './demo/mode.js';
@@ -2915,84 +2918,9 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 // ── 🔬 News Source Test (TEMP — remove after News tab QA) ────────────────
-var NEWS_TEST_SOURCES=['fangraphs','mlbtraderumors','cbssports','yahoo','sbnation_mets','baseballamerica','mlb_direct','reddit_baseball','espn_news'];
-var newsTestResults={}; // key → result object from proxy
-function openNewsSourceTest(){
-  document.getElementById('newsSourceTestOverlay').style.display='flex';
-  renderNewsSourceTest();
-}
-function closeNewsSourceTest(){
-  document.getElementById('newsSourceTestOverlay').style.display='none';
-}
-function renderNewsSourceTest(){
-  var list=document.getElementById('newsSourceTestList');
-  if(!list)return;
-  if(!Object.keys(newsTestResults).length){
-    list.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Click "▶ Run All" to test each source.</div>';
-    return;
-  }
-  var rows=NEWS_TEST_SOURCES.map(function(k){
-    var r=newsTestResults[k];
-    if(!r) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>'+k+'</b> · pending</div>';
-    if(r.pending) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>'+k+'</b> · ⏳ testing…</div>';
-    var ok=r.ok&&r.status>=200&&r.status<300&&(r.itemCount>0);
-    var icon=ok?'✅':'❌';
-    var line1='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:1rem">'+icon+'</span><b style="color:var(--text)">'+k+'</b><span style="color:var(--muted);font-size:.7rem">HTTP '+(r.status||'?')+' · '+(r.kind||'?')+' · '+(r.byteLength||0)+'b · '+(r.elapsedMs||0)+'ms · '+(r.itemCount||0)+' items</span></div>';
-    var line2=r.firstTitle?'<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: '+escapeHtml(r.firstTitle).slice(0,140)+'</div>':'';
-    var line3=r.error?'<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: '+escapeHtml(r.error)+'</div>':'';
-    var line4=r.sample?'<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">'+escapeHtml(r.sample)+'</pre></details>':'';
-    return '<div style="padding:10px;border-bottom:1px solid var(--border)">'+line1+line2+line3+line4+'</div>';
-  }).join('');
-  list.innerHTML=rows;
-}
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function runNewsSourceTest(){
-  var btn=document.getElementById('newsTestRunBtn');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Running…';}
-  newsTestResults={};
-  NEWS_TEST_SOURCES.forEach(function(k){newsTestResults[k]={pending:true};});
-  renderNewsSourceTest();
-  var promises=NEWS_TEST_SOURCES.map(function(k){
-    return fetch(API_BASE+'/api/proxy-test?source='+encodeURIComponent(k))
-      .then(function(r){return r.json();})
-      .then(function(j){newsTestResults[k]=j;renderNewsSourceTest();})
-      .catch(function(e){newsTestResults[k]={ok:false,error:'fetch failed: '+(e&&e.message||e)};renderNewsSourceTest();});
-  });
-  Promise.all(promises).then(function(){
-    if(btn){btn.disabled=false;btn.textContent='▶ Run All';}
-  });
-}
-function copyNewsSourceTest(){
-  var lines=['MLB News Source Test','Date: '+new Date().toISOString(),'Proxy: '+API_BASE+'/api/proxy-test',''];
-  NEWS_TEST_SOURCES.forEach(function(k){
-    var r=newsTestResults[k];
-    lines.push('── '+k+' ──');
-    if(!r||r.pending){lines.push('  (not tested)');lines.push('');return;}
-    lines.push('  url:        '+(r.url||'?'));
-    lines.push('  status:     '+(r.status||'?')+' · ok='+!!r.ok);
-    lines.push('  kind:       '+(r.kind||'?'));
-    lines.push('  contentType:'+(r.contentType||'?'));
-    lines.push('  bytes:      '+(r.byteLength||0));
-    lines.push('  elapsedMs:  '+(r.elapsedMs||0));
-    lines.push('  itemCount:  '+(r.itemCount||0));
-    lines.push('  firstTitle: '+(r.firstTitle||''));
-    if(r.error) lines.push('  error:      '+r.error);
-    if(r.sample){
-      lines.push('  sample (first 600 chars):');
-      r.sample.split('\n').forEach(function(ln){lines.push('    '+ln);});
-    }
-    lines.push('');
-  });
-  var text=lines.join('\n');
-  var btn=document.getElementById('newsTestCopyBtn');
-  function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;setTimeout(function(){btn.textContent=orig;},1800);}
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');},function(){fallbackCopy(text);flash('✓ Copied (fallback)');});
-  }else{
-    fallbackCopy(text);flash('✓ Copied (fallback)');
-  }
-}
-// ── /News Source Test ─────────────────────────────────────────────────────
+// ── News Source Test (v3.39.27) ─── EXTRACTED to dev/news-test.js
+// Functions imported: openNewsSourceTest, closeNewsSourceTest, runNewsSourceTest,
+// copyNewsSourceTest
 
 function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=state.devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=state.devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=state.devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=state.devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=state.devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=state.devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=state.devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=state.devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=state.devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=state.devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=state.devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=state.devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=state.devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=state.devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=state.devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=state.devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=state.devTuning.wp_extreme_floor||85;var tLP=document.getElementById('tuneLiveWPPriority');if(tLP)tLP.value=state.devTuning.livewp_priority||30;var tLR=document.getElementById('tuneLiveWPRefresh');if(tLR)tLR.value=state.devTuning.livewp_refresh_ms||90000;document.getElementById('tuneFocusCritical').value=state.devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=state.devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=state.devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=state.devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=state.devColorLocked;}}
 
