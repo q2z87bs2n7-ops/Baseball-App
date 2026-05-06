@@ -2951,7 +2951,10 @@ async function pollPendingVideoClips() {
         if(diff<bestDiff){bestDiff=diff;best=clip;}
       });
       var limit=isPlayerMatched?Infinity:90*60*1000;
-      if(best&&bestDiff<limit){
+      // HR clips typically take 1-2 min to publish after the play. If no player_id match
+      // was found, skip patching this poll so the next 30s retry can find the correct clip.
+      var isHR=item.data.event==='Home Run';
+      if(best&&bestDiff<limit&&(isPlayerMatched||!isHR)){
         lastVideoClip=best;
         patchFeedItemWithClip(playTs,gpk,best);
       }
