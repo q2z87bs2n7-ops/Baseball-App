@@ -2865,14 +2865,13 @@ async function devTestVideoClip() {
 }
 
 async function pollPendingVideoClips() {
-  // Scan feedItems for scoring plays whose feed element hasn't been patched with a clip yet.
-  // feedItems is the source of truth — no separate queue needed.
+  // Scan feedItems for HR plays whose feed element hasn't been patched with a clip yet.
   var cutoff=Date.now()-2*60*60*1000;
   var feed=document.getElementById('feed');
   if(!feed) return;
   var pending=feedItems.filter(function(item){
     if(!item.data||!item.data.batterId) return false;
-    if(item.data.event!=='Home Run'&&!item.data.scoring) return false;
+    if(item.data.event!=='Home Run') return false;
     if(!item.ts||item.ts.getTime()<cutoff) return false;
     var el=feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
     return el&&!el.dataset.clipPatched;
@@ -2889,13 +2888,19 @@ async function pollPendingVideoClips() {
         if(!r.ok) continue;
         var d=await r.json();
         var all=(d.highlights&&d.highlights.highlights&&d.highlights.highlights.items)||[];
-        liveContentCache[gpk]={items:all.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);}),fetchedAt:Date.now()};
+        // Keep only playable video clips; exclude data-visualization (darkroom, bat-track, etc.)
+        liveContentCache[gpk]={items:all.filter(function(it){
+          if(it.type!=='video'||!pickPlayback(it.playbacks)) return false;
+          return !(it.keywordsAll||[]).some(function(kw){
+            var v=(kw.value||kw.slug||'').toLowerCase();
+            return v==='data-visualization'||v==='data_visualization';
+          });
+        }),fetchedAt:Date.now()};
       }catch(e){continue;}
     }
     var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
     if(!clips.length) continue;
-    // Exclude Statcast/Savant clips — they share timestamps with the play but
-    // are analysis overlays, not broadcast replays. Check both keywords and title.
+    // Exclude Statcast/Savant clips — analysis overlays, not broadcast replays.
     function isStatcast(clip){
       var title=(clip.headline||clip.blurb||'').toLowerCase();
       if(title.indexOf('statcast')!==-1||title.indexOf('savant')!==-1) return true;
@@ -2905,14 +2910,13 @@ async function pollPendingVideoClips() {
       });
     }
     var broadcastClips=clips.filter(function(c){return !isStatcast(c);});
-    // Prefer clips tagged as scoring plays; fall back to all non-Statcast clips.
+    // Prefer clips tagged home-run / scoring-play / walk-off (API uses hyphens, not underscores).
     var scoringClips=broadcastClips.filter(function(clip){
       return (clip.keywordsAll||[]).some(function(kw){
         var v=kw.value||kw.slug||'';
-        return v==='home_run'||v==='scoring_play'||v==='walk_off';
+        return v==='home-run'||v==='scoring-play'||v==='walk-off';
       });
     });
-    var candidatePool=scoringClips.length?scoringClips:broadcastClips;
     byGame[pk].forEach(function(item){
       var playTs=item.ts.getTime();
       var bid=String(item.data.batterId);
@@ -2923,9 +2927,17 @@ async function pollPendingVideoClips() {
           return false;
         });
       }
-      // Narrow to player_id-matched clips first; fall back to full candidate pool.
-      var playerClips=candidatePool.filter(hasPlayer);
-      var pool=playerClips.length?playerClips:candidatePool;
+      // 4-tier priority: player_id in scoringClips → player_id in broadcastClips →
+      // nearest-timestamp in scoringClips → nearest-timestamp in broadcastClips.
+      // This prevents a player whose clip lacks the home-run tag from being matched
+      // to another player's clip via timestamp when the game has mixed-tag clips.
+      var playerFromScoring=scoringClips.filter(hasPlayer);
+      var playerFromBroadcast=broadcastClips.filter(hasPlayer);
+      var pool=playerFromScoring.length?playerFromScoring
+              :playerFromBroadcast.length?playerFromBroadcast
+              :scoringClips.length?scoringClips
+              :broadcastClips;
+      var isPlayerMatched=playerFromScoring.length||playerFromBroadcast.length;
       var best=null,bestDiff=Infinity;
       pool.forEach(function(clip){
         var clipTs=clip.date?new Date(clip.date).getTime():null;
@@ -2933,8 +2945,7 @@ async function pollPendingVideoClips() {
         var diff=Math.abs(clipTs-playTs);
         if(diff<bestDiff){bestDiff=diff;best=clip;}
       });
-      // No time cap when player_id matched — we're confident; 90-min cap for fallback.
-      var limit=playerClips.length?Infinity:90*60*1000;
+      var limit=isPlayerMatched?Infinity:90*60*1000;
       if(best&&bestDiff<limit){
         lastVideoClip=best;
         patchFeedItemWithClip(playTs,gpk,best);
@@ -3016,7 +3027,7 @@ function renderVideoDebugPanel(){
         var title=(clip.headline||clip.blurb||'').toLowerCase();
         var isStatcast2=(title.indexOf('statcast')!==-1||title.indexOf('savant')!==-1)||
           (clip.keywordsAll||[]).some(function(kw){var v=(kw.value||kw.slug||'').toLowerCase();return v==='statcast'||v==='savant';});
-        var hasScoringKw=(clip.keywordsAll||[]).some(function(kw){var v=kw.value||kw.slug||'';return v==='home_run'||v==='scoring_play'||v==='walk_off';});
+        var hasScoringKw=(clip.keywordsAll||[]).some(function(kw){var v=kw.value||kw.slug||'';return v==='home-run'||v==='scoring-play'||v==='walk-off';});
         var playerIds=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='player_id'||(kw.slug&&kw.slug.startsWith('player_id-'));}).map(function(kw){return kw.type==='player_id'?kw.value:kw.slug.split('-')[1];});
         var hasPlayback=!!pickPlayback(clip.playbacks);
         var clipTs=clip.date?new Date(clip.date).getTime():null;
@@ -3062,7 +3073,7 @@ function copyVideoDebug(){
       var playerIds=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='player_id'||(kw.slug&&kw.slug.startsWith('player_id-'));}).map(function(kw){return kw.type==='player_id'?kw.value:kw.slug.split('-')[1];});
       var taxonomy=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';}).map(function(kw){return kw.value||kw.slug;});
       var isStatcast=(clip.headline||clip.blurb||'').toLowerCase().indexOf('statcast')!==-1||taxonomy.some(function(v){return v==='statcast'||v==='savant';});
-      return {id:clip.id,headline:clip.headline||clip.blurb,date:clip.date,isStatcast:isStatcast,hasScoringKw:taxonomy.some(function(v){return v==='home_run'||v==='scoring_play'||v==='walk_off';}),playerIds:playerIds,taxonomy:taxonomy,hasPlayback:!!pickPlayback(clip.playbacks)};
+      return {id:clip.id,headline:clip.headline||clip.blurb,date:clip.date,isStatcast:isStatcast,hasScoringKw:taxonomy.some(function(v){return v==='home-run'||v==='scoring-play'||v==='walk-off';}),playerIds:playerIds,taxonomy:taxonomy,hasPlayback:!!pickPlayback(clip.playbacks)};
     })};
   });
   var text=JSON.stringify({pendingFeedItems:pendingItems,liveContentCache:cacheOut},null,2);
@@ -3378,7 +3389,14 @@ function buildYesterdayHeroes() {
   ydCache.forEach(function(cacheItem){
     var content=yesterdayContentCache[cacheItem.gamePk];
     if(!content) return;
-    var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    var allItems=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    // Exclude data-visualization (darkroom) clips — they share player_ids but are analysis overlays
+    var items=allItems.filter(function(clip){
+      return !(clip.keywordsAll||[]).some(function(kw){
+        var v=(kw.value||kw.slug||'').toLowerCase();
+        return v==='data-visualization'||v==='data_visualization';
+      });
+    });
     // Group clips by player_id keyword
     var playerClips={};
     items.forEach(function(clip){
@@ -3390,12 +3408,12 @@ function buildYesterdayHeroes() {
       if(!playerClips[pid]) playerClips[pid]={clips:[],name:'',isHR:false,isWalkoff:false,teamAbbr:''};
       playerClips[pid].clips.push(clip);
       // Detect HR
-      var isHRClip=clip.keywordsAll.some(function(kw){return (kw.type==='taxonomy'&&kw.value==='home_run')||kw.slug==='home_run';});
+      var isHRClip=clip.keywordsAll.some(function(kw){return (kw.type==='taxonomy'&&kw.value==='home-run')||kw.slug==='home-run';});
       if(isHRClip) playerClips[pid].isHR=true;
       // Detect walk-off
       var isWO=(clip.headline||'').toLowerCase().indexOf('walk-off')!==-1||
                (clip.blurb||'').toLowerCase().indexOf('walk-off')!==-1||
-               clip.keywordsAll.some(function(kw){return kw.value==='walk_off'||kw.slug==='walk_off';});
+               clip.keywordsAll.some(function(kw){return kw.value==='walk-off'||kw.slug==='walk-off';});
       if(isWO) playerClips[pid].isWalkoff=true;
       // Capture player name from headline if not yet set
       if(!playerClips[pid].name&&clip.headline) playerClips[pid].name=clip.headline.split("'")[0].split(' ').slice(0,2).join(' ');
@@ -3406,11 +3424,11 @@ function buildYesterdayHeroes() {
       seenPlayers[pid]=true;
       var pc=playerClips[pid];
       if(!pc.isHR&&!pc.isWalkoff) return; // only HR hitters and walk-off heroes
-      var hrCount=pc.clips.filter(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});}).length;
+      var hrCount=pc.clips.filter(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home-run'||kw.slug==='home-run';});}).length;
       var role=pc.isWalkoff?'walkoff':hrCount>=2?'multi-HR':'HR';
       // Pick best clip: walk-off/HR first, then longest
       var clip=pc.clips.find(function(c){return pc.isWalkoff&&((c.headline||'').toLowerCase().indexOf('walk-off')!==-1);});
-      if(!clip) clip=pc.clips.find(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});});
+      if(!clip) clip=pc.clips.find(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home-run'||kw.slug==='home-run';});});
       if(!clip) clip=pc.clips[0];
       var imgUrl=pickHeroImage(clip)||'';
       if(!imgUrl) return; // skip if no photo
