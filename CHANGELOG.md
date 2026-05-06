@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.39.7
+**Current version:** v3.39.8
+
+**v3.39.8** — Extract OAuth/email sign-in initiators to `src/auth/oauth.js`. `signInWithGitHub` (redirect to GitHub OAuth flow with random state token) and `signInWithEmail` (POST to `/api/auth/email-request` for magic-link). Both are stateless fire-and-forget functions; the session-token state, `signOut`, sync interval, `mergeCollectionOnSignIn`, and `updateSyncUI` stay in `main.js` for now because they depend on the still-monolithic Card Collection module. Imports `API_BASE` from `config/constants.js`. Bridge exposure unchanged.
 
 **v3.39.7** — Extract radio station data to `src/radio/stations.js`. Pure-data extraction (no behavior change): `MLB_TEAM_RADIO` (30 flagship stations + URLs + format), `FALLBACK_RADIO` (Fox Sports), `APPROVED_RADIO_TEAM_IDS` (the 9-team `Set` for focus pairing), `RADIO_CHECK_DEFAULT_NOTES` (seeded-once default annotations for the Radio Check sweep tool). The radio ENGINE (`pickRadioForFocus`, `toggleRadio`, `loadRadioStream`, `setRadioUI`, `updateRadioForFocus`) stays in `main.js` for now because it reads `focusGamePk` + `gameStates` (hot mutable state); will move once `state.js` is in place. Net: src/main.js drops ~80 lines; modular code now 626 lines across 10 files.
 

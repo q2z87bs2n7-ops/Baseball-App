@@ -23,6 +23,7 @@ import {
   MLB_TEAM_RADIO, FALLBACK_RADIO, APPROVED_RADIO_TEAM_IDS,
   RADIO_CHECK_DEFAULT_NOTES,
 } from './radio/stations.js';
+import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
@@ -5849,20 +5850,7 @@ function toggleInvert(){
 }
 
 // ── Session & Sync Functions ──────────────────────────────────────────────────
-function signInWithGitHub(){
-  const state=Math.random().toString(36).slice(2,15);
-  const githubAuthUrl='https://github.com/login/oauth/authorize?'+
-    'client_id=Ov23lilv8CB5JzyvevZE&'+
-    'redirect_uri='+encodeURIComponent(window.location.origin+'/api/auth/github')+'&'+
-    'state='+state+'&'+
-    'scope=user:email';
-  window.location=githubAuthUrl;
-}
-function signInWithEmail(){
-  var email=prompt('Enter your email to receive a sign-in link:');
-  if(!email||!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))return alert('Invalid email');
-  fetch((window.API_BASE||'')+'/api/auth/email-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})}).then(r=>r.json()).then(d=>{if(d.error)alert('Error: '+d.error);else alert(d.message);}).catch(e=>alert('Network error'));
-}
+// signInWithGitHub + signInWithEmail imported from ./auth/oauth.js
 function signOut(){
   if(!confirm('Sign out and disconnect sync?'))return;
   mlbSessionToken=null;mlbAuthUser=null;

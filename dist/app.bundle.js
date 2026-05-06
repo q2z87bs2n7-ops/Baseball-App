@@ -472,6 +472,27 @@
     "158": "URL updated v3.34.1 \u2014 not yet confirmed"
   };
 
+  // src/auth/oauth.js
+  function signInWithGitHub() {
+    const state = Math.random().toString(36).slice(2, 15);
+    const githubAuthUrl = "https://github.com/login/oauth/authorize?client_id=Ov23lilv8CB5JzyvevZE&redirect_uri=" + encodeURIComponent(window.location.origin + "/api/auth/github") + "&state=" + state + "&scope=user:email";
+    window.location = githubAuthUrl;
+  }
+  function signInWithEmail() {
+    var email = prompt("Enter your email to receive a sign-in link:");
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return alert("Invalid email");
+    }
+    fetch((API_BASE || "") + "/api/auth/email-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    }).then((r) => r.json()).then((d) => {
+      if (d.error) alert("Error: " + d.error);
+      else alert(d.message);
+    }).catch((e) => alert("Network error"));
+  }
+
   // src/push/push.js
   var VAPID_PUBLIC_KEY = "BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE";
   function urlBase64ToUint8Array(b64) {
@@ -7318,19 +7339,6 @@
     applyTeamTheme(activeTeam);
     loadTodayGame();
     loadNextGame();
-  }
-  function signInWithGitHub() {
-    const state = Math.random().toString(36).slice(2, 15);
-    const githubAuthUrl = "https://github.com/login/oauth/authorize?client_id=Ov23lilv8CB5JzyvevZE&redirect_uri=" + encodeURIComponent(window.location.origin + "/api/auth/github") + "&state=" + state + "&scope=user:email";
-    window.location = githubAuthUrl;
-  }
-  function signInWithEmail() {
-    var email = prompt("Enter your email to receive a sign-in link:");
-    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) return alert("Invalid email");
-    fetch((window.API_BASE || "") + "/api/auth/email-request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }).then((r) => r.json()).then((d) => {
-      if (d.error) alert("Error: " + d.error);
-      else alert(d.message);
-    }).catch((e) => alert("Network error"));
   }
   function signOut() {
     if (!confirm("Sign out and disconnect sync?")) return;
