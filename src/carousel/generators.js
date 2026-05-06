@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { SEASON, MLB_BASE } from '../config/constants.js';
 
-let carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null };
+let carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null, tcLookup: null };
 function setCarouselCallbacks(callbacks) {
   Object.assign(carouselCallbacks, callbacks);
 }
@@ -487,7 +487,7 @@ function genRosterMoveStories(){
     var fullName=t.person.fullName;
     var desc=t.typeDesc||'';
     var icon,priority,headline;
-    var toAbbr=t.toTeam&&t.toTeam.id?tcLookup(t.toTeam.id).abbr:'the majors';
+    var toAbbr=t.toTeam&&t.toTeam.id?carouselCallbacks.tcLookup(t.toTeam.id).abbr:'the majors';
     if(desc.indexOf('Activated')!==-1){
       icon='✅';priority=state.devTuning.roster_priority_il||40;
       headline=fullName+' ('+toAbbr+') activated';
@@ -503,7 +503,7 @@ function genRosterMoveStories(){
       headline=fullName+' called up by '+toAbbr;
     }else if(desc.indexOf('Trade')!==-1){
       icon='🔄';priority=state.devTuning.roster_priority_trade||55;
-      var fromAbbr=t.fromTeam&&t.fromTeam.id?tcLookup(t.fromTeam.id).abbr:'the majors';
+      var fromAbbr=t.fromTeam&&t.fromTeam.id?carouselCallbacks.tcLookup(t.fromTeam.id).abbr:'the majors';
       headline=fullName+' traded from '+fromAbbr+' to '+toAbbr;
     }else{
       icon='📋';priority=35;

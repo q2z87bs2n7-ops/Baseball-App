@@ -155,7 +155,7 @@
   };
 
   // src/utils/format.js
-  function tcLookup2(id) {
+  function tcLookup(id) {
     var t = TEAMS.find(function(t2) {
       return t2.id === id;
     });
@@ -1523,7 +1523,7 @@
   }
 
   // src/carousel/generators.js
-  var carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null };
+  var carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null, tcLookup: null };
   function setCarouselCallbacks(callbacks) {
     Object.assign(carouselCallbacks, callbacks);
   }
@@ -2110,7 +2110,7 @@
       var fullName = t.person.fullName;
       var desc = t.typeDesc || "";
       var icon, priority, headline;
-      var toAbbr = t.toTeam && t.toTeam.id ? tcLookup(t.toTeam.id).abbr : "the majors";
+      var toAbbr = t.toTeam && t.toTeam.id ? carouselCallbacks.tcLookup(t.toTeam.id).abbr : "the majors";
       if (desc.indexOf("Activated") !== -1) {
         icon = "\u2705";
         priority = state.devTuning.roster_priority_il || 40;
@@ -2132,7 +2132,7 @@
       } else if (desc.indexOf("Trade") !== -1) {
         icon = "\u{1F504}";
         priority = state.devTuning.roster_priority_trade || 55;
-        var fromAbbr = t.fromTeam && t.fromTeam.id ? tcLookup(t.fromTeam.id).abbr : "the majors";
+        var fromAbbr = t.fromTeam && t.fromTeam.id ? carouselCallbacks.tcLookup(t.fromTeam.id).abbr : "the majors";
         headline = fullName + " traded from " + fromAbbr + " to " + toAbbr;
       } else {
         icon = "\u{1F4CB}";
@@ -2862,7 +2862,7 @@
     initReal();
   }
   function initReal() {
-    setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore, localDateStr, getEffectiveDate });
+    setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore, localDateStr, getEffectiveDate, tcLookup });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -2969,7 +2969,7 @@
       games.forEach(function(g) {
         var pk = g.gamePk, newStatus = g.status.abstractGameState, detailed = g.status.detailedState || "";
         var away = g.teams.away, home = g.teams.home;
-        var awayTc = tcLookup2(away.team.id), homeTc = tcLookup2(home.team.id);
+        var awayTc = tcLookup(away.team.id), homeTc = tcLookup(home.team.id);
         var ls = g.linescore || {}, gameTime = null, gameDateMs = null;
         if (g.gameDate) {
           try {
