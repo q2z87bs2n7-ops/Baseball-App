@@ -4759,6 +4759,135 @@ function copyNewsSourceTest(){
   }
 }
 // ── /News Source Test ─────────────────────────────────────────────────────
+
+// ── 📺 YouTube Channel Debug ──────────────────────────────────────────────
+var ytDebugResults={};
+function openYoutubeDebug(){
+  document.getElementById('ytDebugOverlay').style.display='flex';
+  renderYoutubeDebugList();
+}
+function closeYoutubeDebug(){
+  document.getElementById('ytDebugOverlay').style.display='none';
+}
+function ytDebugEntries(){
+  var entries=TEAMS.map(function(t){
+    return {key:t.id,teamId:t.id,teamName:t.name,abbr:t.short,channelId:t.youtubeUC||''};
+  });
+  entries.sort(function(a,b){return a.teamName.localeCompare(b.teamName);});
+  entries.push({key:'mlb_fallback',teamId:null,teamName:'MLB (Fallback)',abbr:'MLB',channelId:'UCoLrcjPV5tBJkzGBFm-6_sA'});
+  return entries;
+}
+function renderYoutubeDebugList(){
+  var list=document.getElementById('ytDebugList');
+  if(!list)return;
+  var entries=ytDebugEntries();
+  var anyTested=Object.keys(ytDebugResults).length>0;
+  if(!anyTested){
+    list.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Click "▶ Run All" to test all 31 channels.</div>';
+    return;
+  }
+  var done=Object.values(ytDebugResults).filter(function(r){return r&&!r.pending;}).length;
+  var summary='<div style="padding:6px 10px;font-size:.7rem;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">'+done+' of '+entries.length+' tested</div>';
+  var html=entries.map(function(e){
+    var r=ytDebugResults[e.key];
+    var icon,statusLine,extra='';
+    if(!r){icon='⬜';statusLine='<span style="color:var(--muted)">untested</span>';}
+    else if(r.pending){icon='⏳';statusLine='<span style="color:var(--muted)">testing…</span>';}
+    else if(r.ok){
+      icon='✅';
+      statusLine='<span style="color:#22c55e;font-weight:700">HTTP '+r.status+' · '+r.count+' videos</span>'
+        +'<span style="color:var(--muted);font-size:.66rem"> · '+r.ms+'ms</span>';
+    }else{
+      icon='❌';
+      statusLine='<span style="color:#e03030;font-weight:700">HTTP '+(r.status||0)+'</span>'
+        +'<span style="color:var(--muted);font-size:.66rem"> · '+r.ms+'ms</span>';
+      if(r.error) extra='<div style="margin-top:2px;font-size:.66rem;color:#e03030">'+escapeHtml(r.error)+'</div>';
+    }
+    return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">'+
+      '<span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">'+icon+'</span>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
+          '<span style="font-size:.78rem;font-weight:700;color:var(--text)">'+escapeHtml(e.teamName)+'</span>'+
+          '<span style="font-size:.66rem;color:var(--muted)">'+escapeHtml(e.abbr)+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px">'+
+          '<span style="font-size:.63rem;color:var(--muted);font-family:monospace">'+escapeHtml(e.channelId)+'</span>'+
+          '<span style="color:var(--muted)">·</span>'+statusLine+
+        '</div>'+
+        extra+
+      '</div>'+
+      '<button onclick="runYoutubeDebugOne(\''+e.key+'\')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">▶</button>'+
+    '</div>';
+  }).join('');
+  list.innerHTML=summary+html;
+}
+function runYoutubeDebugAll(){
+  var btn=document.getElementById('ytDebugRunBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Running…';}
+  var entries=ytDebugEntries();
+  ytDebugResults={};
+  entries.forEach(function(e){ytDebugResults[e.key]={pending:true};});
+  renderYoutubeDebugList();
+  var promises=entries.map(function(e){return runYoutubeDebugOne(e.key);});
+  Promise.all(promises).then(function(){
+    if(btn){btn.disabled=false;btn.textContent='▶ Run All';}
+  });
+}
+function runYoutubeDebugOne(key){
+  var entries=ytDebugEntries();
+  var e=entries.find(function(x){return String(x.key)===String(key);});
+  if(!e)return Promise.resolve();
+  ytDebugResults[e.key]={pending:true};
+  renderYoutubeDebugList();
+  var t0=Date.now();
+  return fetch(API_BASE+'/api/proxy-youtube?channel='+encodeURIComponent(e.channelId))
+    .then(function(res){
+      var ms=Date.now()-t0;
+      return res.json().then(function(j){
+        ytDebugResults[e.key]={ok:res.ok&&!!j.success,status:res.status,count:j.count||0,ms:ms,error:j.error||null};
+        renderYoutubeDebugList();
+      },function(){
+        ytDebugResults[e.key]={ok:false,status:res.status,count:0,ms:ms,error:'JSON parse error'};
+        renderYoutubeDebugList();
+      });
+    })
+    .catch(function(err){
+      var ms=Date.now()-t0;
+      ytDebugResults[e.key]={ok:false,status:0,count:0,ms:ms,error:'Network: '+(err&&err.message||'failed')};
+      renderYoutubeDebugList();
+    });
+}
+function ytDebugReset(){
+  ytDebugResults={};
+  renderYoutubeDebugList();
+}
+function ytDebugCopy(){
+  var entries=ytDebugEntries();
+  var works=[],broken=[],untested=[];
+  entries.forEach(function(e){
+    var r=ytDebugResults[e.key];
+    if(!r||r.pending){
+      untested.push('• '+e.teamName+' ('+e.abbr+') — '+e.channelId);
+    }else if(r.ok){
+      works.push('• '+e.teamName+' ('+e.abbr+') — '+e.channelId+' — '+r.count+' videos · '+r.ms+'ms');
+    }else{
+      var detail='HTTP '+(r.status||0)+(r.error?' · '+r.error:'');
+      broken.push('• '+e.teamName+' ('+e.abbr+') — '+e.channelId+' — '+detail+' · '+r.ms+'ms');
+    }
+  });
+  var lines=['YouTube Channel Debug','Date: '+new Date().toISOString().slice(0,10),'Proxy: '+API_BASE+'/api/proxy-youtube',''];
+  lines.push('✅ WORKS ('+works.length+'):');lines.push.apply(lines,works.length?works:['  (none)']);lines.push('');
+  lines.push('❌ BROKEN/ERROR ('+broken.length+'):');lines.push.apply(lines,broken.length?broken:['  (none)']);lines.push('');
+  if(untested.length){lines.push('⏳ UNTESTED ('+untested.length+'):');lines.push.apply(lines,untested);}
+  var text=lines.join('\n');
+  var btn=document.getElementById('ytDebugCopyBtn');
+  function flash(msg){if(!btn)return;var orig=btn.textContent;btn.textContent=msg;setTimeout(function(){btn.textContent=orig;},1800);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');},function(){fallbackCopy(text);flash('✓ Copied (fallback)');});
+  }else{fallbackCopy(text);flash('✓ Copied (fallback)');}
+}
+// ── /YouTube Channel Debug ────────────────────────────────────────────────
+
 function toggleDevTools(){var p=document.getElementById('devToolsPanel');var opening=p.style.display!=='block';p.style.display=opening?'block':'none';if(opening){document.getElementById('tuneRotateMs').value=devTuning.rotateMs;document.getElementById('tuneRbiThreshold').value=devTuning.rbiThreshold;document.getElementById('tuneRbiCooldown').value=devTuning.rbiCooldown;document.getElementById('tuneHRPriority').value=devTuning.hr_priority;document.getElementById('tuneHRCooldown').value=devTuning.hr_cooldown;document.getElementById('tuneBigInningPriority').value=devTuning.biginning_priority;document.getElementById('tuneBigInningThreshold').value=devTuning.biginning_threshold;document.getElementById('tuneWalkoffPriority').value=devTuning.walkoff_priority;document.getElementById('tuneNohitterFloor').value=devTuning.nohitter_inning_floor;document.getElementById('tuneBasesLoadedEnable').checked=devTuning.basesloaded_enable;document.getElementById('tuneBasesLoadedPriority').value=devTuning.basesloaded_priority;var tHF=document.getElementById('tuneHitstreakFloor');if(tHF)tHF.value=devTuning.hitstreak_floor||10;var tHP=document.getElementById('tuneHitstreakPriority');if(tHP)tHP.value=devTuning.hitstreak_priority||65;var tRI=document.getElementById('tuneRosterPriorityIL');if(tRI)tRI.value=devTuning.roster_priority_il||40;var tRT=document.getElementById('tuneRosterPriorityTrade');if(tRT)tRT.value=devTuning.roster_priority_trade||55;var tWL=document.getElementById('tuneWPLeverageFloor');if(tWL)tWL.value=devTuning.wp_leverage_floor||2;var tWE=document.getElementById('tuneWPExtremeFloor');if(tWE)tWE.value=devTuning.wp_extreme_floor||85;var tLP=document.getElementById('tuneLiveWPPriority');if(tLP)tLP.value=devTuning.livewp_priority||30;var tLR=document.getElementById('tuneLiveWPRefresh');if(tLR)tLR.value=devTuning.livewp_refresh_ms||90000;document.getElementById('tuneFocusCritical').value=devTuning.focus_critical;document.getElementById('tuneFocusHigh').value=devTuning.focus_high;document.getElementById('tuneFocusSwitchMargin').value=devTuning.focus_switch_margin;document.getElementById('tuneFocusAlertCooldown').value=devTuning.focus_alert_cooldown;document.getElementById('lockThemeToggle').checked=devColorLocked;}}
 
 // Delegated click handler for Dev Tools panel — replaces 11 inline onclick attributes (M3)
@@ -4778,6 +4907,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='testClip'){devTestVideoClip();toggleDevTools();}
     else if(action==='resetCollection'){resetCollection();}
     else if(action==='newsTest'){openNewsSourceTest();toggleDevTools();}
+    else if(action==='youtubeDebug'){openYoutubeDebug();toggleDevTools();}
     else if(action==='videoDebug'){openVideoDebugPanel();toggleDevTools();}
     else if(action==='resetTuning'){resetTuning();}
     else if(action==='captureApp'){captureCurrentTheme('app');}
