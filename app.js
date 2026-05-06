@@ -2944,6 +2944,95 @@ async function pollPendingVideoClips() {
   }
 }
 
+function openVideoDebugPanel(){
+  var p=document.getElementById('videoDebugPanel');
+  if(!p) return;
+  p.style.display='flex';
+  renderVideoDebugPanel();
+}
+function closeVideoDebugPanel(){
+  var p=document.getElementById('videoDebugPanel');
+  if(p) p.style.display='none';
+}
+function refreshVideoDebugPanel(){ renderVideoDebugPanel(); }
+function renderVideoDebugPanel(){
+  var el=document.getElementById('videoDebugList');
+  if(!el) return;
+  var pks=Object.keys(liveContentCache);
+  if(!pks.length){
+    el.innerHTML='<div style="color:var(--muted);padding:12px">No content cached yet. Visit Pulse with live games to populate.</div>';
+    return;
+  }
+  var html='';
+  pks.forEach(function(pk){
+    var entry=liveContentCache[pk];
+    var clips=entry.items||[];
+    var age=Math.round((Date.now()-entry.fetchedAt)/1000);
+    html+='<div style="margin-bottom:20px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+    html+='<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center">';
+    html+='<span>Game '+pk+' &nbsp;<span style="color:var(--muted);font-weight:400">('+clips.length+' video clips)</span></span>';
+    html+='<span style="color:var(--muted);font-size:.65rem;font-weight:400">cached '+age+'s ago</span>';
+    html+='</div>';
+    if(!clips.length){
+      html+='<div style="padding:8px 12px;color:var(--muted)">No playable video clips returned.</div>';
+    } else {
+      clips.forEach(function(clip,i){
+        // Filter analysis
+        var title=(clip.headline||clip.blurb||'').toLowerCase();
+        var statcastByTitle=title.indexOf('statcast')!==-1||title.indexOf('savant')!==-1;
+        var statcastByKw=(clip.keywordsAll||[]).some(function(kw){var v=(kw.value||kw.slug||'').toLowerCase();return v==='statcast'||v==='savant';});
+        var isStatcast2=statcastByTitle||statcastByKw;
+        var hasScoringKw=(clip.keywordsAll||[]).some(function(kw){var v=kw.value||kw.slug||'';return v==='home_run'||v==='scoring_play'||v==='walk_off';});
+        var playerIds=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='player_id'||(kw.slug&&kw.slug.startsWith('player_id-'));}).map(function(kw){return kw.type==='player_id'?kw.value:kw.slug.split('-')[1];});
+        var hasPlayback=!!pickPlayback(clip.playbacks);
+        var clipTs=clip.date?new Date(clip.date).getTime():null;
+        var clipAge=clipTs?Math.round((Date.now()-clipTs)/60000)+'m ago':'no date';
+        var statcastBadge=isStatcast2?'<span style="background:rgba(220,60,60,.25);color:#f87171;padding:1px 6px;border-radius:4px">🚫 STATCAST</span>':'<span style="background:rgba(34,197,94,.15);color:#4ade80;padding:1px 6px;border-radius:4px">✓ broadcast</span>';
+        var scoringBadge=hasScoringKw?'<span style="background:rgba(245,158,11,.2);color:#fbbf24;padding:1px 6px;border-radius:4px">✓ scoring kw</span>':'<span style="background:var(--card);color:var(--muted);padding:1px 6px;border-radius:4px">no scoring kw</span>';
+        var playbackBadge=hasPlayback?'<span style="color:#4ade80">✓ mp4</span>':'<span style="color:#f87171">✗ no mp4</span>';
+        html+='<div style="padding:8px 12px;border-top:1px solid var(--border);'+(isStatcast2?'opacity:.45':'')+'">';
+        html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:5px">';
+        html+='<span style="color:var(--muted)">'+i+'.</span>';
+        html+=statcastBadge+' '+scoringBadge+' '+playbackBadge;
+        html+='<span style="color:var(--muted)">'+clipAge+'</span>';
+        html+='</div>';
+        html+='<div style="color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(clip.headline||'').replace(/"/g,'&quot;')+'">'+escHtml(clip.headline||clip.blurb||'(no title)')+'</div>';
+        if(playerIds.length){
+          html+='<div style="color:var(--muted);margin-bottom:2px">player_ids: '+escHtml(playerIds.join(', '))+'</div>';
+        }
+        var kwTaxonomy=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';}).map(function(kw){return kw.value||kw.slug;}).join(', ');
+        if(kwTaxonomy){
+          html+='<div style="color:var(--muted)">taxonomy: '+escHtml(kwTaxonomy)+'</div>';
+        }
+        html+='</div>';
+      });
+    }
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function copyVideoDebug(){
+  var btn=document.getElementById('videoDebugCopyBtn');
+  // Serialize liveContentCache with clip metadata for each game
+  var out={};
+  Object.keys(liveContentCache).forEach(function(pk){
+    var entry=liveContentCache[pk];
+    out[pk]={fetchedAt:new Date(entry.fetchedAt).toISOString(),clipCount:(entry.items||[]).length,clips:(entry.items||[]).map(function(clip){
+      var playerIds=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='player_id'||(kw.slug&&kw.slug.startsWith('player_id-'));}).map(function(kw){return kw.type==='player_id'?kw.value:kw.slug.split('-')[1];});
+      var taxonomy=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';}).map(function(kw){return kw.value||kw.slug;});
+      var isStatcast=(clip.headline||clip.blurb||'').toLowerCase().indexOf('statcast')!==-1||taxonomy.some(function(v){return v==='statcast'||v==='savant';});
+      return {id:clip.id,headline:clip.headline||clip.blurb,date:clip.date,isStatcast:isStatcast,hasScoringKw:taxonomy.some(function(v){return v==='home_run'||v==='scoring_play'||v==='walk_off';}),playerIds:playerIds,taxonomy:taxonomy,hasPlayback:!!pickPlayback(clip.playbacks)};
+    })};
+  });
+  var text=JSON.stringify(out,null,2);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      if(btn){var orig=btn.textContent;btn.textContent='✓ Copied!';setTimeout(function(){btn.textContent=orig;},1800);}
+    }).catch(function(){fallbackCopy(text);});
+  } else { fallbackCopy(text); }
+}
+
 function patchFeedItemWithClip(feedItemTs,gamePk,clip){
   var url=pickPlayback(clip.playbacks);
   var thumb=pickHeroImage(clip);
@@ -4646,6 +4735,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='testClip'){devTestVideoClip();toggleDevTools();}
     else if(action==='resetCollection'){resetCollection();}
     else if(action==='newsTest'){openNewsSourceTest();toggleDevTools();}
+    else if(action==='videoDebug'){openVideoDebugPanel();toggleDevTools();}
     else if(action==='resetTuning'){resetTuning();}
     else if(action==='captureApp'){captureCurrentTheme('app');}
     else if(action==='capturePulse'){captureCurrentTheme('pulse');}
