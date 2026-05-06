@@ -8,7 +8,7 @@
 // "Critical Gotchas" #2 (Audacy radio rights gap).
 //
 // Source of truth for the approved Set: in-app Radio Check sweep,
-// last updated 2026-05-02.
+// last updated 2026-05-06.
 
 export const MLB_TEAM_RADIO = {
   108: { name: 'KLAA Angels Radio',     url: 'https://klaa.streamguys1.com/live',                                                              format: 'direct' },
@@ -48,7 +48,7 @@ export const FALLBACK_RADIO = { name: 'Fox Sports Radio', url: 'https://ais-sa1.
 // Approved team IDs whose flagship feeds verifiably play live game audio.
 // Update as the in-app Radio Check sweep grows; non-approved teams skip
 // to FALLBACK_RADIO.
-export const APPROVED_RADIO_TEAM_IDS = new Set([108, 114, 116, 117, 140, 142, 144, 146, 147]);
+export const APPROVED_RADIO_TEAM_IDS = new Set([108, 114, 116, 117, 137, 140, 142, 144, 146, 147]);
 
 // Default notes seeded once into the Radio Check tool's textarea on first run
 // (preserves user-entered notes via the `mlb_radio_check_notes_seeded_v2`
@@ -67,7 +67,7 @@ export const RADIO_CHECK_DEFAULT_NOTES = {
   '119': 'URL updated v3.34.1 — not yet confirmed',
   '121': 'URL updated v3.34.1 — not yet confirmed',
   '133': 'URL updated v3.34.1 — not yet confirmed',
-  '137': 'Not yet confirmed — needs Radio Check sweep',
+  '137': 'Confirmed working — live game audio (verified 2026-05-06)',
   '139': 'URL updated v3.34.1 — not yet confirmed',
   '140': 'Confirmed working — live game audio (verified 2026-05-02)',
   '142': 'Confirmed working — live game audio (verified 2026-05-02)',

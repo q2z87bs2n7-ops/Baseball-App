@@ -8,12 +8,12 @@ Controlled by one place in `src/radio/stations.js`:
 
 ```javascript
 // src/radio/stations.js
-export const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
+export const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,137,140,142,144,146,147]);
 ```
 
 To enable a team: add its `teamId` to this Set, bump comment date, bump app version + `sw.js` CACHE, commit. To disable: remove `teamId`. The `MLB_TEAM_RADIO` URL map stays untouched.
 
-### ✅ Currently enabled (9 teams — last sweep 2026-05-02)
+### ✅ Currently enabled (10 teams — last sweep 2026-05-06)
 
 | `teamId` | Team | Flagship station | Format |
 |---|---|---|---|
@@ -21,6 +21,7 @@ To enable a team: add its `teamId` to this Set, bump comment date, bump app vers
 | 114 | Cleveland Guardians | WTAM 1100 AM | hls |
 | 116 | Detroit Tigers | WXYT 97.1 The Ticket | hls |
 | 117 | Houston Astros | SportsTalk 790 AM | direct |
+| 137 | San Francisco Giants | KNBR 104.5 / 680 | direct |
 | 140 | Texas Rangers | 105.3 The Fan KRLD | hls |
 | 142 | Minnesota Twins | WCCO News Talk 830 | hls |
 | 144 | Atlanta Braves | 680 The Fan / 93.7 FM | direct |
@@ -47,7 +48,7 @@ URL is in `MLB_TEAM_RADIO` (Radio Check can still test it), but excluded from `A
 | 134 | Pittsburgh Pirates | KDKA-FM 93.7 The Fan | ❌ Broken (Audacy rights) |
 | 135 | San Diego Padres | KWFN 97.3 The Fan | ❌ Broken (Audacy rights) |
 | 136 | Seattle Mariners | Seattle Sports 710 AM | ❌ Broken (Bonneville rebrand of KIRO) |
-| 137 | San Francisco Giants | KNBR 104.5 / 680 | ⏳ Untested |
+| 137 | San Francisco Giants | KNBR 104.5 / 680 | ✅ Confirmed 2026-05-06 — moved to enabled |
 | 138 | St. Louis Cardinals | KMOX NewsRadio 1120 | ❌ Broken (Audacy rights) |
 | 139 | Tampa Bay Rays | WDAE 95.3 FM / 620 AM | ⏳ Station replaced v3.34.1 — untested |
 | 141 | Toronto Blue Jays | CJCL Sportsnet 590 | ❌ Broken (likely Canada geo-locked) |

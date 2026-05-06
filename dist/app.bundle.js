@@ -2385,7 +2385,7 @@
     158: { name: "WTMJ Newsradio 620", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/WTMJAMAAC.aac", format: "direct" }
   };
   var FALLBACK_RADIO = { name: "Fox Sports Radio", url: "https://ais-sa1.streamon.fm/7852_128k.aac", format: "direct" };
-  var APPROVED_RADIO_TEAM_IDS = /* @__PURE__ */ new Set([108, 114, 116, 117, 140, 142, 144, 146, 147]);
+  var APPROVED_RADIO_TEAM_IDS = /* @__PURE__ */ new Set([108, 114, 116, 117, 137, 140, 142, 144, 146, 147]);
   var RADIO_CHECK_DEFAULT_NOTES = {
     "108": "Confirmed working \u2014 live game audio (verified 2026-05-02)",
     "109": "URL updated v3.34.1 \u2014 not yet confirmed",
@@ -2400,7 +2400,7 @@
     "119": "URL updated v3.34.1 \u2014 not yet confirmed",
     "121": "URL updated v3.34.1 \u2014 not yet confirmed",
     "133": "URL updated v3.34.1 \u2014 not yet confirmed",
-    "137": "Not yet confirmed \u2014 needs Radio Check sweep",
+    "137": "Confirmed working \u2014 live game audio (verified 2026-05-06)",
     "139": "URL updated v3.34.1 \u2014 not yet confirmed",
     "140": "Confirmed working \u2014 live game audio (verified 2026-05-02)",
     "142": "Confirmed working \u2014 live game audio (verified 2026-05-02)",

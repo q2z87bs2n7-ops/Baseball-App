@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.43
+**Current version:** v3.43.3
+
+**v3.43.3** — Settings menu polish + Giants radio confirmed. (1) **Settings panel:** 🃏 emoji for Cards Collected; Color Theme + Theme Scope + Invert merged into single "Appearance" block; Sync Collection compacted to 2 rows (signed-out: GitHub/Email buttons side-by-side; signed-in: single "🐙 GitHub — Sign Out" / "✉️ Email — Sign Out" button). (2) **Dev Tools:** removed non-hotkey explanatory text from 5 action buttons (Video Debug, Reset Collection, YouTube Test, Test Notification, Radio Check); keyboard shortcut labels kept. (3) **Radio:** San Francisco Giants (137 / KNBR 104.5/680) confirmed working and added to `APPROVED_RADIO_TEAM_IDS` (10 teams total, last sweep 2026-05-06).
 
 **v3.43** — **News carousel + News-tab image fixes.** Net result of an investigation into "carousel pictures sometimes missing" and "MLB articles in News tab show no images." Changes consolidated from a chain of in-flight commits (v3.42.5 → v3.42.15) where the diagnostic surfaced the issues progressively; this entry describes the final landed state.
 

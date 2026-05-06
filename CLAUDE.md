@@ -313,7 +313,7 @@ Full tier definitions, data model, lifecycle, `window.CollectionCard` API: `docs
 Background terrestrial sports-radio that auto-pairs to the focused game. Source of truth (`src/radio/stations.js`):
 
 ```javascript
-export const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
+export const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,137,140,142,144,146,147]);
 ```
 
 To enable a team: add `teamId` to this Set, bump comment date, bump version + `sw.js` CACHE. Falls through to Fox Sports Radio when no approved team is focused. ⚠️ Audacy-hosted stations (`live.amperwave.net/manifest/audacy-*`) play alternate content during games — never add Audacy URLs to `APPROVED_RADIO_TEAM_IDS`.
@@ -387,7 +387,7 @@ These are subtle bugs that could be silently re-introduced. Full issue list: `do
 | YouTube channel IDs (`youtubeUC`) | Teams may rebrand/change channels | Verify each offseason |
 | Game state strings | MLB uses both `"Preview"` and `"Scheduled"` | Both checked — verify if new states appear |
 | `MLB_TEAM_RADIO` URLs | radio.net-sourced; stations may change CDNs | Re-run 🔍 Radio Check sweep periodically |
-| `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated — last updated 2026-05-02 | Update Set when sweep results change |
+| `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated — last updated 2026-05-06 | Update Set when sweep results change |
 | Hls.js CDN URL | `cdn.jsdelivr.net/npm/hls.js@1.5.18` — pinned, free CDN | Bundle locally if CDN unreliable |
 | `NEWS_IMAGE_HOSTS` allowlist | Hand-curated CDN domain list — thumbnails silently fall back to placeholder if CDN changes | Add new hostname to `NEWS_IMAGE_HOSTS` regex in `src/utils/news.js` |
 
