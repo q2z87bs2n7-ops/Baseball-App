@@ -1259,7 +1259,7 @@
     state.focusLastTimecode = null;
     state.focusState.batterStats = null;
     state.focusState.pitcherStats = null;
-    dismissFocusAlert2();
+    dismissFocusAlert();
     if (state.focusFastTimer) {
       clearInterval(state.focusFastTimer);
       state.focusFastTimer = null;
@@ -1517,7 +1517,7 @@
     el.style.display = "";
     el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:6px;margin:6px 0;font-size:.75rem"><span>\u26A1 <strong style="color:var(--text)">' + reason + '</strong></span><div style="display:flex;gap:6px;flex-shrink:0"><button onclick="setFocusGame(' + pk + ');dismissFocusAlert()" style="padding:3px 10px;background:#f59e0b;border:none;border-radius:4px;color:#000;font-weight:700;font-size:11px;cursor:pointer">Switch</button><button onclick="dismissFocusAlert()" style="padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:11px;cursor:pointer">\u2715</button></div></div>';
   }
-  function dismissFocusAlert2() {
+  function dismissFocusAlert() {
     var el = document.getElementById("focusAlertBanner");
     if (el) el.style.display = "none";
   }

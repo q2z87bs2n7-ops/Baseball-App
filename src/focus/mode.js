@@ -290,6 +290,6 @@ function showFocusAlert(pk, reason) {
     +'</div></div>';
 }
 
-function dismissFocusAlert() {
+export function dismissFocusAlert() {
   var el=document.getElementById('focusAlertBanner'); if(el) el.style.display='none';
 }

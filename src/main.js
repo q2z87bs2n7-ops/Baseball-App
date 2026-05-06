@@ -34,7 +34,7 @@ import {
 import {
   calcFocusScore, selectFocusGame, setFocusGame, setFocusGameManual, resetFocusAuto,
   pollFocusLinescore, renderFocusCard, renderFocusMiniBar,
-  openFocusOverlay, closeFocusOverlay, renderFocusOverlay,
+  openFocusOverlay, closeFocusOverlay, renderFocusOverlay, dismissFocusAlert,
 } from './focus/mode.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import {
