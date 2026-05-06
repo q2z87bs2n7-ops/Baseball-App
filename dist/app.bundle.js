@@ -3380,9 +3380,6 @@
       var r = await fetch(MLB_BASE + "/game/" + gamePk + "/content");
       var d = await r.json();
       state.yesterdayContentCache[gamePk] = d;
-      if (typeof window !== "undefined" && window.Recorder && window.Recorder.active) {
-        window.Recorder._captureYesterdayContent(gamePk, d);
-      }
       return d;
     } catch (e) {
       state.yesterdayContentCache[gamePk] = null;
@@ -3742,7 +3739,8 @@
   var STATUS_INTERVAL_MS = 5e3;
   var PITCH_CAP_PER_GAME = 5e3;
   var CONTENT_CAP_PER_GAME = 200;
-  var BOXSCORE_CAP_PER_GAME = 50;
+  var BOXSCORE_CAP_PER_GAME = 10;
+  var FEED_BASELINE_CAP = 200;
   function deepClone(x) {
     if (x === null || typeof x !== "object") return x;
     if (x instanceof Date) return new Date(x.getTime());
@@ -3756,6 +3754,50 @@
   }
   function tsNow() {
     return Date.now();
+  }
+  function trimClip(clip) {
+    if (!clip) return clip;
+    var trimmed = {
+      id: clip.id,
+      headline: clip.headline,
+      blurb: clip.blurb,
+      date: clip.date,
+      type: clip.type,
+      keywordsAll: clip.keywordsAll
+      // full — needed for player_id match + filters
+    };
+    if (clip.playbacks && clip.playbacks.length) {
+      var mp4 = clip.playbacks.find(function(p) {
+        return p.name === "mp4Avc";
+      });
+      var any = mp4 || clip.playbacks.find(function(p) {
+        return p.url && typeof p.url === "string" && p.url.endsWith(".mp4");
+      });
+      if (any) trimmed.playbacks = [{ name: any.name, url: any.url }];
+    }
+    if (clip.image) {
+      var raw = clip.image.cuts;
+      var cuts = Array.isArray(raw) ? raw : raw ? Object.values(raw) : [];
+      if (cuts.length) {
+        var c16 = cuts.filter(function(c) {
+          return c.aspectRatio === "16:9" && (c.width || 0) >= 480;
+        });
+        c16.sort(function(a, b) {
+          return (a.width || 0) - (b.width || 0);
+        });
+        var best = c16[0];
+        if (!best) {
+          var sorted = cuts.slice().sort(function(a, b) {
+            return (b.width || 0) - (a.width || 0);
+          });
+          best = sorted[0];
+        }
+        if (best) {
+          trimmed.image = { cuts: [{ src: best.src || best.url, width: best.width, aspectRatio: best.aspectRatio }] };
+        }
+      }
+    }
+    return trimmed;
   }
   function pad2(n) {
     return n < 10 ? "0" + n : "" + n;
@@ -3773,15 +3815,20 @@
     capWarned: false,
     start: function() {
       if (Recorder.active) return;
+      var startTs = tsNow();
+      var baselineFeed = state.feedItems || [];
+      if (baselineFeed.length > FEED_BASELINE_CAP) {
+        baselineFeed = baselineFeed.slice(0, FEED_BASELINE_CAP);
+      }
       Recorder.data = {
         metadata: {
           recorderVersion: 2,
-          startedAt: tsNow(),
+          startedAt: startTs,
           season: typeof window !== "undefined" && window.SEASON || null
         },
         // Live game state + feed (overwritten/appended over time)
         gameStates: deepClone(state.gameStates || {}),
-        feedItems: (state.feedItems || []).map(function(it) {
+        feedItems: baselineFeed.map(function(it) {
           return { gamePk: it.gamePk, data: deepClone(it.data), ts: it.ts ? it.ts.getTime() : tsNow() };
         }),
         scheduleData: deepClone(state.scheduleData || []),
@@ -3789,25 +3836,36 @@
         // not retained between polls so backfill isn't possible)
         pitchTimeline: {},
         boxscoreSnapshots: {},
-        // Content cache — baseline what's already fetched, then append deltas
-        contentCacheBaseline: deepClone(state.liveContentCache || {}),
+        // Video clip cache — unified timeline. Pre-existing liveContentCache
+        // entries fold in as a single t=startTs entry (trimmed to demo essentials).
+        // No separate baseline field. yesterdayContentCache dropped — out of demo
+        // replay scope (Yesterday Recap is its own UI surface, not part of demo).
         contentCacheTimeline: {},
-        yesterdayContentCache: deepClone(state.yesterdayContentCache || {}),
-        lastVideoClip: state.lastVideoClip ? deepClone(state.lastVideoClip) : null,
+        lastVideoClip: state.lastVideoClip ? trimClip(state.lastVideoClip) : null,
         // Story-cache snapshots — overwritten on each 30s tick (latest only,
         // constant size — these are derived caches, not append-only)
         caches: {},
         // Focus mode tracking
         focusStatsCache: deepClone(state.focusStatsCache || {}),
         focusTrack: [{
-          ts: tsNow(),
+          ts: startTs,
           focusGamePk: state.focusGamePk || null,
           isManual: !!state.focusIsManual,
           tensionLabel: state.focusState && state.focusState.tensionLabel || null
         }]
       };
+      var existingContent = state.liveContentCache || {};
+      Object.keys(existingContent).forEach(function(pk) {
+        var entry = existingContent[pk];
+        var items = entry && entry.items || [];
+        if (!items.length) return;
+        Recorder.data.contentCacheTimeline[pk] = [{
+          ts: startTs,
+          items: items.map(trimClip)
+        }];
+      });
       Recorder._snapshotCaches();
-      Recorder.startedAt = tsNow();
+      Recorder.startedAt = startTs;
       Recorder.capWarned = false;
       Recorder.active = true;
       Recorder.snapshotTimer = setInterval(Recorder._snapshotCaches, SNAPSHOT_INTERVAL_MS);
@@ -3828,13 +3886,22 @@
       }
       if (Recorder.data) {
         Recorder.data.scheduleData = deepClone(state.scheduleData || []);
-        Recorder.data.lastVideoClip = state.lastVideoClip ? deepClone(state.lastVideoClip) : Recorder.data.lastVideoClip;
-        Recorder.data.yesterdayContentCache = deepClone(state.yesterdayContentCache || {});
+        Recorder.data.lastVideoClip = state.lastVideoClip ? trimClip(state.lastVideoClip) : Recorder.data.lastVideoClip;
         Recorder.data.metadata.exportedAt = tsNow();
         Recorder.data.metadata.durationMs = Recorder.data.metadata.exportedAt - Recorder.startedAt;
       }
       Recorder._updateStatus();
       Recorder._updateButtonState();
+    },
+    // Stamp metadata.exportedAt + durationMs at export time so mid-run
+    // downloads carry an accurate "snapshot taken at" timestamp without
+    // disturbing the running recording.
+    _stampExportMetadata: function() {
+      if (!Recorder.data) return;
+      var now = tsNow();
+      Recorder.data.metadata.exportedAt = now;
+      Recorder.data.metadata.durationMs = now - Recorder.startedAt;
+      Recorder.data.metadata.midRun = Recorder.active;
     },
     reset: function() {
       if (Recorder.active) return;
@@ -3845,7 +3912,8 @@
       Recorder._updateButtonState();
     },
     download: function() {
-      if (Recorder.active || !Recorder.data) return;
+      if (!Recorder.data) return;
+      Recorder._stampExportMetadata();
       var blob = new Blob([JSON.stringify(Recorder.data)], { type: "application/json" });
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
@@ -3859,7 +3927,8 @@
       }, 1e3);
     },
     copy: function() {
-      if (Recorder.active || !Recorder.data) return;
+      if (!Recorder.data) return;
+      Recorder._stampExportMetadata();
       var text = JSON.stringify(Recorder.data);
       function flash(msg) {
         var btn = document.getElementById("recorderCopyBtn");
@@ -3988,12 +4057,8 @@
       if (!Recorder.data) return;
       if (!Recorder.data.contentCacheTimeline[gamePk]) Recorder.data.contentCacheTimeline[gamePk] = [];
       var arr = Recorder.data.contentCacheTimeline[gamePk];
-      arr.push({ ts: tsNow(), items: deepClone(items || []) });
+      arr.push({ ts: tsNow(), items: (items || []).map(trimClip) });
       if (arr.length > CONTENT_CAP_PER_GAME) arr.shift();
-    },
-    _captureYesterdayContent: function(gamePk, content) {
-      if (!Recorder.data) return;
-      Recorder.data.yesterdayContentCache[gamePk] = deepClone(content);
     },
     _captureBoxscore: function(gamePk, bs) {
       if (!Recorder.data || !bs) return;
@@ -4099,9 +4164,9 @@
       var dlBtn = document.getElementById("recorderDownloadBtn");
       var resetBtn = document.getElementById("recorderResetBtn");
       if (toggleBtn) toggleBtn.textContent = Recorder.active ? "\u23F9 Stop Recording" : "\u23FA Start Recording";
-      var canExport = !Recorder.active && !!Recorder.data;
-      if (copyBtn) copyBtn.disabled = !canExport;
-      if (dlBtn) dlBtn.disabled = !canExport;
+      var hasData = !!Recorder.data;
+      if (copyBtn) copyBtn.disabled = !hasData;
+      if (dlBtn) dlBtn.disabled = !hasData;
       if (resetBtn) resetBtn.disabled = Recorder.active;
     },
     _note: function(msg) {

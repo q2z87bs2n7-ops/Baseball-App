@@ -20,7 +20,8 @@ const STATUS_INTERVAL_MS = 5000;
 // Per-game caps so a long run can't quietly balloon
 const PITCH_CAP_PER_GAME = 5000;          // ~150 ABs × 30 pitches
 const CONTENT_CAP_PER_GAME = 200;         // clip-cache delta entries
-const BOXSCORE_CAP_PER_GAME = 50;         // one every ~2 min over 2h
+const BOXSCORE_CAP_PER_GAME = 10;         // fetchBoxscore is single-fetch-per-game; this is just a defensive ceiling
+const FEED_BASELINE_CAP = 200;            // trim baseline feed to last 200 plays (live cap is 600)
 
 function deepClone(x) {
   // Fast path for the kinds of plain-data objects the recorder captures.
@@ -37,6 +38,47 @@ function deepClone(x) {
 }
 
 function tsNow() { return Date.now(); }
+
+// Strip MLB clip metadata to demo essentials. A raw clip is ~5–10 KB
+// (multi-bitrate playbacks, 12+ image cut variants); trimmed is ~1 KB.
+// Demo replay needs: matching by player_id keyword, statcast/abs filtering
+// by keyword/headline, and rendering one mp4Avc playback + one 16:9 thumb.
+function trimClip(clip) {
+  if (!clip) return clip;
+  var trimmed = {
+    id: clip.id,
+    headline: clip.headline,
+    blurb: clip.blurb,
+    date: clip.date,
+    type: clip.type,
+    keywordsAll: clip.keywordsAll,  // full — needed for player_id match + filters
+  };
+  // Keep one playback URL (mp4Avc preferred, any .mp4 fallback — what
+  // pickPlayback would select anyway)
+  if (clip.playbacks && clip.playbacks.length) {
+    var mp4 = clip.playbacks.find(function(p) { return p.name === 'mp4Avc'; });
+    var any = mp4 || clip.playbacks.find(function(p) { return p.url && typeof p.url === 'string' && p.url.endsWith('.mp4'); });
+    if (any) trimmed.playbacks = [{ name: any.name, url: any.url }];
+  }
+  // Keep one 16:9 ≥480w cut (smallest above the floor — what pickHeroImage prefers)
+  if (clip.image) {
+    var raw = clip.image.cuts;
+    var cuts = Array.isArray(raw) ? raw : (raw ? Object.values(raw) : []);
+    if (cuts.length) {
+      var c16 = cuts.filter(function(c) { return c.aspectRatio === '16:9' && (c.width || 0) >= 480; });
+      c16.sort(function(a, b) { return (a.width || 0) - (b.width || 0); });
+      var best = c16[0];
+      if (!best) {
+        var sorted = cuts.slice().sort(function(a, b) { return (b.width || 0) - (a.width || 0); });
+        best = sorted[0];
+      }
+      if (best) {
+        trimmed.image = { cuts: [{ src: best.src || best.url, width: best.width, aspectRatio: best.aspectRatio }] };
+      }
+    }
+  }
+  return trimmed;
+}
 
 function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 function downloadFilename() {
@@ -55,17 +97,23 @@ const Recorder = {
 
   start: function() {
     if (Recorder.active) return;
+    var startTs = tsNow();
     // Step 1 — baseline snapshot of current in-memory state (before observers).
     // Captures everything that's already happened in the session.
+    var baselineFeed = (state.feedItems || []);
+    if (baselineFeed.length > FEED_BASELINE_CAP) {
+      // Keep most-recent N (feedItems are stored newest-first by addFeedItem)
+      baselineFeed = baselineFeed.slice(0, FEED_BASELINE_CAP);
+    }
     Recorder.data = {
       metadata: {
         recorderVersion: 2,
-        startedAt: tsNow(),
+        startedAt: startTs,
         season: (typeof window !== 'undefined' && window.SEASON) || null,
       },
       // Live game state + feed (overwritten/appended over time)
       gameStates: deepClone(state.gameStates || {}),
-      feedItems: (state.feedItems || []).map(function(it) {
+      feedItems: baselineFeed.map(function(it) {
         return { gamePk: it.gamePk, data: deepClone(it.data), ts: it.ts ? it.ts.getTime() : tsNow() };
       }),
       scheduleData: deepClone(state.scheduleData || []),
@@ -73,26 +121,39 @@ const Recorder = {
       // not retained between polls so backfill isn't possible)
       pitchTimeline: {},
       boxscoreSnapshots: {},
-      // Content cache — baseline what's already fetched, then append deltas
-      contentCacheBaseline: deepClone(state.liveContentCache || {}),
+      // Video clip cache — unified timeline. Pre-existing liveContentCache
+      // entries fold in as a single t=startTs entry (trimmed to demo essentials).
+      // No separate baseline field. yesterdayContentCache dropped — out of demo
+      // replay scope (Yesterday Recap is its own UI surface, not part of demo).
       contentCacheTimeline: {},
-      yesterdayContentCache: deepClone(state.yesterdayContentCache || {}),
-      lastVideoClip: state.lastVideoClip ? deepClone(state.lastVideoClip) : null,
+      lastVideoClip: state.lastVideoClip ? trimClip(state.lastVideoClip) : null,
       // Story-cache snapshots — overwritten on each 30s tick (latest only,
       // constant size — these are derived caches, not append-only)
       caches: {},
       // Focus mode tracking
       focusStatsCache: deepClone(state.focusStatsCache || {}),
       focusTrack: [{
-        ts: tsNow(),
+        ts: startTs,
         focusGamePk: state.focusGamePk || null,
         isManual: !!state.focusIsManual,
         tensionLabel: (state.focusState && state.focusState.tensionLabel) || null,
       }],
     };
+    // Fold pre-existing liveContentCache entries into contentCacheTimeline
+    // as a single trimmed entry per game at t=startTs.
+    var existingContent = state.liveContentCache || {};
+    Object.keys(existingContent).forEach(function(pk) {
+      var entry = existingContent[pk];
+      var items = (entry && entry.items) || [];
+      if (!items.length) return;
+      Recorder.data.contentCacheTimeline[pk] = [{
+        ts: startTs,
+        items: items.map(trimClip),
+      }];
+    });
     // Initial cache snapshot
     Recorder._snapshotCaches();
-    Recorder.startedAt = tsNow();
+    Recorder.startedAt = startTs;
     Recorder.capWarned = false;
     Recorder.active = true;
     // Periodic cache snapshot (overwrites latest, doesn't append)
@@ -110,13 +171,23 @@ const Recorder = {
     if (Recorder.data) {
       // Final scheduleData refresh + metadata
       Recorder.data.scheduleData = deepClone(state.scheduleData || []);
-      Recorder.data.lastVideoClip = state.lastVideoClip ? deepClone(state.lastVideoClip) : Recorder.data.lastVideoClip;
-      Recorder.data.yesterdayContentCache = deepClone(state.yesterdayContentCache || {});
+      Recorder.data.lastVideoClip = state.lastVideoClip ? trimClip(state.lastVideoClip) : Recorder.data.lastVideoClip;
       Recorder.data.metadata.exportedAt = tsNow();
       Recorder.data.metadata.durationMs = Recorder.data.metadata.exportedAt - Recorder.startedAt;
     }
     Recorder._updateStatus();
     Recorder._updateButtonState();
+  },
+
+  // Stamp metadata.exportedAt + durationMs at export time so mid-run
+  // downloads carry an accurate "snapshot taken at" timestamp without
+  // disturbing the running recording.
+  _stampExportMetadata: function() {
+    if (!Recorder.data) return;
+    var now = tsNow();
+    Recorder.data.metadata.exportedAt = now;
+    Recorder.data.metadata.durationMs = now - Recorder.startedAt;
+    Recorder.data.metadata.midRun = Recorder.active;
   },
 
   reset: function() {
@@ -129,7 +200,8 @@ const Recorder = {
   },
 
   download: function() {
-    if (Recorder.active || !Recorder.data) return;
+    if (!Recorder.data) return;
+    Recorder._stampExportMetadata();
     var blob = new Blob([JSON.stringify(Recorder.data)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -142,7 +214,8 @@ const Recorder = {
   },
 
   copy: function() {
-    if (Recorder.active || !Recorder.data) return;
+    if (!Recorder.data) return;
+    Recorder._stampExportMetadata();
     var text = JSON.stringify(Recorder.data);
     function flash(msg) {
       var btn = document.getElementById('recorderCopyBtn');
@@ -269,13 +342,8 @@ const Recorder = {
     if (!Recorder.data) return;
     if (!Recorder.data.contentCacheTimeline[gamePk]) Recorder.data.contentCacheTimeline[gamePk] = [];
     var arr = Recorder.data.contentCacheTimeline[gamePk];
-    arr.push({ ts: tsNow(), items: deepClone(items || []) });
+    arr.push({ ts: tsNow(), items: (items || []).map(trimClip) });
     if (arr.length > CONTENT_CAP_PER_GAME) arr.shift();
-  },
-
-  _captureYesterdayContent: function(gamePk, content) {
-    if (!Recorder.data) return;
-    Recorder.data.yesterdayContentCache[gamePk] = deepClone(content);
   },
 
   _captureBoxscore: function(gamePk, bs) {
@@ -387,9 +455,11 @@ const Recorder = {
     var dlBtn = document.getElementById('recorderDownloadBtn');
     var resetBtn = document.getElementById('recorderResetBtn');
     if (toggleBtn) toggleBtn.textContent = Recorder.active ? '⏹ Stop Recording' : '⏺ Start Recording';
-    var canExport = !Recorder.active && !!Recorder.data;
-    if (copyBtn) copyBtn.disabled = !canExport;
-    if (dlBtn) dlBtn.disabled = !canExport;
+    // Download/Copy work both during and after recording (mid-run snapshots
+    // are non-destructive — recording continues). Reset stays gated on !active.
+    var hasData = !!Recorder.data;
+    if (copyBtn) copyBtn.disabled = !hasData;
+    if (dlBtn) dlBtn.disabled = !hasData;
     if (resetBtn) resetBtn.disabled = Recorder.active;
   },
 
