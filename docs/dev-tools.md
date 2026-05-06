@@ -97,9 +97,23 @@ In-memory ring buffer (`devLog`, cap 500) populated by a `console.log/warn/error
 
 **Functions** (all in `app.js`):
 - `pushDevLog(level, src, args)` — internal, called by the console wrap and error listeners
+- `devTrace(src, ...args)` — **always-on** event tracer (added v3.38.2). Pushes to `devLog` regardless of `DEBUG`. Use at major event boundaries — boot, navigation, polls, focus changes, theme apply, collection adds, radio start/stop, etc. Also forwards to `console.log` when `DEBUG=true`.
 - `renderLogCapture()` — re-renders the list from current filter state
 - `copyLogAsMarkdown()` — clipboard export
 - `clearDevLog()` — empties `devLog` and re-renders
 - `_filteredDevLog()`, `_logLevelRank()`, `_fmtLogTs()` — internal helpers
 
 **Globals:** `devLog` (ring buffer array), `DEV_LOG_CAP` (500).
+
+**Current `devTrace` instrumentation points** (v3.38.2):
+- `boot` — script load
+- `sw` — service worker register/fail
+- `theme` — `applyTeamTheme(team)`
+- `nav` — `showSection(id)`
+- `pulse` — `initLeaguePulse()` (first nav only, lazy)
+- `demo` — `toggleDemoMode()`
+- `focus` — `setFocusGameManual(pk)`
+- `collect` — `collectCard(data, force)`
+- `radio` — `startRadio()` / `stopRadio()`
+
+Add a new `devTrace('<src>', ...)` call at any new event boundary you want surfaced in Log Capture — keep them low-volume (one per user-meaningful event, never per poll tick or animation frame).

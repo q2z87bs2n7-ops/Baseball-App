@@ -35,6 +35,18 @@ window.addEventListener('unhandledrejection', function(e){
   var r = e && e.reason;
   pushDevLog('error', 'promise', [r && r.stack ? r.stack : (r && r.message ? r.message : String(r))]);
 });
+// Always-on event trace — feeds Log Capture regardless of DEBUG flag. Use at major
+// event boundaries (boot, navigation, polls, focus changes, theme apply, collection
+// adds, radio start/stop, etc.) so the buffer is useful in production where
+// DEBUG=false and console.log calls are otherwise gated out.
+function devTrace(src){
+  var args=Array.prototype.slice.call(arguments,1);
+  pushDevLog('log', src||'app', args);
+  if(typeof DEBUG!=='undefined' && DEBUG){
+    try{ console.log.apply(console, ['['+(src||'app')+']'].concat(args)); }catch(e){}
+  }
+}
+devTrace('boot','app.js loaded · '+new Date().toISOString());
 
 // ── Naming conventions ────────────────────────────────────────────────────────
 // load*()    — fetch + cache + render a full section (loadTodayGame, loadSchedule)
@@ -256,6 +268,7 @@ async function fetchBoxscore(gamePk){
 
 // ── League Pulse functions ────────────────────────────────────────────────────
 function initLeaguePulse() {
+  devTrace('pulse','initLeaguePulse · first nav to Pulse');
   initReal();
 }
 function initReal() {
@@ -584,6 +597,7 @@ function updateDemoBtnLabel(){
 }
 
 function toggleDemoMode() {
+  devTrace('demo', demoMode ? 'exit' : 'init');
   if(demoMode) exitDemo();
   else initDemo();
   updateDemoBtnLabel();
@@ -2344,6 +2358,7 @@ function setFocusGame(pk) {
   focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
 }
 function setFocusGameManual(pk) {
+  devTrace('focus','manual pick · gamePk='+pk);
   focusIsManual=true;
   setFocusGame(pk);
 }
@@ -2664,6 +2679,7 @@ function collectCard(data, force) {
   var eventType = data.eventType, badge = data.badge || '', rbi = data.rbi || 0;
   var key = playerId + '_' + eventType;
   var tier = getCardTier(badge, eventType, rbi);
+  devTrace('collect',(playerName||'?')+' · '+eventType+' · tier='+tier+(rbi?' · rbi='+rbi:'')+(force?' [forced]':''));
 
   if (demoMode && !force) {
     // Simulate the collection outcome so the rail flash message works during demo playback
@@ -4500,7 +4516,7 @@ function stopAllMedia(except){
   if(except!=='highlight'){document.querySelectorAll('video').forEach(function(v){if(!v.paused)v.pause();});}
 }
 function toggleRadio(){if(radioAudio&&!radioAudio.paused){stopRadio();}else{startRadio();}}
-function startRadio(){stopAllMedia('radio');loadRadioStream(pickRadioForFocus());}
+function startRadio(){devTrace('radio','startRadio');stopAllMedia('radio');loadRadioStream(pickRadioForFocus());}
 function loadRadioStream(pick){
   if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
   if(!radioAudio){radioAudio=new Audio();radioAudio.preload='none';}
@@ -4523,6 +4539,7 @@ function loadRadioStream(pick){
   }
 }
 function stopRadio(){
+  devTrace('radio','stopRadio · was teamId='+radioCurrentTeamId);
   if(radioAudio){radioAudio.pause();}
   if(radioHls){try{radioHls.destroy();}catch(e){}radioHls=null;}
   radioCurrentTeamId=null;
@@ -5023,6 +5040,7 @@ function hslLighten(hex,targetL){hex=hex.replace('#','');var n=parseInt(hex,16),
 function pickAccent(secondaryHex,cardHex){var sLum=relLuminance(secondaryHex),cCon=contrastRatio(secondaryHex,cardHex);if(sLum>=0.18&&cCon>=3.0)return secondaryHex;var lifted=hslLighten(secondaryHex,0.65);if(contrastRatio(lifted,cardHex)>=3.0)return lifted;return'#FFB273';}
 function pickHeaderText(primaryHex){return relLuminance(primaryHex)>0.5?'#0a0f1e':'#ffffff';}
 function applyTeamTheme(team){
+  if(team) devTrace('theme','applyTeamTheme · '+team.name+' (id:'+team.id+')'+(devColorLocked?' [locked]':''));
   if(devColorLocked&&devColorOverrides.app.primary){
     document.documentElement.style.setProperty('--dark',devColorOverrides.app.dark);
     document.documentElement.style.setProperty('--card',devColorOverrides.app.card);
@@ -5359,6 +5377,7 @@ function onSoundPanelClickOutside(e){
 }
 
 function showSection(id,btn){
+  devTrace('nav','showSection · '+id);
   if(demoMode)exitDemo();
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
   if(id!=='league'&&leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}
@@ -6271,4 +6290,9 @@ document.addEventListener('keydown',function(e){
 
 document.addEventListener('click',onSoundPanelClickOutside);
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(
+    function(reg){devTrace('sw','registered · scope='+reg.scope);},
+    function(err){devTrace('sw','registration FAILED · '+(err&&err.message||err));}
+  );
+}
