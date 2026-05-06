@@ -5,9 +5,13 @@
 
 ---
 
-**Current version:** v3.38.13
+**Current version:** v3.38.14
 
-**v3.38.13** — Remove broken RSS proxy news feed code. Cleaned up orphaned `fetchMLBNewsFeed()` function and related helpers that were causing 500 errors due to deprecated MLB.com RSS feed URLs. Modern news tab relies on `/api/proxy-news` endpoint which aggregates 5 sources with fallbacks; legacy RSS proxy code was dead code that only generated console errors on app load.
+**v3.38.14** — Add Pulse state-change event logging. Comprehensive trace logging to track state transitions and diagnose why Pulse empty state shows what it shows. New traces: pollLeaguePulse start/end (hasLive, pollDate, game counts), schedule fetch result (date, games returned), game final (which game went final and score), renderEmptyState (upcoming count, postSlate/intermission flags). All visible in Dev Tools → Log Capture with timestamps — eliminates guesswork when investigating "why did the state change?" See individual commit messages for full trace points.
+
+**v3.38.13** — Add Pulse diagnostics inspector to Dev Tools. Permanent debug tool in Dev Tools → App State → ⚡ Pulse Diagnostics that shows current time/greeting, game counts (live/upcoming/final/enabled), reason analysis (why empty state is showing), and all games in gameStates with status and enabled flag sorted by game time. One-click copy to export full diagnostic report with tables. Eliminates the guesswork when debugging Pulse display issues.
+
+**v3.38.12** — Remove broken RSS proxy news feed code. Cleaned up orphaned `fetchMLBNewsFeed()` function and related helpers that were causing 500 errors due to deprecated MLB.com RSS feed URLs. Modern news tab relies on `/api/proxy-news` endpoint which aggregates 5 sources with fallbacks; legacy RSS proxy code was dead code that only generated console errors on app load.
 
 **v3.38.11** — Fix YouTube channel IDs for 13 teams. Root cause: Teams were using YouTube TV channel IDs (which don't have RSS feeds enabled) instead of official team channels, causing 404 errors in the proxy. Updated channel IDs via web scraping: Arizona Diamondbacks, Baltimore Orioles, Cleveland Guardians, Colorado Rockies, Houston Astros, Kansas City Royals, Los Angeles Angels, Minnesota Twins, Philadelphia Phillies, San Diego Padres, San Francisco Giants, Seattle Mariners, and MLB fallback channel. All 30 teams + fallback now verified as of May 2026.
 

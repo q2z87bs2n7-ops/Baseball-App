@@ -82,6 +82,32 @@ Binary toggles (checkboxes, color pickers) apply **immediately**. Numeric inputs
 - Calls `showPlayerCard()` → displays a random template variant
 - Logs: `"Replaying HR: {name} at {away} @ {home}"`
 
+## ⚡ Pulse Diagnostics (added v3.38.14)
+
+Permanent debug tool in **Dev Tools → App State → ⚡ Pulse Diagnostics** designed to eliminate guesswork when Pulse is showing an unexpected empty state. Displays:
+
+### Summary metrics
+- **Current time** — ISO timestamp showing what the app thinks the time is
+- **Greeting** — what empty-state headline would be displayed based on hour-of-day logic
+- **Game counts** — live (In Progress), upcoming (Preview/Scheduled), final, enabled, total
+
+### Why empty state shows
+Analysis section that checks:
+- **No upcoming games found** — whether the empty state triggers because all games are Final
+- **Intermission flag** — whether hype block is being suppressed during mid-day gaps
+- **Live games** — count of games currently In Progress
+
+### All games table
+Complete list of every game in `gameStates` with:
+- Matchup (away @ home)
+- Status (Preview/Scheduled/Live/Final) + detailed status
+- Enabled flag (✓ or ✗ indicating whether game is in `enabledGames`)
+- Inning + half-inning (for Live games only)
+
+Sorted chronologically by game time, making it easy to trace which games are tracked and why certain ones are/aren't showing in the feed.
+
+**Button:** Click the **⚡ Pulse Diagnostics** section header to copy the full diagnostic report as Markdown with all tables. Paste into a chat for context.
+
 ## Video Debug panel
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
@@ -293,7 +319,7 @@ In-memory ring buffer (`devLog`, cap 500) populated by a `console.log/warn/error
 
 **Globals:** `devLog` (ring buffer array), `DEV_LOG_CAP` (500).
 
-**Current `devTrace` instrumentation points** (v3.38.2):
+**Current `devTrace` instrumentation points** (v3.38.14):
 - `boot` — script load
 - `sw` — service worker register/fail
 - `theme` — `applyTeamTheme(team)`
@@ -303,5 +329,16 @@ In-memory ring buffer (`devLog`, cap 500) populated by a `console.log/warn/error
 - `focus` — `setFocusGameManual(pk)`
 - `collect` — `collectCard(data, force)`
 - `radio` — `startRadio()` / `stopRadio()`
+- `poll` — `pollLeaguePulse()` start/end + schedule fetch result + game final transitions (v3.38.14)
+- `empty` — `renderEmptyState()` logic with upcoming/postSlate/intermission flags (v3.38.14)
 
-Add a new `devTrace('<src>', ...)` call at any new event boundary you want surfaced in Log Capture — keep them low-volume (one per user-meaningful event, never per poll tick or animation frame).
+**Pulse state-change logging** (v3.38.14) — add a new `devTrace('poll', ...)` call at any new polling boundary you want surfaced:
+- `pollLeaguePulse start` — hasLive, pollDate, game counts, enabled count
+- `schedule fetch` — date polled, games returned
+- `game final` — which game went final and score
+- `pollLeaguePulse end` — live, final, total games, enabled, feedItems
+- `renderEmptyState` — upcoming count, postSlate flag, intermission flag
+
+These traces help trace exactly which poll triggered state changes and why the empty state is showing what it shows.
+
+Keep new traces low-volume (one per user-meaningful event, never per poll tick or animation frame).
