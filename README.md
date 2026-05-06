@@ -156,9 +156,9 @@ cd Baseball-App
 python3 -m http.server 8000   # or any static server
 ```
 
-Open `http://localhost:8000`. That's the whole setup — no npm, no env vars required for the app. Push notifications and card sync require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#vercel-environment-variables), but everything else works against the public MLB Stats API.
+Open `http://localhost:8000`. That's the whole setup — no npm, no env vars required for the app. Auth (GitHub OAuth, email magic-link) and push notifications require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#session-storage--cross-device-sync-v38) — they will silently fail without Vercel. Everything else works against the public MLB Stats API.
 
-> Note: YouTube embeds in the Media tab return `Error 153` on `file://` URLs. Use a local server, not double-click.
+> Note: YouTube embeds in the Home tab YouTube widget return `Error 153` on `file://` URLs. Use a local server, not double-click.
 
 ---
 
@@ -194,11 +194,11 @@ For the full breakdown of architecture, every API endpoint, every CSS variable, 
 
 ## Status & roadmap
 
-**Current version:** v3.34 (May 2026).
+**Current version:** v3.37.2 (May 2026).
 
 The app is feature-complete for personal use and stable in daily operation. Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh.
 
-Open backlog items live at the bottom of [CLAUDE.md → Feature Backlog](./CLAUDE.md#feature-backlog). Highlights:
+Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
 
 - Career stats expansion on player cards (last 10-game average, hot streak context)
 - Replacement radio URLs for Audacy-affected stations (rights gap)
