@@ -3,9 +3,10 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v3.42.3
+**Current version:** v3.42.4
 
 **Recent versions** (full history in `CHANGELOG.md`):
+- **v3.42.4** — Fix news carousel headline property fallback. Carousel now handles API responses with varying property names (headline/title, pubDate/published/publishedAt). Gracefully defaults to 'News' if headline missing.
 - **v3.42.3** — Restore news carousel to Pulse side rail. Headlines carousel was removed in v3.39 when RSS proxy broke, leaving orphaned HTML. Re-added with `/api/proxy-news` as source. Extracted to dedicated `src/pulse/news-carousel.js` module (substantive logic lives in subsystems; main.js is orchestration only).
 - **v3.42.2** — Fix second carousel-extraction bug: `fmtRate` used in `genHRStories` but never imported into `src/carousel/generators.js`. Caused `ReferenceError: fmtRate is not defined` during normal carousel rotation when an HR story had a cached batter stat. Added `import { fmtRate } from '../utils/format.js';`.
 - **v3.42.1** — Fix Demo Mode crash (`ReferenceError: DEBUG is not defined`) in `src/carousel/generators.js`. Module was missing the local `const DEBUG = false;` that other extracted modules declared during the v3.40 refactor.

@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.42.3
+**Current version:** v3.42.4
+
+**v3.42.4** — Fix news carousel headline property fallback. The `/api/proxy-news` endpoint returns articles with varying property names (`headline`, `title`, or `published`/`pubDate`/`publishedAt` for dates). Carousel now handles all variants and gracefully defaults to 'News' if headline missing, matches behavior in News section loader.
 
 **v3.42.3** — Restore news carousel to Pulse side rail. The carousel was removed in v3.39 when the RSS proxy broke, leaving behind orphaned HTML and nav buttons (`nextNewsCard`/`prevNewsCard` functions never reimplemented). Re-added news carousel that loads 10 headlines from `/api/proxy-news` and rotates them on left/right click. Extracted into dedicated `src/pulse/news-carousel.js` module following modular architecture pattern (substantive logic lives in subsystem modules, main.js is orchestration only). State tracking: `state.pulseNewsArticles`, `state.pulseNewsIndex`. Exports: `loadPulseNews`, `nextNewsCard`, `prevNewsCard`, `renderPulseNewsCard`.
 
