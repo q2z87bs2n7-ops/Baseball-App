@@ -3,7 +3,7 @@
 
 // Map feed names to RSS URLs (also used by other endpoints — exported)
 export const MLB_RSS_FEEDS = {
-  mlb: 'https://www.mlb.com/feeds/rss.xml',
+  mlb: 'https://www.mlb.com/feeds/news/rss.xml',
   yankees: 'https://www.mlb.com/yankees/feeds/rss.xml',
   mets: 'https://www.mlb.com/mets/feeds/rss.xml',
   redsox: 'https://www.mlb.com/redsox/feeds/rss.xml',
