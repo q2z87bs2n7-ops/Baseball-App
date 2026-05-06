@@ -166,7 +166,7 @@
     if (isNaN(n)) return v;
     return n.toFixed(d);
   }
-  function fmtRate2(v, d) {
+  function fmtRate(v, d) {
     d = d === void 0 ? 3 : d;
     if (v == null || v === "") return "\u2014";
     var n = parseFloat(v);
@@ -913,6 +913,7 @@
   }
 
   // src/carousel/generators.js
+  var DEBUG2 = false;
   var carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null, tcLookup: null };
   function setCarouselCallbacks(callbacks) {
     Object.assign(carouselCallbacks, callbacks);
@@ -1232,7 +1233,7 @@
   }
   async function fetchMissingHRBatterStats() {
     if (state.demoMode) {
-      if (DEBUG) console.log("Demo: Skipping fetchMissingHRBatterStats API call");
+      if (DEBUG2) console.log("Demo: Skipping fetchMissingHRBatterStats API call");
       return;
     }
     var ids = [];
@@ -1256,7 +1257,7 @@
   }
   async function loadProbablePitcherStats() {
     if (state.demoMode) {
-      if (DEBUG) console.log("Demo: Skipping loadProbablePitcherStats API call");
+      if (DEBUG2) console.log("Demo: Skipping loadProbablePitcherStats API call");
       return;
     }
     var ids = [];
@@ -1282,7 +1283,7 @@
   function genProbablePitchers() {
     var out = [], today = carouselCallbacks.localDateStr(carouselCallbacks.getEffectiveDate());
     var games = [];
-    if (state.demoMode && DEBUG) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(state.gameStates).filter((g) => carouselCallbacks.localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
+    if (state.demoMode && DEBUG2) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(state.gameStates).filter((g) => carouselCallbacks.localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
     Object.values(state.gameStates).forEach(function(g) {
       if (carouselCallbacks.localDateStr(new Date(g.gameDateMs)) === today && g.awayAbbr && g.homeAbbr && g.status !== "Live" && g.status !== "Final") {
         var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
@@ -1612,7 +1613,7 @@
   }
   async function loadDailyLeaders() {
     if (state.demoMode) {
-      if (DEBUG) console.log("Demo: Skipping loadDailyLeaders API call");
+      if (DEBUG2) console.log("Demo: Skipping loadDailyLeaders API call");
       return;
     }
     try {
@@ -1966,7 +1967,7 @@
   }
 
   // src/feed/render.js
-  var DEBUG2 = false;
+  var DEBUG3 = false;
   var feedCallbacks = { localDateStr: null };
   function setFeedCallbacks(callbacks) {
     Object.assign(feedCallbacks, callbacks);
@@ -2072,7 +2073,7 @@
       state.tomorrowPreview.fetchedAt = Date.now();
       if (isPostSlate()) renderEmptyState(true);
     } catch (e) {
-      if (DEBUG2) console.warn("fetchTomorrowPreview", e);
+      if (DEBUG3) console.warn("fetchTomorrowPreview", e);
     } finally {
       state.tomorrowPreview.inFlight = false;
     }
@@ -2287,7 +2288,7 @@
     var upcomingGames = [], completedGames = [];
     var localDateStr2 = feedCallbacks.localDateStr;
     var filterDate = state.demoMode && localDateStr2 ? localDateStr2(state.demoDate) : localDateStr2 ? localDateStr2(/* @__PURE__ */ new Date()) : null;
-    if (state.demoMode && DEBUG2) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(state.gameStates).length, "total games");
+    if (state.demoMode && DEBUG3) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(state.gameStates).length, "total games");
     Object.values(state.gameStates).forEach(function(g) {
       if (state.demoMode && localDateStr2 && localDateStr2(new Date(g.gameDateMs)) !== filterDate) return;
       if (g.status === "Live") return;
@@ -5603,9 +5604,9 @@
     var jerseyOverlay = state.selectedPlayer && state.selectedPlayer.jerseyNumber ? '<div class="headshot-jersey-pill">#' + state.selectedPlayer.jerseyNumber + "</div>" : "";
     var html = pid ? '<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + pid + '/headshot/67/current">' + jerseyOverlay + "</div>" : "";
     var boxes = [];
-    if (group === "hitting") boxes = [{ v: fmtRate2(s.avg), l: "AVG" }, { v: s.homeRuns, l: "HR" }, { v: s.rbi, l: "RBI" }, { v: fmtRate2(s.ops), l: "OPS" }, { v: s.hits, l: "H" }, { v: s.doubles, l: "2B" }, { v: s.triples, l: "3B" }, { v: s.strikeOuts, l: "K" }, { v: s.baseOnBalls, l: "BB" }, { v: s.runs, l: "R" }, { v: s.stolenBases, l: "SB" }, { v: s.plateAppearances, l: "PA" }];
+    if (group === "hitting") boxes = [{ v: fmtRate(s.avg), l: "AVG" }, { v: s.homeRuns, l: "HR" }, { v: s.rbi, l: "RBI" }, { v: fmtRate(s.ops), l: "OPS" }, { v: s.hits, l: "H" }, { v: s.doubles, l: "2B" }, { v: s.triples, l: "3B" }, { v: s.strikeOuts, l: "K" }, { v: s.baseOnBalls, l: "BB" }, { v: s.runs, l: "R" }, { v: s.stolenBases, l: "SB" }, { v: s.plateAppearances, l: "PA" }];
     else if (group === "pitching") boxes = [{ v: fmt(s.era, 2), l: "ERA" }, { v: fmt(s.whip, 2), l: "WHIP" }, { v: s.strikeOuts, l: "K" }, { v: s.wins + "-" + s.losses, l: "W-L" }, { v: fmt(s.inningsPitched, 1), l: "IP" }, { v: s.hits, l: "H" }, { v: s.baseOnBalls, l: "BB" }, { v: s.homeRuns, l: "HR" }, { v: fmt(s.strikeoutWalkRatio, 2), l: "K/BB" }, { v: fmt(s.strikeoutsPer9Inn, 2), l: "K/9" }, { v: fmt(s.walksPer9Inn, 2), l: "BB/9" }, { v: s.saves, l: "SV" }];
-    else boxes = [{ v: fmtRate2(s.fielding), l: "FPCT" }, { v: s.putOuts, l: "PO" }, { v: s.assists, l: "A" }, { v: s.errors, l: "E" }, { v: s.chances, l: "TC" }, { v: s.doublePlays, l: "DP" }];
+    else boxes = [{ v: fmtRate(s.fielding), l: "FPCT" }, { v: s.putOuts, l: "PO" }, { v: s.assists, l: "A" }, { v: s.errors, l: "E" }, { v: s.chances, l: "TC" }, { v: s.doublePlays, l: "DP" }];
     var cols = group === "fielding" ? 3 : 4;
     html += '<div class="stat-grid stat-grid--cols-' + cols + '">';
     boxes.forEach(function(b, i) {
@@ -5971,7 +5972,7 @@
           if (!br.ok) throw new Error(br.status);
           var bd = await br.json();
           var bst = bd.stats && bd.stats[0] && bd.stats[0].splits && bd.stats[0].splits[0] && bd.stats[0].splits[0].stat;
-          if (bst) batterStats = "AVG " + fmtRate2(bst.avg) + " \xB7 OBP " + fmtRate2(bst.obp) + " \xB7 OPS " + fmtRate2(bst.ops);
+          if (bst) batterStats = "AVG " + fmtRate(bst.avg) + " \xB7 OBP " + fmtRate(bst.obp) + " \xB7 OPS " + fmtRate(bst.ops);
         } catch (e) {
         }
       }
@@ -6080,7 +6081,7 @@
   function setSyncCallbacks(callbacks) {
     Object.assign(syncCallbacks, callbacks);
   }
-  var DEBUG3 = false;
+  var DEBUG4 = false;
   async function syncCollection() {
     if (!state.mlbSessionToken) return;
     try {
@@ -6094,7 +6095,7 @@
         const data = await r.json();
         if (data.collection) {
           if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(data.collection);
-          if (DEBUG3) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
+          if (DEBUG4) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
         }
       }
     } catch (e) {
@@ -6112,7 +6113,7 @@
           const merged = mergeCollectionSlots(local, data.collection);
           if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(merged);
           if (syncCallbacks.updateCollectionUI) syncCallbacks.updateCollectionUI();
-          if (DEBUG3) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
+          if (DEBUG4) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
         }
       }
     } catch (e) {
@@ -6336,7 +6337,7 @@
       var d = await r.json();
       var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
       if (!stat) return null;
-      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate2(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate2(stat.ops) };
+      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate(stat.ops) };
       state.collectionCareerStatsCache[playerId] = result;
       return result;
     } catch (e) {
@@ -7204,8 +7205,8 @@
       position: position || "\u2014",
       hrCount,
       hrPrev: typeof hrCount === "number" && hrCount >= 1 ? hrCount - 1 : hrCount,
-      avg: stat ? fmtRate2(stat.avg) : "\u2014",
-      ops: stat ? fmtRate2(stat.ops) : "\u2014",
+      avg: stat ? fmtRate(stat.avg) : "\u2014",
+      ops: stat ? fmtRate(stat.ops) : "\u2014",
       rbi: stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014"
     };
   }
@@ -7295,8 +7296,8 @@
     }
     var rbiSeason = stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014";
     var hits = stat ? stat.hits != null ? stat.hits : "\u2014" : "\u2014";
-    var avg = stat ? fmtRate2(stat.avg) : "\u2014";
-    var ops = stat ? fmtRate2(stat.ops) : "\u2014";
+    var avg = stat ? fmtRate(stat.avg) : "\u2014";
+    var ops = stat ? fmtRate(stat.ops) : "\u2014";
     var rbiPrev = typeof rbiSeason === "number" && rbiSeason >= rbi ? rbiSeason - rbi : rbiSeason;
     var battingAfter = halfInning === "top" ? aScore : hScore;
     var fieldingScore = halfInning === "top" ? hScore : aScore;
@@ -8340,7 +8341,7 @@
   }
 
   // src/dev/tuning.js
-  var DEBUG4 = false;
+  var DEBUG5 = false;
   var _refreshDebugPanel2 = null;
   var _devTuningDefaults = null;
   function setTuningCallbacks(cbs) {
@@ -8389,7 +8390,7 @@
   function updateTuning(param, val) {
     if (param === "basesloaded_enable") {
       state.devTuning[param] = val === "true";
-      if (DEBUG4) console.log("\u2713 Bases Loaded " + (state.devTuning[param] ? "enabled" : "disabled"));
+      if (DEBUG5) console.log("\u2713 Bases Loaded " + (state.devTuning[param] ? "enabled" : "disabled"));
       return;
     }
     var parsed = parseInt(val, 10);
@@ -8401,9 +8402,9 @@
         state.storyRotateTimer = null;
       }
       if (state.pulseInitialized && !state.demoMode) state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-      if (DEBUG4) console.log("\u2713 Carousel rotation updated to " + parsed + "ms");
+      if (DEBUG5) console.log("\u2713 Carousel rotation updated to " + parsed + "ms");
     } else {
-      if (DEBUG4) console.log("\u2713 " + param + " updated to " + parsed);
+      if (DEBUG5) console.log("\u2713 " + param + " updated to " + parsed);
     }
   }
   function resetTuning() {
@@ -8429,7 +8430,7 @@
       state.storyRotateTimer = null;
     }
     if (state.pulseInitialized && !state.demoMode) state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-    if (DEBUG4) console.log("\u2713 Dev tuning reset to defaults");
+    if (DEBUG5) console.log("\u2713 Dev tuning reset to defaults");
   }
   function updateColorOverride(context, colorVar, value) {
     state.devColorOverrides[context][colorVar] = value;
@@ -8437,7 +8438,7 @@
       if (context === "app") applyTeamTheme(state.activeTeam);
       else applyPulseMLBTheme();
     }
-    if (DEBUG4) console.log("\u2713 " + context + " theme." + colorVar + " \u2192 " + value);
+    if (DEBUG5) console.log("\u2713 " + context + " theme." + colorVar + " \u2192 " + value);
   }
   function captureCurrentTheme(context) {
     var cssVarMap = { dark: "--dark", card: "--card", card2: "--card2", border: "--border", primary: "--primary", secondary: "--secondary", accent: "--accent", accentText: "--accent-text", headerText: "--header-text" };
@@ -8449,7 +8450,7 @@
       var el = document.getElementById(elId);
       if (el) el.value = cssVal;
     });
-    if (DEBUG4) console.log("\u2713 Captured current " + context + " theme colors");
+    if (DEBUG5) console.log("\u2713 Captured current " + context + " theme colors");
   }
   function toggleColorLock(enable) {
     state.devColorLocked = enable;
@@ -8457,11 +8458,11 @@
       if (!state.devColorOverrides.app.primary) captureCurrentTheme("app");
       if (!state.devColorOverrides.pulse.primary) captureCurrentTheme("pulse");
       applyTeamTheme(state.activeTeam);
-      if (DEBUG4) console.log("\u2713 Theme lock enabled \u2014 auto-switching disabled");
+      if (DEBUG5) console.log("\u2713 Theme lock enabled \u2014 auto-switching disabled");
     } else {
       applyTeamTheme(state.activeTeam);
       applyPulseMLBTheme();
-      if (DEBUG4) console.log("\u2713 Theme lock disabled \u2014 auto-switching restored");
+      if (DEBUG5) console.log("\u2713 Theme lock disabled \u2014 auto-switching restored");
     }
     document.getElementById("lockThemeToggle").checked = state.devColorLocked;
   }

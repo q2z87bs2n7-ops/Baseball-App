@@ -1,5 +1,8 @@
 import { state } from '../state.js';
 import { SEASON, MLB_BASE } from '../config/constants.js';
+import { fmtRate } from '../utils/format.js';
+
+const DEBUG = false;
 
 let carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null, localDateStr: null, getEffectiveDate: null, tcLookup: null };
 function setCarouselCallbacks(callbacks) {

@@ -3,9 +3,11 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v3.42.0
+**Current version:** v3.42.2
 
 **Recent versions** (full history in `CHANGELOG.md`):
+- **v3.42.2** — Fix second carousel-extraction bug: `fmtRate` used in `genHRStories` but never imported into `src/carousel/generators.js`. Caused `ReferenceError: fmtRate is not defined` during normal carousel rotation when an HR story had a cached batter stat. Added `import { fmtRate } from '../utils/format.js';`.
+- **v3.42.1** — Fix Demo Mode crash (`ReferenceError: DEBUG is not defined`) in `src/carousel/generators.js`. Module was missing the local `const DEBUG = false;` that other extracted modules declared during the v3.40 refactor.
 - **v3.42.0** — Removed legacy `app.js` fallback, the `USE_BUNDLE` flag, and the parity-check script. `dist/app.bundle.js` is now the only source of truth, loaded via a static `<script defer>`. Pre-cleanup git tag: `pre-bundle-cleanup-v3.41` for emergency revert.
 - **v3.40.0** — Modular refactor complete. `src/main.js` is now ~680 LOC of boot/orchestration glue; the rest of the original 7,127-line `app.js` has been extracted into ~30 modules under `src/` (config, diag, utils, data, ui, feed, pulse, carousel, focus, cards, collection, radio, push, auth, sections, demo, dev). Single `state.js` container holds hot mutable state. See `docs/module-graph.md`.
 - **v3.39.0** — Initial bundle scaffolding (esbuild + first module extraction).
