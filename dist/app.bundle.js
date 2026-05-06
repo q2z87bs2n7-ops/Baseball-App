@@ -155,7 +155,7 @@
   };
 
   // src/utils/format.js
-  function tcLookup(id) {
+  function tcLookup2(id) {
     var t = TEAMS.find(function(t2) {
       return t2.id === id;
     });
@@ -168,7 +168,7 @@
     if (isNaN(n)) return v;
     return n.toFixed(d);
   }
-  function fmtRate(v, d) {
+  function fmtRate2(v, d) {
     d = d === void 0 ? 3 : d;
     if (v == null || v === "") return "\u2014";
     var n = parseFloat(v);
@@ -1522,6 +1522,948 @@
     if (el) el.style.display = "none";
   }
 
+  // src/carousel/generators.js
+  function ordinal2(n) {
+    return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th";
+  }
+  function makeStory(id, type, tier, priority, icon, headline, sub, badge, gamePk, ts, cooldownMs, decayRate) {
+    var existing = state.storyPool.find(function(s) {
+      return s.id === id;
+    });
+    return { id, type, tier, priority, icon, headline, sub, badge, gamePk: gamePk || null, ts: ts || /* @__PURE__ */ new Date(), lastShown: existing ? existing.lastShown : null, cooldownMs, decayRate };
+  }
+  function liveOrHighlight(sbId, eventTs) {
+    var recent = eventTs && Date.now() - eventTs.getTime() <= 6e4;
+    return recent && !state.displayedStoryIds.has(sbId) ? "live" : "highlight";
+  }
+  function genHRStories() {
+    var out = [];
+    var hrsByBatter = {};
+    state.feedItems.forEach(function(item) {
+      if (!item.data || item.data.event !== "Home Run") return;
+      if (state.demoMode && item.ts.getTime() > state.demoCurrentTime) return;
+      var g = state.gameStates[item.gamePk];
+      if (!g) return;
+      var bid = item.data.batterId || "anon_" + item.gamePk + "_" + item.ts.getTime();
+      if (!hrsByBatter[bid]) hrsByBatter[bid] = [];
+      hrsByBatter[bid].push({ item, g });
+    });
+    var multiWords = ["", "", "second", "third", "fourth", "fifth"];
+    Object.keys(hrsByBatter).forEach(function(bid) {
+      var entries = hrsByBatter[bid];
+      var latest = entries[entries.length - 1];
+      var item = latest.item, g = latest.g;
+      var count = entries.length;
+      var bname = item.data.batterName || "Player";
+      var statObj = state.hrBatterStatsCache[bid] || function() {
+        var c = (state.statsCache.hitting || []).find(function(e) {
+          return e.player && e.player.id == bid;
+        });
+        return c ? c.stat : null;
+      }();
+      var statStr = "";
+      if (statObj && statObj.homeRuns != null) statStr = statObj.homeRuns + " HR \xB7 " + statObj.rbi + " RBI \xB7 " + fmtRate(statObj.avg) + " AVG \xB7 " + fmtRate(statObj.ops) + " OPS";
+      var sub = g.awayAbbr + " @ " + g.homeAbbr + (statStr ? " \xB7 " + statStr : "");
+      var id, headline, priority;
+      if (count === 1) {
+        id = "hr_" + item.gamePk + "_" + item.ts.getTime();
+        var pitcherStr = item.data.pitcherName ? " off " + item.data.pitcherName : "";
+        var distStr = item.data.distance ? item.data.distance + "ft " : "";
+        var innStr = item.data.inning ? " in the " + ordinal2(item.data.inning) + " inning" : "";
+        var hrNumMatch = (item.data.desc || "").match(/\((\d+)\)/);
+        var hrTag = hrNumMatch ? " (HR #" + hrNumMatch[1] + " this season)" : "";
+        headline = bname + " hit a " + distStr + "homer" + pitcherStr + innStr + hrTag;
+        priority = state.devTuning.hr_priority;
+      } else {
+        id = "hr_multi_" + bid + "_" + entries[0].item.gamePk + "_" + count;
+        var ordWord = multiWords[count] || count + "th";
+        var innStr2 = item.data.inning ? " in the " + ordinal2(item.data.inning) + " inning" : "";
+        headline = bname + " hits his " + ordWord + " homer of the game" + innStr2 + "!";
+        priority = state.devTuning.hr_priority + (count - 1) * 15;
+      }
+      out.push(makeStory(id, "realtime", 1, priority, "\u{1F4A5}", headline, sub, "highlight", item.gamePk, item.ts, state.devTuning.hr_cooldown, 0.5));
+    });
+    return out;
+  }
+  function genNoHitterWatch() {
+    var out = [];
+    Object.values(state.gameStates).forEach(function(g) {
+      if (g.status !== "Live" || g.detailedState !== "In Progress") return;
+      if (g.inning < state.devTuning.nohitter_inning_floor) return;
+      var nohitAway = g.awayHits === 0, nohitHome = g.homeHits === 0;
+      if (!nohitAway && !nohitHome) return;
+      var id = "nohit_" + g.gamePk;
+      var pitchingTeam = nohitAway ? g.homeAbbr : g.awayAbbr;
+      var hittingTeam = nohitAway ? g.awayAbbr : g.homeAbbr;
+      var isPerfect = state.perfectGameTracker[g.gamePk] === true;
+      var priority, headline;
+      if (isPerfect) {
+        priority = 99;
+        headline = pitchingTeam + " working a perfect game through the " + ordinal2(g.inning);
+      } else {
+        priority = state.devTuning.nohitter_priority;
+        headline = pitchingTeam + " working a no-hitter through the " + ordinal2(g.inning);
+      }
+      var sub = hittingTeam + " have 0 hits \xB7 " + g.awayAbbr + " " + g.awayScore + ", " + g.homeAbbr + " " + g.homeScore;
+      out.push(makeStory(id, "nohit", 1, priority, "\u{1F6AB}", headline, sub, "live", g.gamePk, /* @__PURE__ */ new Date(), 2 * 6e4, 0.2));
+    });
+    return out;
+  }
+  function genWalkOffThreat() {
+    var out = [];
+    Object.values(state.gameStates).forEach(function(g) {
+      if (g.status !== "Live" || g.halfInning !== "bottom" || g.inning < 9) return;
+      var runnersOn = (g.onFirst ? 1 : 0) + (g.onSecond ? 1 : 0) + (g.onThird ? 1 : 0);
+      var deficit = g.awayScore - g.homeScore;
+      if (deficit < 0 || deficit > runnersOn + 1) return;
+      var id = "walkoff_" + g.gamePk + "_" + g.inning;
+      var headline = "Walk-off situation \u2014 " + g.homeAbbr + " in the bottom " + ordinal2(g.inning);
+      var sub = g.awayAbbr + " " + g.awayScore + ", " + g.homeAbbr + " " + g.homeScore + " \xB7 " + ordinal2(g.inning) + " inning";
+      out.push(makeStory(id, "walkoff", 1, state.devTuning.walkoff_priority, "\u{1F514}", headline, sub, "live", g.gamePk, /* @__PURE__ */ new Date(), state.devTuning.walkoff_cooldown, 0.9));
+    });
+    return out;
+  }
+  function genBasesLoaded() {
+    if (!state.devTuning.basesloaded_enable) return [];
+    var out = [];
+    Object.values(state.gameStates).forEach(function(g) {
+      if (g.status !== "Live" || !g.onFirst || !g.onSecond || !g.onThird) return;
+      var battingAbbr = g.halfInning === "top" ? g.awayAbbr : g.homeAbbr;
+      var id = "basesloaded_" + g.gamePk + "_" + g.inning + "_" + g.halfInning;
+      var headline = "Bases loaded \u2014 " + battingAbbr + " batting in the " + ordinal2(g.inning);
+      var sub = g.awayAbbr + " " + g.awayScore + ", " + g.homeAbbr + " " + g.homeScore + " \xB7 " + ordinal2(g.inning);
+      out.push(makeStory(id, "realtime", 1, state.devTuning.basesloaded_priority, "\u{1F514}", headline, sub, "live", g.gamePk, /* @__PURE__ */ new Date(), 3 * 6e4, 0.8));
+    });
+    return out;
+  }
+  function genStolenBaseStories() {
+    var out = [];
+    state.stolenBaseEvents.forEach(function(sb) {
+      var isHome = sb.base === "home";
+      var baseLabel = isHome ? "home plate" : sb.base;
+      var halfInd = sb.halfInning === "top" ? "\u25B2" : "\u25BC";
+      var sub = sb.awayAbbr + " @ " + sb.homeAbbr + " \xB7 " + halfInd + sb.inning;
+      var sbId = "sb_" + sb.key;
+      out.push(makeStory(
+        sbId,
+        "realtime",
+        isHome ? 1 : 2,
+        isHome ? 85 : 55,
+        "\u{1F3C3}",
+        sb.runnerName + " steals " + baseLabel,
+        sub,
+        liveOrHighlight(sbId, sb.ts),
+        sb.gamePk,
+        sb.ts,
+        5 * 6e4,
+        0.7
+      ));
+    });
+    return out;
+  }
+  function genBigInning() {
+    var out = [], groups = {};
+    state.feedItems.forEach(function(item) {
+      if (!item.data || item.data.type !== "play" || !item.data.scoring) return;
+      if (state.demoMode && item.ts.getTime() > state.demoCurrentTime) return;
+      var key = item.gamePk + "_" + item.data.inning + "_" + item.data.halfInning;
+      if (!groups[key]) groups[key] = { gamePk: item.gamePk, inning: item.data.inning, half: item.data.halfInning, runs: 0, lastItem: item };
+      groups[key].runs++;
+      groups[key].lastItem = item;
+    });
+    Object.values(groups).forEach(function(grp) {
+      if (grp.runs < state.devTuning.biginning_threshold) return;
+      var g = state.gameStates[grp.gamePk];
+      if (!g) return;
+      var id = "biginning_" + grp.gamePk + "_" + grp.inning + "_" + grp.half;
+      var battingTeam = grp.half === "top" ? g.awayAbbr : g.homeAbbr;
+      var headline = battingTeam + " scored " + grp.runs + " runs in the " + ordinal2(grp.inning);
+      var sub = g.awayAbbr + " @ " + g.homeAbbr;
+      out.push(makeStory(id, "realtime", 1, state.devTuning.biginning_priority, "\u{1F525}", headline, sub, "highlight", grp.gamePk, grp.lastItem.ts, 10 * 6e4, 0.4));
+    });
+    return out;
+  }
+  function genFinalScoreStories() {
+    var out = [];
+    Object.values(state.gameStates).forEach(function(g) {
+      if (g.status !== "Final") return;
+      if (g.detailedState === "Postponed" || g.detailedState === "Cancelled" || g.detailedState === "Suspended") return;
+      var id = "final_" + g.gamePk;
+      var winner = g.awayScore > g.homeScore ? g.awayAbbr : g.homeAbbr;
+      var loser = g.awayScore > g.homeScore ? g.homeAbbr : g.awayAbbr;
+      var ws = Math.max(g.awayScore, g.homeScore), ls = Math.min(g.awayScore, g.homeScore);
+      var headline = winner + " defeat " + loser + " " + ws + "-" + ls;
+      var sub = "Final" + (g.venueName ? " \xB7 " + g.venueName : "");
+      var ts = g.gameDateMs ? new Date(g.gameDateMs) : /* @__PURE__ */ new Date();
+      out.push(makeStory(id, "game_status", 2, 80, "\u{1F3C1}", headline, sub, "final", g.gamePk, ts, 15 * 6e4, 0.3));
+    });
+    return out;
+  }
+  function genStreakStories() {
+    var out = [];
+    if (!state.scheduleData || !state.scheduleData.length) return out;
+    var streaksByTeam = {};
+    state.scheduleData.filter(function(g) {
+      return g.status.abstractGameState === "Final";
+    }).forEach(function(g) {
+      var away = g.teams.away, home = g.teams.home;
+      [away, home].forEach(function(side) {
+        var teamId = side.team.id;
+        if (!streaksByTeam[teamId]) streaksByTeam[teamId] = { id: teamId, name: side.team.name, games: [] };
+        var isHome = side === home;
+        var myScore = isHome ? home.score : away.score;
+        var oppScore = isHome ? away.score : home.score;
+        if (myScore != null && oppScore != null) streaksByTeam[teamId].games.push({ win: myScore > oppScore, date: new Date(g.gameDate) });
+      });
+    });
+    Object.values(streaksByTeam).forEach(function(team) {
+      team.games.sort(function(a, b) {
+        return b.date - a.date;
+      });
+      var streak = 0, isWin = null;
+      for (var i = 0; i < team.games.length; i++) {
+        var g = team.games[i];
+        if (i === 0) {
+          isWin = g.win;
+          streak = 1;
+        } else if (g.win === isWin) {
+          streak++;
+        } else break;
+      }
+      if (streak < 3) return;
+      var id = "streak_" + team.id + "_" + streak + "_" + (isWin ? "W" : "L");
+      var headline = team.name + (isWin ? " on a " + streak + "-game winning streak" : " on a " + streak + "-game losing streak");
+      out.push(makeStory(id, "streak", 2, 60, isWin ? "\u{1F525}" : "\u2744\uFE0F", headline, "", isWin ? "hot" : "cold", null, /* @__PURE__ */ new Date(), 20 * 6e4, 0.1));
+    });
+    return out;
+  }
+  async function genMultiHitDay() {
+    var out = [], dateStr = localDateStr(getEffectiveDate());
+    var playerIds = Object.keys(state.dailyHitsTracker);
+    for (var i = 0; i < playerIds.length; i++) {
+      var batterId = playerIds[i];
+      var entry = state.dailyHitsTracker[batterId];
+      if (entry.hits < 3 && !(entry.hits >= 2 && entry.hrs >= 1)) continue;
+      var id = "multihit_" + batterId + "_" + dateStr;
+      var h = entry.hits, ab = entry.hits;
+      if (!state.demoMode && entry.gamePk) {
+        var bs = await fetchBoxscore(entry.gamePk);
+        if (bs) {
+          var team = bs.teams && bs.teams.away;
+          var found = false;
+          if (team && team.players) {
+            Object.keys(team.players).forEach(function(pk) {
+              var p = team.players[pk];
+              if (p.person && p.person.id === parseInt(batterId)) {
+                h = p.stats.batting.hits;
+                ab = p.stats.batting.atBats;
+                found = true;
+              }
+            });
+          }
+          if (!found) {
+            team = bs.teams && bs.teams.home;
+            if (team && team.players) {
+              Object.keys(team.players).forEach(function(pk) {
+                var p = team.players[pk];
+                if (p.person && p.person.id === parseInt(batterId)) {
+                  h = p.stats.batting.hits;
+                  ab = p.stats.batting.atBats;
+                }
+              });
+            }
+          }
+        }
+      }
+      var hrStr = entry.hrs ? " with " + entry.hrs + " HR" + (entry.hrs > 1 ? "s" : "") : "";
+      var headline = state.demoMode ? entry.name + " goes " + h + "-for-today" + hrStr : entry.name + " goes " + h + " for " + ab + hrStr;
+      var g = state.gameStates[entry.gamePk] || {};
+      var sub = g.awayAbbr && g.homeAbbr ? g.awayAbbr + " @ " + g.homeAbbr : "";
+      out.push(makeStory(id, "daily_stat", 2, 55, "\u{1F3CF}", headline, sub, g.status === "Live" ? "live" : "today", entry.gamePk, /* @__PURE__ */ new Date(), 15 * 6e4, 0.1));
+    }
+    return out;
+  }
+  function genDailyLeaders() {
+    var out = [];
+    if (!state.dailyLeadersCache) return out;
+    var cats = [
+      { key: "homeRuns", label: "Home Run Leaders", icon: "\u{1F3CF}", fmtVal: null },
+      { key: "battingAverage", label: "Batting Avg Leaders", icon: "\u{1F3AF}", fmtVal: function(v) {
+        return (v + "").replace(/^0\./, ".");
+      } },
+      { key: "rbi", label: "RBI Leaders", icon: "\u{1F3CF}", fmtVal: null },
+      { key: "stolenBases", label: "Stolen Base Leaders", icon: "\u{1F3C3}", fmtVal: null },
+      { key: "wins", label: "Pitching Wins Leaders", icon: "\u26BE", fmtVal: null },
+      { key: "saves", label: "Pitching Saves Leaders", icon: "\u26BE", fmtVal: null }
+    ];
+    var today = localDateStr(getEffectiveDate());
+    cats.forEach(function(cat) {
+      var list = state.dailyLeadersCache[cat.key];
+      if (!list || !list.length) return;
+      var sub = list.slice(0, 5).map(function(p, i) {
+        if (!p || !p.person) return "";
+        var lastName = p.person.fullName.split(" ").slice(1).join(" ") || p.person.fullName;
+        var val = cat.fmtVal ? cat.fmtVal(p.value) : p.value;
+        return i + 1 + ". " + lastName + " " + val;
+      }).filter(Boolean).join(" \xB7 ");
+      var id = "leader_" + cat.key + "_" + today;
+      out.push(makeStory(id, "daily_stat", 3, 65, cat.icon, "MLB " + cat.label, sub, "leaders", null, /* @__PURE__ */ new Date(), 30 * 6e4, 0.05));
+    });
+    return out;
+  }
+  function genPitcherGem() {
+    var out = [];
+    Object.keys(state.dailyPitcherKs).forEach(function(key) {
+      var entry = state.dailyPitcherKs[key];
+      if (entry.ks < 8) return;
+      var g = state.gameStates[entry.gamePk] || {};
+      var id = "kgem_" + key;
+      var headline = entry.name + " has " + entry.ks + " strikeouts today";
+      var sub = g.awayAbbr && g.homeAbbr ? g.awayAbbr + " @ " + g.homeAbbr + (g.status === "Live" ? " \xB7 " + ordinal2(g.inning) : "") : "";
+      out.push(makeStory(id, "daily_stat", 2, 58, "\u26A1", headline, sub, g.status === "Live" ? "live" : "today", entry.gamePk, /* @__PURE__ */ new Date(), 10 * 6e4, 0.2));
+    });
+    return out;
+  }
+  function genOnThisDay() {
+    if (!state.onThisDayCache || !state.onThisDayCache.length) return [];
+    return state.onThisDayCache.map(function(item) {
+      return makeStory(item.id, "historical", 4, 20, item.icon, item.headline, item.sub, "onthisday", item.gamePk, item.ts, 60 * 6e4, 0.5);
+    });
+  }
+  function genYesterdayHighlights() {
+    if (!state.yesterdayCache || !state.yesterdayCache.length) return [];
+    return state.yesterdayCache.map(function(item) {
+      return makeStory(item.id, "yesterday", 4, 45, item.icon, item.headline, item.sub, "yesterday", item.gamePk, item.ts, 30 * 6e4, 0.3);
+    });
+  }
+  async function fetchMissingHRBatterStats() {
+    if (state.demoMode) {
+      if (DEBUG) console.log("Demo: Skipping fetchMissingHRBatterStats API call");
+      return;
+    }
+    var ids = [];
+    state.feedItems.forEach(function(item) {
+      if (!item.data || item.data.event !== "Home Run") return;
+      var bid = item.data.batterId;
+      if (bid && !state.hrBatterStatsCache[bid]) ids.push(bid);
+    });
+    var unique = [...new Set(ids)];
+    if (!unique.length) return;
+    await Promise.all(unique.map(async function(id) {
+      try {
+        var r = await fetch(MLB_BASE + "/people/" + id + "/stats?stats=season&season=" + SEASON + "&group=hitting");
+        if (!r.ok) throw new Error(r.status);
+        var d = await r.json();
+        var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+        if (stat) state.hrBatterStatsCache[id] = stat;
+      } catch (e) {
+      }
+    }));
+  }
+  async function loadProbablePitcherStats() {
+    if (state.demoMode) {
+      if (DEBUG) console.log("Demo: Skipping loadProbablePitcherStats API call");
+      return;
+    }
+    var ids = [];
+    Object.values(state.storyCarouselRawGameData).forEach(function(raw) {
+      var awayPP = raw.teams && raw.teams.away && raw.teams.away.probablePitcher;
+      var homePP = raw.teams && raw.teams.home && raw.teams.home.probablePitcher;
+      if (awayPP && awayPP.id && !state.probablePitcherStatsCache[awayPP.id]) ids.push(awayPP.id);
+      if (homePP && homePP.id && !state.probablePitcherStatsCache[homePP.id]) ids.push(homePP.id);
+    });
+    if (!ids.length) return;
+    await Promise.all(ids.map(async function(id) {
+      try {
+        var r = await fetch(MLB_BASE + "/people/" + id + "/stats?stats=season&season=" + SEASON + "&group=pitching");
+        if (!r.ok) throw new Error(r.status);
+        var d = await r.json();
+        var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+        state.probablePitcherStatsCache[id] = { wins: stat ? stat.wins : 0, losses: stat ? stat.losses : 0 };
+      } catch (e) {
+        state.probablePitcherStatsCache[id] = { wins: 0, losses: 0 };
+      }
+    }));
+  }
+  function genProbablePitchers() {
+    var out = [], today = localDateStr(getEffectiveDate());
+    var games = [];
+    if (state.demoMode && DEBUG) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(state.gameStates).filter((g) => localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
+    Object.values(state.gameStates).forEach(function(g) {
+      if (localDateStr(new Date(g.gameDateMs)) === today && g.awayAbbr && g.homeAbbr && g.status !== "Live" && g.status !== "Final") {
+        var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
+        if (rawG && rawG.doubleHeader === "Y" && rawG.gameNumber === 2) {
+          var game1Live = Object.values(state.gameStates).some(function(s) {
+            return s.status === "Live" && s.awayId === g.awayId && s.homeId === g.homeId;
+          });
+          if (game1Live) return;
+        }
+        games.push(g);
+      }
+    });
+    games.forEach(function(g) {
+      var awayAbbr = g.awayAbbr || "TBD", homeAbbr = g.homeAbbr || "TBD", awayPP = "TBD", homePP = "TBD";
+      var awayPPId = null, homePPId = null;
+      if (state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk]) {
+        var raw = state.storyCarouselRawGameData[g.gamePk];
+        if (raw.teams && raw.teams.away && raw.teams.away.probablePitcher && raw.teams.away.probablePitcher.fullName) {
+          awayPP = raw.teams.away.probablePitcher.fullName;
+          awayPPId = raw.teams.away.probablePitcher.id;
+        }
+        if (raw.teams && raw.teams.home && raw.teams.home.probablePitcher && raw.teams.home.probablePitcher.fullName) {
+          homePP = raw.teams.home.probablePitcher.fullName;
+          homePPId = raw.teams.home.probablePitcher.id;
+        }
+      }
+      var awayWL = awayPPId && state.probablePitcherStatsCache[awayPPId] ? state.probablePitcherStatsCache[awayPPId].wins + "-" + state.probablePitcherStatsCache[awayPPId].losses : "0-0";
+      var homeWL = homePPId && state.probablePitcherStatsCache[homePPId] ? state.probablePitcherStatsCache[homePPId].wins + "-" + state.probablePitcherStatsCache[homePPId].losses : "0-0";
+      var headline = awayPP + " (" + awayWL + ") [" + awayAbbr + "] vs " + homePP + " (" + homeWL + ") [" + homeAbbr + "]";
+      var rawG2 = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
+      var timeTBD = rawG2 && rawG2.status && rawG2.status.startTimeTBD;
+      var timeStr = timeTBD ? "TBD" : g.gameTime || "TBD";
+      out.push(makeStory("probable_" + g.gamePk, "contextual", 4, 40, "\u26BE", headline, "Today \xB7 " + timeStr, "probables", g.gamePk, new Date(g.gameDateMs), 60 * 6e4, 0.05));
+    });
+    return out;
+  }
+  function genInningRecapStories() {
+    var out = [];
+    function genRecap(g, recapInning, recapHalf, recapKey) {
+      if (state.inningRecapsFired.has(recapKey)) return;
+      var inningPlays = state.feedItems.filter(function(item) {
+        return item.gamePk === g.gamePk && item.data && item.data.inning === recapInning && item.data.halfInning === recapHalf && item.data.type === "play";
+      });
+      if (!inningPlays.length) return;
+      var lastPlayInInning = inningPlays[inningPlays.length - 1];
+      var finalAwayScore = lastPlayInInning.data.awayScore;
+      var finalHomeScore = lastPlayInInning.data.homeScore;
+      var startAwayScore = 0, startHomeScore = 0;
+      for (var i = state.feedItems.length - 1; i >= 0; i--) {
+        if (state.feedItems[i].data && state.feedItems[i].data.type === "play" && state.feedItems[i].gamePk === g.gamePk) {
+          if (state.feedItems[i].data.inning < recapInning || state.feedItems[i].data.inning === recapInning && state.feedItems[i].data.halfInning !== recapHalf) {
+            startAwayScore = state.feedItems[i].data.awayScore;
+            startHomeScore = state.feedItems[i].data.homeScore;
+            break;
+          }
+        }
+      }
+      var runs = recapHalf === "top" ? finalAwayScore - startAwayScore : finalHomeScore - startHomeScore;
+      var strikeouts = 0, walks = 0, hrs = 0, dps = 0, errors = 0, playerHRs = [], pitcherNames = /* @__PURE__ */ new Set(), hadRisp = false, dpBatter = null;
+      var isClean123 = inningPlays.length === 3 && !inningPlays.some(function(p) {
+        return p.data.scoring;
+      });
+      var runnersLeftOn = false;
+      inningPlays.forEach(function(play) {
+        if (play.data.risp) hadRisp = true;
+        if (play.data.desc.indexOf("strikes out") !== -1) strikeouts++;
+        if (play.data.desc.indexOf("walk") !== -1) walks++;
+        if (play.data.event === "Home Run") {
+          hrs++;
+          playerHRs.push(play.data.batterName);
+        }
+        if (play.data.desc.indexOf("double play") !== -1) {
+          dps++;
+          if (!dpBatter) dpBatter = play.data.batterName;
+        }
+        if (play.data.desc.indexOf("error") !== -1) errors++;
+        if (play.data.pitcherName) pitcherNames.add(play.data.pitcherName);
+      });
+      var lastPlay = inningPlays[inningPlays.length - 1];
+      runnersLeftOn = lastPlay.data.risp || lastPlay.data.onFirst || lastPlay.data.onSecond || lastPlay.data.onThird;
+      var pitcher = pitcherNames.size === 1 ? Array.from(pitcherNames)[0] : null;
+      var battingTeam = recapHalf === "top" ? g.awayName : g.homeName;
+      var pittchingTeam = recapHalf === "top" ? g.homeName : g.awayName;
+      var halfLabel = recapHalf === "top" ? "top" : "bottom";
+      var innStr = ordinal2(recapInning);
+      var priority = 0, headline = "";
+      if (hrs > 0 && runs > 0) {
+        priority = 100;
+        var hrStr = hrs === 1 ? playerHRs[0] + " goes deep" : "Back-to-back homers";
+        headline = hrStr + " in the " + halfLabel + " of the " + innStr + ", " + battingTeam + " score " + runs;
+      } else if (strikeouts === 3 && inningPlays.length === 3) {
+        priority = 95;
+        headline = pitcher ? pitcher + " strikes out the side in the " + innStr : "Perfect strikeout inning in the " + innStr;
+      } else if (runs >= 2 && hrs === 0) {
+        priority = 90;
+        headline = battingTeam + " score " + runs + " runs in the " + halfLabel + " of the " + innStr;
+      } else if (runs > 0 && hadRisp) {
+        var battingScore = recapHalf === "top" ? g.awayScore : g.homeScore;
+        var pitchingScore = recapHalf === "top" ? g.homeScore : g.awayScore;
+        if (battingScore <= pitchingScore) {
+          priority = 85;
+          headline = battingTeam + " claw back in the " + innStr;
+        }
+      } else if (runnersLeftOn && runs === 0 && inningPlays.length === 3) {
+        priority = 80;
+        headline = battingTeam + " strand runners at the corners, " + runs + " runs in the " + halfLabel + " of the " + innStr;
+      } else if (strikeouts >= 2 && runs === 0 && isClean123) {
+        priority = 75;
+        headline = pitcher ? pitcher + " keeps " + pittchingTeam + " off the board with " + strikeouts + " Ks in the " + innStr : "Clean " + strikeouts + "-strikeout inning in the " + innStr;
+      } else if (dps > 0) {
+        priority = 70;
+        headline = dpBatter ? dpBatter + " hits into a double play in the " + innStr : pittchingTeam + " turn a double play to escape the " + innStr;
+      } else if (walks >= 3) {
+        priority = 65;
+        headline = walks + " walks load the bases for " + battingTeam + " in the " + innStr;
+      } else if (errors > 0 && runs > 0) {
+        priority = 55;
+        headline = "Error plates a run \u2014 " + battingTeam + " capitalize in the " + innStr;
+      } else if (strikeouts >= 2 && isClean123) {
+        priority = 40;
+        headline = pitcher ? pitcher + " retires the side with " + strikeouts + " Ks in the " + innStr : battingTeam + " go 1-2-3 with " + strikeouts + " strikeouts in the " + innStr;
+      } else if (isClean123) {
+        priority = 25;
+        headline = battingTeam + " go 1-2-3 in the " + halfLabel + " of the " + innStr;
+      } else if (runs > 0) {
+        priority = 45;
+        headline = battingTeam + " score " + runs + " in the " + innStr;
+      } else {
+        priority = 0;
+        headline = runs + " runs for " + battingTeam + " in the " + halfLabel + " of the " + innStr;
+      }
+      if (!headline) return;
+      state.inningRecapsFired.add(recapKey);
+      var sub = battingTeam + " \xB7 " + ordinal2(recapInning) + " inning";
+      out.push(makeStory("inning_recap_" + recapKey, "inning_recap", 2, priority, "\u{1F4CA}", headline, sub, "inning_recap", g.gamePk, /* @__PURE__ */ new Date(), 0, 0));
+    }
+    Object.keys(state.inningRecapsPending).forEach(function(recapKey) {
+      var p = state.inningRecapsPending[recapKey];
+      var g = state.gameStates[p.gamePk];
+      if (!g) {
+        delete state.inningRecapsPending[recapKey];
+        return;
+      }
+      genRecap(g, p.inning, p.halfInning, recapKey);
+      delete state.inningRecapsPending[recapKey];
+      state.lastInningState[p.gamePk] = { inning: p.inning, halfInning: p.halfInning };
+    });
+    Object.values(state.gameStates).forEach(function(g) {
+      if (g.status !== "Live") return;
+      var lastState = state.lastInningState[g.gamePk];
+      if (!lastState) {
+        state.lastInningState[g.gamePk] = { inning: g.inning, halfInning: g.halfInning };
+        return;
+      }
+      if (lastState.inning === g.inning && lastState.halfInning === g.halfInning) return;
+      var recapKey = g.gamePk + "_" + lastState.inning + "_" + lastState.halfInning;
+      if (state.inningRecapsFired.has(recapKey)) {
+        state.lastInningState[g.gamePk] = { inning: g.inning, halfInning: g.halfInning };
+        return;
+      }
+      genRecap(g, lastState.inning, lastState.halfInning, recapKey);
+      state.lastInningState[g.gamePk] = { inning: g.inning, halfInning: g.halfInning };
+    });
+    return out;
+  }
+  async function loadTransactionsCache2() {
+    try {
+      var today = /* @__PURE__ */ new Date(), start = new Date(today);
+      start.setDate(start.getDate() - 2);
+      var fmt2 = function(d2) {
+        return d2.getFullYear() + "-" + String(d2.getMonth() + 1).padStart(2, "0") + "-" + String(d2.getDate()).padStart(2, "0");
+      };
+      var r = await fetch(MLB_BASE + "/transactions?sportId=1&startDate=" + fmt2(start) + "&endDate=" + fmt2(today));
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      var notable = ["Injured List", "Designated for Assignment", "Selected", "Called Up", "Trade", "Activated From"];
+      state.transactionsCache = (d.transactions || []).filter(function(t) {
+        return notable.some(function(kw) {
+          return (t.typeDesc || "").indexOf(kw) !== -1;
+        });
+      });
+      state.transactionsLastFetch = Date.now();
+    } catch (e) {
+      state.transactionsCache = state.transactionsCache || [];
+    }
+  }
+  async function loadHighLowCache2() {
+    try {
+      var stats = ["homeRuns", "strikeOuts", "hits"];
+      var allResults = {};
+      for (var i = 0; i < stats.length; i++) {
+        try {
+          var r = await fetch(MLB_BASE + "/highLow/player?sortStat=" + stats[i] + "&season=" + SEASON + "&sportId=1&gameType=R&limit=3");
+          if (!r.ok) throw new Error(r.status);
+          var d = await r.json();
+          allResults[stats[i]] = d.results || [];
+        } catch (e) {
+          allResults[stats[i]] = [];
+        }
+      }
+      state.highLowCache = allResults;
+      state.highLowLastFetch = Date.now();
+    } catch (e) {
+      state.highLowCache = state.highLowCache || {};
+    }
+  }
+  function genRosterMoveStories() {
+    var out = [];
+    if (!state.transactionsCache || !state.transactionsCache.length) return out;
+    var cutoff = Date.now() - 48 * 60 * 60 * 1e3;
+    state.transactionsCache.forEach(function(t) {
+      if (!t.person || !t.person.fullName) return;
+      var txDate = t.date ? new Date(t.date).getTime() : 0;
+      if (txDate && txDate < cutoff) return;
+      var fullName = t.person.fullName;
+      var desc = t.typeDesc || "";
+      var icon, priority, headline;
+      var toAbbr = t.toTeam && t.toTeam.id ? tcLookup(t.toTeam.id).abbr : "the majors";
+      if (desc.indexOf("Activated") !== -1) {
+        icon = "\u2705";
+        priority = state.devTuning.roster_priority_il || 40;
+        headline = fullName + " (" + toAbbr + ") activated";
+      } else if (desc.indexOf("Injured List") !== -1) {
+        icon = "\u{1F3E5}";
+        priority = state.devTuning.roster_priority_il || 40;
+        var ilMatch = desc.match(/(\d+)-Day/);
+        var ilDays = ilMatch ? ilMatch[1] : "";
+        headline = fullName + " (" + toAbbr + ") placed on the " + (ilDays ? ilDays + "-Day " : "") + "IL";
+      } else if (desc.indexOf("Designated") !== -1) {
+        icon = "\u2B07\uFE0F";
+        priority = state.devTuning.roster_priority_il || 40;
+        headline = fullName + " (" + toAbbr + ") designated for assignment";
+      } else if (desc.indexOf("Selected") !== -1 || desc.indexOf("Called Up") !== -1) {
+        icon = "\u2B06\uFE0F";
+        priority = state.devTuning.roster_priority_trade || 55;
+        headline = fullName + " called up by " + toAbbr;
+      } else if (desc.indexOf("Trade") !== -1) {
+        icon = "\u{1F504}";
+        priority = state.devTuning.roster_priority_trade || 55;
+        var fromAbbr = t.fromTeam && t.fromTeam.id ? tcLookup(t.fromTeam.id).abbr : "the majors";
+        headline = fullName + " traded from " + fromAbbr + " to " + toAbbr;
+      } else {
+        icon = "\u{1F4CB}";
+        priority = 35;
+        headline = fullName + " (" + toAbbr + ") \u2014 " + desc;
+      }
+      var id = "roster_" + t.typeCode + "_" + (t.person.id || 0) + "_" + (t.date || "today");
+      var sub = toAbbr + (t.date ? " \xB7 " + t.date : "");
+      out.push(makeStory(id, "roster_move", 3, priority, icon, headline, sub, "roster", null, t.date ? new Date(t.date) : /* @__PURE__ */ new Date(), 120 * 6e4, 0.2));
+    });
+    return out;
+  }
+  async function genWinProbabilityStories() {
+    var out = [];
+    if (!state.focusGamePk) return out;
+    var g = state.gameStates[state.focusGamePk];
+    if (!g || g.status !== "Live" || g.detailedState !== "In Progress") return out;
+    try {
+      var r = await fetch(MLB_BASE + "/game/" + state.focusGamePk + "/contextMetrics");
+      if (!r.ok) throw new Error(r.status);
+      var d = await r.json();
+      var homeWP = d.homeWinProbability || 50;
+      var leverageIndex = d.leverageIndex || 1;
+      var wpAdded = Math.abs(d.homeWinProbabilityAdded || 0);
+      var isExtreme = homeWP >= (state.devTuning.wp_extreme_floor || 85) || homeWP <= 100 - (state.devTuning.wp_extreme_floor || 85);
+      var isHighLev = leverageIndex >= (state.devTuning.wp_leverage_floor || 2);
+      var isBigSwing = wpAdded >= 20;
+      if (!isExtreme && !isHighLev && !isBigSwing) return out;
+      var favAbbr = homeWP > 50 ? g.homeAbbr : g.awayAbbr;
+      var favWP = homeWP > 50 ? homeWP : 100 - homeWP;
+      var id = "wp_" + state.focusGamePk + "_" + Math.round(homeWP / 5) * 5;
+      var icon, headline, badge, tier, priority;
+      if (leverageIndex >= 3) {
+        icon = "\u26A1";
+        tier = 1;
+        priority = 72;
+        badge = "live";
+        headline = "High leverage \u2014 " + g.awayAbbr + " @ " + g.homeAbbr;
+      } else if (isExtreme) {
+        icon = "\u{1F4CA}";
+        tier = 2;
+        priority = 65;
+        badge = "live";
+        headline = favAbbr + " are " + Math.round(favWP) + "% favorites in the " + ordinal2(g.inning);
+      } else {
+        icon = "\u{1F4CA}";
+        tier = 2;
+        priority = 60;
+        badge = "live";
+        headline = "Win probability swings for " + favAbbr + " (+" + Math.round(wpAdded) + "%)";
+      }
+      var sub = g.awayAbbr + " @ " + g.homeAbbr + " \xB7 " + ordinal2(g.inning) + " \xB7 " + Math.round(favWP) + "% WP";
+      state.storyPool = state.storyPool.filter(function(s) {
+        return s.id.indexOf("wp_" + state.focusGamePk + "_") !== 0;
+      });
+      out.push(makeStory(id, "realtime", tier, priority, icon, headline, sub, badge, state.focusGamePk, /* @__PURE__ */ new Date(), 3 * 6e4, 0.6));
+    } catch (e) {
+    }
+    return out;
+  }
+  function genSeasonHighStories() {
+    var out = [];
+    if (!state.highLowCache) return out;
+    var SEASON_STR = String(SEASON);
+    var configs = [
+      { stat: "homeRuns", icon: "\u{1F4A5}", label: "HR in a game", threshold: 3 },
+      { stat: "strikeOuts", icon: "\u{1F525}", label: "strikeouts in a game", threshold: 13 },
+      { stat: "hits", icon: "\u{1F3CF}", label: "hits in a game", threshold: 4 }
+    ];
+    configs.forEach(function(cfg) {
+      var results = state.highLowCache[cfg.stat] || [];
+      if (!results.length) return;
+      var top = results[0];
+      if (!top || !top.person || !top.stat) return;
+      var val = top.stat[cfg.stat] || 0;
+      if (val < cfg.threshold) return;
+      var lastName = top.person.fullName.split(" ").slice(1).join(" ") || top.person.fullName;
+      var teamAbbr = top.team && top.team.abbreviation || "";
+      var oppAbbr = top.opponent && top.opponent.abbreviation || "";
+      var dateStr = top.game && top.game.gameDate ? top.game.gameDate : "";
+      var id = "highlow_" + cfg.stat + "_" + top.person.id + "_" + SEASON_STR;
+      var headline = SEASON_STR + " season high: " + lastName + " \u2014 " + val + " " + cfg.label;
+      var sub = teamAbbr + (oppAbbr ? " vs " + oppAbbr : "") + (dateStr ? " \xB7 " + dateStr : "");
+      out.push(makeStory(id, "contextual", 4, state.devTuning.highlow_priority || 25, "\u{1F396}\uFE0F", headline, sub, "record", null, dateStr ? new Date(dateStr) : /* @__PURE__ */ new Date(), 24 * 60 * 6e4, 0.1));
+    });
+    return out;
+  }
+  async function loadDailyLeaders() {
+    if (state.demoMode) {
+      if (DEBUG) console.log("Demo: Skipping loadDailyLeaders API call");
+      return;
+    }
+    try {
+      var rH = await fetch(MLB_BASE + "/stats/leaders?leaderCategories=homeRuns,battingAverage,rbi,stolenBases&season=" + SEASON + "&statGroup=hitting&limit=5");
+      if (!rH.ok) throw new Error(rH.status);
+      var dH = await rH.json();
+      var rP = await fetch(MLB_BASE + "/stats/leaders?leaderCategories=wins,saves&season=" + SEASON + "&statGroup=pitching&limit=5");
+      if (!rP.ok) throw new Error(rP.status);
+      var dP = await rP.json();
+      state.dailyLeadersCache = {};
+      [dH.leagueLeaders || [], dP.leagueLeaders || []].forEach(function(list) {
+        list.forEach(function(cat) {
+          if (cat.leaderCategory && cat.leaders) state.dailyLeadersCache[cat.leaderCategory] = cat.leaders;
+        });
+      });
+    } catch (e) {
+    }
+  }
+  async function loadLiveWPCache() {
+    var livePks = Object.keys(state.gameStates).filter(function(pk) {
+      var g = state.gameStates[pk];
+      return g && g.status === "Live" && g.detailedState === "In Progress";
+    });
+    if (!livePks.length) {
+      state.liveWPCache = {};
+      state.liveWPLastFetch = Date.now();
+      return;
+    }
+    await Promise.all(livePks.map(function(pk) {
+      return fetch(MLB_BASE + "/game/" + pk + "/contextMetrics").then(function(r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      }).then(function(d) {
+        state.liveWPCache[pk] = { homeWP: d.homeWinProbability || 50, leverageIndex: d.leverageIndex || 1, ts: Date.now() };
+      }).catch(function() {
+      });
+    }));
+    Object.keys(state.liveWPCache).forEach(function(pk) {
+      if (!state.gameStates[pk] || state.gameStates[pk].status !== "Live") delete state.liveWPCache[pk];
+    });
+    state.liveWPLastFetch = Date.now();
+  }
+  function genLiveWinProbStories() {
+    var out = [];
+    Object.keys(state.liveWPCache).forEach(function(pk) {
+      var g = state.gameStates[pk];
+      if (!g || g.status !== "Live" || g.detailedState !== "In Progress") return;
+      var c = state.liveWPCache[pk];
+      var homeWP = c.homeWP;
+      var favAbbr = homeWP >= 50 ? g.homeAbbr : g.awayAbbr;
+      var dogAbbr = homeWP >= 50 ? g.awayAbbr : g.homeAbbr;
+      var favWP = homeWP >= 50 ? homeWP : 100 - homeWP;
+      var bucket = Math.round(homeWP / 10) * 10;
+      var id = "livewp_" + pk + "_" + bucket;
+      var halfArrow = g.halfInning === "top" ? "\u25B2" : "\u25BC";
+      var headline = favAbbr + " " + Math.round(favWP) + "% to win vs " + dogAbbr;
+      var sub = g.awayAbbr + " @ " + g.homeAbbr + " \xB7 " + halfArrow + ordinal2(g.inning) + " \xB7 " + g.awayScore + "\u2013" + g.homeScore;
+      out.push(makeStory(id, "contextual", 4, state.devTuning.livewp_priority || 30, "\u{1F4C8}", headline, sub, "live", +pk, /* @__PURE__ */ new Date(), 15 * 6e4, 0.1));
+    });
+    return out;
+  }
+  function genDailyIntro() {
+    var todayStr = localDateStr(getEffectiveDate());
+    var todayGames = Object.values(state.gameStates).filter(function(g) {
+      return g.gameDateMs && localDateStr(new Date(g.gameDateMs)) === todayStr;
+    });
+    if (!todayGames.length) return [];
+    var liveCount = todayGames.filter(function(g) {
+      return g.status === "Live" && g.detailedState === "In Progress";
+    }).length;
+    var finalCount = todayGames.filter(function(g) {
+      return g.status === "Final";
+    }).length;
+    if (liveCount >= 2 || finalCount >= Math.ceil(todayGames.length / 2)) return [];
+    var marquee = null;
+    todayGames.forEach(function(g) {
+      var raw = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
+      if (!raw || !raw.teams) return;
+      var aPP = raw.teams.away && raw.teams.away.probablePitcher;
+      var hPP = raw.teams.home && raw.teams.home.probablePitcher;
+      if (!aPP || !hPP) return;
+      var aS = state.probablePitcherStatsCache[aPP.id] || {}, hS = state.probablePitcherStatsCache[hPP.id] || {};
+      var aW = aS.wins || 0, aL = aS.losses || 0, hW = hS.wins || 0, hL = hS.losses || 0;
+      if (aW <= aL || hW <= hL) return;
+      var aboveZero = aW - aL + (hW - hL);
+      if (!marquee || aboveZero > marquee.score) {
+        marquee = { away: aPP.fullName, home: hPP.fullName, awayAbbr: g.awayAbbr, homeAbbr: g.homeAbbr, score: aboveZero, gamePk: g.gamePk };
+      }
+    });
+    var n = todayGames.length, headline, sub, gamePk = null;
+    if (marquee && marquee.score >= 6) {
+      headline = marquee.away.split(" ").pop() + " vs " + marquee.home.split(" ").pop() + " is the matchup tonight.";
+      sub = n + " games \xB7 " + marquee.awayAbbr + " @ " + marquee.homeAbbr + " headlines";
+      gamePk = marquee.gamePk;
+    } else {
+      headline = n + " games on the slate. Pulse is on.";
+      sub = "Live play-by-play across every game";
+    }
+    return [makeStory("dailyintro_" + todayStr, "editorial", 4, 50, "\u{1F4F0}", headline, sub, "today", gamePk, /* @__PURE__ */ new Date(), 4 * 60 * 6e4, 0.4)];
+  }
+
+  // src/carousel/rotation.js
+  async function buildStoryPool() {
+    var now = Date.now();
+    if (now - state.dailyLeadersLastFetch > 5 * 6e4) {
+      loadDailyLeaders();
+      state.dailyLeadersLastFetch = now;
+    }
+    if (now - state.transactionsLastFetch > 120 * 6e4) {
+      loadTransactionsCache2();
+    }
+    if (now - state.highLowLastFetch > 6 * 60 * 6e4) {
+      loadHighLowCache2();
+    }
+    if (now - state.liveWPLastFetch > (state.devTuning.livewp_refresh_ms || 9e4)) {
+      loadLiveWPCache();
+    }
+    await loadProbablePitcherStats();
+    fetchMissingHRBatterStats();
+    var multiHitStories = await genMultiHitDay();
+    var wpStories = await genWinProbabilityStories();
+    var fresh = [].concat(
+      genHRStories(),
+      genNoHitterWatch(),
+      genWalkOffThreat(),
+      genBasesLoaded(),
+      genStolenBaseStories(),
+      genBigInning(),
+      genFinalScoreStories(),
+      genStreakStories(),
+      multiHitStories,
+      genDailyLeaders(),
+      genPitcherGem(),
+      genOnThisDay(),
+      genYesterdayHighlights(),
+      genProbablePitchers(),
+      genInningRecapStories(),
+      wpStories,
+      genRosterMoveStories(),
+      genSeasonHighStories(),
+      genLiveWinProbStories(),
+      genDailyIntro()
+    );
+    var introMarquee = fresh.find(function(s) {
+      return s.type === "editorial" && s.id.indexOf("dailyintro_") === 0 && s.gamePk;
+    });
+    if (introMarquee) {
+      var dupId = "probable_" + introMarquee.gamePk;
+      fresh = fresh.filter(function(s) {
+        return s.id !== dupId;
+      });
+    }
+    state.storyPool = fresh.slice().sort(function(a, b) {
+      return b.priority - a.priority;
+    });
+    var carousel = document.getElementById("storyCarousel");
+    if (!carousel) return;
+    if (state.storyPool.length) {
+      if (carousel.style.display === "none") {
+        carousel.style.display = "";
+        rotateStory();
+        if (!state.storyRotateTimer) state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
+      }
+    } else {
+      carousel.style.display = "none";
+      if (state.storyRotateTimer) {
+        clearInterval(state.storyRotateTimer);
+        state.storyRotateTimer = null;
+      }
+    }
+  }
+  function rotateStory() {
+    if (!state.storyPool.length) return;
+    var now = Date.now();
+    var maxCooldown = Math.max(state.storyPool.length * state.devTuning.rotateMs * 1.5, 2 * 6e4);
+    var eligible = state.storyPool.filter(function(s) {
+      return !s.lastShown || now - s.lastShown.getTime() > Math.min(s.cooldownMs, maxCooldown);
+    });
+    if (!eligible.length) {
+      eligible = state.storyPool.slice().sort(function(a, b) {
+        return (a.lastShown ? a.lastShown.getTime() : 0) - (b.lastShown ? b.lastShown.getTime() : 0);
+      });
+    }
+    var scored = eligible.map(function(s) {
+      var ageMin = (now - s.ts.getTime()) / 6e4;
+      var decay = Math.pow(Math.max(0, 1 - s.decayRate), ageMin / 30);
+      return { s, score: s.priority * decay };
+    });
+    scored.sort(function(a, b) {
+      return b.score - a.score;
+    });
+    showStoryCard(scored[0].s);
+  }
+  function showStoryCard(story) {
+    story.lastShown = /* @__PURE__ */ new Date();
+    state.storyShownId = story.id;
+    state.displayedStoryIds.add(story.id);
+    renderStoryCard(story);
+    updateStoryDots();
+    refreshDebugPanel();
+  }
+  function renderStoryCard(story) {
+    var el = document.getElementById("storyCard");
+    if (!el) return;
+    var badgeMap = { live: "live", final: "final", today: "today", yesterday: "yesterday", onthisday: "onthisday", upcoming: "upcoming", leaders: "leaders", probables: "probables", highlight: "highlight", inning_recap: "inning_recap", hot: "hot", cold: "cold", streak: "streak", roster: "roster", award: "award", record: "award" };
+    var labelMap = { live: "LIVE", final: "FINAL", today: "TODAY", yesterday: "YESTERDAY", onthisday: "ON THIS DAY", upcoming: "UPCOMING", leaders: "LEADERS", probables: "TODAY'S PROBABLE PITCHERS", highlight: "HIGHLIGHT", inning_recap: "INNING RECAP", hot: "HOT", cold: "COLD", streak: "HITTING STREAK", roster: "ROSTER MOVE", award: "AWARD", record: "SEASON HIGH" };
+    var bc = badgeMap[story.badge] || "today", bl = labelMap[story.badge] || "TODAY";
+    el.className = "story-card tier" + story.tier + (story.id.indexOf("biginning") === 0 ? " story-biginning" : "") + (story.id.indexOf("leader_") === 0 ? " story-leaders" : "");
+    el.innerHTML = '<div><span class="story-badge ' + bc + '">' + bl + '</span></div><div style="display:flex;align-items:flex-start;gap:6px;margin-top:2px"><span class="story-icon">' + story.icon + '</span><div><div class="story-headline">' + story.headline + "</div>" + (story.sub ? '<div class="story-sub">' + story.sub + "</div>" : "") + "</div></div>";
+  }
+  function updateStoryDots() {
+    var el = document.getElementById("storyDots");
+    if (!el) return;
+    var max = Math.min(state.storyPool.length, 8);
+    var curIdx = state.storyPool.findIndex(function(s) {
+      return s.id === state.storyShownId;
+    });
+    var html = "";
+    for (var i = 0; i < max; i++) html += '<div class="story-dot' + (i === curIdx ? " active" : "") + '"></div>';
+    el.innerHTML = html;
+  }
+  function prevStory() {
+    if (!state.storyPool.length) return;
+    var idx = state.storyPool.findIndex(function(s) {
+      return s.id === state.storyShownId;
+    });
+    showStoryCard(state.storyPool[idx <= 0 ? state.storyPool.length - 1 : idx - 1]);
+  }
+  function nextStory() {
+    if (!state.storyPool.length) return;
+    var idx = state.storyPool.findIndex(function(s) {
+      return s.id === state.storyShownId;
+    });
+    showStoryCard(state.storyPool[idx >= state.storyPool.length - 1 ? 0 : idx + 1]);
+  }
+  function onStoryVisibilityChange() {
+    if (document.hidden) {
+      clearInterval(state.storyRotateTimer);
+      state.storyRotateTimer = null;
+    } else if (state.pulseInitialized && state.storyPool.length) {
+      rotateStory();
+      state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
+    }
+  }
+
   // src/auth/oauth.js
   function signInWithGitHub() {
     const state2 = Math.random().toString(36).slice(2, 15);
@@ -1645,7 +2587,7 @@
   function getYdActiveCache() {
     return state.ydDisplayCache !== null ? state.ydDisplayCache : state.yesterdayCache || [];
   }
-  async function fetchBoxscore(gamePk) {
+  async function fetchBoxscore2(gamePk) {
     if (!state.boxscoreCache[gamePk]) {
       try {
         var bsR = await fetch(MLB_BASE + "/game/" + gamePk + "/boxscore");
@@ -1657,7 +2599,7 @@
     }
     return state.boxscoreCache[gamePk];
   }
-  function getEffectiveDate() {
+  function getEffectiveDate2() {
     return state.demoMode && state.demoDate ? state.demoDate : /* @__PURE__ */ new Date();
   }
   function initLeaguePulse() {
@@ -1673,9 +2615,9 @@
     if (!state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6) {
       var _d = /* @__PURE__ */ new Date();
       _d.setDate(_d.getDate() - 1);
-      state.pollDateStr = localDateStr(_d);
+      state.pollDateStr = localDateStr2(_d);
     } else {
-      state.pollDateStr = localDateStr(getEffectiveDate());
+      state.pollDateStr = localDateStr2(getEffectiveDate2());
     }
     loadRoster();
     loadOnThisDayCache();
@@ -1723,12 +2665,12 @@
     var isMidnightWindow = !state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6;
     if (!hasLive) {
       var hasGamesFromCurrentDate = state.pollDateStr && Object.values(state.gameStates).some(function(g) {
-        return g.gameDateMs && localDateStr(new Date(g.gameDateMs)) === state.pollDateStr;
+        return g.gameDateMs && localDateStr2(new Date(g.gameDateMs)) === state.pollDateStr;
       });
       if (!hasGamesFromCurrentDate && !isMidnightWindow) {
-        state.pollDateStr = localDateStr(getEffectiveDate());
+        state.pollDateStr = localDateStr2(getEffectiveDate2());
       } else if (!isMidnightWindow && isPostSlate()) {
-        var todayStr = localDateStr(getEffectiveDate());
+        var todayStr = localDateStr2(getEffectiveDate2());
         if (state.pollDateStr < todayStr) {
           pruneStaleGames(todayStr);
           state.pollDateStr = todayStr;
@@ -1750,7 +2692,7 @@
       if ((!games.length || isMidnightWindow && !hasLiveInFetch) && !hasLive) {
         var yesterday = /* @__PURE__ */ new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        var yDateStr = localDateStr(yesterday);
+        var yDateStr = localDateStr2(yesterday);
         var yr = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + yDateStr + "&hydrate=linescore,team,probablePitcher", { signal: sig });
         if (!yr.ok) throw new Error(yr.status);
         var yd = await yr.json();
@@ -1771,7 +2713,7 @@
       games.forEach(function(g) {
         var pk = g.gamePk, newStatus = g.status.abstractGameState, detailed = g.status.detailedState || "";
         var away = g.teams.away, home = g.teams.home;
-        var awayTc = tcLookup(away.team.id), homeTc = tcLookup(home.team.id);
+        var awayTc = tcLookup2(away.team.id), homeTc = tcLookup2(home.team.id);
         var ls = g.linescore || {}, gameTime = null, gameDateMs = null;
         if (g.gameDate) {
           try {
@@ -1891,7 +2833,7 @@
       renderSideRailGames();
       pollPendingVideoClips();
       selectFocusGame();
-      refreshDebugPanel();
+      refreshDebugPanel2();
       var live = Object.values(state.gameStates).filter(function(g) {
         return g.status === "Live" && g.detailedState === "In Progress";
       }).length;
@@ -2090,10 +3032,10 @@
   function renderSideRailGames() {
     var upcomingHtml = "", completedHtml = "";
     var upcomingGames = [], completedGames = [];
-    var filterDate = state.demoMode ? localDateStr(state.demoDate) : localDateStr(/* @__PURE__ */ new Date());
+    var filterDate = state.demoMode ? localDateStr2(state.demoDate) : localDateStr2(/* @__PURE__ */ new Date());
     if (state.demoMode && DEBUG2) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(state.gameStates).length, "total games");
     Object.values(state.gameStates).forEach(function(g) {
-      if (state.demoMode && localDateStr(new Date(g.gameDateMs)) !== filterDate) return;
+      if (state.demoMode && localDateStr2(new Date(g.gameDateMs)) !== filterDate) return;
       if (g.status === "Live") return;
       if (g.status === "Final") completedGames.push(g);
       else upcomingGames.push(g);
@@ -2127,1199 +3069,7 @@
     if (!gamesHtml) gamesHtml = '<div style="color:var(--muted);font-size:.75rem;padding:12px;text-align:center;">No games today</div>';
     document.getElementById("sideRailGames").innerHTML = gamesHtml;
   }
-  function liveOrHighlight(id, eventTs) {
-    var recent = eventTs && Date.now() - eventTs.getTime() <= 6e4;
-    return recent && !state.displayedStoryIds.has(id) ? "live" : "highlight";
-  }
-  function makeStory(id, type, tier, priority, icon, headline, sub, badge, gamePk, ts, cooldownMs, decayRate) {
-    var existing = state.storyPool.find(function(s) {
-      return s.id === id;
-    });
-    return { id, type, tier, priority, icon, headline, sub, badge, gamePk: gamePk || null, ts: ts || /* @__PURE__ */ new Date(), lastShown: existing ? existing.lastShown : null, cooldownMs, decayRate };
-  }
-  function genHRStories() {
-    var out = [];
-    var hrsByBatter = {};
-    state.feedItems.forEach(function(item) {
-      if (!item.data || item.data.event !== "Home Run") return;
-      if (state.demoMode && item.ts.getTime() > state.demoCurrentTime) return;
-      var g = state.gameStates[item.gamePk];
-      if (!g) return;
-      var bid = item.data.batterId || "anon_" + item.gamePk + "_" + item.ts.getTime();
-      if (!hrsByBatter[bid]) hrsByBatter[bid] = [];
-      hrsByBatter[bid].push({ item, g });
-    });
-    var multiWords = ["", "", "second", "third", "fourth", "fifth"];
-    Object.keys(hrsByBatter).forEach(function(bid) {
-      var entries = hrsByBatter[bid];
-      var latest = entries[entries.length - 1];
-      var item = latest.item, g = latest.g;
-      var count = entries.length;
-      var bname = item.data.batterName || "Player";
-      var statObj = state.hrBatterStatsCache[bid] || function() {
-        var c = (state.statsCache.hitting || []).find(function(e) {
-          return e.player && e.player.id == bid;
-        });
-        return c ? c.stat : null;
-      }();
-      var statStr = "";
-      if (statObj && statObj.homeRuns != null) statStr = statObj.homeRuns + " HR \xB7 " + statObj.rbi + " RBI \xB7 " + fmtRate(statObj.avg) + " AVG \xB7 " + fmtRate(statObj.ops) + " OPS";
-      var sub = g.awayAbbr + " @ " + g.homeAbbr + (statStr ? " \xB7 " + statStr : "");
-      var id, headline, priority;
-      if (count === 1) {
-        id = "hr_" + item.gamePk + "_" + item.ts.getTime();
-        var pitcherStr = item.data.pitcherName ? " off " + item.data.pitcherName : "";
-        var distStr = item.data.distance ? item.data.distance + "ft " : "";
-        var innStr = item.data.inning ? " in the " + ordinal(item.data.inning) + " inning" : "";
-        var hrNumMatch = (item.data.desc || "").match(/\((\d+)\)/);
-        var hrTag = hrNumMatch ? " (HR #" + hrNumMatch[1] + " this season)" : "";
-        headline = bname + " hit a " + distStr + "homer" + pitcherStr + innStr + hrTag;
-        priority = state.devTuning.hr_priority;
-      } else {
-        id = "hr_multi_" + bid + "_" + entries[0].item.gamePk + "_" + count;
-        var ordWord = multiWords[count] || count + "th";
-        var innStr2 = item.data.inning ? " in the " + ordinal(item.data.inning) + " inning" : "";
-        headline = bname + " hits his " + ordWord + " homer of the game" + innStr2 + "!";
-        priority = state.devTuning.hr_priority + (count - 1) * 15;
-      }
-      out.push(makeStory(id, "realtime", 1, priority, "\u{1F4A5}", headline, sub, "highlight", item.gamePk, item.ts, state.devTuning.hr_cooldown, 0.5));
-    });
-    return out;
-  }
-  function genNoHitterWatch() {
-    var out = [];
-    Object.values(state.gameStates).forEach(function(g) {
-      if (g.status !== "Live" || g.detailedState !== "In Progress") return;
-      if (g.inning < state.devTuning.nohitter_inning_floor) return;
-      var nohitAway = g.awayHits === 0, nohitHome = g.homeHits === 0;
-      if (!nohitAway && !nohitHome) return;
-      var id = "nohit_" + g.gamePk;
-      var pitchingTeam = nohitAway ? g.homeAbbr : g.awayAbbr;
-      var hittingTeam = nohitAway ? g.awayAbbr : g.homeAbbr;
-      var isPerfect = state.perfectGameTracker[g.gamePk] === true;
-      var priority, headline;
-      if (isPerfect) {
-        priority = 99;
-        headline = pitchingTeam + " working a perfect game through the " + ordinal(g.inning);
-      } else {
-        priority = state.devTuning.nohitter_priority;
-        headline = pitchingTeam + " working a no-hitter through the " + ordinal(g.inning);
-      }
-      var sub = hittingTeam + " have 0 hits \xB7 " + g.awayAbbr + " " + g.awayScore + ", " + g.homeAbbr + " " + g.homeScore;
-      out.push(makeStory(id, "nohit", 1, priority, "\u{1F6AB}", headline, sub, "live", g.gamePk, /* @__PURE__ */ new Date(), 2 * 6e4, 0.2));
-    });
-    return out;
-  }
-  function genWalkOffThreat() {
-    var out = [];
-    Object.values(state.gameStates).forEach(function(g) {
-      if (g.status !== "Live" || g.halfInning !== "bottom" || g.inning < 9) return;
-      var runnersOn = (g.onFirst ? 1 : 0) + (g.onSecond ? 1 : 0) + (g.onThird ? 1 : 0);
-      var deficit = g.awayScore - g.homeScore;
-      if (deficit < 0 || deficit > runnersOn + 1) return;
-      var id = "walkoff_" + g.gamePk + "_" + g.inning;
-      var headline = "Walk-off situation \u2014 " + g.homeAbbr + " in the bottom " + ordinal(g.inning);
-      var sub = g.awayAbbr + " " + g.awayScore + ", " + g.homeAbbr + " " + g.homeScore + " \xB7 " + ordinal(g.inning) + " inning";
-      out.push(makeStory(id, "walkoff", 1, state.devTuning.walkoff_priority, "\u{1F514}", headline, sub, "live", g.gamePk, /* @__PURE__ */ new Date(), state.devTuning.walkoff_cooldown, 0.9));
-    });
-    return out;
-  }
-  function genBasesLoaded() {
-    if (!state.devTuning.basesloaded_enable) return [];
-    var out = [];
-    Object.values(state.gameStates).forEach(function(g) {
-      if (g.status !== "Live" || !g.onFirst || !g.onSecond || !g.onThird) return;
-      var battingAbbr = g.halfInning === "top" ? g.awayAbbr : g.homeAbbr;
-      var half = g.halfInning === "top" ? "Top" : "Bot";
-      var id = "basesloaded_" + g.gamePk + "_" + g.inning + "_" + g.halfInning;
-      var headline = "Bases loaded \u2014 " + battingAbbr + " batting in the " + ordinal(g.inning);
-      var sub = g.awayAbbr + " " + g.awayScore + ", " + g.homeAbbr + " " + g.homeScore + " \xB7 " + half + " " + ordinal(g.inning);
-      out.push(makeStory(id, "realtime", 1, state.devTuning.basesloaded_priority, "\u{1F514}", headline, sub, "live", g.gamePk, /* @__PURE__ */ new Date(), 3 * 6e4, 0.8));
-    });
-    return out;
-  }
-  function genStolenBaseStories() {
-    var out = [];
-    state.stolenBaseEvents.forEach(function(sb) {
-      var isHome = sb.base === "home";
-      var baseLabel = isHome ? "home plate" : sb.base;
-      var halfInd = sb.halfInning === "top" ? "\u25B2" : "\u25BC";
-      var sub = sb.awayAbbr + " @ " + sb.homeAbbr + " \xB7 " + halfInd + sb.inning;
-      var sbId = "sb_" + sb.key;
-      out.push(makeStory(
-        sbId,
-        "realtime",
-        isHome ? 1 : 2,
-        isHome ? 85 : 55,
-        "\u{1F3C3}",
-        sb.runnerName + " steals " + baseLabel,
-        sub,
-        liveOrHighlight(sbId, sb.ts),
-        sb.gamePk,
-        sb.ts,
-        5 * 6e4,
-        0.7
-      ));
-    });
-    return out;
-  }
-  function genBigInning() {
-    var out = [], groups = {};
-    state.feedItems.forEach(function(item) {
-      if (!item.data || item.data.type !== "play" || !item.data.scoring) return;
-      if (state.demoMode && item.ts.getTime() > state.demoCurrentTime) return;
-      var key = item.gamePk + "_" + item.data.inning + "_" + item.data.halfInning;
-      if (!groups[key]) groups[key] = { gamePk: item.gamePk, inning: item.data.inning, half: item.data.halfInning, runs: 0, lastItem: item };
-      groups[key].runs++;
-      groups[key].lastItem = item;
-    });
-    Object.values(groups).forEach(function(grp) {
-      if (grp.runs < state.devTuning.biginning_threshold) return;
-      var g = state.gameStates[grp.gamePk];
-      if (!g) return;
-      var id = "biginning_" + grp.gamePk + "_" + grp.inning + "_" + grp.half;
-      var battingTeam = grp.half === "top" ? g.awayAbbr : g.homeAbbr;
-      var headline = battingTeam + " scored " + grp.runs + " runs in the " + ordinal(grp.inning);
-      var sub = g.awayAbbr + " @ " + g.homeAbbr;
-      out.push(makeStory(id, "realtime", 1, state.devTuning.biginning_priority, "\u{1F525}", headline, sub, "highlight", grp.gamePk, grp.lastItem.ts, 10 * 6e4, 0.4));
-    });
-    return out;
-  }
-  function genFinalScoreStories() {
-    var out = [];
-    Object.values(state.gameStates).forEach(function(g) {
-      if (g.status !== "Final") return;
-      if (g.detailedState === "Postponed" || g.detailedState === "Cancelled" || g.detailedState === "Suspended") return;
-      var id = "final_" + g.gamePk;
-      var winner = g.awayScore > g.homeScore ? g.awayAbbr : g.homeAbbr;
-      var loser = g.awayScore > g.homeScore ? g.homeAbbr : g.awayAbbr;
-      var ws = Math.max(g.awayScore, g.homeScore), ls = Math.min(g.awayScore, g.homeScore);
-      var headline = winner + " defeat " + loser + " " + ws + "-" + ls;
-      var sub = "Final" + (g.venueName ? " \xB7 " + g.venueName : "");
-      var ts = g.gameDateMs ? new Date(g.gameDateMs) : /* @__PURE__ */ new Date();
-      out.push(makeStory(id, "game_status", 2, 80, "\u{1F3C1}", headline, sub, "final", g.gamePk, ts, 15 * 6e4, 0.3));
-    });
-    return out;
-  }
-  function genStreakStories() {
-    var out = [];
-    if (!state.scheduleData || !state.scheduleData.length) return out;
-    var streaksByTeam = {};
-    state.scheduleData.filter(function(g) {
-      return g.status.abstractGameState === "Final";
-    }).forEach(function(g) {
-      var away = g.teams.away, home = g.teams.home;
-      [away, home].forEach(function(side) {
-        var teamId = side.team.id;
-        if (!streaksByTeam[teamId]) streaksByTeam[teamId] = { id: teamId, name: side.team.name, games: [] };
-        var isHome = side === home;
-        var myScore = isHome ? home.score : away.score;
-        var oppScore = isHome ? away.score : home.score;
-        if (myScore != null && oppScore != null) streaksByTeam[teamId].games.push({ win: myScore > oppScore, date: new Date(g.gameDate) });
-      });
-    });
-    Object.values(streaksByTeam).forEach(function(team) {
-      team.games.sort(function(a, b) {
-        return b.date - a.date;
-      });
-      var streak = 0, isWin = null;
-      for (var i = 0; i < team.games.length; i++) {
-        var g = team.games[i];
-        if (i === 0) {
-          isWin = g.win;
-          streak = 1;
-        } else if (g.win === isWin) {
-          streak++;
-        } else break;
-      }
-      if (streak < 3) return;
-      var id = "streak_" + team.id + "_" + streak + "_" + (isWin ? "W" : "L");
-      var headline = team.name + (isWin ? " on a " + streak + "-game winning streak" : " on a " + streak + "-game losing streak");
-      out.push(makeStory(id, "streak", 2, 60, isWin ? "\u{1F525}" : "\u2744\uFE0F", headline, "", isWin ? "hot" : "cold", null, /* @__PURE__ */ new Date(), 20 * 6e4, 0.1));
-    });
-    return out;
-  }
-  async function genMultiHitDay() {
-    var out = [], dateStr = localDateStr(getEffectiveDate());
-    var playerIds = Object.keys(state.dailyHitsTracker);
-    for (var i = 0; i < playerIds.length; i++) {
-      var batterId = playerIds[i];
-      var entry = state.dailyHitsTracker[batterId];
-      if (entry.hits < 3 && !(entry.hits >= 2 && entry.hrs >= 1)) continue;
-      var id = "multihit_" + batterId + "_" + dateStr;
-      var h = entry.hits, ab = entry.hits;
-      if (!state.demoMode && entry.gamePk) {
-        var bs = await fetchBoxscore(entry.gamePk);
-        if (bs) {
-          var team = bs.teams && bs.teams.away;
-          var found = false;
-          if (team && team.players) {
-            Object.keys(team.players).forEach(function(pk) {
-              var p = team.players[pk];
-              if (p.person && p.person.id === parseInt(batterId)) {
-                h = p.stats.batting.hits;
-                ab = p.stats.batting.atBats;
-                found = true;
-              }
-            });
-          }
-          if (!found) {
-            team = bs.teams && bs.teams.home;
-            if (team && team.players) {
-              Object.keys(team.players).forEach(function(pk) {
-                var p = team.players[pk];
-                if (p.person && p.person.id === parseInt(batterId)) {
-                  h = p.stats.batting.hits;
-                  ab = p.stats.batting.atBats;
-                }
-              });
-            }
-          }
-        }
-      }
-      var hrStr = entry.hrs ? " with " + entry.hrs + " HR" + (entry.hrs > 1 ? "s" : "") : "";
-      var headline = state.demoMode ? entry.name + " goes " + h + "-for-today" + hrStr : entry.name + " goes " + h + " for " + ab + hrStr;
-      var g = state.gameStates[entry.gamePk] || {};
-      var sub = g.awayAbbr && g.homeAbbr ? g.awayAbbr + " @ " + g.homeAbbr : "";
-      out.push(makeStory(id, "daily_stat", 2, 55, "\u{1F3CF}", headline, sub, g.status === "Live" ? "live" : "today", entry.gamePk, /* @__PURE__ */ new Date(), 15 * 6e4, 0.1));
-    }
-    return out;
-  }
-  function genDailyLeaders() {
-    var out = [];
-    if (!state.dailyLeadersCache) return out;
-    var cats = [
-      { key: "homeRuns", label: "Home Run Leaders", icon: "\u{1F3CF}", fmtVal: null },
-      { key: "battingAverage", label: "Batting Avg Leaders", icon: "\u{1F3AF}", fmtVal: function(v) {
-        return (v + "").replace(/^0\./, ".");
-      } },
-      { key: "rbi", label: "RBI Leaders", icon: "\u{1F3CF}", fmtVal: null },
-      { key: "stolenBases", label: "Stolen Base Leaders", icon: "\u{1F3C3}", fmtVal: null },
-      { key: "wins", label: "Pitching Wins Leaders", icon: "\u26BE", fmtVal: null },
-      { key: "saves", label: "Pitching Saves Leaders", icon: "\u26BE", fmtVal: null }
-    ];
-    var today = localDateStr(getEffectiveDate());
-    cats.forEach(function(cat) {
-      var list = state.dailyLeadersCache[cat.key];
-      if (!list || !list.length) return;
-      var sub = list.slice(0, 5).map(function(p, i) {
-        if (!p || !p.person) return "";
-        var lastName = p.person.fullName.split(" ").slice(1).join(" ") || p.person.fullName;
-        var val = cat.fmtVal ? cat.fmtVal(p.value) : p.value;
-        return i + 1 + ". " + lastName + " " + val;
-      }).filter(Boolean).join(" \xB7 ");
-      var id = "leader_" + cat.key + "_" + today;
-      out.push(makeStory(id, "daily_stat", 3, 65, cat.icon, "MLB " + cat.label, sub, "leaders", null, /* @__PURE__ */ new Date(), 30 * 6e4, 0.05));
-    });
-    return out;
-  }
-  function genPitcherGem() {
-    var out = [];
-    Object.keys(state.dailyPitcherKs).forEach(function(key) {
-      var entry = state.dailyPitcherKs[key];
-      if (entry.ks < 8) return;
-      var g = state.gameStates[entry.gamePk] || {};
-      var id = "kgem_" + key;
-      var headline = entry.name + " has " + entry.ks + " strikeouts today";
-      var sub = g.awayAbbr && g.homeAbbr ? g.awayAbbr + " @ " + g.homeAbbr + (g.status === "Live" ? " \xB7 " + ordinal(g.inning) : "") : "";
-      out.push(makeStory(id, "daily_stat", 2, 58, "\u26A1", headline, sub, g.status === "Live" ? "live" : "today", entry.gamePk, /* @__PURE__ */ new Date(), 10 * 6e4, 0.2));
-    });
-    return out;
-  }
-  function genOnThisDay() {
-    if (!state.onThisDayCache || !state.onThisDayCache.length) return [];
-    return state.onThisDayCache.map(function(item) {
-      return makeStory(item.id, "historical", 4, 20, item.icon, item.headline, item.sub, "onthisday", item.gamePk, item.ts, 60 * 6e4, 0.5);
-    });
-  }
-  function genYesterdayHighlights() {
-    if (!state.yesterdayCache || !state.yesterdayCache.length) return [];
-    return state.yesterdayCache.map(function(item) {
-      return makeStory(item.id, "yesterday", 4, 45, item.icon, item.headline, item.sub, "yesterday", item.gamePk, item.ts, 30 * 6e4, 0.3);
-    });
-  }
-  async function fetchMissingHRBatterStats() {
-    if (state.demoMode) {
-      if (DEBUG2) console.log("Demo: Skipping fetchMissingHRBatterStats API call");
-      return;
-    }
-    var ids = [];
-    state.feedItems.forEach(function(item) {
-      if (!item.data || item.data.event !== "Home Run") return;
-      var bid = item.data.batterId;
-      if (bid && !state.hrBatterStatsCache[bid]) ids.push(bid);
-    });
-    var unique = [...new Set(ids)];
-    if (!unique.length) return;
-    await Promise.all(unique.map(async function(id) {
-      try {
-        var r = await fetch(MLB_BASE + "/people/" + id + "/stats?stats=season&season=" + SEASON + "&group=hitting");
-        if (!r.ok) throw new Error(r.status);
-        var d = await r.json();
-        var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
-        if (stat) state.hrBatterStatsCache[id] = stat;
-      } catch (e) {
-      }
-    }));
-  }
-  async function loadProbablePitcherStats() {
-    if (state.demoMode) {
-      if (DEBUG2) console.log("Demo: Skipping loadProbablePitcherStats API call");
-      return;
-    }
-    var ids = [];
-    Object.values(state.storyCarouselRawGameData).forEach(function(raw) {
-      var awayPP = raw.teams && raw.teams.away && raw.teams.away.probablePitcher;
-      var homePP = raw.teams && raw.teams.home && raw.teams.home.probablePitcher;
-      if (awayPP && awayPP.id && !state.probablePitcherStatsCache[awayPP.id]) ids.push(awayPP.id);
-      if (homePP && homePP.id && !state.probablePitcherStatsCache[homePP.id]) ids.push(homePP.id);
-    });
-    if (!ids.length) return;
-    await Promise.all(ids.map(async function(id) {
-      try {
-        var r = await fetch(MLB_BASE + "/people/" + id + "/stats?stats=season&season=" + SEASON + "&group=pitching");
-        if (!r.ok) throw new Error(r.status);
-        var d = await r.json();
-        var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
-        state.probablePitcherStatsCache[id] = { wins: stat ? stat.wins : 0, losses: stat ? stat.losses : 0 };
-      } catch (e) {
-        state.probablePitcherStatsCache[id] = { wins: 0, losses: 0 };
-      }
-    }));
-  }
-  function genProbablePitchers() {
-    var out = [], today = localDateStr(getEffectiveDate());
-    var games = [];
-    if (state.demoMode && DEBUG2) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(state.gameStates).filter((g) => localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
-    Object.values(state.gameStates).forEach(function(g) {
-      if (localDateStr(new Date(g.gameDateMs)) === today && g.awayAbbr && g.homeAbbr && g.status !== "Live" && g.status !== "Final") {
-        var rawG = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
-        if (rawG && rawG.doubleHeader === "Y" && rawG.gameNumber === 2) {
-          var game1Live = Object.values(state.gameStates).some(function(s) {
-            return s.status === "Live" && s.awayId === g.awayId && s.homeId === g.homeId;
-          });
-          if (game1Live) return;
-        }
-        games.push(g);
-      }
-    });
-    games.forEach(function(g) {
-      var awayAbbr = g.awayAbbr || "TBD", homeAbbr = g.homeAbbr || "TBD", awayPP = "TBD", homePP = "TBD";
-      var awayPPId = null, homePPId = null;
-      if (state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk]) {
-        var raw = state.storyCarouselRawGameData[g.gamePk];
-        if (raw.teams && raw.teams.away && raw.teams.away.probablePitcher && raw.teams.away.probablePitcher.fullName) {
-          awayPP = raw.teams.away.probablePitcher.fullName;
-          awayPPId = raw.teams.away.probablePitcher.id;
-        }
-        if (raw.teams && raw.teams.home && raw.teams.home.probablePitcher && raw.teams.home.probablePitcher.fullName) {
-          homePP = raw.teams.home.probablePitcher.fullName;
-          homePPId = raw.teams.home.probablePitcher.id;
-        }
-      }
-      var awayWL = awayPPId && state.probablePitcherStatsCache[awayPPId] ? state.probablePitcherStatsCache[awayPPId].wins + "-" + state.probablePitcherStatsCache[awayPPId].losses : "0-0";
-      var homeWL = homePPId && state.probablePitcherStatsCache[homePPId] ? state.probablePitcherStatsCache[homePPId].wins + "-" + state.probablePitcherStatsCache[homePPId].losses : "0-0";
-      var headline = awayPP + " (" + awayWL + ") [" + awayAbbr + "] vs " + homePP + " (" + homeWL + ") [" + homeAbbr + "]";
-      var rawG2 = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
-      var timeTBD = rawG2 && rawG2.status && rawG2.status.startTimeTBD;
-      var timeStr = timeTBD ? "TBD" : g.gameTime || "TBD";
-      out.push(makeStory("probable_" + g.gamePk, "contextual", 4, 40, "\u26BE", headline, "Today \xB7 " + timeStr, "probables", g.gamePk, new Date(g.gameDateMs), 60 * 6e4, 0.05));
-    });
-    return out;
-  }
-  function updateInningStates() {
-  }
-  function genInningRecapStories() {
-    var out = [];
-    function genRecap(g, recapInning, recapHalf, recapKey) {
-      if (state.inningRecapsFired.has(recapKey)) return;
-      var inningPlays = state.feedItems.filter(function(item) {
-        return item.gamePk === g.gamePk && item.data && item.data.inning === recapInning && item.data.halfInning === recapHalf && item.data.type === "play";
-      });
-      if (!inningPlays.length) return;
-      var lastPlayInInning = inningPlays[inningPlays.length - 1];
-      var finalAwayScore = lastPlayInInning.data.awayScore;
-      var finalHomeScore = lastPlayInInning.data.homeScore;
-      var startAwayScore = 0, startHomeScore = 0;
-      for (var i = state.feedItems.length - 1; i >= 0; i--) {
-        if (state.feedItems[i].data && state.feedItems[i].data.type === "play" && state.feedItems[i].gamePk === g.gamePk) {
-          if (state.feedItems[i].data.inning < recapInning || state.feedItems[i].data.inning === recapInning && state.feedItems[i].data.halfInning !== recapHalf) {
-            startAwayScore = state.feedItems[i].data.awayScore;
-            startHomeScore = state.feedItems[i].data.homeScore;
-            break;
-          }
-        }
-      }
-      var runs = recapHalf === "top" ? finalAwayScore - startAwayScore : finalHomeScore - startHomeScore;
-      var strikeouts = 0, walks = 0, hrs = 0, dps = 0, errors = 0, playerHRs = [], pitcherNames = /* @__PURE__ */ new Set(), hadRisp = false, dpBatter = null;
-      var isClean123 = inningPlays.length === 3 && !inningPlays.some(function(p) {
-        return p.data.scoring;
-      });
-      var runnersLeftOn = false;
-      inningPlays.forEach(function(play) {
-        if (play.data.risp) hadRisp = true;
-        if (play.data.desc.indexOf("strikes out") !== -1) strikeouts++;
-        if (play.data.desc.indexOf("walk") !== -1) walks++;
-        if (play.data.event === "Home Run") {
-          hrs++;
-          playerHRs.push(play.data.batterName);
-        }
-        if (play.data.desc.indexOf("double play") !== -1) {
-          dps++;
-          if (!dpBatter) dpBatter = play.data.batterName;
-        }
-        if (play.data.desc.indexOf("error") !== -1) errors++;
-        if (play.data.pitcherName) pitcherNames.add(play.data.pitcherName);
-      });
-      var lastPlay = inningPlays[inningPlays.length - 1];
-      runnersLeftOn = lastPlay.data.risp || lastPlay.data.onFirst || lastPlay.data.onSecond || lastPlay.data.onThird;
-      var pitcher = pitcherNames.size === 1 ? Array.from(pitcherNames)[0] : null;
-      var battingTeam = recapHalf === "top" ? g.awayName : g.homeName;
-      var pittchingTeam = recapHalf === "top" ? g.homeName : g.awayName;
-      var halfLabel = recapHalf === "top" ? "top" : "bottom";
-      var innStr = ordinal(recapInning);
-      var priority = 0, headline = "";
-      if (hrs > 0 && runs > 0) {
-        priority = 100;
-        var hrStr = hrs === 1 ? playerHRs[0] + " goes deep" : "Back-to-back homers";
-        headline = hrStr + " in the " + halfLabel + " of the " + innStr + ", " + battingTeam + " score " + runs;
-      } else if (strikeouts === 3 && inningPlays.length === 3) {
-        priority = 95;
-        headline = pitcher ? pitcher + " strikes out the side in the " + innStr : "Perfect strikeout inning in the " + innStr;
-      } else if (runs >= 2 && hrs === 0) {
-        priority = 90;
-        headline = battingTeam + " score " + runs + " runs in the " + halfLabel + " of the " + innStr;
-      } else if (runs > 0 && hadRisp) {
-        var battingScore = recapHalf === "top" ? g.awayScore : g.homeScore;
-        var pitchingScore = recapHalf === "top" ? g.homeScore : g.awayScore;
-        if (battingScore <= pitchingScore) {
-          priority = 85;
-          headline = battingTeam + " claw back in the " + innStr;
-        }
-      } else if (runnersLeftOn && runs === 0 && inningPlays.length === 3) {
-        priority = 80;
-        headline = battingTeam + " strand runners at the corners, " + runs + " runs in the " + halfLabel + " of the " + innStr;
-      } else if (strikeouts >= 2 && runs === 0 && isClean123) {
-        priority = 75;
-        headline = pitcher ? pitcher + " keeps " + pittchingTeam + " off the board with " + strikeouts + " Ks in the " + innStr : "Clean " + strikeouts + "-strikeout inning in the " + innStr;
-      } else if (dps > 0) {
-        priority = 70;
-        headline = dpBatter ? dpBatter + " hits into a double play in the " + innStr : pittchingTeam + " turn a double play to escape the " + innStr;
-      } else if (walks >= 3) {
-        priority = 65;
-        headline = walks + " walks load the bases for " + battingTeam + " in the " + innStr;
-      } else if (errors > 0 && runs > 0) {
-        priority = 55;
-        headline = "Error plates a run \u2014 " + battingTeam + " capitalize in the " + innStr;
-      } else if (strikeouts >= 2 && isClean123) {
-        priority = 40;
-        headline = pitcher ? pitcher + " retires the side with " + strikeouts + " Ks in the " + innStr : battingTeam + " go 1-2-3 with " + strikeouts + " strikeouts in the " + innStr;
-      } else if (isClean123) {
-        priority = 25;
-        headline = battingTeam + " go 1-2-3 in the " + halfLabel + " of the " + innStr;
-      } else if (runs > 0) {
-        priority = 45;
-        headline = battingTeam + " score " + runs + " in the " + innStr;
-      } else {
-        priority = 0;
-        headline = runs + " runs for " + battingTeam + " in the " + halfLabel + " of the " + innStr;
-      }
-      if (!headline) return;
-      state.inningRecapsFired.add(recapKey);
-      var sub = battingTeam + " \xB7 " + ordinal(recapInning) + " inning";
-      out.push(makeStory("inning_recap_" + recapKey, "inning_recap", 2, priority, "\u{1F4CA}", headline, sub, "inning_recap", g.gamePk, /* @__PURE__ */ new Date(), 0, 0));
-    }
-    Object.keys(state.inningRecapsPending).forEach(function(recapKey) {
-      var p = state.inningRecapsPending[recapKey];
-      var g = state.gameStates[p.gamePk];
-      if (!g) {
-        delete state.inningRecapsPending[recapKey];
-        return;
-      }
-      genRecap(g, p.inning, p.halfInning, recapKey);
-      delete state.inningRecapsPending[recapKey];
-      state.lastInningState[p.gamePk] = { inning: p.inning, halfInning: p.halfInning };
-    });
-    Object.values(state.gameStates).forEach(function(g) {
-      if (g.status !== "Live") return;
-      var lastState = state.lastInningState[g.gamePk];
-      if (!lastState) {
-        state.lastInningState[g.gamePk] = { inning: g.inning, halfInning: g.halfInning };
-        return;
-      }
-      if (lastState.inning === g.inning && lastState.halfInning === g.halfInning) return;
-      var recapKey = g.gamePk + "_" + lastState.inning + "_" + lastState.halfInning;
-      if (state.inningRecapsFired.has(recapKey)) {
-        state.lastInningState[g.gamePk] = { inning: g.inning, halfInning: g.halfInning };
-        return;
-      }
-      genRecap(g, lastState.inning, lastState.halfInning, recapKey);
-      state.lastInningState[g.gamePk] = { inning: g.inning, halfInning: g.halfInning };
-    });
-    return out;
-  }
-  async function loadTransactionsCache() {
-    try {
-      var today = /* @__PURE__ */ new Date(), start = new Date(today);
-      start.setDate(start.getDate() - 2);
-      var fmt2 = function(d2) {
-        return d2.getFullYear() + "-" + String(d2.getMonth() + 1).padStart(2, "0") + "-" + String(d2.getDate()).padStart(2, "0");
-      };
-      var r = await fetch(MLB_BASE + "/transactions?sportId=1&startDate=" + fmt2(start) + "&endDate=" + fmt2(today));
-      if (!r.ok) throw new Error(r.status);
-      var d = await r.json();
-      var notable = ["Injured List", "Designated for Assignment", "Selected", "Called Up", "Trade", "Activated From"];
-      state.transactionsCache = (d.transactions || []).filter(function(t) {
-        return notable.some(function(kw) {
-          return (t.typeDesc || "").indexOf(kw) !== -1;
-        });
-      });
-      state.transactionsLastFetch = Date.now();
-    } catch (e) {
-      state.transactionsCache = state.transactionsCache || [];
-    }
-  }
-  async function loadHighLowCache() {
-    try {
-      var stats = ["homeRuns", "strikeOuts", "hits"];
-      var allResults = {};
-      for (var i = 0; i < stats.length; i++) {
-        try {
-          var r = await fetch(MLB_BASE + "/highLow/player?sortStat=" + stats[i] + "&season=" + SEASON + "&sportId=1&gameType=R&limit=3");
-          if (!r.ok) throw new Error(r.status);
-          var d = await r.json();
-          allResults[stats[i]] = d.results || [];
-        } catch (e) {
-          allResults[stats[i]] = [];
-        }
-      }
-      state.highLowCache = allResults;
-      state.highLowLastFetch = Date.now();
-    } catch (e) {
-      state.highLowCache = state.highLowCache || {};
-    }
-  }
-  function genRosterMoveStories() {
-    var out = [];
-    if (!state.transactionsCache || !state.transactionsCache.length) return out;
-    var cutoff = Date.now() - 48 * 60 * 60 * 1e3;
-    state.transactionsCache.forEach(function(t) {
-      if (!t.person || !t.person.fullName) return;
-      var txDate = t.date ? new Date(t.date).getTime() : 0;
-      if (txDate && txDate < cutoff) return;
-      var fullName = t.person.fullName;
-      var desc = t.typeDesc || "";
-      var icon, priority, headline;
-      var toAbbr = t.toTeam && t.toTeam.id ? tcLookup(t.toTeam.id).abbr : "the majors";
-      if (desc.indexOf("Activated") !== -1) {
-        icon = "\u2705";
-        priority = state.devTuning.roster_priority_il || 40;
-        headline = fullName + " (" + toAbbr + ") activated";
-      } else if (desc.indexOf("Injured List") !== -1) {
-        icon = "\u{1F3E5}";
-        priority = state.devTuning.roster_priority_il || 40;
-        var ilMatch = desc.match(/(\d+)-Day/);
-        var ilDays = ilMatch ? ilMatch[1] : "";
-        headline = fullName + " (" + toAbbr + ") placed on the " + (ilDays ? ilDays + "-Day " : "") + "IL";
-      } else if (desc.indexOf("Designated") !== -1) {
-        icon = "\u2B07\uFE0F";
-        priority = state.devTuning.roster_priority_il || 40;
-        headline = fullName + " (" + toAbbr + ") designated for assignment";
-      } else if (desc.indexOf("Selected") !== -1 || desc.indexOf("Called Up") !== -1) {
-        icon = "\u2B06\uFE0F";
-        priority = state.devTuning.roster_priority_trade || 55;
-        headline = fullName + " called up by " + toAbbr;
-      } else if (desc.indexOf("Trade") !== -1) {
-        icon = "\u{1F504}";
-        priority = state.devTuning.roster_priority_trade || 55;
-        var fromAbbr = t.fromTeam && t.fromTeam.id ? tcLookup(t.fromTeam.id).abbr : "the majors";
-        headline = fullName + " traded from " + fromAbbr + " to " + toAbbr;
-      } else {
-        icon = "\u{1F4CB}";
-        priority = 35;
-        headline = fullName + " (" + toAbbr + ") \u2014 " + desc;
-      }
-      var id = "roster_" + t.typeCode + "_" + (t.person.id || 0) + "_" + (t.date || "today");
-      var sub = toAbbr + (t.date ? " \xB7 " + t.date : "");
-      out.push(makeStory(id, "roster_move", 3, priority, icon, headline, sub, "roster", null, t.date ? new Date(t.date) : /* @__PURE__ */ new Date(), 120 * 6e4, 0.2));
-    });
-    return out;
-  }
-  async function genWinProbabilityStories() {
-    var out = [];
-    if (!state.focusGamePk) return out;
-    var g = state.gameStates[state.focusGamePk];
-    if (!g || g.status !== "Live" || g.detailedState !== "In Progress") return out;
-    try {
-      var r = await fetch(MLB_BASE + "/game/" + state.focusGamePk + "/contextMetrics");
-      if (!r.ok) throw new Error(r.status);
-      var d = await r.json();
-      var homeWP = d.homeWinProbability || 50;
-      var leverageIndex = d.leverageIndex || 1;
-      var wpAdded = Math.abs(d.homeWinProbabilityAdded || 0);
-      var isExtreme = homeWP >= (state.devTuning.wp_extreme_floor || 85) || homeWP <= 100 - (state.devTuning.wp_extreme_floor || 85);
-      var isHighLev = leverageIndex >= (state.devTuning.wp_leverage_floor || 2);
-      var isBigSwing = wpAdded >= 20;
-      if (!isExtreme && !isHighLev && !isBigSwing) return out;
-      var favAbbr = homeWP > 50 ? g.homeAbbr : g.awayAbbr;
-      var favWP = homeWP > 50 ? homeWP : 100 - homeWP;
-      var id = "wp_" + state.focusGamePk + "_" + Math.round(homeWP / 5) * 5;
-      var icon, headline, badge, tier, priority;
-      if (leverageIndex >= 3) {
-        icon = "\u26A1";
-        tier = 1;
-        priority = 72;
-        badge = "live";
-        headline = "High leverage \u2014 " + g.awayAbbr + " @ " + g.homeAbbr;
-      } else if (isExtreme) {
-        icon = "\u{1F4CA}";
-        tier = 2;
-        priority = 65;
-        badge = "live";
-        headline = favAbbr + " are " + Math.round(favWP) + "% favorites in the " + ordinal(g.inning);
-      } else {
-        icon = "\u{1F4CA}";
-        tier = 2;
-        priority = 60;
-        badge = "live";
-        headline = "Win probability swings for " + favAbbr + " (+" + Math.round(wpAdded) + "%)";
-      }
-      var sub = g.awayAbbr + " @ " + g.homeAbbr + " \xB7 " + ordinal(g.inning) + " \xB7 " + Math.round(favWP) + "% WP";
-      state.storyPool = state.storyPool.filter(function(s) {
-        return s.id.indexOf("wp_" + state.focusGamePk + "_") !== 0;
-      });
-      out.push(makeStory(id, "realtime", tier, priority, icon, headline, sub, badge, state.focusGamePk, /* @__PURE__ */ new Date(), 3 * 6e4, 0.6));
-    } catch (e) {
-    }
-    return out;
-  }
-  function genSeasonHighStories() {
-    var out = [];
-    if (!state.highLowCache) return out;
-    var SEASON_STR = String(SEASON);
-    var configs = [
-      { stat: "homeRuns", icon: "\u{1F4A5}", label: "HR in a game", threshold: 3 },
-      { stat: "strikeOuts", icon: "\u{1F525}", label: "strikeouts in a game", threshold: 13 },
-      { stat: "hits", icon: "\u{1F3CF}", label: "hits in a game", threshold: 4 }
-    ];
-    configs.forEach(function(cfg) {
-      var results = state.highLowCache[cfg.stat] || [];
-      if (!results.length) return;
-      var top = results[0];
-      if (!top || !top.person || !top.stat) return;
-      var val = top.stat[cfg.stat] || 0;
-      if (val < cfg.threshold) return;
-      var lastName = top.person.fullName.split(" ").slice(1).join(" ") || top.person.fullName;
-      var teamAbbr = top.team && top.team.abbreviation || "";
-      var oppAbbr = top.opponent && top.opponent.abbreviation || "";
-      var dateStr = top.game && top.game.gameDate ? top.game.gameDate : "";
-      var id = "highlow_" + cfg.stat + "_" + top.person.id + "_" + SEASON_STR;
-      var headline = SEASON_STR + " season high: " + lastName + " \u2014 " + val + " " + cfg.label;
-      var sub = teamAbbr + (oppAbbr ? " vs " + oppAbbr : "") + (dateStr ? " \xB7 " + dateStr : "");
-      out.push(makeStory(id, "contextual", 4, state.devTuning.highlow_priority || 25, "\u{1F396}\uFE0F", headline, sub, "record", null, dateStr ? new Date(dateStr) : /* @__PURE__ */ new Date(), 24 * 60 * 6e4, 0.1));
-    });
-    return out;
-  }
-  async function loadLiveWPCache() {
-    var livePks = Object.keys(state.gameStates).filter(function(pk) {
-      var g = state.gameStates[pk];
-      return g && g.status === "Live" && g.detailedState === "In Progress";
-    });
-    if (!livePks.length) {
-      state.liveWPCache = {};
-      state.liveWPLastFetch = Date.now();
-      return;
-    }
-    await Promise.all(livePks.map(function(pk) {
-      return fetch(MLB_BASE + "/game/" + pk + "/contextMetrics").then(function(r) {
-        if (!r.ok) throw new Error(r.status);
-        return r.json();
-      }).then(function(d) {
-        state.liveWPCache[pk] = { homeWP: d.homeWinProbability || 50, leverageIndex: d.leverageIndex || 1, ts: Date.now() };
-      }).catch(function() {
-      });
-    }));
-    Object.keys(state.liveWPCache).forEach(function(pk) {
-      if (!state.gameStates[pk] || state.gameStates[pk].status !== "Live") delete state.liveWPCache[pk];
-    });
-    state.liveWPLastFetch = Date.now();
-  }
-  function genLiveWinProbStories() {
-    var out = [];
-    Object.keys(state.liveWPCache).forEach(function(pk) {
-      var g = state.gameStates[pk];
-      if (!g || g.status !== "Live" || g.detailedState !== "In Progress") return;
-      var c = state.liveWPCache[pk];
-      var homeWP = c.homeWP;
-      var favAbbr = homeWP >= 50 ? g.homeAbbr : g.awayAbbr;
-      var dogAbbr = homeWP >= 50 ? g.awayAbbr : g.homeAbbr;
-      var favWP = homeWP >= 50 ? homeWP : 100 - homeWP;
-      var bucket = Math.round(homeWP / 10) * 10;
-      var id = "livewp_" + pk + "_" + bucket;
-      var halfArrow = g.halfInning === "top" ? "\u25B2" : "\u25BC";
-      var headline = favAbbr + " " + Math.round(favWP) + "% to win vs " + dogAbbr;
-      var sub = g.awayAbbr + " @ " + g.homeAbbr + " \xB7 " + halfArrow + ordinal(g.inning) + " \xB7 " + g.awayScore + "\u2013" + g.homeScore;
-      out.push(makeStory(id, "contextual", 4, state.devTuning.livewp_priority || 30, "\u{1F4C8}", headline, sub, "live", +pk, /* @__PURE__ */ new Date(), 15 * 6e4, 0.1));
-    });
-    return out;
-  }
-  function genDailyIntro() {
-    var todayStr = localDateStr(getEffectiveDate());
-    var todayGames = Object.values(state.gameStates).filter(function(g) {
-      return g.gameDateMs && localDateStr(new Date(g.gameDateMs)) === todayStr;
-    });
-    if (!todayGames.length) return [];
-    var liveCount = todayGames.filter(function(g) {
-      return g.status === "Live" && g.detailedState === "In Progress";
-    }).length;
-    var finalCount = todayGames.filter(function(g) {
-      return g.status === "Final";
-    }).length;
-    if (liveCount >= 2 || finalCount >= Math.ceil(todayGames.length / 2)) return [];
-    var marquee = null;
-    todayGames.forEach(function(g) {
-      var raw = state.storyCarouselRawGameData && state.storyCarouselRawGameData[g.gamePk];
-      if (!raw || !raw.teams) return;
-      var aPP = raw.teams.away && raw.teams.away.probablePitcher;
-      var hPP = raw.teams.home && raw.teams.home.probablePitcher;
-      if (!aPP || !hPP) return;
-      var aS = state.probablePitcherStatsCache[aPP.id] || {}, hS = state.probablePitcherStatsCache[hPP.id] || {};
-      var aW = aS.wins || 0, aL = aS.losses || 0, hW = hS.wins || 0, hL = hS.losses || 0;
-      if (aW <= aL || hW <= hL) return;
-      var aboveZero = aW - aL + (hW - hL);
-      if (!marquee || aboveZero > marquee.score) {
-        marquee = { away: aPP.fullName, home: hPP.fullName, awayAbbr: g.awayAbbr, homeAbbr: g.homeAbbr, score: aboveZero, gamePk: g.gamePk };
-      }
-    });
-    var n = todayGames.length, headline, sub, gamePk = null;
-    if (marquee && marquee.score >= 6) {
-      headline = marquee.away.split(" ").pop() + " vs " + marquee.home.split(" ").pop() + " is the matchup tonight.";
-      sub = n + " games \xB7 " + marquee.awayAbbr + " @ " + marquee.homeAbbr + " headlines";
-      gamePk = marquee.gamePk;
-    } else {
-      headline = n + " games on the slate. Pulse is on.";
-      sub = "Live play-by-play across every game";
-    }
-    return [makeStory("dailyintro_" + todayStr, "editorial", 4, 50, "\u{1F4F0}", headline, sub, "today", gamePk, /* @__PURE__ */ new Date(), 4 * 60 * 6e4, 0.4)];
-  }
-  async function buildStoryPool() {
-    var now = Date.now();
-    if (now - state.dailyLeadersLastFetch > 5 * 6e4) {
-      loadDailyLeaders();
-      state.dailyLeadersLastFetch = now;
-    }
-    if (now - state.transactionsLastFetch > 120 * 6e4) {
-      loadTransactionsCache();
-    }
-    if (now - state.highLowLastFetch > 6 * 60 * 6e4) {
-      loadHighLowCache();
-    }
-    if (now - state.liveWPLastFetch > (state.devTuning.livewp_refresh_ms || 9e4)) {
-      loadLiveWPCache();
-    }
-    await loadProbablePitcherStats();
-    fetchMissingHRBatterStats();
-    var multiHitStories = await genMultiHitDay();
-    var wpStories = await genWinProbabilityStories();
-    var fresh = [].concat(
-      genHRStories(),
-      genNoHitterWatch(),
-      genWalkOffThreat(),
-      genBasesLoaded(),
-      genStolenBaseStories(),
-      genBigInning(),
-      genFinalScoreStories(),
-      genStreakStories(),
-      multiHitStories,
-      genDailyLeaders(),
-      genPitcherGem(),
-      genOnThisDay(),
-      genYesterdayHighlights(),
-      genProbablePitchers(),
-      genInningRecapStories(),
-      wpStories,
-      genRosterMoveStories(),
-      genSeasonHighStories(),
-      genLiveWinProbStories(),
-      genDailyIntro()
-    );
-    var introMarquee = fresh.find(function(s) {
-      return s.type === "editorial" && s.id.indexOf("dailyintro_") === 0 && s.gamePk;
-    });
-    if (introMarquee) {
-      var dupId = "probable_" + introMarquee.gamePk;
-      fresh = fresh.filter(function(s) {
-        return s.id !== dupId;
-      });
-    }
-    state.storyPool = fresh.slice().sort(function(a, b) {
-      return b.priority - a.priority;
-    });
-    var carousel = document.getElementById("storyCarousel");
-    if (!carousel) return;
-    if (state.storyPool.length) {
-      if (carousel.style.display === "none") {
-        carousel.style.display = "";
-        rotateStory();
-        if (!state.storyRotateTimer) state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-      }
-    } else {
-      carousel.style.display = "none";
-      if (state.storyRotateTimer) {
-        clearInterval(state.storyRotateTimer);
-        state.storyRotateTimer = null;
-      }
-    }
-  }
-  function rotateStory() {
-    if (!state.storyPool.length) return;
-    var now = Date.now();
-    var maxCooldown = Math.max(state.storyPool.length * state.devTuning.rotateMs * 1.5, 2 * 6e4);
-    var eligible = state.storyPool.filter(function(s) {
-      return !s.lastShown || now - s.lastShown.getTime() > Math.min(s.cooldownMs, maxCooldown);
-    });
-    if (!eligible.length) {
-      eligible = state.storyPool.slice().sort(function(a, b) {
-        return (a.lastShown ? a.lastShown.getTime() : 0) - (b.lastShown ? b.lastShown.getTime() : 0);
-      });
-    }
-    var scored = eligible.map(function(s) {
-      var ageMin = (now - s.ts.getTime()) / 6e4;
-      var decay = Math.pow(Math.max(0, 1 - s.decayRate), ageMin / 30);
-      return { s, score: s.priority * decay };
-    });
-    scored.sort(function(a, b) {
-      return b.score - a.score;
-    });
-    showStoryCard(scored[0].s);
-  }
-  function showStoryCard(story) {
-    story.lastShown = /* @__PURE__ */ new Date();
-    state.storyShownId = story.id;
-    state.displayedStoryIds.add(story.id);
-    renderStoryCard(story);
-    updateStoryDots();
-    refreshDebugPanel();
-  }
-  function renderStoryCard(story) {
-    var el = document.getElementById("storyCard");
-    if (!el) return;
-    var badgeMap = { live: "live", final: "final", today: "today", yesterday: "yesterday", onthisday: "onthisday", upcoming: "upcoming", leaders: "leaders", probables: "probables", highlight: "highlight", inning_recap: "inning_recap", hot: "hot", cold: "cold", streak: "streak", roster: "roster", award: "award", record: "award" };
-    var labelMap = { live: "LIVE", final: "FINAL", today: "TODAY", yesterday: "YESTERDAY", onthisday: "ON THIS DAY", upcoming: "UPCOMING", leaders: "LEADERS", probables: "TODAY'S PROBABLE PITCHERS", highlight: "HIGHLIGHT", inning_recap: "INNING RECAP", hot: "HOT", cold: "COLD", streak: "HITTING STREAK", roster: "ROSTER MOVE", award: "AWARD", record: "SEASON HIGH" };
-    var bc = badgeMap[story.badge] || "today", bl = labelMap[story.badge] || "TODAY";
-    el.className = "story-card tier" + story.tier + (story.id.indexOf("biginning") === 0 ? " story-biginning" : "") + (story.id.indexOf("leader_") === 0 ? " story-leaders" : "");
-    el.innerHTML = '<div><span class="story-badge ' + bc + '">' + bl + '</span></div><div style="display:flex;align-items:flex-start;gap:6px;margin-top:2px"><span class="story-icon">' + story.icon + '</span><div><div class="story-headline">' + story.headline + "</div>" + (story.sub ? '<div class="story-sub">' + story.sub + "</div>" : "") + "</div></div>";
-  }
-  function updateStoryDots() {
-    var el = document.getElementById("storyDots");
-    if (!el) return;
-    var max = Math.min(state.storyPool.length, 8);
-    var curIdx = state.storyPool.findIndex(function(s) {
-      return s.id === state.storyShownId;
-    });
-    var html = "";
-    for (var i = 0; i < max; i++) html += '<div class="story-dot' + (i === curIdx ? " active" : "") + '"></div>';
-    el.innerHTML = html;
-  }
-  function prevStory() {
-    if (!state.storyPool.length) return;
-    var idx = state.storyPool.findIndex(function(s) {
-      return s.id === state.storyShownId;
-    });
-    showStoryCard(state.storyPool[idx <= 0 ? state.storyPool.length - 1 : idx - 1]);
-  }
-  function nextStory() {
-    if (!state.storyPool.length) return;
-    var idx = state.storyPool.findIndex(function(s) {
-      return s.id === state.storyShownId;
-    });
-    showStoryCard(state.storyPool[idx >= state.storyPool.length - 1 ? 0 : idx + 1]);
-  }
-  function onStoryVisibilityChange() {
-    if (document.hidden) {
-      clearInterval(state.storyRotateTimer);
-      state.storyRotateTimer = null;
-    } else if (state.pulseInitialized && state.storyPool.length) {
-      rotateStory();
-      state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-    }
-  }
-  async function loadOnThisDayCache() {
-    state.onThisDayCache = [];
-    var today = /* @__PURE__ */ new Date();
-    var mm = String(today.getMonth() + 1).padStart(2, "0");
-    var dd = String(today.getDate()).padStart(2, "0");
-    for (var i = 1; i <= 3; i++) {
-      var yr = SEASON - i;
-      try {
-        var r = await fetch(MLB_BASE + "/schedule?date=" + yr + "-" + mm + "-" + dd + "&sportId=1&hydrate=linescore,team");
-        if (!r.ok) throw new Error(r.status);
-        var d = await r.json();
-        var games = (d.dates || []).flatMap(function(dt) {
-          return dt.games || [];
-        }).filter(function(g2) {
-          return g2.status.abstractGameState === "Final";
-        });
-        for (var j = 0; j < games.length; j++) {
-          var g = games[j];
-          var away = g.teams.away, home = g.teams.home;
-          var winner = away.score > home.score ? away.team.abbreviation : home.team.abbreviation;
-          var loser = away.score > home.score ? home.team.abbreviation : away.team.abbreviation;
-          var ws = Math.max(away.score || 0, home.score || 0), ls = Math.min(away.score || 0, home.score || 0);
-          var playerHighlight = "", sigPlay = "";
-          try {
-            var bs = await fetchBoxscore(g.gamePk);
-            var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
-            var topBatter = null, topBatterStats = null;
-            var hrHitters = { multi: [], single: [] };
-            Object.values(allPlayers).forEach(function(p) {
-              if (!p.stats || !p.stats.batting) return;
-              var bat = p.stats.batting;
-              if (!bat.hits || bat.atBats < 2) return;
-              if (!topBatter || bat.hits / bat.atBats > topBatterStats.hits / topBatterStats.atBats) {
-                topBatter = p;
-                topBatterStats = bat;
-              }
-              if (bat.homeRuns && bat.homeRuns >= 2) hrHitters.multi.push({ name: p.person.fullName.split(" ").pop(), hrs: bat.homeRuns });
-              else if (bat.homeRuns === 1) hrHitters.single.push(p.person.fullName.split(" ").pop());
-            });
-            var winPitcher = null, winPitcherStats = null, losePitcher = null, losePitcherStats = null, savePitcher = null;
-            var allPitchers = [];
-            Object.values(allPlayers).forEach(function(p) {
-              if (!p.stats || !p.stats.pitching) return;
-              var pit = p.stats.pitching;
-              if (p.gameStatus) {
-                if (p.gameStatus.isWinningPitcher) {
-                  winPitcher = p;
-                  winPitcherStats = pit;
-                }
-                if (p.gameStatus.isLosingPitcher) {
-                  losePitcher = p;
-                  losePitcherStats = pit;
-                }
-                if (p.gameStatus.isSavePitcher) savePitcher = p;
-              }
-              if (parseFloat(pit.inningsPitched || 0) > 0) allPitchers.push({ p, stats: pit });
-            });
-            if (!winPitcher || !losePitcher) {
-              allPitchers.sort(function(a, b) {
-                return parseFloat(b.stats.inningsPitched || 0) - parseFloat(a.stats.inningsPitched || 0);
-              });
-              if (!winPitcher && allPitchers.length) {
-                winPitcher = allPitchers[0].p;
-                winPitcherStats = allPitchers[0].stats;
-              }
-              if (!losePitcher && allPitchers.length > 1) {
-                losePitcher = allPitchers[1].p;
-                losePitcherStats = allPitchers[1].stats;
-              }
-            }
-            var lines = [];
-            if (topBatter && topBatterStats) lines.push(topBatter.person.fullName.split(" ").pop() + " " + topBatterStats.hits + "-" + topBatterStats.atBats);
-            if (winPitcher && winPitcherStats) lines.push("W: " + winPitcher.person.fullName.split(" ").pop() + " " + winPitcherStats.inningsPitched + "IP, " + winPitcherStats.strikeOuts + "K, " + (winPitcherStats.earnedRuns || 0) + " ER");
-            if (losePitcher && losePitcherStats) lines.push("L: " + losePitcher.person.fullName.split(" ").pop() + " " + losePitcherStats.inningsPitched + "IP, " + losePitcherStats.strikeOuts + "K, " + (losePitcherStats.earnedRuns || 0) + " ER");
-            if (savePitcher) lines.push("S: " + savePitcher.person.fullName.split(" ").pop());
-            hrHitters.multi.forEach(function(h) {
-              lines.push(h.name + " " + h.hrs + "HR");
-            });
-            hrHitters.single.forEach(function(name) {
-              lines.push(name + " HR");
-            });
-            if (lines.length) playerHighlight = " \xB7 " + lines.join(" \xB7 ");
-          } catch (e) {
-          }
-          try {
-            var pbResp = await fetch(MLB_BASE + "/game/" + g.gamePk + "/playByPlay");
-            if (!pbResp.ok) throw new Error(pbResp.status);
-            var pb = await pbResp.json();
-            var plays = pb.allPlays || [];
-            var lastPlay = plays[plays.length - 1];
-            if (lastPlay && lastPlay.about && lastPlay.about.isScoringPlay && lastPlay.result) {
-              var evt = lastPlay.result.event || "";
-              if (evt.indexOf("Home Run") !== -1 && lastPlay.about.inning >= 9 && Math.abs(ws - ls) <= 1) {
-                sigPlay = " \xB7 Walk-off HR!";
-              } else if (evt.indexOf("Grand Slam") !== -1) {
-                sigPlay = " \xB7 Grand slam!";
-              }
-            }
-            var allHits = { away: 0, home: 0 };
-            plays.forEach(function(p) {
-              if (p.result && ["Single", "Double", "Triple", "Home Run"].indexOf(p.result.event) !== -1) {
-                var half = (p.about.halfInning || "Top").toLowerCase();
-                allHits[half === "top" ? "away" : "home"]++;
-              }
-            });
-            if (allHits.away === 0 || allHits.home === 0) {
-              sigPlay = " \xB7 No-hitter!";
-            }
-          } catch (e) {
-          }
-          var headline = "On this day in " + yr + ": " + winner + " beat " + loser + " " + ws + "-" + ls + playerHighlight + sigPlay;
-          state.onThisDayCache.push({ id: "otd_" + yr + "_" + g.gamePk, icon: "\u{1F4C5}", headline, sub: g.venue ? g.venue.name : "", gamePk: g.gamePk, ts: new Date(g.gameDate || Date.now()) });
-        }
-      } catch (e) {
-      }
-    }
-  }
-  async function loadYdForDate(dateStr) {
-    var result = [];
-    try {
-      var r = await fetch(MLB_BASE + "/schedule?date=" + dateStr + "&sportId=1&hydrate=linescore,team");
-      if (!r.ok) throw new Error(r.status);
-      var d = await r.json();
-      var games = (d.dates || []).flatMap(function(dt) {
-        return dt.games || [];
-      }).filter(function(g2) {
-        if (g2.status.abstractGameState !== "Final") return false;
-        var detailed = g2.status.detailedState || "";
-        if (detailed === "Postponed" || detailed === "Cancelled" || detailed === "Suspended") return false;
-        return true;
-      });
-      for (var i = 0; i < games.length; i++) {
-        var g = games[i];
-        var away = g.teams.away, home = g.teams.home;
-        var winner = away.score > home.score ? away.team.abbreviation : home.team.abbreviation;
-        var loser = away.score > home.score ? home.team.abbreviation : away.team.abbreviation;
-        var ws = Math.max(away.score || 0, home.score || 0), ls = Math.min(away.score || 0, home.score || 0);
-        var linescore = g.linescore || {};
-        var dur = linescore.gameDurationMinutes ? " \xB7 " + Math.floor(linescore.gameDurationMinutes / 60) + "h " + String(linescore.gameDurationMinutes % 60).padStart(2, "0") + "m" : "";
-        var playerHighlight = "", sigPlay = "";
-        try {
-          var bs = await fetchBoxscore(g.gamePk);
-          var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
-          var topBatter = null, topBatterStats = null;
-          Object.values(allPlayers).forEach(function(p) {
-            if (!p.stats || !p.stats.batting) return;
-            var bat = p.stats.batting;
-            if (!bat.hits || bat.atBats < 2) return;
-            if (!topBatter || bat.hits / bat.atBats > topBatterStats.hits / topBatterStats.atBats) {
-              topBatter = p;
-              topBatterStats = bat;
-            }
-          });
-          var winPitcher = null, winPitcherStats = null, losePitcher = null, losePitcherStats = null, savePitcher = null;
-          var allPitchers = [];
-          Object.values(allPlayers).forEach(function(p) {
-            if (!p.stats || !p.stats.pitching) return;
-            var pit = p.stats.pitching;
-            if (p.gameStatus) {
-              if (p.gameStatus.isWinningPitcher) {
-                winPitcher = p;
-                winPitcherStats = pit;
-              }
-              if (p.gameStatus.isLosingPitcher) {
-                losePitcher = p;
-                losePitcherStats = pit;
-              }
-              if (p.gameStatus.isSavePitcher) savePitcher = p;
-            }
-            if (parseFloat(pit.inningsPitched || 0) > 0) allPitchers.push({ p, stats: pit });
-          });
-          if (!winPitcher || !losePitcher) {
-            allPitchers.sort(function(a, b) {
-              return parseFloat(b.stats.inningsPitched || 0) - parseFloat(a.stats.inningsPitched || 0);
-            });
-            if (!winPitcher && allPitchers.length) {
-              winPitcher = allPitchers[0].p;
-              winPitcherStats = allPitchers[0].stats;
-            }
-            if (!losePitcher && allPitchers.length > 1) {
-              losePitcher = allPitchers[1].p;
-              losePitcherStats = allPitchers[1].stats;
-            }
-          }
-          var lines = [];
-          if (topBatter && topBatterStats) {
-            var bline = topBatter.person.fullName.split(" ").pop() + " " + topBatterStats.hits + "-" + topBatterStats.atBats;
-            if (topBatterStats.homeRuns > 0) bline += " " + topBatterStats.homeRuns + "HR";
-            if (topBatterStats.rbi > 0) bline += " " + topBatterStats.rbi + "RBI";
-            lines.push(bline);
-          }
-          if (winPitcher && winPitcherStats) lines.push("W: " + winPitcher.person.fullName.split(" ").pop() + " " + winPitcherStats.inningsPitched + "IP, " + winPitcherStats.strikeOuts + "K, " + (winPitcherStats.earnedRuns || 0) + " ER");
-          if (losePitcher && losePitcherStats) lines.push("L: " + losePitcher.person.fullName.split(" ").pop() + " " + losePitcherStats.inningsPitched + "IP, " + losePitcherStats.strikeOuts + "K, " + (losePitcherStats.earnedRuns || 0) + " ER");
-          if (savePitcher) lines.push("S: " + savePitcher.person.fullName.split(" ").pop());
-          if (lines.length) playerHighlight = " \xB7 " + lines.join(" \xB7 ");
-        } catch (e) {
-        }
-        try {
-          var pbResp2 = await fetch(MLB_BASE + "/game/" + g.gamePk + "/playByPlay");
-          if (!pbResp2.ok) throw new Error(pbResp2.status);
-          var pb = await pbResp2.json();
-          var plays = pb.allPlays || [];
-          var lastPlay = plays[plays.length - 1];
-          if (lastPlay && lastPlay.about && lastPlay.about.isScoringPlay && lastPlay.result) {
-            var evt = lastPlay.result.event || "";
-            if (evt.indexOf("Home Run") !== -1 && lastPlay.about.inning >= 9 && Math.abs(ws - ls) <= 1) {
-              sigPlay = " \xB7 Walk-off HR!";
-            } else if (evt.indexOf("Grand Slam") !== -1) {
-              sigPlay = " \xB7 Grand slam!";
-            }
-          }
-          var allHits = { away: 0, home: 0 };
-          plays.forEach(function(p) {
-            if (p.result && ["Single", "Double", "Triple", "Home Run"].indexOf(p.result.event) !== -1) {
-              var half = (p.about.halfInning || "Top").toLowerCase();
-              allHits[half === "top" ? "away" : "home"]++;
-            }
-          });
-          if (allHits.away === 0 || allHits.home === 0) {
-            sigPlay = " \xB7 No-hitter!";
-          }
-        } catch (e) {
-        }
-        var headline = winner + " beat " + loser + " " + ws + "-" + ls + playerHighlight + sigPlay;
-        var videoTitle = null;
-        try {
-          var cr = await fetch(MLB_BASE + "/game/" + g.gamePk + "/content");
-          if (cr.ok) {
-            var cd = await cr.json();
-            var items = cd.highlights && cd.highlights.highlights && cd.highlights.highlights.items || [];
-            if (items.length && items[0].headline) videoTitle = items[0].headline;
-          }
-        } catch (e) {
-        }
-        result.push({ id: "yday_" + g.gamePk + "_result", icon: "\u2705", headline: videoTitle || headline, sub: videoTitle ? headline : (g.venue ? g.venue.name : "") + dur, gamePk: g.gamePk, ts: new Date(g.gameDate || Date.now()) });
-      }
-    } catch (e) {
-    }
-    return result;
-  }
-  async function loadYesterdayCache() {
-    state.yesterdayCache = [];
-    var yd = /* @__PURE__ */ new Date();
-    yd.setDate(yd.getDate() - 1);
-    var dateStr = yd.getFullYear() + "-" + String(yd.getMonth() + 1).padStart(2, "0") + "-" + String(yd.getDate()).padStart(2, "0");
-    state.yesterdayCache = await loadYdForDate(dateStr);
-    state.yesterdayCache.forEach(function(item) {
-      item.headline = "Yesterday: " + item.headline;
-    });
-    updateFeedEmpty();
-  }
-  async function loadDailyLeaders() {
-    if (state.demoMode) {
-      if (DEBUG2) console.log("Demo: Skipping loadDailyLeaders API call");
-      return;
-    }
-    try {
-      var rH = await fetch(MLB_BASE + "/stats/leaders?leaderCategories=homeRuns,battingAverage,rbi,stolenBases&season=" + SEASON + "&statGroup=hitting&limit=5");
-      if (!rH.ok) throw new Error(rH.status);
-      var dH = await rH.json();
-      var rP = await fetch(MLB_BASE + "/stats/leaders?leaderCategories=wins,saves&season=" + SEASON + "&statGroup=pitching&limit=5");
-      if (!rP.ok) throw new Error(rP.status);
-      var dP = await rP.json();
-      state.dailyLeadersCache = {};
-      [dH.leagueLeaders || [], dP.leagueLeaders || []].forEach(function(list) {
-        list.forEach(function(cat) {
-          if (cat.leaderCategory && cat.leaders) state.dailyLeadersCache[cat.leaderCategory] = cat.leaders;
-        });
-      });
-    } catch (e) {
-    }
-  }
-  function ordinal(n) {
-    return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th";
-  }
-  function refreshDebugPanel() {
+  function refreshDebugPanel2() {
     var panel = document.getElementById("debugPanel");
     if (!panel) return;
     var now = Date.now();
@@ -3606,7 +3356,7 @@
       var d = await r.json();
       var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
       if (!stat) return null;
-      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate(stat.ops) };
+      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate2(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate2(stat.ops) };
       state.collectionCareerStatsCache[playerId] = result;
       return result;
     } catch (e) {
@@ -4770,7 +4520,7 @@
     tick();
     state.countdownTimer = setInterval(tick, 3e4);
   }
-  function localDateStr(d) {
+  function localDateStr2(d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function toggleGame(gamePk) {
@@ -4889,7 +4639,7 @@
     Object.keys(state.gameStates).forEach(function(pk) {
       var g = state.gameStates[pk];
       if (g.status !== "Final" || !g.gameDateMs) return;
-      var gDate = localDateStr(new Date(g.gameDateMs));
+      var gDate = localDateStr2(new Date(g.gameDateMs));
       if (gDate < beforeDateStr) {
         delete state.gameStates[pk];
         state.enabledGames.delete(+pk);
@@ -4908,7 +4658,7 @@
       var seed = state.pollDateStr ? state.pollDateStr.split("-").map(Number) : null;
       var nextDate = seed ? new Date(seed[0], seed[1] - 1, seed[2]) : /* @__PURE__ */ new Date();
       nextDate.setDate(nextDate.getDate() + 1);
-      var ts = localDateStr(nextDate);
+      var ts = localDateStr2(nextDate);
       var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + ts + "&hydrate=team");
       if (!r.ok) throw new Error(r.status);
       var d = await r.json();
@@ -5135,7 +4885,7 @@
     if (!jerseyNumber && overrideStats && overrideStats._jersey) jerseyNumber = overrideStats._jersey;
     if ((!position || !jerseyNumber) && gamePk) {
       try {
-        var bs = await fetchBoxscore(gamePk);
+        var bs = await fetchBoxscore2(gamePk);
         var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
         var playerData = allPlayers.find(function(p) {
           return p.person && p.person.id === batterId;
@@ -5168,8 +4918,8 @@
       position: position || "\u2014",
       hrCount,
       hrPrev: typeof hrCount === "number" && hrCount >= 1 ? hrCount - 1 : hrCount,
-      avg: stat ? fmtRate(stat.avg) : "\u2014",
-      ops: stat ? fmtRate(stat.ops) : "\u2014",
+      avg: stat ? fmtRate2(stat.avg) : "\u2014",
+      ops: stat ? fmtRate2(stat.ops) : "\u2014",
       rbi: stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014"
     };
   }
@@ -5318,8 +5068,8 @@
     }
     var rbiSeason = stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014";
     var hits = stat ? stat.hits != null ? stat.hits : "\u2014" : "\u2014";
-    var avg = stat ? fmtRate(stat.avg) : "\u2014";
-    var ops = stat ? fmtRate(stat.ops) : "\u2014";
+    var avg = stat ? fmtRate2(stat.avg) : "\u2014";
+    var ops = stat ? fmtRate2(stat.ops) : "\u2014";
     var rbiPrev = typeof rbiSeason === "number" && rbiSeason >= rbi ? rbiSeason - rbi : rbiSeason;
     var battingAfter = halfInning === "top" ? aScore : hScore;
     var fieldingScore = halfInning === "top" ? hScore : aScore;
@@ -5338,7 +5088,7 @@
     var position = rEntry && rEntry.position && rEntry.position.abbreviation || null;
     if ((!position || !jerseyNumber) && gamePk) {
       try {
-        var bs = await fetchBoxscore(gamePk);
+        var bs = await fetchBoxscore2(gamePk);
         var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
         var playerData = allPlayers.find(function(p) {
           return p.person && p.person.id === batterId;
@@ -6930,7 +6680,7 @@
       } else if (action === "capturePulse") {
         captureCurrentTheme("pulse");
       } else if (action === "refreshDebug") {
-        refreshDebugPanel();
+        refreshDebugPanel2();
       } else if (action === "copyLog") {
         copyLogAsMarkdown();
       } else if (action === "clearLog") {
@@ -7938,9 +7688,9 @@
       return x.gamePk === gamePk;
     });
     if (!g) return;
-    var ds = localDateStr(new Date(g.gameDate));
+    var ds = localDateStr2(new Date(g.gameDate));
     var dayGames = state.scheduleData.filter(function(x) {
-      return localDateStr(new Date(x.gameDate)) === ds;
+      return localDateStr2(new Date(x.gameDate)) === ds;
     }).sort(function(a, b) {
       return a.gamePk - b.gamePk;
     });
@@ -8373,9 +8123,9 @@
     var jerseyOverlay = state.selectedPlayer && state.selectedPlayer.jerseyNumber ? '<div class="headshot-jersey-pill">#' + state.selectedPlayer.jerseyNumber + "</div>" : "";
     var html = pid ? '<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + pid + '/headshot/67/current">' + jerseyOverlay + "</div>" : "";
     var boxes = [];
-    if (group === "hitting") boxes = [{ v: fmtRate(s.avg), l: "AVG" }, { v: s.homeRuns, l: "HR" }, { v: s.rbi, l: "RBI" }, { v: fmtRate(s.ops), l: "OPS" }, { v: s.hits, l: "H" }, { v: s.doubles, l: "2B" }, { v: s.triples, l: "3B" }, { v: s.strikeOuts, l: "K" }, { v: s.baseOnBalls, l: "BB" }, { v: s.runs, l: "R" }, { v: s.stolenBases, l: "SB" }, { v: s.plateAppearances, l: "PA" }];
+    if (group === "hitting") boxes = [{ v: fmtRate2(s.avg), l: "AVG" }, { v: s.homeRuns, l: "HR" }, { v: s.rbi, l: "RBI" }, { v: fmtRate2(s.ops), l: "OPS" }, { v: s.hits, l: "H" }, { v: s.doubles, l: "2B" }, { v: s.triples, l: "3B" }, { v: s.strikeOuts, l: "K" }, { v: s.baseOnBalls, l: "BB" }, { v: s.runs, l: "R" }, { v: s.stolenBases, l: "SB" }, { v: s.plateAppearances, l: "PA" }];
     else if (group === "pitching") boxes = [{ v: fmt(s.era, 2), l: "ERA" }, { v: fmt(s.whip, 2), l: "WHIP" }, { v: s.strikeOuts, l: "K" }, { v: s.wins + "-" + s.losses, l: "W-L" }, { v: fmt(s.inningsPitched, 1), l: "IP" }, { v: s.hits, l: "H" }, { v: s.baseOnBalls, l: "BB" }, { v: s.homeRuns, l: "HR" }, { v: fmt(s.strikeoutWalkRatio, 2), l: "K/BB" }, { v: fmt(s.strikeoutsPer9Inn, 2), l: "K/9" }, { v: fmt(s.walksPer9Inn, 2), l: "BB/9" }, { v: s.saves, l: "SV" }];
-    else boxes = [{ v: fmtRate(s.fielding), l: "FPCT" }, { v: s.putOuts, l: "PO" }, { v: s.assists, l: "A" }, { v: s.errors, l: "E" }, { v: s.chances, l: "TC" }, { v: s.doublePlays, l: "DP" }];
+    else boxes = [{ v: fmtRate2(s.fielding), l: "FPCT" }, { v: s.putOuts, l: "PO" }, { v: s.assists, l: "A" }, { v: s.errors, l: "E" }, { v: s.chances, l: "TC" }, { v: s.doublePlays, l: "DP" }];
     var cols = group === "fielding" ? 3 : 4;
     html += '<div class="stat-grid stat-grid--cols-' + cols + '">';
     boxes.forEach(function(b, i) {
@@ -8570,7 +8320,7 @@
           if (!br.ok) throw new Error(br.status);
           var bd = await br.json();
           var bst = bd.stats && bd.stats[0] && bd.stats[0].splits && bd.stats[0].splits[0] && bd.stats[0].splits[0].stat;
-          if (bst) batterStats = "AVG " + fmtRate(bst.avg) + " \xB7 OBP " + fmtRate(bst.obp) + " \xB7 OPS " + fmtRate(bst.ops);
+          if (bst) batterStats = "AVG " + fmtRate2(bst.avg) + " \xB7 OBP " + fmtRate2(bst.obp) + " \xB7 OPS " + fmtRate2(bst.ops);
         } catch (e) {
         }
       }
@@ -8965,7 +8715,7 @@
       playSound,
       showPlayerCard,
       rotateStory,
-      localDateStr
+      localDateStr: localDateStr2
     });
     state.pulseInitialized = true;
     initLeaguePulse();
