@@ -97,7 +97,7 @@ import {
 } from './pulse/poll.js';
 import {
   loadPulseNews, nextNewsCard, prevNewsCard,
-} from './pulse/news.js';
+} from './pulse/news-carousel.js';
 import {
   setTuningCallbacks, toggleDevTools, updateTuning, resetTuning,
   updateColorOverride, captureCurrentTheme, toggleColorLock,

@@ -7771,7 +7771,7 @@
     }
   }
 
-  // src/pulse/news.js
+  // src/pulse/news-carousel.js
   async function loadPulseNews() {
     try {
       var r = await fetch(API_BASE + "/api/proxy-news");
