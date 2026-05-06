@@ -98,6 +98,10 @@ async function fetchBoxscore(gamePk){
 }
 
 // ── League Pulse functions ────────────────────────────────────────────────────
+function getEffectiveDate(){
+  return state.demoMode&&state.demoDate?state.demoDate:new Date();
+}
+
 function initLeaguePulse() {
   devTrace('pulse','initLeaguePulse · first nav to Pulse');
   initReal();

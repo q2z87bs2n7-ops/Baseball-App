@@ -1333,6 +1333,9 @@
     }
     return state.boxscoreCache[gamePk];
   }
+  function getEffectiveDate() {
+    return state.demoMode && state.demoDate ? state.demoDate : /* @__PURE__ */ new Date();
+  }
   function initLeaguePulse() {
     devTrace("pulse", "initLeaguePulse \xB7 first nav to Pulse");
     initReal();
