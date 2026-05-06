@@ -2,7 +2,7 @@
 // Wraps fetch() to capture {ts, method, url, status, ok, ms, sizeBytes, errorMsg}
 // into a small ring buffer. Pure metadata — never reads the response body, so
 // downstream consumers see an unmodified Response. Surfaced in Dev Tools →
-// Network. Service worker (sw.js) and any pre-app.js scripts are not affected.
+// Network. Service worker (sw.js) and any pre-bundle scripts are not affected.
 //
 // Importing this module has side effects: it wraps window.fetch. Import it
 // once, before any other module performs a fetch.

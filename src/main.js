@@ -141,7 +141,7 @@ import {
 import { state } from './state.js';
 
 const DEBUG=false; // Set true locally to enable verbose console logging
-devTrace('boot','app.js loaded · '+new Date().toISOString());
+devTrace('boot','bundle loaded · '+new Date().toISOString());
 
 // ── Naming conventions ────────────────────────────────────────────────────────
 // load*()    — fetch + cache + render a full section (loadTodayGame, loadSchedule)

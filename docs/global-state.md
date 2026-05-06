@@ -2,8 +2,6 @@
 
 All hot mutable state lives in `src/state.js` as properties of a single exported `state` object. Every module that imports `state` receives a live binding — mutating `state.gameStates[pk]` or `state.feedItems` propagates everywhere. Constants are in `src/config/constants.js`. This file is the authoritative list.
 
-The legacy `app.js` (preserved as the `USE_BUNDLE=false` fallback) used bare top-level globals; the snippet below shows the modern shape.
-
 ```javascript
 const SEASON = 2026                    // hardcoded — update each season
 const MLB_BASE = 'https://statsapi.mlb.com/api/v1'
