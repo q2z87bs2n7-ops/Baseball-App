@@ -81,10 +81,12 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 14. **`genProbablePitchers()`** — Source: `scheduleData` (today) OR `gameStates` fallback. Filters: `abstractGameState !== 'Final'` AND `localDate === today`. ID: `probable_{gamePk}`. Headline: "Scherzer [NYM] vs Kershaw [LAD] · 7:05 PM". Priority: 40. Cooldown: 60 min.
 
-15. **`genInningRecapStories()`** — One-shot end-of-inning narrative summaries. Fires exactly once per half-inning. **Primary path (v2.59):** processes `inningRecapsPending{}` keys queued by `pollGamePlays()` at `outs===3`. **Fallback path:** `lastInningState` linescore transition detection. `inningRecapsFired` Set deduplicates across both paths. 19 templates with priorities 0–100. Tier-2, no cooldown/decay.
+15. **`genInningRecapStories()`** — One-shot end-of-inning narrative summaries. Fires exactly once per half-inning. **Primary path (v2.59):** processes `inningRecapsPending{}` keys queued by `pollGamePlays()` at `outs===3`. **Fallback path:** `lastInningState` linescore transition detection. `inningRecapsFired` Set deduplicates across both paths. 19 templates with priorities 0–100. Tier-2, no cooldown/decay. **Run calculation (v3.38):** uses actual run differential (final score minus starting score) instead of counting scoring plays — a grand slam counts as 4 runs, not 1.
 
 ### Inning recap templates (priority order)
-HR+runs (100) > perfect K (95) > multi-run (90) > comeback (85) > stranded runners (80) > shutout+Ks (75) > DP escape (70) > walk-heavy (65) > error-led (55) > single run (45) > 1-2-3+Ks (40) > 1-2-3 (25) > fallback (0)
+HR+runs (100) > perfect K (95) > multi-run (90) > clawback (85) > stranded runners (80) > shutout+Ks (75) > DP escape (70) > walk-heavy (65) > error-led (55) > single run (45) > 1-2-3+Ks (40) > 1-2-3 (25) > fallback (0)
+
+**Clawback (priority 85, v3.38):** fires when: (1) team scored ≥1 run with RISP (runners in scoring position), AND (2) team is trailing or tied before the run(s) score. Prevents "claw back" messages from appearing when a team already leading adds to their advantage.
 
 ### Inning Recap console debugging (v2.46+)
 ```javascript

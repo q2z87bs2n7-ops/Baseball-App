@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. Split across three files: `index.html` (HTML structure), `styles.css` (all CSS), `app.js` (all JavaScript).
 
-**Current version:** v3.37.5
+**Current version:** v3.38.0
 
 **Version history** (full detail in `CHANGELOG.md`):
 - **v1.x** — initial build: schedule, standings, stats, live game view, PWA install, push notifications, team theming
@@ -19,6 +19,7 @@ An MLB sports tracker, defaulting to the New York Mets. All data is pulled live 
 - **v3.37** — taxonomy hyphens fix; exclude darkroom clips; 4-tier player matching; remove `patchStoryWithClip`
 - **v3.37.3** — exclude ABS challenge clips (carry batter player_id but are pitch-review overlays)
 - **v3.37.5** — remove timestamp fallback from clip matching; player_id match only
+- **v3.38** — carousel logic improvements: clawback requires trailing/tied score; inning recap runs use actual differential
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
