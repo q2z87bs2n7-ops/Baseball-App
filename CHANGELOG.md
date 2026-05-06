@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.38.11
+**Current version:** v3.38.13
+
+**v3.38.13** — Remove broken RSS proxy news feed code. Cleaned up orphaned `fetchMLBNewsFeed()` function and related helpers that were causing 500 errors due to deprecated MLB.com RSS feed URLs. Modern news tab relies on `/api/proxy-news` endpoint which aggregates 5 sources with fallbacks; legacy RSS proxy code was dead code that only generated console errors on app load.
 
 **v3.38.11** — Fix YouTube channel IDs for 13 teams. Root cause: Teams were using YouTube TV channel IDs (which don't have RSS feeds enabled) instead of official team channels, causing 404 errors in the proxy. Updated channel IDs via web scraping: Arizona Diamondbacks, Baltimore Orioles, Cleveland Guardians, Colorado Rockies, Houston Astros, Kansas City Royals, Los Angeles Angels, Minnesota Twins, Philadelphia Phillies, San Diego Padres, San Francisco Giants, Seattle Mariners, and MLB fallback channel. All 30 teams + fallback now verified as of May 2026.
 
