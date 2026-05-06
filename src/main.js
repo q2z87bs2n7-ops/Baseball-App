@@ -1,7 +1,9 @@
 // ── Module imports ───────────────────────────────────────────────────────────
-// Constants extracted to src/config/constants.js as the first demonstration
-// of the modular split. Future commits can extract subsystems incrementally
-// (Pulse polling, Focus Mode, Story Carousel, etc.) following the same pattern.
+// Diag (devLog + devNet) is imported FIRST — the modules wrap console.log
+// and window.fetch as side-effects of import, so any code below that logs
+// or fetches is captured.
+import { DEV_LOG_CAP, devLog, pushDevLog, devTrace } from './diag/devLog.js';
+import { DEV_NET_CAP, devNetLog } from './diag/devNet.js';
 import {
   SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1,
   TEAMS, MLB_THEME,
@@ -10,93 +12,7 @@ import {
 } from './config/constants.js';
 
 const DEBUG=false; // Set true locally to enable verbose console logging
-
-// ── 🔍 Dev log ring buffer ───────────────────────────────────────────────────
-// In-memory capture of console output + uncaught errors so Dev Tools → Log Capture
-// can surface them on iPad/phone where the browser console isn't reachable. Cap
-// is intentionally small — this is "what just happened?" not durable telemetry.
-const DEV_LOG_CAP = 500;
-var devLog = []; // {ts:number, level:'log'|'warn'|'error'|'info', src:string, msg:string}
-function pushDevLog(level, src, args){
-  try{
-    var msg = Array.prototype.map.call(args, function(a){
-      if (a == null) return String(a);
-      if (typeof a === 'string') return a;
-      if (a instanceof Error) return (a.stack || (a.name + ': ' + a.message));
-      try { return JSON.stringify(a); } catch(e) { return String(a); }
-    }).join(' ');
-    if (msg.length > 600) msg = msg.slice(0, 600) + '…';
-    devLog.push({ts: Date.now(), level: level, src: src || '', msg: msg});
-    if (devLog.length > DEV_LOG_CAP) devLog.splice(0, devLog.length - DEV_LOG_CAP);
-  }catch(e){ /* swallow — logging must never throw */ }
-}
-(function wrapConsole(){
-  ['log','info','warn','error'].forEach(function(lvl){
-    var orig = console[lvl];
-    console[lvl] = function(){
-      pushDevLog(lvl === 'info' ? 'log' : lvl, '', arguments);
-      try { orig.apply(console, arguments); } catch(e) {}
-    };
-  });
-})();
-window.addEventListener('error', function(e){
-  pushDevLog('error', 'window', [e && e.message ? e.message : 'error', e && e.filename ? (e.filename + ':' + e.lineno) : '']);
-});
-window.addEventListener('unhandledrejection', function(e){
-  var r = e && e.reason;
-  pushDevLog('error', 'promise', [r && r.stack ? r.stack : (r && r.message ? r.message : String(r))]);
-});
-// Always-on event trace — feeds Log Capture regardless of DEBUG flag. Use at major
-// event boundaries (boot, navigation, polls, focus changes, theme apply, collection
-// adds, radio start/stop, etc.) so the buffer is useful in production where
-// DEBUG=false and console.log calls are otherwise gated out.
-function devTrace(src){
-  var args=Array.prototype.slice.call(arguments,1);
-  pushDevLog('log', src||'app', args);
-  if(typeof DEBUG!=='undefined' && DEBUG){
-    try{ console.log.apply(console, ['['+(src||'app')+']'].concat(args)); }catch(e){}
-  }
-}
 devTrace('boot','app.js loaded · '+new Date().toISOString());
-
-// ── 🌐 Network trace ─────────────────────────────────────────────────────────
-// Wraps fetch() to capture {ts, method, url, status, ok, ms, sizeBytes, errorMsg}
-// into a small ring buffer. Pure metadata — never reads the response body, so
-// downstream consumers see an unmodified Response. Surfaced in Dev Tools →
-// Network. Service worker (sw.js) and any pre-app.js scripts are not affected.
-const DEV_NET_CAP = 50;
-var devNetLog = [];
-(function wrapFetch(){
-  if(typeof window==='undefined' || !window.fetch) return;
-  var origFetch = window.fetch.bind(window);
-  window.fetch = function(input, init){
-    var t0 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-    var url = (typeof input==='string') ? input : (input && input.url) || '';
-    var method = (init && init.method) || (input && input.method) || 'GET';
-    var entry = {ts: Date.now(), method: method.toUpperCase(), url: url, status: null, ok: null, ms: null, sizeBytes: null, errorMsg: null};
-    devNetLog.push(entry);
-    if(devNetLog.length > DEV_NET_CAP) devNetLog.splice(0, devNetLog.length - DEV_NET_CAP);
-    return origFetch(input, init).then(function(res){
-      var t1 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-      entry.ms = Math.round(t1 - t0);
-      entry.status = res.status;
-      entry.ok = res.ok;
-      try{
-        var cl = res.headers && res.headers.get && res.headers.get('content-length');
-        if(cl) entry.sizeBytes = parseInt(cl,10);
-      }catch(e){}
-      if(!res.ok) pushDevLog('warn','net', [method.toUpperCase()+' '+res.status+' · '+url+' · '+entry.ms+'ms']);
-      return res;
-    }, function(err){
-      var t1 = (typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-      entry.ms = Math.round(t1 - t0);
-      entry.ok = false;
-      entry.errorMsg = (err && err.message) ? err.message : String(err);
-      pushDevLog('error','net', [method.toUpperCase()+' FAILED · '+url+' · '+entry.errorMsg]);
-      throw err;
-    });
-  };
-})();
 
 // ── Naming conventions ────────────────────────────────────────────────────────
 // load*()    — fetch + cache + render a full section (loadTodayGame, loadSchedule)

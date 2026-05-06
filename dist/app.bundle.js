@@ -1,4 +1,91 @@
 (() => {
+  // src/diag/devLog.js
+  var DEV_LOG_CAP = 500;
+  var devLog = [];
+  function pushDevLog(level, src, args) {
+    try {
+      var msg = Array.prototype.map.call(args, function(a) {
+        if (a == null) return String(a);
+        if (typeof a === "string") return a;
+        if (a instanceof Error) return a.stack || a.name + ": " + a.message;
+        try {
+          return JSON.stringify(a);
+        } catch (e) {
+          return String(a);
+        }
+      }).join(" ");
+      if (msg.length > 600) msg = msg.slice(0, 600) + "\u2026";
+      devLog.push({ ts: Date.now(), level, src: src || "", msg });
+      if (devLog.length > DEV_LOG_CAP) devLog.splice(0, devLog.length - DEV_LOG_CAP);
+    } catch (e) {
+    }
+  }
+  (function wrapConsole() {
+    ["log", "info", "warn", "error"].forEach(function(lvl) {
+      var orig = console[lvl];
+      console[lvl] = function() {
+        pushDevLog(lvl === "info" ? "log" : lvl, "", arguments);
+        try {
+          orig.apply(console, arguments);
+        } catch (e) {
+        }
+      };
+    });
+  })();
+  window.addEventListener("error", function(e) {
+    pushDevLog("error", "window", [e && e.message ? e.message : "error", e && e.filename ? e.filename + ":" + e.lineno : ""]);
+  });
+  window.addEventListener("unhandledrejection", function(e) {
+    var r = e && e.reason;
+    pushDevLog("error", "promise", [r && r.stack ? r.stack : r && r.message ? r.message : String(r)]);
+  });
+  function devTrace(src) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    pushDevLog("log", src || "app", args);
+    if (typeof DEBUG !== "undefined" && DEBUG) {
+      try {
+        console.log.apply(console, ["[" + (src || "app") + "]"].concat(args));
+      } catch (e) {
+      }
+    }
+  }
+
+  // src/diag/devNet.js
+  var DEV_NET_CAP = 50;
+  var devNetLog = [];
+  (function wrapFetch() {
+    if (typeof window === "undefined" || !window.fetch) return;
+    var origFetch = window.fetch.bind(window);
+    window.fetch = function(input, init) {
+      var t0 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+      var url = typeof input === "string" ? input : input && input.url || "";
+      var method = init && init.method || input && input.method || "GET";
+      var entry = { ts: Date.now(), method: method.toUpperCase(), url, status: null, ok: null, ms: null, sizeBytes: null, errorMsg: null };
+      devNetLog.push(entry);
+      if (devNetLog.length > DEV_NET_CAP) devNetLog.splice(0, devNetLog.length - DEV_NET_CAP);
+      return origFetch(input, init).then(function(res) {
+        var t1 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        entry.ms = Math.round(t1 - t0);
+        entry.status = res.status;
+        entry.ok = res.ok;
+        try {
+          var cl = res.headers && res.headers.get && res.headers.get("content-length");
+          if (cl) entry.sizeBytes = parseInt(cl, 10);
+        } catch (e) {
+        }
+        if (!res.ok) pushDevLog("warn", "net", [method.toUpperCase() + " " + res.status + " \xB7 " + url + " \xB7 " + entry.ms + "ms"]);
+        return res;
+      }, function(err) {
+        var t1 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        entry.ms = Math.round(t1 - t0);
+        entry.ok = false;
+        entry.errorMsg = err && err.message ? err.message : String(err);
+        pushDevLog("error", "net", [method.toUpperCase() + " FAILED \xB7 " + url + " \xB7 " + entry.errorMsg]);
+        throw err;
+      });
+    };
+  })();
+
   // src/config/constants.js
   var SEASON = 2026;
   var WC_SPOTS = 3;
@@ -67,91 +154,8 @@
   };
 
   // src/main.js
-  var DEBUG = false;
-  var DEV_LOG_CAP = 500;
-  var devLog = [];
-  function pushDevLog(level, src, args) {
-    try {
-      var msg = Array.prototype.map.call(args, function(a) {
-        if (a == null) return String(a);
-        if (typeof a === "string") return a;
-        if (a instanceof Error) return a.stack || a.name + ": " + a.message;
-        try {
-          return JSON.stringify(a);
-        } catch (e) {
-          return String(a);
-        }
-      }).join(" ");
-      if (msg.length > 600) msg = msg.slice(0, 600) + "\u2026";
-      devLog.push({ ts: Date.now(), level, src: src || "", msg });
-      if (devLog.length > DEV_LOG_CAP) devLog.splice(0, devLog.length - DEV_LOG_CAP);
-    } catch (e) {
-    }
-  }
-  (function wrapConsole() {
-    ["log", "info", "warn", "error"].forEach(function(lvl) {
-      var orig = console[lvl];
-      console[lvl] = function() {
-        pushDevLog(lvl === "info" ? "log" : lvl, "", arguments);
-        try {
-          orig.apply(console, arguments);
-        } catch (e) {
-        }
-      };
-    });
-  })();
-  window.addEventListener("error", function(e) {
-    pushDevLog("error", "window", [e && e.message ? e.message : "error", e && e.filename ? e.filename + ":" + e.lineno : ""]);
-  });
-  window.addEventListener("unhandledrejection", function(e) {
-    var r = e && e.reason;
-    pushDevLog("error", "promise", [r && r.stack ? r.stack : r && r.message ? r.message : String(r)]);
-  });
-  function devTrace(src) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    pushDevLog("log", src || "app", args);
-    if (typeof DEBUG !== "undefined" && DEBUG) {
-      try {
-        console.log.apply(console, ["[" + (src || "app") + "]"].concat(args));
-      } catch (e) {
-      }
-    }
-  }
+  var DEBUG2 = false;
   devTrace("boot", "app.js loaded \xB7 " + (/* @__PURE__ */ new Date()).toISOString());
-  var DEV_NET_CAP = 50;
-  var devNetLog = [];
-  (function wrapFetch() {
-    if (typeof window === "undefined" || !window.fetch) return;
-    var origFetch = window.fetch.bind(window);
-    window.fetch = function(input, init) {
-      var t0 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-      var url = typeof input === "string" ? input : input && input.url || "";
-      var method = init && init.method || input && input.method || "GET";
-      var entry = { ts: Date.now(), method: method.toUpperCase(), url, status: null, ok: null, ms: null, sizeBytes: null, errorMsg: null };
-      devNetLog.push(entry);
-      if (devNetLog.length > DEV_NET_CAP) devNetLog.splice(0, devNetLog.length - DEV_NET_CAP);
-      return origFetch(input, init).then(function(res) {
-        var t1 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-        entry.ms = Math.round(t1 - t0);
-        entry.status = res.status;
-        entry.ok = res.ok;
-        try {
-          var cl = res.headers && res.headers.get && res.headers.get("content-length");
-          if (cl) entry.sizeBytes = parseInt(cl, 10);
-        } catch (e) {
-        }
-        if (!res.ok) pushDevLog("warn", "net", [method.toUpperCase() + " " + res.status + " \xB7 " + url + " \xB7 " + entry.ms + "ms"]);
-        return res;
-      }, function(err) {
-        var t1 = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-        entry.ms = Math.round(t1 - t0);
-        entry.ok = false;
-        entry.errorMsg = err && err.message ? err.message : String(err);
-        pushDevLog("error", "net", [method.toUpperCase() + " FAILED \xB7 " + url + " \xB7 " + entry.errorMsg]);
-        throw err;
-      });
-    };
-  })();
   var activeTeam = TEAMS.find((t) => t.id === 121);
   var scheduleData = [];
   var scheduleLoaded = false;
@@ -784,7 +788,7 @@
           }
         });
       }
-      if (DEBUG) console.log("Demo: Loaded daily-events.json \u2014", Object.keys(data.gameStates).length, "games,", data.feedItems.length, "plays");
+      if (DEBUG2) console.log("Demo: Loaded daily-events.json \u2014", Object.keys(data.gameStates).length, "games,", data.feedItems.length, "plays");
       return data;
     } catch (e) {
       console.error("Demo: Failed to load daily-events.json", e);
@@ -956,7 +960,7 @@
     });
     demoPlayIdx = 0;
     demoCurrentTime = demoPlayQueue.length > 0 ? demoPlayQueue[0].ts : 0;
-    if (DEBUG) console.log("Demo: Loaded", enabledGames.size, "games from", localDateStr(demoDate), ",", feedItems.length, "feed items,", demoPlayQueue.length, "plays queued");
+    if (DEBUG2) console.log("Demo: Loaded", enabledGames.size, "games from", localDateStr(demoDate), ",", feedItems.length, "feed items,", demoPlayQueue.length, "plays queued");
     var feed = document.getElementById("feed");
     if (feed) feed.innerHTML = "";
     renderTicker();
@@ -1227,7 +1231,7 @@
     var upcomingHtml = "", completedHtml = "";
     var upcomingGames = [], completedGames = [];
     var filterDate = demoMode ? localDateStr(demoDate) : localDateStr(/* @__PURE__ */ new Date());
-    if (demoMode && DEBUG) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(gameStates).length, "total games");
+    if (demoMode && DEBUG2) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(gameStates).length, "total games");
     Object.values(gameStates).forEach(function(g) {
       if (demoMode && localDateStr(new Date(g.gameDateMs)) !== filterDate) return;
       if (g.status === "Live") return;
@@ -1576,7 +1580,7 @@
   }
   async function fetchMissingHRBatterStats() {
     if (demoMode) {
-      if (DEBUG) console.log("Demo: Skipping fetchMissingHRBatterStats API call");
+      if (DEBUG2) console.log("Demo: Skipping fetchMissingHRBatterStats API call");
       return;
     }
     var ids = [];
@@ -1600,7 +1604,7 @@
   }
   async function loadProbablePitcherStats() {
     if (demoMode) {
-      if (DEBUG) console.log("Demo: Skipping loadProbablePitcherStats API call");
+      if (DEBUG2) console.log("Demo: Skipping loadProbablePitcherStats API call");
       return;
     }
     var ids = [];
@@ -1626,7 +1630,7 @@
   function genProbablePitchers() {
     var out = [], today = localDateStr(getEffectiveDate());
     var games = [];
-    if (demoMode && DEBUG) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(gameStates).filter((g) => localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
+    if (demoMode && DEBUG2) console.log("Demo: genProbablePitchers filtering to date", today, "found", Object.values(gameStates).filter((g) => localDateStr(new Date(g.gameDateMs)) === today).length, "matching games");
     Object.values(gameStates).forEach(function(g) {
       if (localDateStr(new Date(g.gameDateMs)) === today && g.awayAbbr && g.homeAbbr && g.status !== "Live" && g.status !== "Final") {
         var rawG = storyCarouselRawGameData && storyCarouselRawGameData[g.gamePk];
@@ -2433,7 +2437,7 @@
   }
   async function loadDailyLeaders() {
     if (demoMode) {
-      if (DEBUG) console.log("Demo: Skipping loadDailyLeaders API call");
+      if (DEBUG2) console.log("Demo: Skipping loadDailyLeaders API call");
       return;
     }
     try {
@@ -2865,7 +2869,7 @@
     var halfInning = play.halfInning || gs.halfInning;
     var badgeText = play.desc.includes("walk-off") ? "WALK-OFF HOME RUN!" : "\u{1F4A5} HOME RUN!";
     showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, null, null, badgeText, item.gamePk);
-    if (DEBUG) console.log("Replaying HR:", batterName, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
+    if (DEBUG2) console.log("Replaying HR:", batterName, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
   }
   function replayRBICard(itemIndex) {
     var rbis = feedItems.filter(function(item2) {
@@ -2888,7 +2892,7 @@
       return;
     }
     showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning, item.gamePk);
-    if (DEBUG) console.log("Replaying RBI:", play.batterName, play.event, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
+    if (DEBUG2) console.log("Replaying RBI:", play.batterName, play.event, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
   }
   function tierRank(t) {
     return { legendary: 4, epic: 3, rare: 2, common: 1 }[t] || 0;
@@ -4389,7 +4393,7 @@
       tomorrowPreview.fetchedAt = Date.now();
       if (isPostSlate()) renderEmptyState(true);
     } catch (e) {
-      if (DEBUG) console.warn("fetchTomorrowPreview", e);
+      if (DEBUG2) console.warn("fetchTomorrowPreview", e);
     } finally {
       tomorrowPreview.inFlight = false;
     }
@@ -6633,7 +6637,7 @@
   function updateTuning(param, val) {
     if (param === "basesloaded_enable") {
       devTuning[param] = val === "true";
-      if (DEBUG) console.log("\u2713 Bases Loaded " + (devTuning[param] ? "enabled" : "disabled"));
+      if (DEBUG2) console.log("\u2713 Bases Loaded " + (devTuning[param] ? "enabled" : "disabled"));
       return;
     }
     var parsed = parseInt(val, 10);
@@ -6645,9 +6649,9 @@
         storyRotateTimer = null;
       }
       if (pulseInitialized && !demoMode) storyRotateTimer = setInterval(rotateStory, devTuning.rotateMs);
-      if (DEBUG) console.log("\u2713 Carousel rotation updated to " + parsed + "ms");
+      if (DEBUG2) console.log("\u2713 Carousel rotation updated to " + parsed + "ms");
     } else {
-      if (DEBUG) console.log("\u2713 " + param + " updated to " + parsed);
+      if (DEBUG2) console.log("\u2713 " + param + " updated to " + parsed);
     }
   }
   function resetTuning() {
@@ -6672,7 +6676,7 @@
       storyRotateTimer = null;
     }
     if (pulseInitialized && !demoMode) storyRotateTimer = setInterval(rotateStory, devTuning.rotateMs);
-    if (DEBUG) console.log("\u2713 Dev tuning reset to defaults");
+    if (DEBUG2) console.log("\u2713 Dev tuning reset to defaults");
   }
   function updateColorOverride(context, colorVar, value) {
     devColorOverrides[context][colorVar] = value;
@@ -6680,7 +6684,7 @@
       if (context === "app") applyTeamTheme(activeTeam);
       else applyPulseMLBTheme();
     }
-    if (DEBUG) console.log("\u2713 " + context + " theme." + colorVar + " \u2192 " + value);
+    if (DEBUG2) console.log("\u2713 " + context + " theme." + colorVar + " \u2192 " + value);
   }
   function captureCurrentTheme(context) {
     var cssVarMap = { dark: "--dark", card: "--card", card2: "--card2", border: "--border", primary: "--primary", secondary: "--secondary", accent: "--accent", accentText: "--accent-text", headerText: "--header-text" };
@@ -6692,7 +6696,7 @@
       var el = document.getElementById(elId);
       if (el) el.value = cssVal;
     });
-    if (DEBUG) console.log("\u2713 Captured current " + context + " theme colors");
+    if (DEBUG2) console.log("\u2713 Captured current " + context + " theme colors");
   }
   function toggleColorLock(enable) {
     devColorLocked = enable;
@@ -6700,11 +6704,11 @@
       if (!devColorOverrides.app.primary) captureCurrentTheme("app");
       if (!devColorOverrides.pulse.primary) captureCurrentTheme("pulse");
       applyTeamTheme(activeTeam);
-      if (DEBUG) console.log("\u2713 Theme lock enabled \u2014 auto-switching disabled");
+      if (DEBUG2) console.log("\u2713 Theme lock enabled \u2014 auto-switching disabled");
     } else {
       applyTeamTheme(activeTeam);
       applyPulseMLBTheme();
-      if (DEBUG) console.log("\u2713 Theme lock disabled \u2014 auto-switching restored");
+      if (DEBUG2) console.log("\u2713 Theme lock disabled \u2014 auto-switching restored");
     }
     document.getElementById("lockThemeToggle").checked = devColorLocked;
   }
@@ -7200,7 +7204,7 @@
         const data = await r.json();
         if (data.collection) {
           saveCollection(data.collection);
-          if (DEBUG) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
+          if (DEBUG2) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
         }
       }
     } catch (e) {
@@ -7218,7 +7222,7 @@
           const merged = mergeCollectionSlots(local, data.collection);
           saveCollection(merged);
           updateCollectionUI();
-          if (DEBUG) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
+          if (DEBUG2) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
         }
       }
     } catch (e) {
@@ -7848,7 +7852,7 @@
       video.innerHTML = '<div style="color:#e03030;padding:20px;text-align:center">Video failed to load. Please try refreshing.</div>';
     });
     video.addEventListener("canplay", function() {
-      if (DEBUG) console.log("Video ready to play");
+      if (DEBUG2) console.log("Video ready to play");
       video.play().catch(function(err) {
         console.error("Autoplay blocked:", err);
       });
