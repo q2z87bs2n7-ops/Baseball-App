@@ -7906,13 +7906,34 @@
   // src/pulse/news-carousel.js
   async function loadPulseNews() {
     try {
-      var r = await fetch(API_BASE + "/api/proxy-news");
+      var r = await fetch(API_BASE + "/api/proxy-rss?feed=mlb");
       if (!r.ok) throw new Error("Status " + r.status);
       var d = await r.json();
-      state.pulseNewsArticles = Array.isArray(d.articles) ? d.articles.slice(0, 10) : [];
+      if (!d.success || !Array.isArray(d.articles) || !d.articles.length) throw new Error("Empty MLB feed");
+      state.pulseNewsArticles = d.articles.slice(0, 10);
       state.pulseNewsIndex = 0;
       renderPulseNewsCard();
+      return;
     } catch (e) {
+    }
+    try {
+      var r2 = await fetch("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20");
+      if (!r2.ok) throw new Error("Status " + r2.status);
+      var d2 = await r2.json();
+      var arts = (d2.articles || []).filter(function(a) {
+        return a.headline;
+      }).slice(0, 10).map(function(a) {
+        return {
+          title: a.headline,
+          link: a.links && a.links.web && a.links.web.href || "",
+          image: a.images && a.images[0] && a.images[0].url || "",
+          pubDate: a.published || ""
+        };
+      });
+      state.pulseNewsArticles = arts;
+      state.pulseNewsIndex = 0;
+      renderPulseNewsCard();
+    } catch (e2) {
       state.pulseNewsArticles = [];
       showNewsUnavailable();
     }
