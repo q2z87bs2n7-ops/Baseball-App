@@ -1523,6 +1523,10 @@
   }
 
   // src/carousel/generators.js
+  var carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null };
+  function setCarouselCallbacks(callbacks) {
+    Object.assign(carouselCallbacks, callbacks);
+  }
   function ordinal2(n) {
     return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th";
   }
@@ -1747,7 +1751,7 @@
       var id = "multihit_" + batterId + "_" + dateStr;
       var h = entry.hits, ab = entry.hits;
       if (!state.demoMode && entry.gamePk) {
-        var bs = await fetchBoxscore(entry.gamePk);
+        var bs = await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(entry.gamePk) : null);
         if (bs) {
           var team = bs.teams && bs.teams.away;
           var found = false;
@@ -2054,7 +2058,7 @@
     });
     return out;
   }
-  async function loadTransactionsCache2() {
+  async function loadTransactionsCache() {
     try {
       var today = /* @__PURE__ */ new Date(), start = new Date(today);
       start.setDate(start.getDate() - 2);
@@ -2075,7 +2079,7 @@
       state.transactionsCache = state.transactionsCache || [];
     }
   }
-  async function loadHighLowCache2() {
+  async function loadHighLowCache() {
     try {
       var stats = ["homeRuns", "strikeOuts", "hits"];
       var allResults = {};
@@ -2261,7 +2265,7 @@
           var ws = Math.max(away.score || 0, home.score || 0), ls = Math.min(away.score || 0, home.score || 0);
           var playerHighlight = "", sigPlay = "";
           try {
-            var bs = await fetchBoxscore(g.gamePk);
+            var bs = await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(g.gamePk) : null);
             var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
             var topBatter = null, topBatterStats = null;
             var hrHitters = { multi: [], single: [] };
@@ -2378,7 +2382,7 @@
         var dur = linescore.gameDurationMinutes ? " \xB7 " + Math.floor(linescore.gameDurationMinutes / 60) + "h " + String(linescore.gameDurationMinutes % 60).padStart(2, "0") + "m" : "";
         var playerHighlight = "", sigPlay = "";
         try {
-          var bs = await fetchBoxscore(g.gamePk);
+          var bs = await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(g.gamePk) : null);
           var allPlayers = Object.assign({}, bs && bs.teams && bs.teams.home && bs.teams.home.players || {}, bs && bs.teams && bs.teams.away && bs.teams.away.players || {});
           var topBatter = null, topBatterStats = null;
           Object.values(allPlayers).forEach(function(p) {
@@ -2486,7 +2490,7 @@
     state.yesterdayCache.forEach(function(item) {
       item.headline = "Yesterday: " + item.headline;
     });
-    updateFeedEmpty();
+    if (carouselCallbacks.updateFeedEmpty) carouselCallbacks.updateFeedEmpty();
   }
   async function loadLiveWPCache() {
     var livePks = Object.keys(state.gameStates).filter(function(pk) {
@@ -2579,10 +2583,10 @@
       state.dailyLeadersLastFetch = now;
     }
     if (now - state.transactionsLastFetch > 120 * 6e4) {
-      loadTransactionsCache2();
+      loadTransactionsCache();
     }
     if (now - state.highLowLastFetch > 6 * 60 * 6e4) {
-      loadHighLowCache2();
+      loadHighLowCache();
     }
     if (now - state.liveWPLastFetch > (state.devTuning.livewp_refresh_ms || 9e4)) {
       loadLiveWPCache();
@@ -2838,7 +2842,7 @@
   function getYdActiveCache() {
     return state.ydDisplayCache !== null ? state.ydDisplayCache : state.yesterdayCache || [];
   }
-  async function fetchBoxscore2(gamePk) {
+  async function fetchBoxscore(gamePk) {
     if (!state.boxscoreCache[gamePk]) {
       try {
         var bsR = await fetch(MLB_BASE + "/game/" + gamePk + "/boxscore");
@@ -2858,6 +2862,7 @@
     initReal();
   }
   function initReal() {
+    setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -3080,7 +3085,7 @@
       state.isFirstPoll = false;
       updateInningStates();
       renderTicker();
-      updateFeedEmpty2();
+      updateFeedEmpty();
       renderSideRailGames();
       pollPendingVideoClips();
       selectFocusGame();
@@ -3319,6 +3324,8 @@
     var gamesHtml = upcomingHtml + completedHtml;
     if (!gamesHtml) gamesHtml = '<div style="color:var(--muted);font-size:.75rem;padding:12px;text-align:center;">No games today</div>';
     document.getElementById("sideRailGames").innerHTML = gamesHtml;
+  }
+  function updateInningStates() {
   }
   function refreshDebugPanel2() {
     var panel = document.getElementById("debugPanel");
@@ -4787,7 +4794,7 @@
         el.classList.remove("feed-hidden");
       });
     }
-    updateFeedEmpty2();
+    updateFeedEmpty();
     renderTicker();
   }
   function myTeamGamePks() {
@@ -4822,12 +4829,12 @@
       });
     }
     if (typeof renderTicker === "function") renderTicker();
-    updateFeedEmpty2();
+    updateFeedEmpty();
   }
   function toggleMyTeamLens() {
     applyMyTeamLens(!state.myTeamLens);
   }
-  function updateFeedEmpty2() {
+  function updateFeedEmpty() {
     var feed = document.getElementById("feed");
     var hasVisible = !!feed.querySelector(".feed-item:not(.feed-hidden)");
     var hasAnyGames = Object.keys(state.gameStates).length > 0;
@@ -5021,7 +5028,7 @@
       return +c.dataset.ts < tsMs;
     });
     feed.insertBefore(el, sibling || null);
-    updateFeedEmpty2();
+    updateFeedEmpty();
   }
   function buildFeedEl(item) {
     var el = document.createElement("div"), g = state.gameStates[item.gamePk], d = item.data;
@@ -5073,7 +5080,7 @@
       if (!state.enabledGames.has(+item.gamePk)) el.classList.add("feed-hidden");
       feed.appendChild(el);
     });
-    updateFeedEmpty2();
+    updateFeedEmpty();
   }
   function showAlert(opts) {
     var icon = opts.icon || "\u{1F514}", evtLabel = opts.event || "", desc = opts.desc || "", color = opts.color || "#e03030", duration = opts.duration || 5e3;
@@ -5136,7 +5143,7 @@
     if (!jerseyNumber && overrideStats && overrideStats._jersey) jerseyNumber = overrideStats._jersey;
     if ((!position || !jerseyNumber) && gamePk) {
       try {
-        var bs = await fetchBoxscore2(gamePk);
+        var bs = await fetchBoxscore(gamePk);
         var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
         var playerData = allPlayers.find(function(p) {
           return p.person && p.person.id === batterId;
@@ -5339,7 +5346,7 @@
     var position = rEntry && rEntry.position && rEntry.position.abbreviation || null;
     if ((!position || !jerseyNumber) && gamePk) {
       try {
-        var bs = await fetchBoxscore2(gamePk);
+        var bs = await fetchBoxscore(gamePk);
         var allPlayers = Object.values(bs.teams.away.players).concat(Object.values(bs.teams.home.players));
         var playerData = allPlayers.find(function(p) {
           return p.person && p.person.id === batterId;
@@ -8961,7 +8968,7 @@
       renderTicker,
       renderSideRailGames,
       buildStoryPool,
-      updateFeedEmpty: updateFeedEmpty2,
+      updateFeedEmpty,
       showAlert,
       playSound,
       showPlayerCard,

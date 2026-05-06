@@ -1,6 +1,11 @@
 import { state } from '../state.js';
 import { SEASON, MLB_BASE } from '../config/constants.js';
 
+let carouselCallbacks = { updateFeedEmpty: null, fetchBoxscore: null };
+function setCarouselCallbacks(callbacks) {
+  Object.assign(carouselCallbacks, callbacks);
+}
+
 function ordinal(n){ return n===1?'1st':n===2?'2nd':n===3?'3rd':n+'th'; }
 
 function makeStory(id,type,tier,priority,icon,headline,sub,badge,gamePk,ts,cooldownMs,decayRate){
@@ -204,7 +209,7 @@ async function genMultiHitDay(){
     var id='multihit_'+batterId+'_'+dateStr;
     var h=entry.hits, ab=entry.hits;
     if(!state.demoMode&&entry.gamePk){
-      var bs=await fetchBoxscore(entry.gamePk);
+      var bs=await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(entry.gamePk) : null);
       if(bs){
         var team=bs.teams&&bs.teams.away;
         var found=false;
@@ -612,7 +617,7 @@ async function loadOnThisDayCache(){
         var ws=Math.max(away.score||0,home.score||0), ls=Math.min(away.score||0,home.score||0);
         var playerHighlight='', sigPlay='';
         try{
-          var bs=await fetchBoxscore(g.gamePk);
+          var bs=await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(g.gamePk) : null);
           var allPlayers=Object.assign({},bs&&bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs&&bs.teams&&bs.teams.away&&bs.teams.away.players||{});
           var topBatter=null, topBatterStats=null;
           var hrHitters={multi:[],single:[]};
@@ -694,7 +699,7 @@ async function loadYdForDate(dateStr){
       var dur=linescore.gameDurationMinutes?' · '+Math.floor(linescore.gameDurationMinutes/60)+'h '+String(linescore.gameDurationMinutes%60).padStart(2,'0')+'m':'';
       var playerHighlight='', sigPlay='';
       try{
-        var bs=await fetchBoxscore(g.gamePk);
+        var bs=await (carouselCallbacks.fetchBoxscore ? carouselCallbacks.fetchBoxscore(g.gamePk) : null);
         var allPlayers=Object.assign({},bs&&bs.teams&&bs.teams.home&&bs.teams.home.players||{},bs&&bs.teams&&bs.teams.away&&bs.teams.away.players||{});
         var topBatter=null, topBatterStats=null;
         Object.values(allPlayers).forEach(function(p){
@@ -764,7 +769,7 @@ async function loadYesterdayCache(){
   var dateStr=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
   state.yesterdayCache=await loadYdForDate(dateStr);
   state.yesterdayCache.forEach(function(item){item.headline='Yesterday: '+item.headline;});
-  updateFeedEmpty();
+  if(carouselCallbacks.updateFeedEmpty) carouselCallbacks.updateFeedEmpty();
 }
 
 async function loadLiveWPCache(){
@@ -837,4 +842,4 @@ function genDailyIntro(){
   return [makeStory('dailyintro_'+todayStr,'editorial',4,50,'📰',headline,sub,'today',gamePk,new Date(),4*60*60000,0.4)];
 }
 
-export { ordinal, makeStory, genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genBigInning, genFinalScoreStories, genStreakStories, genMultiHitDay, genDailyLeaders, genPitcherGem, genOnThisDay, genYesterdayHighlights, fetchMissingHRBatterStats, loadProbablePitcherStats, genProbablePitchers, genInningRecapStories, loadTransactionsCache, loadHighLowCache, loadDailyLeaders, genRosterMoveStories, genWinProbabilityStories, genSeasonHighStories, loadLiveWPCache, genLiveWinProbStories, genDailyIntro, loadOnThisDayCache, loadYesterdayCache };
+export { setCarouselCallbacks, ordinal, makeStory, genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genBigInning, genFinalScoreStories, genStreakStories, genMultiHitDay, genDailyLeaders, genPitcherGem, genOnThisDay, genYesterdayHighlights, fetchMissingHRBatterStats, loadProbablePitcherStats, genProbablePitchers, genInningRecapStories, loadTransactionsCache, loadHighLowCache, loadDailyLeaders, genRosterMoveStories, genWinProbabilityStories, genSeasonHighStories, loadLiveWPCache, genLiveWinProbStories, genDailyIntro, loadOnThisDayCache, loadYesterdayCache };

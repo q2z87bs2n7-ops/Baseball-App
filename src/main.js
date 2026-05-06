@@ -41,7 +41,7 @@ import {
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
 import {
-  loadOnThisDayCache, loadYesterdayCache,
+  setCarouselCallbacks, loadOnThisDayCache, loadYesterdayCache, loadTransactionsCache, loadHighLowCache,
 } from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import {
@@ -119,6 +119,7 @@ function initLeaguePulse() {
   initReal();
 }
 function initReal() {
+  setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore });
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
   // Midnight window: at 0–5am local, seed state.pollDateStr to yesterday so West Coast games are found
@@ -514,6 +515,10 @@ function showNewsUnavailable() {
 // ── Story Carousel (v3.39.14) ─── EXTRACTED to carousel/rotation.js + carousel/generators.js
 // Functions now imported: buildStoryPool, rotateStory, showStoryCard, renderStoryCard,
 // updateStoryDots, prevStory, nextStory, onStoryVisibilityChange
+
+function updateInningStates(){
+  // Called after gameStates are updated; actual state mutations happen in genInningRecapStories
+}
 
 // ── Debug Panel (v2.7.1) ──────────────────────────────────────────────────────
 function refreshDebugPanel(){
