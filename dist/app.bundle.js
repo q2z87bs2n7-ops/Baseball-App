@@ -775,6 +775,429 @@
     return radioCurrentTeamId;
   }
 
+  // src/demo/mode.js
+  var demoPaused = false;
+  var demoSpeedMs = 1e4;
+  var _addFeedItem = null;
+  var _renderTicker = null;
+  var _renderSideRailGames = null;
+  var _buildStoryPool = null;
+  var _updateFeedEmpty = null;
+  var _showAlert = null;
+  var _playSound = null;
+  var _showPlayerCard = null;
+  var _rotateStory = null;
+  var _localDateStr = null;
+  function setDemoCallbacks(callbacks) {
+    _addFeedItem = callbacks.addFeedItem;
+    _renderTicker = callbacks.renderTicker;
+    _renderSideRailGames = callbacks.renderSideRailGames;
+    _buildStoryPool = callbacks.buildStoryPool;
+    _updateFeedEmpty = callbacks.updateFeedEmpty;
+    _showAlert = callbacks.showAlert;
+    _playSound = callbacks.playSound;
+    _showPlayerCard = callbacks.showPlayerCard;
+    _rotateStory = callbacks.rotateStory;
+    _localDateStr = callbacks.localDateStr;
+  }
+  async function loadDailyEventsJSON() {
+    try {
+      var r = await fetch("./daily-events.json");
+      if (!r.ok) return null;
+      var data = await r.json();
+      if (data.state.feedItems) {
+        data.state.feedItems.forEach(function(item) {
+          if (item.playTime && typeof item.playTime === "string") {
+            item.playTime = new Date(item.playTime);
+          }
+          if (item.playTime && !item.ts) item.ts = item.playTime;
+        });
+      }
+      if (data.state.onThisDayCache) {
+        data.state.onThisDayCache.forEach(function(item) {
+          if (item.ts && typeof item.ts === "string") {
+            item.ts = new Date(item.ts);
+          }
+        });
+      }
+      if (data.state.yesterdayCache) {
+        data.state.yesterdayCache.forEach(function(item) {
+          if (item.ts && typeof item.ts === "string") {
+            item.ts = new Date(item.ts);
+          }
+        });
+      }
+      return data;
+    } catch (e) {
+      console.error("Demo: Failed to load daily-events.json", e);
+      return null;
+    }
+  }
+  function updateDemoBtnLabel() {
+    var lbl = document.getElementById("demoBtnLabel");
+    if (lbl) lbl.textContent = state.demoMode ? "\u23F9 Exit Demo" : "\u25B6 Try Demo";
+  }
+  function toggleDemoMode() {
+    devTrace("demo", state.demoMode ? "exit" : "init");
+    if (state.demoMode) exitDemo();
+    else initDemo();
+    updateDemoBtnLabel();
+  }
+  async function initDemo() {
+    if (state.pulseTimer) {
+      clearInterval(state.pulseTimer);
+      state.pulseTimer = null;
+    }
+    if (state.pulseAbortCtrl) {
+      state.pulseAbortCtrl.abort();
+      state.pulseAbortCtrl = null;
+    }
+    if (state.storyRotateTimer) {
+      clearInterval(state.storyRotateTimer);
+      state.storyRotateTimer = null;
+    }
+    state.demoMode = true;
+    document.body.classList.add("demo-active");
+    var pulseSection = document.getElementById("pulse");
+    if (pulseSection) pulseSection.classList.add("active");
+    var main = document.getElementById("main");
+    if (main) main.style.display = "none";
+    var feedWrap = document.getElementById("feedWrap");
+    if (feedWrap) feedWrap.style.display = "block";
+    demoSpeedMs = 1e4;
+    demoPaused = false;
+    var mockBar = document.getElementById("mockBar");
+    if (mockBar) {
+      mockBar.style.display = "block";
+      var badge = document.getElementById("mockBarBadge");
+      if (badge) badge.textContent = "\u{1F4FD}\uFE0F Demo";
+      document.getElementById("demoSpeed1x").style.display = "";
+      document.getElementById("demoSpeed10x").style.display = "";
+      document.getElementById("demoSpeed100x").style.display = "";
+      document.getElementById("demoSpeed1x").classList.add("active");
+      document.getElementById("demoNextHRBtn").style.display = "";
+      document.getElementById("demoPauseBtn").style.display = "";
+      document.getElementById("demoForwardBtn").style.display = "";
+      document.getElementById("demoPauseBtn").textContent = "\u23F8 Pause";
+    }
+    state.gameStates = {};
+    state.feedItems = [];
+    state.scheduleData = [];
+    state.enabledGames = /* @__PURE__ */ new Set();
+    state.storyPool = [];
+    state.storyShownId = null;
+    state.demoPlayQueue = [];
+    state.demoPlayIdx = 0;
+    state.dailyLeadersCache = null;
+    state.onThisDayCache = null;
+    state.yesterdayCache = null;
+    state.hrBatterStatsCache = {};
+    state.probablePitcherStatsCache = {};
+    state.dailyHitsTracker = {};
+    state.dailyPitcherKs = {};
+    state.storyCarouselRawGameData = {};
+    state.stolenBaseEvents = [];
+    state.inningRecapsFired = /* @__PURE__ */ new Set();
+    state.inningRecapsPending = {};
+    state.lastInningState = {};
+    var jsonData = await loadDailyEventsJSON();
+    if (!jsonData || !jsonData.state.gameStates) {
+      _showAlert({ icon: "\u26A0\uFE0F", event: "Demo Load Failed", desc: "Could not load daily-events.json", color: "#e85d4f", duration: 3e3 });
+      return;
+    }
+    state.gameStates = jsonData.state.gameStates;
+    Object.values(state.gameStates).forEach(function(g) {
+      g.status = "Preview";
+      g.detailedState = "Scheduled";
+      g.inning = 0;
+      g.halfInning = null;
+      g.outs = 0;
+      g.awayScore = 0;
+      g.homeScore = 0;
+      g.onFirst = false;
+      g.onSecond = false;
+      g.onThird = false;
+    });
+    state.feedItems = (jsonData.state.feedItems || []).map(function(item) {
+      var ts = item.ts || item.playTime;
+      if (ts && typeof ts === "string") ts = new Date(ts);
+      if (!(ts instanceof Date)) ts = /* @__PURE__ */ new Date();
+      return { gamePk: item.gamePk, data: item.data, ts };
+    });
+    state.dailyLeadersCache = jsonData.state.dailyLeadersCache || null;
+    state.onThisDayCache = jsonData.state.onThisDayCache || [];
+    state.yesterdayCache = jsonData.state.yesterdayCache || [];
+    state.hrBatterStatsCache = jsonData.state.hrBatterStatsCache || {};
+    state.probablePitcherStatsCache = jsonData.state.probablePitcherStatsCache || {};
+    state.dailyHitsTracker = jsonData.state.dailyHitsTracker || {};
+    state.dailyPitcherKs = jsonData.state.dailyPitcherKs || {};
+    state.storyCarouselRawGameData = jsonData.state.storyCarouselRawGameData || {};
+    state.stolenBaseEvents = jsonData.state.stolenBaseEvents || [];
+    state.scheduleData = jsonData.state.scheduleData || [];
+    if (jsonData.state.gameStates) {
+      var earliestMs = Infinity;
+      Object.values(jsonData.state.gameStates).forEach(function(g) {
+        if (g.gameDateMs && g.gameDateMs < earliestMs) earliestMs = g.gameDateMs;
+      });
+      if (earliestMs !== Infinity) state.demoDate = new Date(earliestMs);
+    }
+    state.feedItems.forEach(function(item) {
+      if (item.playTime && typeof item.playTime === "string") item.playTime = new Date(item.playTime);
+    });
+    state.onThisDayCache.forEach(function(item) {
+      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
+    });
+    state.yesterdayCache.forEach(function(item) {
+      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
+    });
+    var gamesWithPlays = /* @__PURE__ */ new Set();
+    state.feedItems.forEach(function(item) {
+      if (item.gamePk) gamesWithPlays.add(item.gamePk);
+    });
+    Object.keys(state.gameStates).forEach(function(pk) {
+      if (state.demoMode) {
+        if (gamesWithPlays.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
+      } else {
+        state.enabledGames.add(parseInt(pk));
+      }
+    });
+    state.demoPlayQueue = [];
+    state.feedItems.forEach(function(item) {
+      var ts = item.playTime && item.playTime.getTime ? item.playTime.getTime() : new Date(item.ts).getTime();
+      var d = item.data || {};
+      state.demoPlayQueue.push({
+        gamePk: item.gamePk,
+        ts,
+        event: d.event,
+        desc: d.desc,
+        type: d.type || "play",
+        inning: d.inning,
+        halfInning: d.halfInning,
+        outs: d.outs,
+        awayScore: d.awayScore,
+        homeScore: d.homeScore,
+        scoring: d.scoring,
+        risp: d.risp,
+        playClass: d.playClass,
+        playTime: new Date(ts),
+        batterId: d.batterId,
+        batterName: d.batterName,
+        pitcherName: d.pitcherName,
+        distance: d.distance,
+        icon: d.icon,
+        label: d.label,
+        sub: d.sub
+      });
+    });
+    state.demoPlayQueue.sort(function(a, b) {
+      return a.ts - b.ts;
+    });
+    state.demoPlayIdx = 0;
+    state.demoCurrentTime = state.demoPlayQueue.length > 0 ? state.demoPlayQueue[0].ts : 0;
+    var feed = document.getElementById("feed");
+    if (feed) feed.innerHTML = "";
+    _renderTicker();
+    _renderSideRailGames();
+    await _buildStoryPool();
+    _updateFeedEmpty();
+    _showAlert({ icon: "\u25B6", event: "Demo Mode", desc: state.enabledGames.size + " games \xB7 " + state.feedItems.length + " plays", color: "#7dd89e", duration: 3e3 });
+    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
+    state.storyRotateTimer = setInterval(_rotateStory, state.devTuning.rotateMs);
+    state.demoStartTime = Date.now();
+    updateDemoBtnLabel();
+    pollDemoFeeds();
+  }
+  async function pollDemoFeeds() {
+    if (!state.demoMode) return;
+    if (demoPaused) {
+      clearTimeout(state.demoTimer);
+      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
+      return;
+    }
+    if (state.demoPlayIdx >= state.demoPlayQueue.length) {
+      renderDemoEndScreen();
+      return;
+    }
+    var play = state.demoPlayQueue[state.demoPlayIdx];
+    await advanceDemoPlay(play);
+    state.demoPlayIdx++;
+    clearTimeout(state.demoTimer);
+    state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
+  }
+  function setDemoSpeed(ms, btn) {
+    demoSpeedMs = ms;
+    if (btn) {
+      document.querySelectorAll("#demoSpeed1x,#demoSpeed10x,#demoSpeed100x").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    }
+    if (state.demoMode && !demoPaused && state.demoTimer) {
+      clearTimeout(state.demoTimer);
+      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
+    }
+  }
+  function toggleDemoPause() {
+    demoPaused = !demoPaused;
+    var btn = document.getElementById("demoPauseBtn");
+    if (btn) btn.textContent = demoPaused ? "\u25B6 Resume" : "\u23F8 Pause";
+    if (!demoPaused && state.demoMode) pollDemoFeeds();
+  }
+  function forwardDemoPlay() {
+    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
+    clearTimeout(state.demoTimer);
+    if (!demoPaused) pollDemoFeeds();
+  }
+  function demoNextHR() {
+    var nextHRIdx = -1;
+    for (var i = state.demoPlayIdx; i < state.demoPlayQueue.length; i++) {
+      if (state.demoPlayQueue[i].event === "Home Run") {
+        nextHRIdx = i;
+        break;
+      }
+    }
+    if (nextHRIdx === -1) {
+      _showAlert({ icon: "\u26A0\uFE0F", event: "No more HRs", desc: "Reached end of demo", duration: 2e3 });
+      return;
+    }
+    state.demoPlayIdx = nextHRIdx - 1;
+    clearTimeout(state.demoTimer);
+    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
+    var play = state.demoPlayQueue[state.demoPlayIdx];
+    if (play) {
+      state.demoCurrentTime = play.ts;
+      advanceDemoPlay(play).then(function() {
+        state.demoPlayIdx++;
+        demoPaused = true;
+        var btn = document.getElementById("demoPauseBtn");
+        if (btn) btn.textContent = "\u25B6 Resume";
+      });
+    }
+  }
+  async function advanceDemoPlay(play) {
+    state.demoCurrentTime = play.ts;
+    var g = state.gameStates[play.gamePk];
+    if (!g) return;
+    var feedData = { playTime: new Date(play.ts) };
+    if (play.type === "status") {
+      feedData.type = "status";
+      feedData.icon = play.icon;
+      feedData.label = play.label;
+      feedData.sub = play.sub;
+      if (play.label === "Game underway!") {
+        g.status = "Live";
+        g.detailedState = "In Progress";
+      } else if (play.label === "Game Final") {
+        g.status = "Final";
+      }
+    } else {
+      g.inning = play.inning;
+      g.halfInning = play.halfInning;
+      g.outs = play.outs;
+      g.awayScore = play.awayScore;
+      g.homeScore = play.homeScore;
+      var badge = "";
+      if (play.event === "Home Run") badge = "HR";
+      else if (play.event === "Double") badge = "2B";
+      else if (play.event === "Triple") badge = "3B";
+      else if (play.event === "Single") badge = "1B";
+      feedData.type = "play";
+      feedData.event = play.event;
+      feedData.desc = play.desc;
+      feedData.badge = badge;
+      feedData.scoring = play.scoring;
+      feedData.inning = play.inning;
+      feedData.halfInning = play.halfInning;
+      feedData.outs = play.outs;
+      feedData.awayScore = play.awayScore;
+      feedData.homeScore = play.homeScore;
+      feedData.risp = play.risp;
+      feedData.playClass = play.playClass;
+      if (play.event === "Home Run") {
+        _playSound("hr");
+        if (play.batterId) _showPlayerCard(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
+      } else if (play.scoring) {
+        _showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + play.awayScore + ", " + g.homeAbbr + " " + play.homeScore, desc: play.desc, color: g.homePrimary, duration: 4e3 });
+        _playSound("run");
+      }
+    }
+    _addFeedItem(play.gamePk, feedData);
+    _renderTicker();
+    _renderSideRailGames();
+    await _buildStoryPool();
+  }
+  function renderDemoEndScreen() {
+    state.demoMode = false;
+    clearTimeout(state.demoTimer);
+    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
+    var overlay = document.createElement("div");
+    overlay.className = "demo-end-screen";
+    overlay.innerHTML = '<div class="demo-end-card"><div class="demo-end-headline">Demo Complete</div><div class="demo-end-summary">' + state.demoGamesCache.length + " games &middot; " + state.demoPlayQueue.length + ' plays</div><div class="demo-end-tagline">Ready for live games? Enable Game Start Alerts in Settings.</div><button onclick="exitDemo()" style="margin-top:12px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600">Exit Demo</button></div>';
+    overlay.onclick = function(e) {
+      if (e.target === overlay) exitDemo();
+    };
+    document.body.appendChild(overlay);
+    setTimeout(function() {
+      if (document.body.contains(overlay)) exitDemo();
+    }, 4e3);
+  }
+  function exitDemo() {
+    state.demoMode = false;
+    demoPaused = false;
+    clearTimeout(state.demoTimer);
+    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
+    if (state.pulseAbortCtrl) {
+      state.pulseAbortCtrl.abort();
+      state.pulseAbortCtrl = null;
+    }
+    if (state.focusAbortCtrl) {
+      state.focusAbortCtrl.abort();
+      state.focusAbortCtrl = null;
+    }
+    var overlay = document.querySelector(".demo-end-screen");
+    if (overlay) overlay.remove();
+    document.body.classList.remove("demo-active");
+    state.demoMode = false;
+    state.gameStates = {};
+    state.feedItems = [];
+    state.enabledGames = /* @__PURE__ */ new Set();
+    state.storyPool = [];
+    state.demoPlayQueue = [];
+    state.demoPlayIdx = 0;
+    state.storyShownId = null;
+    state.demoCurrentTime = 0;
+    state.inningRecapsFired = /* @__PURE__ */ new Set();
+    state.inningRecapsPending = {};
+    state.lastInningState = {};
+    var feed = document.getElementById("feed");
+    if (feed) feed.innerHTML = "";
+    var ticker = document.getElementById("gameTicker");
+    if (ticker) ticker.innerHTML = "";
+    var mockBar = document.getElementById("mockBar");
+    if (mockBar) {
+      mockBar.style.display = "none";
+      var btnNormal = document.getElementById("btnNormal");
+      if (btnNormal) btnNormal.style.display = "";
+      var btnFast = document.getElementById("btnFast");
+      if (btnFast) btnFast.style.display = "";
+      var btnSkip = document.getElementById("btnSkip");
+      if (btnSkip) btnSkip.style.display = "";
+      var demoSpeed1x = document.getElementById("demoSpeed1x");
+      if (demoSpeed1x) demoSpeed1x.style.display = "none";
+      var demoSpeed10x = document.getElementById("demoSpeed10x");
+      if (demoSpeed10x) demoSpeed10x.style.display = "none";
+      var demoSpeed100x = document.getElementById("demoSpeed100x");
+      if (demoSpeed100x) demoSpeed100x.style.display = "none";
+      var demoNextHRBtn = document.getElementById("demoNextHRBtn");
+      if (demoNextHRBtn) demoNextHRBtn.style.display = "none";
+      var demoPauseBtn = document.getElementById("demoPauseBtn");
+      if (demoPauseBtn) demoPauseBtn.style.display = "none";
+      var demoForwardBtn = document.getElementById("demoForwardBtn");
+      if (demoForwardBtn) demoForwardBtn.style.display = "none";
+      var badge = document.getElementById("mockBarBadge");
+      if (badge) badge.textContent = "\u26A1 Mock";
+    }
+    updateDemoBtnLabel();
+  }
+
   // src/auth/oauth.js
   function signInWithGitHub() {
     const state2 = Math.random().toString(36).slice(2, 15);
@@ -1289,426 +1712,6 @@
       });
       g.playCount = plays.length;
     } catch (e) {
-    }
-  }
-  async function loadDailyEventsJSON() {
-    try {
-      var r = await fetch("./daily-events.json");
-      if (!r.ok) return null;
-      var data = await r.json();
-      if (data.state.feedItems) {
-        data.state.feedItems.forEach(function(item) {
-          if (item.playTime && typeof item.playTime === "string") {
-            item.playTime = new Date(item.playTime);
-          }
-          if (item.playTime && !item.ts) item.ts = item.playTime;
-        });
-      }
-      if (data.state.onThisDayCache) {
-        data.state.onThisDayCache.forEach(function(item) {
-          if (item.ts && typeof item.ts === "string") {
-            item.ts = new Date(item.ts);
-          }
-        });
-      }
-      if (data.state.yesterdayCache) {
-        data.state.yesterdayCache.forEach(function(item) {
-          if (item.ts && typeof item.ts === "string") {
-            item.ts = new Date(item.ts);
-          }
-        });
-      }
-      if (DEBUG2) console.log("Demo: Loaded daily-events.json \u2014", Object.keys(data.state.gameStates).length, "games,", data.state.feedItems.length, "plays");
-      return data;
-    } catch (e) {
-      console.error("Demo: Failed to load daily-events.json", e);
-      return null;
-    }
-  }
-  function getEffectiveDate() {
-    return state.demoMode && state.demoDate ? state.demoDate : /* @__PURE__ */ new Date();
-  }
-  function updateDemoBtnLabel() {
-    var lbl = document.getElementById("demoBtnLabel");
-    if (lbl) lbl.textContent = state.demoMode ? "\u23F9 Exit Demo" : "\u25B6 Try Demo";
-  }
-  function toggleDemoMode() {
-    devTrace("demo", state.demoMode ? "exit" : "init");
-    if (state.demoMode) exitDemo();
-    else initDemo();
-    updateDemoBtnLabel();
-  }
-  async function initDemo() {
-    if (state.pulseTimer) {
-      clearInterval(state.pulseTimer);
-      state.pulseTimer = null;
-    }
-    if (state.pulseAbortCtrl) {
-      state.pulseAbortCtrl.abort();
-      state.pulseAbortCtrl = null;
-    }
-    if (state.storyRotateTimer) {
-      clearInterval(state.storyRotateTimer);
-      state.storyRotateTimer = null;
-    }
-    state.demoMode = true;
-    pulseMockMode = false;
-    document.body.classList.add("demo-active");
-    var pulseSection = document.getElementById("pulse");
-    if (pulseSection) pulseSection.classList.add("active");
-    var main = document.getElementById("main");
-    if (main) main.style.display = "none";
-    var feedWrap = document.getElementById("feedWrap");
-    if (feedWrap) feedWrap.style.display = "block";
-    demoSpeedMs = 1e4;
-    demoPaused = false;
-    var mockBar = document.getElementById("mockBar");
-    if (mockBar) {
-      mockBar.style.display = "block";
-      var badge = document.getElementById("mockBarBadge");
-      if (badge) badge.textContent = "\u{1F4FD}\uFE0F Demo";
-      document.getElementById("demoSpeed1x").style.display = "";
-      document.getElementById("demoSpeed10x").style.display = "";
-      document.getElementById("demoSpeed100x").style.display = "";
-      document.getElementById("demoSpeed1x").classList.add("active");
-      document.getElementById("demoNextHRBtn").style.display = "";
-      document.getElementById("demoPauseBtn").style.display = "";
-      document.getElementById("demoForwardBtn").style.display = "";
-      document.getElementById("demoPauseBtn").textContent = "\u23F8 Pause";
-    }
-    state.gameStates = {};
-    state.feedItems = [];
-    state.scheduleData = [];
-    state.enabledGames = /* @__PURE__ */ new Set();
-    state.storyPool = [];
-    state.storyShownId = null;
-    state.demoPlayQueue = [];
-    state.demoPlayIdx = 0;
-    state.dailyLeadersCache = null;
-    state.onThisDayCache = null;
-    state.yesterdayCache = null;
-    state.hrBatterStatsCache = {};
-    state.probablePitcherStatsCache = {};
-    state.dailyHitsTracker = {};
-    state.dailyPitcherKs = {};
-    state.storyCarouselRawGameData = {};
-    state.stolenBaseEvents = [];
-    state.inningRecapsFired = /* @__PURE__ */ new Set();
-    state.inningRecapsPending = {};
-    state.lastInningState = {};
-    var jsonData = await loadDailyEventsJSON();
-    if (!jsonData || !jsonData.state.gameStates) {
-      showAlert({ icon: "\u26A0\uFE0F", event: "Demo Load Failed", desc: "Could not load daily-events.json", color: "#e85d4f", duration: 3e3 });
-      return;
-    }
-    state.gameStates = jsonData.state.gameStates;
-    Object.values(state.gameStates).forEach(function(g) {
-      g.status = "Preview";
-      g.detailedState = "Scheduled";
-      g.inning = 0;
-      g.halfInning = null;
-      g.outs = 0;
-      g.awayScore = 0;
-      g.homeScore = 0;
-      g.onFirst = false;
-      g.onSecond = false;
-      g.onThird = false;
-    });
-    state.feedItems = (jsonData.state.feedItems || []).map(function(item) {
-      var ts = item.ts || item.playTime;
-      if (ts && typeof ts === "string") ts = new Date(ts);
-      if (!(ts instanceof Date)) ts = /* @__PURE__ */ new Date();
-      return { gamePk: item.gamePk, data: item.data, ts };
-    });
-    state.dailyLeadersCache = jsonData.state.dailyLeadersCache || null;
-    state.onThisDayCache = jsonData.state.onThisDayCache || [];
-    state.yesterdayCache = jsonData.state.yesterdayCache || [];
-    state.hrBatterStatsCache = jsonData.state.hrBatterStatsCache || {};
-    state.probablePitcherStatsCache = jsonData.state.probablePitcherStatsCache || {};
-    state.dailyHitsTracker = jsonData.state.dailyHitsTracker || {};
-    state.dailyPitcherKs = jsonData.state.dailyPitcherKs || {};
-    state.storyCarouselRawGameData = jsonData.state.storyCarouselRawGameData || {};
-    state.stolenBaseEvents = jsonData.state.stolenBaseEvents || [];
-    state.scheduleData = jsonData.state.scheduleData || [];
-    if (jsonData.state.gameStates) {
-      var earliestMs = Infinity;
-      Object.values(jsonData.state.gameStates).forEach(function(g) {
-        if (g.gameDateMs && g.gameDateMs < earliestMs) earliestMs = g.gameDateMs;
-      });
-      if (earliestMs !== Infinity) state.demoDate = new Date(earliestMs);
-    }
-    state.feedItems.forEach(function(item) {
-      if (item.playTime && typeof item.playTime === "string") item.playTime = new Date(item.playTime);
-    });
-    state.onThisDayCache.forEach(function(item) {
-      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
-    });
-    state.yesterdayCache.forEach(function(item) {
-      if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
-    });
-    var gamesWithPlays = /* @__PURE__ */ new Set();
-    state.feedItems.forEach(function(item) {
-      if (item.gamePk) gamesWithPlays.add(item.gamePk);
-    });
-    Object.keys(state.gameStates).forEach(function(pk) {
-      if (state.demoMode) {
-        if (gamesWithPlays.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
-      } else {
-        state.enabledGames.add(parseInt(pk));
-      }
-    });
-    state.demoPlayQueue = [];
-    state.feedItems.forEach(function(item) {
-      var ts = item.playTime && item.playTime.getTime ? item.playTime.getTime() : new Date(item.ts).getTime();
-      var d = item.data || {};
-      state.demoPlayQueue.push({
-        gamePk: item.gamePk,
-        ts,
-        event: d.event,
-        desc: d.desc,
-        type: d.type || "play",
-        inning: d.inning,
-        halfInning: d.halfInning,
-        outs: d.outs,
-        awayScore: d.awayScore,
-        homeScore: d.homeScore,
-        scoring: d.scoring,
-        risp: d.risp,
-        playClass: d.playClass,
-        playTime: new Date(ts),
-        batterId: d.batterId,
-        batterName: d.batterName,
-        pitcherName: d.pitcherName,
-        distance: d.distance,
-        icon: d.icon,
-        label: d.label,
-        sub: d.sub
-      });
-    });
-    state.demoPlayQueue.sort(function(a, b) {
-      return a.ts - b.ts;
-    });
-    state.demoPlayIdx = 0;
-    state.demoCurrentTime = state.demoPlayQueue.length > 0 ? state.demoPlayQueue[0].ts : 0;
-    if (DEBUG2) console.log("Demo: Loaded", state.enabledGames.size, "games from", localDateStr(state.demoDate), ",", state.feedItems.length, "feed items,", state.demoPlayQueue.length, "plays queued");
-    var feed = document.getElementById("feed");
-    if (feed) feed.innerHTML = "";
-    renderTicker();
-    renderSideRailGames();
-    await buildStoryPool();
-    updateFeedEmpty();
-    showAlert({ icon: "\u25B6", event: "Demo Mode", desc: state.enabledGames.size + " games \xB7 " + state.feedItems.length + " plays", color: "#7dd89e", duration: 3e3 });
-    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-    state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-    state.demoStartTime = Date.now();
-    updateDemoBtnLabel();
-    pollDemoFeeds();
-  }
-  async function pollDemoFeeds() {
-    if (!state.demoMode) return;
-    if (demoPaused) {
-      clearTimeout(state.demoTimer);
-      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
-      return;
-    }
-    if (state.demoPlayIdx >= state.demoPlayQueue.length) {
-      renderDemoEndScreen();
-      return;
-    }
-    var play = state.demoPlayQueue[state.demoPlayIdx];
-    await advanceDemoPlay(play);
-    state.demoPlayIdx++;
-    clearTimeout(state.demoTimer);
-    state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
-  }
-  function setDemoSpeed(ms, btn) {
-    demoSpeedMs = ms;
-    if (btn) {
-      document.querySelectorAll("#demoSpeed1x,#demoSpeed10x,#demoSpeed100x").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-    }
-    if (state.demoMode && !demoPaused && state.demoTimer) {
-      clearTimeout(state.demoTimer);
-      state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
-    }
-  }
-  function toggleDemoPause() {
-    demoPaused = !demoPaused;
-    var btn = document.getElementById("demoPauseBtn");
-    if (btn) btn.textContent = demoPaused ? "\u25B6 Resume" : "\u23F8 Pause";
-    if (!demoPaused && state.demoMode) pollDemoFeeds();
-  }
-  function forwardDemoPlay() {
-    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
-    clearTimeout(state.demoTimer);
-    if (!demoPaused) pollDemoFeeds();
-  }
-  function demoNextHR() {
-    var nextHRIdx = -1;
-    for (var i = state.demoPlayIdx; i < state.demoPlayQueue.length; i++) {
-      if (state.demoPlayQueue[i].event === "Home Run") {
-        nextHRIdx = i;
-        break;
-      }
-    }
-    if (nextHRIdx === -1) {
-      showAlert({ icon: "\u26A0\uFE0F", event: "No more HRs", desc: "Reached end of demo", duration: 2e3 });
-      return;
-    }
-    state.demoPlayIdx = nextHRIdx - 1;
-    clearTimeout(state.demoTimer);
-    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
-    var play = state.demoPlayQueue[state.demoPlayIdx];
-    if (play) {
-      state.demoCurrentTime = play.ts;
-      advanceDemoPlay(play).then(function() {
-        state.demoPlayIdx++;
-        demoPaused = true;
-        var btn = document.getElementById("demoPauseBtn");
-        if (btn) btn.textContent = "\u25B6 Resume";
-      });
-    }
-  }
-  async function advanceDemoPlay(play) {
-    state.demoCurrentTime = play.ts;
-    var g = state.gameStates[play.gamePk];
-    if (!g) return;
-    var feedData = { playTime: new Date(play.ts) };
-    if (play.type === "status") {
-      feedData.type = "status";
-      feedData.icon = play.icon;
-      feedData.label = play.label;
-      feedData.sub = play.sub;
-      if (play.label === "Game underway!") {
-        g.status = "Live";
-        g.detailedState = "In Progress";
-      } else if (play.label === "Game Final") {
-        g.status = "Final";
-      }
-    } else {
-      g.inning = play.inning;
-      g.halfInning = play.halfInning;
-      g.outs = play.outs;
-      g.awayScore = play.awayScore;
-      g.homeScore = play.homeScore;
-      var badge = "";
-      if (play.event === "Home Run") badge = "HR";
-      else if (play.event === "Double") badge = "2B";
-      else if (play.event === "Triple") badge = "3B";
-      else if (play.event === "Single") badge = "1B";
-      feedData.type = "play";
-      feedData.event = play.event;
-      feedData.desc = play.desc;
-      feedData.badge = badge;
-      feedData.scoring = play.scoring;
-      feedData.inning = play.inning;
-      feedData.halfInning = play.halfInning;
-      feedData.outs = play.outs;
-      feedData.awayScore = play.awayScore;
-      feedData.homeScore = play.homeScore;
-      feedData.risp = play.risp;
-      feedData.playClass = play.playClass;
-      if (play.event === "Home Run") {
-        playSound("hr");
-        if (play.batterId) showPlayerCard(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
-      } else if (play.scoring) {
-        showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + play.awayScore + ", " + g.homeAbbr + " " + play.homeScore, desc: play.desc, color: g.homePrimary, duration: 4e3 });
-        playSound("run");
-      }
-    }
-    addFeedItem(play.gamePk, feedData);
-    renderTicker();
-    renderSideRailGames();
-    await buildStoryPool();
-  }
-  function renderDemoEndScreen() {
-    state.demoMode = false;
-    clearTimeout(state.demoTimer);
-    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-    var overlay = document.createElement("div");
-    overlay.className = "demo-end-screen";
-    overlay.innerHTML = '<div class="demo-end-card"><div class="demo-end-headline">Demo Complete</div><div class="demo-end-summary">' + state.demoGamesCache.length + " games &middot; " + state.demoPlayQueue.length + ' plays</div><div class="demo-end-tagline">Ready for live games? Enable Game Start Alerts in Settings.</div><button onclick="exitDemo()" style="margin-top:12px;background:var(--secondary);color:var(--accent-text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600">Exit Demo</button></div>';
-    overlay.onclick = function(e) {
-      if (e.target === overlay) exitDemo();
-    };
-    document.body.appendChild(overlay);
-    setTimeout(function() {
-      if (document.body.contains(overlay)) exitDemo();
-    }, 4e3);
-  }
-  function exitDemo() {
-    state.demoMode = false;
-    demoPaused = false;
-    clearTimeout(state.demoTimer);
-    if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-    if (state.pulseAbortCtrl) {
-      state.pulseAbortCtrl.abort();
-      state.pulseAbortCtrl = null;
-    }
-    if (state.focusAbortCtrl) {
-      state.focusAbortCtrl.abort();
-      state.focusAbortCtrl = null;
-    }
-    var overlay = document.querySelector(".demo-end-screen");
-    if (overlay) overlay.remove();
-    document.body.classList.remove("demo-active");
-    state.demoMode = false;
-    state.gameStates = {};
-    state.feedItems = [];
-    state.enabledGames = /* @__PURE__ */ new Set();
-    state.storyPool = [];
-    state.demoPlayQueue = [];
-    state.demoPlayIdx = 0;
-    state.storyShownId = null;
-    state.demoCurrentTime = 0;
-    state.inningRecapsFired = /* @__PURE__ */ new Set();
-    state.inningRecapsPending = {};
-    state.lastInningState = {};
-    var feed = document.getElementById("feed");
-    if (feed) feed.innerHTML = "";
-    var ticker = document.getElementById("gameTicker");
-    if (ticker) ticker.innerHTML = "";
-    var mockBar = document.getElementById("mockBar");
-    if (mockBar) {
-      mockBar.style.display = "none";
-      var btnNormal = document.getElementById("btnNormal");
-      if (btnNormal) btnNormal.style.display = "";
-      var btnFast = document.getElementById("btnFast");
-      if (btnFast) btnFast.style.display = "";
-      var btnSkip = document.getElementById("btnSkip");
-      if (btnSkip) btnSkip.style.display = "";
-      var demoSpeed1x = document.getElementById("demoSpeed1x");
-      if (demoSpeed1x) demoSpeed1x.style.display = "none";
-      var demoSpeed10x = document.getElementById("demoSpeed10x");
-      if (demoSpeed10x) demoSpeed10x.style.display = "none";
-      var demoSpeed100x = document.getElementById("demoSpeed100x");
-      if (demoSpeed100x) demoSpeed100x.style.display = "none";
-      var demoNextHRBtn = document.getElementById("demoNextHRBtn");
-      if (demoNextHRBtn) demoNextHRBtn.style.display = "none";
-      var demoPauseBtn = document.getElementById("demoPauseBtn");
-      if (demoPauseBtn) demoPauseBtn.style.display = "none";
-      var demoForwardBtn = document.getElementById("demoForwardBtn");
-      if (demoForwardBtn) demoForwardBtn.style.display = "none";
-      var badge = document.getElementById("mockBarBadge");
-      if (badge) badge.textContent = "\u26A1 Mock";
-    }
-    updateDemoBtnLabel();
-    state.isFirstPoll = true;
-    state.pollDateStr = null;
-    var pulseSection = document.getElementById("pulse");
-    var stayingInPulse = pulseSection && pulseSection.classList.contains("active");
-    if (stayingInPulse) {
-      renderFeed();
-      updateFeedEmpty();
-      renderTicker();
-      if (state.pulseTimer) clearInterval(state.pulseTimer);
-      state.pulseTimer = setInterval(pollLeaguePulse, TIMING.PULSE_POLL_MS);
-      if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-      state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-      pollLeaguePulse();
-    } else {
-      var feed = document.getElementById("feed");
-      if (feed) feed.innerHTML = "";
     }
   }
   function renderTicker() {
@@ -8947,6 +8950,18 @@
     loadHomeYoutubeWidget();
     updateCollectionUI();
     updateSyncUI();
+    setDemoCallbacks({
+      addFeedItem,
+      renderTicker,
+      renderSideRailGames,
+      buildStoryPool,
+      updateFeedEmpty,
+      showAlert,
+      playSound,
+      showPlayerCard,
+      rotateStory,
+      localDateStr
+    });
     state.pulseInitialized = true;
     initLeaguePulse();
     state.savedThemeForPulse = state.themeOverride;
