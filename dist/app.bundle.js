@@ -2776,6 +2776,220 @@
     }
   }
 
+  // src/dev/youtube-debug.js
+  var ytDebugResults = {};
+  var _loadHomeYoutubeWidget = null;
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function setYoutubeDebugCallbacks(cbs) {
+    if (cbs.loadHomeYoutubeWidget) _loadHomeYoutubeWidget = cbs.loadHomeYoutubeWidget;
+  }
+  function openYoutubeDebug() {
+    document.getElementById("ytDebugOverlay").style.display = "flex";
+    renderYoutubeDebugList();
+    var inp = document.getElementById("ytCustomInput");
+    if (inp && !inp.value && state.activeTeam && state.activeTeam.youtubeUC) inp.value = state.activeTeam.youtubeUC;
+  }
+  function closeYoutubeDebug() {
+    document.getElementById("ytDebugOverlay").style.display = "none";
+  }
+  function parseYTChannelInput(s) {
+    s = (s || "").trim();
+    if (!s) return { error: "Empty." };
+    if (/^UC[A-Za-z0-9_-]{20,30}$/.test(s)) return { uc: s };
+    var m = s.match(/youtube\.com\/channel\/(UC[A-Za-z0-9_-]{20,30})/);
+    if (m) return { uc: m[1] };
+    if (/youtube\.com\/(@|user\/|c\/)/i.test(s) || /^@/.test(s)) {
+      return { error: "@handle / /user / /c can't be resolved client-side. Visit the channel \u2192 \u22EF \u2192 Share Channel \u2192 Copy Channel ID (UCxxx\u2026)." };
+    }
+    return { error: "Not recognised. Paste a UC channel id or a youtube.com/channel/UCxxx URL." };
+  }
+  function ytDebugFetchCustom() {
+    var raw = (document.getElementById("ytCustomInput") || {}).value || "";
+    var out = document.getElementById("ytCustomResult");
+    var p = parseYTChannelInput(raw);
+    if (p.error) {
+      if (out) out.innerHTML = '<span style="color:#ff6b6b">' + escapeHtml(p.error) + "</span>";
+      return;
+    }
+    var uc = p.uc;
+    if (out) out.innerHTML = '<span style="color:var(--text)">\u23F3 Fetching ' + escapeHtml(uc) + "\u2026</span>";
+    var t0 = Date.now();
+    fetch(API_BASE + "/api/proxy-youtube?channel=" + encodeURIComponent(uc)).then(function(r) {
+      return r.json().then(function(j) {
+        return { res: r, j };
+      });
+    }).then(function(o) {
+      var ms = Date.now() - t0;
+      if (!o.res.ok || !o.j.success || !o.j.videos || !o.j.videos.length) {
+        var msg = "HTTP " + o.res.status + (o.j && o.j.error ? " \xB7 " + o.j.error : o.j && o.j.message ? " \xB7 " + o.j.message : "");
+        if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C ' + escapeHtml(msg) + " \xB7 " + ms + "ms</span>";
+        return;
+      }
+      var v = o.j.videos.slice(0, 5);
+      var teamLbl = state.activeTeam ? state.activeTeam.short : "team";
+      var html = '<div style="color:#22c55e;font-weight:700">\u2705 HTTP ' + o.res.status + " \xB7 " + o.j.count + " videos \xB7 " + ms + "ms</div>";
+      html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
+      v.forEach(function(vid) {
+        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(vid.thumb || "") + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || "") + "</div></div></div>";
+      });
+      html += "</div>";
+      html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam('` + escapeHtml(uc) + `')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">\u2699 Apply to ` + escapeHtml(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open \u2197</a></div>';
+      if (out) out.innerHTML = html;
+    }).catch(function(err) {
+      var ms = Date.now() - t0;
+      if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C Network: ' + escapeHtml(err && err.message || "failed") + " \xB7 " + ms + "ms</span>";
+    });
+  }
+  function ytDebugApplyToTeam(uc) {
+    if (!state.activeTeam) {
+      alert("No active team.");
+      return;
+    }
+    var prev = state.activeTeam.youtubeUC;
+    state.activeTeam.youtubeUC = uc;
+    devTrace("yt", "custom UC applied \xB7 " + state.activeTeam.short + " \xB7 was " + prev + " \xB7 now " + uc);
+    if (_loadHomeYoutubeWidget) _loadHomeYoutubeWidget();
+    var out = document.getElementById("ytCustomResult");
+    if (out) {
+      var note = document.createElement("div");
+      note.style.cssText = "margin-top:6px;padding:6px 8px;background:var(--card2);border:1px solid #22c55e;border-radius:4px;color:var(--text);font-size:.62rem";
+      note.textContent = "\u2705 Applied to " + state.activeTeam.short + ". Open Home \u2192 YouTube widget to verify. Switching teams or reloading reverts to " + (prev || "(none)") + ".";
+      out.appendChild(note);
+    }
+  }
+  function ytDebugEntries() {
+    var entries = TEAMS.map(function(t) {
+      return { key: t.id, teamId: t.id, teamName: t.name, abbr: t.short, channelId: t.youtubeUC || "" };
+    });
+    entries.sort(function(a, b) {
+      return a.teamName.localeCompare(b.teamName);
+    });
+    if (typeof window !== "undefined" && window.MLB_FALLBACK_UC) {
+      entries.push({ key: "mlb_fallback", teamId: null, teamName: "MLB (Fallback)", abbr: "MLB", channelId: window.MLB_FALLBACK_UC });
+    }
+    return entries;
+  }
+  function renderYoutubeDebugList() {
+    var list = document.getElementById("ytDebugList");
+    if (!list) return;
+    var entries = ytDebugEntries();
+    var anyTested = Object.keys(ytDebugResults).length > 0;
+    if (!anyTested) {
+      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Click "\u25B6 Run All" to sweep all ' + entries.length + " channels.</div>";
+      return;
+    }
+    var done = Object.values(ytDebugResults).filter(function(r) {
+      return r && !r.pending;
+    }).length;
+    var summary = '<div style="padding:6px 10px;font-size:.7rem;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">' + done + " of " + entries.length + " tested</div>";
+    var html = entries.map(function(e) {
+      var r = ytDebugResults[e.key];
+      var icon, statusLine, extra = "";
+      if (!r) {
+        icon = "\u2B1C";
+        statusLine = '<span style="color:var(--muted)">untested</span>';
+      } else if (r.pending) {
+        icon = "\u23F3";
+        statusLine = '<span style="color:var(--muted)">testing\u2026</span>';
+      } else if (r.ok) {
+        icon = "\u2705";
+        statusLine = '<span style="color:#22c55e;font-weight:700">HTTP ' + r.status + " \xB7 " + r.count + ' videos</span><span style="color:var(--muted);font-size:.66rem"> \xB7 ' + r.ms + "ms</span>";
+      } else {
+        icon = "\u274C";
+        statusLine = '<span style="color:#e03030;font-weight:700">HTTP ' + (r.status || 0) + '</span><span style="color:var(--muted);font-size:.66rem"> \xB7 ' + r.ms + "ms</span>";
+        if (r.error) extra = '<div style="margin-top:2px;font-size:.66rem;color:#e03030">' + escapeHtml(r.error) + "</div>";
+      }
+      return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">' + icon + '</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text)">' + escapeHtml(e.teamName) + '</span><span style="font-size:.66rem;color:var(--muted)">' + escapeHtml(e.abbr) + '</span></div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px"><span style="font-size:.63rem;color:var(--muted);font-family:monospace">' + escapeHtml(e.channelId) + '</span><span style="color:var(--muted)">\xB7</span>' + statusLine + "</div>" + extra + `</div><button onclick="runYoutubeDebugOne('` + e.key + `')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">\u25B6</button></div>`;
+    }).join("");
+    list.innerHTML = summary + html;
+  }
+  function runYoutubeDebugAll() {
+    var btn = document.getElementById("ytDebugRunBtn");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "\u23F3 Running\u2026";
+    }
+    var entries = ytDebugEntries();
+    ytDebugResults = {};
+    entries.forEach(function(e) {
+      ytDebugResults[e.key] = { pending: true };
+    });
+    renderYoutubeDebugList();
+    var promises = entries.map(function(e) {
+      return runYoutubeDebugOne(e.key);
+    });
+    Promise.all(promises).then(function() {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "\u25B6 Run All";
+      }
+    });
+  }
+  function runYoutubeDebugOne(key) {
+    var entries = ytDebugEntries();
+    var e = entries.find(function(x) {
+      return String(x.key) === String(key);
+    });
+    if (!e) return Promise.resolve();
+    ytDebugResults[e.key] = { pending: true };
+    renderYoutubeDebugList();
+    var t0 = Date.now();
+    return fetch(API_BASE + "/api/proxy-youtube?channel=" + encodeURIComponent(e.channelId)).then(function(res) {
+      var ms = Date.now() - t0;
+      return res.json().then(
+        function(j) {
+          ytDebugResults[e.key] = { ok: res.ok && !!j.success, status: res.status, count: j.count || 0, ms, error: j.error || null };
+          renderYoutubeDebugList();
+        },
+        function() {
+          ytDebugResults[e.key] = { ok: false, status: res.status, count: 0, ms, error: "JSON parse error" };
+          renderYoutubeDebugList();
+        }
+      );
+    }).catch(function(err) {
+      var ms = Date.now() - t0;
+      ytDebugResults[e.key] = { ok: false, status: 0, count: 0, ms, error: "Network: " + (err && err.message || "failed") };
+      renderYoutubeDebugList();
+    });
+  }
+  function ytDebugReset() {
+    ytDebugResults = {};
+    renderYoutubeDebugList();
+  }
+  function ytDebugCopy() {
+    var entries = ytDebugEntries();
+    var works = [], broken = [], untested = [];
+    entries.forEach(function(e) {
+      var r = ytDebugResults[e.key];
+      if (!r || r.pending) {
+        untested.push("\u2022 " + e.teamName + " (" + e.abbr + ") \u2014 " + e.channelId);
+      } else if (r.ok) {
+        works.push("\u2022 " + e.teamName + " (" + e.abbr + ") \u2014 " + e.channelId + " \u2014 " + r.count + " videos \xB7 " + r.ms + "ms");
+      } else {
+        var detail = "HTTP " + (r.status || 0) + (r.error ? " \xB7 " + r.error : "");
+        broken.push("\u2022 " + e.teamName + " (" + e.abbr + ") \u2014 " + e.channelId + " \u2014 " + detail + " \xB7 " + r.ms + "ms");
+      }
+    });
+    var lines = ["YouTube Channel Test", "Date: " + (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), "Proxy: " + API_BASE + "/api/proxy-youtube", ""];
+    lines.push("\u2705 WORKS (" + works.length + "):");
+    lines.push.apply(lines, works.length ? works : ["  (none)"]);
+    lines.push("");
+    lines.push("\u274C BROKEN/ERROR (" + broken.length + "):");
+    lines.push.apply(lines, broken.length ? broken : ["  (none)"]);
+    lines.push("");
+    if (untested.length) {
+      lines.push("\u23F3 UNTESTED (" + untested.length + "):");
+      lines.push.apply(lines, untested);
+    }
+    if (typeof window !== "undefined" && window._copyToClipboard) {
+      window._copyToClipboard(lines.join("\n"), "ytDebugCopyBtn");
+    }
+  }
+
   // src/demo/mode.js
   var demoPaused = false;
   var demoSpeedMs = 1e4;
@@ -3707,7 +3921,7 @@
   var leagueRefreshTimer = null;
   var selectedVideoId = null;
   var mediaVideos = [];
-  var MLB_FALLBACK_UC2 = "UCoLrcjPV5PbUrUyXq5mjc_A";
+  var MLB_FALLBACK_UC = "UCoLrcjPV5PbUrUyXq5mjc_A";
   var LEAGUE_HIT_STATS = [{ label: "HR", cats: "homeRuns", decimals: 0 }, { label: "AVG", cats: "battingAverage", decimals: 3, noLeadZero: true }, { label: "OPS", cats: "onBasePlusSlugging", decimals: 3, noLeadZero: true }, { label: "RBI", cats: "runsBattedIn", decimals: 0 }, { label: "SB", cats: "stolenBases", decimals: 0 }, { label: "BB", cats: "walks", decimals: 0 }];
   var LEAGUE_PIT_STATS = [{ label: "SO", cats: "strikeouts", decimals: 0 }, { label: "WHIP", cats: "walksAndHitsPerInningPitched", decimals: 2 }, { label: "ERA", cats: "earnedRunAverage", decimals: 2 }, { label: "W", cats: "wins", decimals: 0 }, { label: "SV", cats: "saves", decimals: 0 }, { label: "IP", cats: "inningsPitched", decimals: 1 }];
   async function loadTodayGame() {
@@ -3871,7 +4085,7 @@
     }
   }
   async function loadHomeYoutubeWidget() {
-    var uc = state.activeTeam.youtubeUC || MLB_FALLBACK_UC2, teamName = state.activeTeam.youtubeUC ? state.activeTeam.name : "MLB", channelUrl = "https://www.youtube.com/channel/" + uc;
+    var uc = state.activeTeam.youtubeUC || MLB_FALLBACK_UC, teamName = state.activeTeam.youtubeUC ? state.activeTeam.name : "MLB", channelUrl = "https://www.youtube.com/channel/" + uc;
     var themeTeam = state.themeOverride || state.activeTeam, bannerColor = state.themeInvert ? themeTeam.secondary : themeTeam.primary;
     var grad = "background:linear-gradient(135deg," + bannerColor + " 0%,var(--dark) 100%)";
     document.getElementById("homeYoutubeHeader").innerHTML = '<div style="' + grad + ';border-radius:12px 12px 0 0;padding:16px 20px;display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:2px">\u{1F4FA} Official Channel</div><div style="font-size:1.1rem;font-weight:800;color:#fff">' + teamName + '</div></div><a href="' + channelUrl + '" target="_blank" style="font-size:.78rem;color:rgba(255,255,255,.7);text-decoration:none;border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:6px">Open in YouTube \u2197</a></div>';
@@ -5189,6 +5403,7 @@
     setFeedCallbacks({ localDateStr });
     setSectionCallbacks({ renderNextGame, getSeriesInfo, localDateStr, teamCapImg, capImgError });
     setRadioCheckCallbacks({ toggleSettings });
+    setYoutubeDebugCallbacks({ loadHomeYoutubeWidget });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -7395,202 +7610,6 @@
       btn.classList.remove("applied");
     }, 1500);
   }
-  var ytDebugResults = {};
-  function openYoutubeDebug() {
-    document.getElementById("ytDebugOverlay").style.display = "flex";
-    renderYoutubeDebugList();
-    var inp = document.getElementById("ytCustomInput");
-    if (inp && !inp.value && state.activeTeam && state.activeTeam.youtubeUC) inp.value = state.activeTeam.youtubeUC;
-  }
-  function closeYoutubeDebug() {
-    document.getElementById("ytDebugOverlay").style.display = "none";
-  }
-  function parseYTChannelInput(s) {
-    s = (s || "").trim();
-    if (!s) return { error: "Empty." };
-    if (/^UC[A-Za-z0-9_-]{20,30}$/.test(s)) return { uc: s };
-    var m = s.match(/youtube\.com\/channel\/(UC[A-Za-z0-9_-]{20,30})/);
-    if (m) return { uc: m[1] };
-    if (/youtube\.com\/(@|user\/|c\/)/i.test(s) || /^@/.test(s)) {
-      return { error: "@handle / /user / /c can't be resolved client-side. Visit the channel \u2192 \u22EF \u2192 Share Channel \u2192 Copy Channel ID (UCxxx\u2026)." };
-    }
-    return { error: "Not recognised. Paste a UC channel id or a youtube.com/channel/UCxxx URL." };
-  }
-  function ytDebugFetchCustom() {
-    var raw = (document.getElementById("ytCustomInput") || {}).value || "";
-    var out = document.getElementById("ytCustomResult");
-    var p = parseYTChannelInput(raw);
-    if (p.error) {
-      if (out) out.innerHTML = '<span style="color:#ff6b6b">' + escapeHtml(p.error) + "</span>";
-      return;
-    }
-    var uc = p.uc;
-    if (out) out.innerHTML = '<span style="color:var(--text)">\u23F3 Fetching ' + escapeHtml(uc) + "\u2026</span>";
-    var t0 = Date.now();
-    fetch(API_BASE + "/api/proxy-youtube?channel=" + encodeURIComponent(uc)).then(function(r) {
-      return r.json().then(function(j) {
-        return { res: r, j };
-      });
-    }).then(function(o) {
-      var ms = Date.now() - t0;
-      if (!o.res.ok || !o.j.success || !o.j.videos || !o.j.videos.length) {
-        var msg = "HTTP " + o.res.status + (o.j && o.j.error ? " \xB7 " + o.j.error : o.j && o.j.message ? " \xB7 " + o.j.message : "");
-        if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C ' + escapeHtml(msg) + " \xB7 " + ms + "ms</span>";
-        return;
-      }
-      var v = o.j.videos.slice(0, 5);
-      var teamLbl = state.activeTeam ? state.activeTeam.short : "team";
-      var html = '<div style="color:#22c55e;font-weight:700">\u2705 HTTP ' + o.res.status + " \xB7 " + o.j.count + " videos \xB7 " + ms + "ms</div>";
-      html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
-      v.forEach(function(vid) {
-        html += '<div style="display:flex;gap:8px;align-items:flex-start"><img src="' + escapeHtml(vid.thumb || "") + '" style="width:60px;height:34px;object-fit:cover;border-radius:3px;flex-shrink:0" loading="lazy"/><div style="flex:1;min-width:0"><div style="font-size:.65rem;color:var(--text);font-weight:600;line-height:1.2">' + escapeHtml(vid.title || "?") + '</div><div style="font-size:.6rem;color:var(--muted)">' + escapeHtml(vid.date || "") + "</div></div></div>";
-      });
-      html += "</div>";
-      html += `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button onclick="ytDebugApplyToTeam('` + escapeHtml(uc) + `')" style="background:var(--secondary);border:1px solid var(--border);color:var(--accent-text);font-size:.66rem;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">\u2699 Apply to ` + escapeHtml(teamLbl) + '</button><a href="https://www.youtube.com/channel/' + escapeHtml(uc) + '" target="_blank" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.66rem;padding:5px 10px;border-radius:6px;text-decoration:none">Open \u2197</a></div>';
-      if (out) out.innerHTML = html;
-    }).catch(function(err) {
-      var ms = Date.now() - t0;
-      if (out) out.innerHTML = '<span style="color:#ff6b6b">\u274C Network: ' + escapeHtml(err && err.message || "failed") + " \xB7 " + ms + "ms</span>";
-    });
-  }
-  function ytDebugApplyToTeam(uc) {
-    if (!state.activeTeam) {
-      alert("No active team.");
-      return;
-    }
-    var prev = state.activeTeam.youtubeUC;
-    state.activeTeam.youtubeUC = uc;
-    devTrace("yt", "custom UC applied \xB7 " + state.activeTeam.short + " \xB7 was " + prev + " \xB7 now " + uc);
-    if (typeof loadHomeYoutubeWidget === "function") loadHomeYoutubeWidget();
-    var out = document.getElementById("ytCustomResult");
-    if (out) {
-      var note = document.createElement("div");
-      note.style.cssText = "margin-top:6px;padding:6px 8px;background:var(--card2);border:1px solid #22c55e;border-radius:4px;color:var(--text);font-size:.62rem";
-      note.textContent = "\u2705 Applied to " + state.activeTeam.short + ". Open Home \u2192 YouTube widget to verify. Switching teams or reloading reverts to " + (prev || "(none)") + ".";
-      out.appendChild(note);
-    }
-  }
-  function ytDebugEntries() {
-    var entries = TEAMS.map(function(t) {
-      return { key: t.id, teamId: t.id, teamName: t.name, abbr: t.short, channelId: t.youtubeUC || "" };
-    });
-    entries.sort(function(a, b) {
-      return a.teamName.localeCompare(b.teamName);
-    });
-    if (typeof MLB_FALLBACK_UC !== "undefined" && MLB_FALLBACK_UC) entries.push({ key: "mlb_fallback", teamId: null, teamName: "MLB (Fallback)", abbr: "MLB", channelId: MLB_FALLBACK_UC });
-    return entries;
-  }
-  function renderYoutubeDebugList() {
-    var list = document.getElementById("ytDebugList");
-    if (!list) return;
-    var entries = ytDebugEntries();
-    var anyTested = Object.keys(ytDebugResults).length > 0;
-    if (!anyTested) {
-      list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Click "\u25B6 Run All" to sweep all ' + entries.length + " channels.</div>";
-      return;
-    }
-    var done = Object.values(ytDebugResults).filter(function(r) {
-      return r && !r.pending;
-    }).length;
-    var summary = '<div style="padding:6px 10px;font-size:.7rem;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)">' + done + " of " + entries.length + " tested</div>";
-    var html = entries.map(function(e) {
-      var r = ytDebugResults[e.key];
-      var icon, statusLine, extra = "";
-      if (!r) {
-        icon = "\u2B1C";
-        statusLine = '<span style="color:var(--muted)">untested</span>';
-      } else if (r.pending) {
-        icon = "\u23F3";
-        statusLine = '<span style="color:var(--muted)">testing\u2026</span>';
-      } else if (r.ok) {
-        icon = "\u2705";
-        statusLine = '<span style="color:#22c55e;font-weight:700">HTTP ' + r.status + " \xB7 " + r.count + ' videos</span><span style="color:var(--muted);font-size:.66rem"> \xB7 ' + r.ms + "ms</span>";
-      } else {
-        icon = "\u274C";
-        statusLine = '<span style="color:#e03030;font-weight:700">HTTP ' + (r.status || 0) + '</span><span style="color:var(--muted);font-size:.66rem"> \xB7 ' + r.ms + "ms</span>";
-        if (r.error) extra = '<div style="margin-top:2px;font-size:.66rem;color:#e03030">' + escapeHtml(r.error) + "</div>";
-      }
-      return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="font-size:.95rem;flex-shrink:0;width:20px;text-align:center">' + icon + '</span><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.78rem;font-weight:700;color:var(--text)">' + escapeHtml(e.teamName) + '</span><span style="font-size:.66rem;color:var(--muted)">' + escapeHtml(e.abbr) + '</span></div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px"><span style="font-size:.63rem;color:var(--muted);font-family:monospace">' + escapeHtml(e.channelId) + '</span><span style="color:var(--muted)">\xB7</span>' + statusLine + "</div>" + extra + `</div><button onclick="runYoutubeDebugOne('` + e.key + `')" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.68rem;padding:5px 8px;border-radius:6px;cursor:pointer;flex-shrink:0;font-weight:700">\u25B6</button></div>`;
-    }).join("");
-    list.innerHTML = summary + html;
-  }
-  function runYoutubeDebugAll() {
-    var btn = document.getElementById("ytDebugRunBtn");
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = "\u23F3 Running\u2026";
-    }
-    var entries = ytDebugEntries();
-    ytDebugResults = {};
-    entries.forEach(function(e) {
-      ytDebugResults[e.key] = { pending: true };
-    });
-    renderYoutubeDebugList();
-    var promises = entries.map(function(e) {
-      return runYoutubeDebugOne(e.key);
-    });
-    Promise.all(promises).then(function() {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "\u25B6 Run All";
-      }
-    });
-  }
-  function runYoutubeDebugOne(key) {
-    var entries = ytDebugEntries();
-    var e = entries.find(function(x) {
-      return String(x.key) === String(key);
-    });
-    if (!e) return Promise.resolve();
-    ytDebugResults[e.key] = { pending: true };
-    renderYoutubeDebugList();
-    var t0 = Date.now();
-    return fetch(API_BASE + "/api/proxy-youtube?channel=" + encodeURIComponent(e.channelId)).then(function(res) {
-      var ms = Date.now() - t0;
-      return res.json().then(function(j) {
-        ytDebugResults[e.key] = { ok: res.ok && !!j.success, status: res.status, count: j.count || 0, ms, error: j.error || null };
-        renderYoutubeDebugList();
-      }, function() {
-        ytDebugResults[e.key] = { ok: false, status: res.status, count: 0, ms, error: "JSON parse error" };
-        renderYoutubeDebugList();
-      });
-    }).catch(function(err) {
-      var ms = Date.now() - t0;
-      ytDebugResults[e.key] = { ok: false, status: 0, count: 0, ms, error: "Network: " + (err && err.message || "failed") };
-      renderYoutubeDebugList();
-    });
-  }
-  function ytDebugReset() {
-    ytDebugResults = {};
-    renderYoutubeDebugList();
-  }
-  function ytDebugCopy() {
-    var entries = ytDebugEntries();
-    var works = [], broken = [], untested = [];
-    entries.forEach(function(e) {
-      var r = ytDebugResults[e.key];
-      if (!r || r.pending) {
-        untested.push("\u2022 " + e.teamName + " (" + e.abbr + ") \u2014 " + e.channelId);
-      } else if (r.ok) {
-        works.push("\u2022 " + e.teamName + " (" + e.abbr + ") \u2014 " + e.channelId + " \u2014 " + r.count + " videos \xB7 " + r.ms + "ms");
-      } else {
-        var detail = "HTTP " + (r.status || 0) + (r.error ? " \xB7 " + r.error : "");
-        broken.push("\u2022 " + e.teamName + " (" + e.abbr + ") \u2014 " + e.channelId + " \u2014 " + detail + " \xB7 " + r.ms + "ms");
-      }
-    });
-    var lines = ["YouTube Channel Test", "Date: " + (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), "Proxy: " + API_BASE + "/api/proxy-youtube", ""];
-    lines.push("\u2705 WORKS (" + works.length + "):");
-    lines.push.apply(lines, works.length ? works : ["  (none)"]);
-    lines.push("");
-    lines.push("\u274C BROKEN/ERROR (" + broken.length + "):");
-    lines.push.apply(lines, broken.length ? broken : ["  (none)"]);
-    lines.push("");
-    if (untested.length) {
-      lines.push("\u23F3 UNTESTED (" + untested.length + "):");
-      lines.push.apply(lines, untested);
-    }
-    _copyToClipboard(lines.join("\n"), "ytDebugCopyBtn");
-  }
   function fallbackCopy2(text) {
     var ta = document.createElement("textarea");
     ta.value = text;
@@ -7639,8 +7658,8 @@
     }
     list.innerHTML = rows.slice().reverse().map(function(e) {
       var cls = "dt-log-row" + (e.level === "error" ? " lv-error" : e.level === "warn" ? " lv-warn" : "");
-      var tag = e.src ? '<span class="lv-tag">[' + escapeHtml(e.src) + "]</span>" : "";
-      return '<div class="' + cls + '"><span class="lv-ts">' + _fmtLogTs(e.ts) + "</span>" + tag + escapeHtml(e.msg) + "</div>";
+      var tag = e.src ? '<span class="lv-tag">[' + escapeHtml2(e.src) + "]</span>" : "";
+      return '<div class="' + cls + '"><span class="lv-ts">' + _fmtLogTs(e.ts) + "</span>" + tag + escapeHtml2(e.msg) + "</div>";
     }).join("");
   }
   function copyLogAsMarkdown() {
@@ -7805,7 +7824,7 @@
       var v = obj[k];
       var disp = v == null ? "\u2014" : typeof v === "object" ? JSON.stringify(v) : String(v);
       if (disp.length > 200) disp = disp.slice(0, 200) + "\u2026";
-      return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">' + escapeHtml(k) + "</span><span>" + escapeHtml(disp) + "</span></div>";
+      return '<div style="display:flex;gap:8px;padding:1px 0"><span style="color:var(--muted);min-width:120px">' + escapeHtml2(k) + "</span><span>" + escapeHtml2(disp) + "</span></div>";
     }).join("");
   }
   function _miniCopyBtn(action) {
@@ -7822,16 +7841,16 @@
     if (c) c.textContent = "(" + ctx.counts.state.gameStates + "g \xB7 " + ctx.counts.state.feedItems + "f \xB7 " + ctx.counts.state.storyPool + "s)";
     var gs = _stateGameStatesArr();
     var gsBody = gs.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + gs.map(function(g) {
-      return '<div class="dt-log-row">' + escapeHtml(g.matchup) + " \xB7 " + escapeHtml(g.status) + " \xB7 " + escapeHtml(g.score) + (g.inning ? " \xB7 " + escapeHtml(g.inning) + " (" + g.outs + "o)" : "") + (g.bases ? " \xB7 \u{1F3C3}" + escapeHtml(g.bases) : "") + (g.enabled === false ? ' <span class="lv-tag">[hidden]</span>' : "") + "</div>";
+      return '<div class="dt-log-row">' + escapeHtml2(g.matchup) + " \xB7 " + escapeHtml2(g.status) + " \xB7 " + escapeHtml2(g.score) + (g.inning ? " \xB7 " + escapeHtml2(g.inning) + " (" + g.outs + "o)" : "") + (g.bases ? " \xB7 \u{1F3C3}" + escapeHtml2(g.bases) : "") + (g.enabled === false ? ' <span class="lv-tag">[hidden]</span>' : "") + "</div>";
     }).join("") + "</div>" : '<div class="dt-label-muted">No games loaded.</div>';
     var fi = _stateFeedItemsArr(30);
     var fiBody = fi.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + fi.map(function(f) {
       var ts = f.ts ? f.ts.slice(11, 19) : "";
-      return '<div class="dt-log-row"><span class="lv-ts">' + escapeHtml(ts) + '</span><span class="lv-tag">[' + escapeHtml(String(f.type || "?")) + "]</span>" + escapeHtml(f.label || f.desc || "") + (f.scoring ? " \u2B50" : "") + "</div>";
+      return '<div class="dt-log-row"><span class="lv-ts">' + escapeHtml2(ts) + '</span><span class="lv-tag">[' + escapeHtml2(String(f.type || "?")) + "]</span>" + escapeHtml2(f.label || f.desc || "") + (f.scoring ? " \u2B50" : "") + "</div>";
     }).join("") + "</div>" : '<div class="dt-label-muted">Feed empty.</div>';
     var sp = _stateStoryPoolArr();
     var spBody = sp.length ? '<div class="dt-mono" style="max-height:160px;overflow-y:auto">' + sp.map(function(s) {
-      return '<div class="dt-log-row' + (s.isShown ? " lv-warn" : "") + '"><span class="lv-tag">p' + (s.priority || 0) + '</span><span class="lv-tag">[' + escapeHtml(String(s.type || "?")) + "]</span>" + escapeHtml(s.headline || "") + (s.cooldownRem ? ' <span class="lv-ts">(' + escapeHtml(s.cooldownRem) + ")</span>" : "") + (s.isShown ? " \u25C0 shown" : "") + "</div>";
+      return '<div class="dt-log-row' + (s.isShown ? " lv-warn" : "") + '"><span class="lv-tag">p' + (s.priority || 0) + '</span><span class="lv-tag">[' + escapeHtml2(String(s.type || "?")) + "]</span>" + escapeHtml2(s.headline || "") + (s.cooldownRem ? ' <span class="lv-ts">(' + escapeHtml2(s.cooldownRem) + ")</span>" : "") + (s.isShown ? " \u25C0 shown" : "") + "</div>";
     }).join("") + "</div>" : '<div class="dt-label-muted">Story pool empty.</div>';
     var ctxBody = '<div style="font-size:.65rem">' + _kvList({
       version: ctx.version,
@@ -8044,8 +8063,8 @@
       else if (e.status >= 300) cls += " lv-warn";
       var ms = e.ms != null ? e.ms + "ms" : "-";
       var size = _fmtBytes(e.sizeBytes);
-      var err = e.errorMsg ? '<div style="margin-left:24px;color:#ff6b6b">' + escapeHtml(e.errorMsg) + "</div>" : "";
-      return '<div class="' + cls + '" title="' + escapeHtml(e.url || "") + '"><span class="lv-ts">' + ts + '</span><span class="lv-tag">' + escapeHtml(e.method) + " " + st + '</span><span class="lv-ts">' + ms + " \xB7 " + size + "</span> " + escapeHtml(_shortUrl(e.url)) + err + "</div>";
+      var err = e.errorMsg ? '<div style="margin-left:24px;color:#ff6b6b">' + escapeHtml2(e.errorMsg) + "</div>" : "";
+      return '<div class="' + cls + '" title="' + escapeHtml2(e.url || "") + '"><span class="lv-ts">' + ts + '</span><span class="lv-tag">' + escapeHtml2(e.method) + " " + st + '</span><span class="lv-ts">' + ms + " \xB7 " + size + "</span> " + escapeHtml2(_shortUrl(e.url)) + err + "</div>";
     }).join("");
   }
   function copyNetTraceAsMarkdown() {
@@ -8121,12 +8140,12 @@
       var e = _lsEntry(k);
       var preview;
       if (e.isJson) {
-        preview = '<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml(JSON.stringify(e.parsed, null, 2)) + "</pre></details>";
+        preview = '<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--muted);font-size:.6rem">view JSON</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card);border:1px solid var(--border);border-radius:4px;font-size:.6rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml2(JSON.stringify(e.parsed, null, 2)) + "</pre></details>";
       } else if (e.raw != null) {
         var disp = e.raw.length > 140 ? e.raw.slice(0, 140) + "\u2026" : e.raw;
-        preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">' + escapeHtml(disp) + "</div>";
+        preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">' + escapeHtml2(disp) + "</div>";
       } else preview = '<div style="margin-top:2px;color:var(--muted);font-size:.6rem">(null)</div>';
-      return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">' + escapeHtml(k) + '</span><span class="dt-label-muted">' + _fmtBytes(e.bytes) + '</span><button data-dt-action="clearLsKey" data-ls-key="' + escapeHtml(k) + '" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">\u{1F5D1}</button></div>' + preview + "</div>";
+      return '<div class="dt-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-weight:600;color:var(--text);font-family:ui-monospace,monospace">' + escapeHtml2(k) + '</span><span class="dt-label-muted">' + _fmtBytes(e.bytes) + '</span><button data-dt-action="clearLsKey" data-ls-key="' + escapeHtml2(k) + '" style="background:var(--card);border:1px solid var(--hr-border);color:var(--text);font-size:.6rem;padding:2px 6px;border-radius:4px;cursor:pointer">\u{1F5D1}</button></div>' + preview + "</div>";
     }).join("");
   }
   function clearLsKey(key) {
@@ -8323,7 +8342,7 @@
       return;
     }
     var opts = live.map(function(x) {
-      return '<option value="' + x.pk + '">' + escapeHtml(x.g.awayAbbr + " @ " + x.g.homeAbbr + " \xB7 " + (x.g.halfInning || "") + " " + (x.g.inning || "?") + " \xB7 " + x.g.awayScore + "-" + x.g.homeScore) + "</option>";
+      return '<option value="' + x.pk + '">' + escapeHtml2(x.g.awayAbbr + " @ " + x.g.homeAbbr + " \xB7 " + (x.g.halfInning || "") + " " + (x.g.inning || "?") + " \xB7 " + x.g.awayScore + "-" + x.g.homeScore) + "</option>";
     }).join("");
     var curFocus = typeof state.focusGamePk !== "undefined" && state.focusGamePk ? state.focusGamePk : "";
     body.innerHTML = '<div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F3AF} Force Focus</div><div class="dt-label-muted" style="margin-bottom:6px">Override auto-scoring and pin Focus Mode to a specific live game. Resets via the \u21A9 AUTO pill in the focus card.</div><div style="display:flex;gap:6px;align-items:center"><select id="forceFocusSel" class="dt-input" style="flex:1">' + opts + '</select><button data-dt-action="forceFocusGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Apply</button></div>' + (curFocus ? '<div class="dt-label-muted" style="margin-top:4px">Current focus: gamePk ' + curFocus + "</div>" : "") + '</div><div class="dt-box"><div class="dt-label" style="margin-bottom:6px">\u{1F4D6} Force Inning Recap</div><div class="dt-label-muted" style="margin-bottom:6px">Queues an inning_recap story so it surfaces in the next pool build. Replaces the manual <code>state.inningRecapsPending[\u2026]</code> + <code>buildStoryPool()</code> console workflow.</div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="forceRecapGame" class="dt-input" style="flex:2;min-width:140px">' + opts + '</select><select id="forceRecapHalf" class="dt-input" style="flex:1;min-width:60px"><option value="top">Top</option><option value="bottom">Bottom</option></select><input id="forceRecapInning" type="number" min="1" max="20" placeholder="Inn" class="dt-input" style="flex:0 0 60px"><button data-dt-action="forceRecapGo" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:5px 10px;border-radius:4px;cursor:pointer;font-weight:600">Queue</button></div></div>';
@@ -8509,14 +8528,14 @@
       var ok = r.ok && r.status >= 200 && r.status < 300 && r.itemCount > 0;
       var icon = ok ? "\u2705" : "\u274C";
       var line1 = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:1rem">' + icon + '</span><b style="color:var(--text)">' + k + '</b><span style="color:var(--muted);font-size:.7rem">HTTP ' + (r.status || "?") + " \xB7 " + (r.kind || "?") + " \xB7 " + (r.byteLength || 0) + "b \xB7 " + (r.elapsedMs || 0) + "ms \xB7 " + (r.itemCount || 0) + " items</span></div>";
-      var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml(r.firstTitle).slice(0, 140) + "</div>" : "";
-      var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml(r.error) + "</div>" : "";
-      var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml(r.sample) + "</pre></details>" : "";
+      var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml2(r.firstTitle).slice(0, 140) + "</div>" : "";
+      var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml2(r.error) + "</div>" : "";
+      var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml2(r.sample) + "</pre></details>" : "";
       return '<div style="padding:10px;border-bottom:1px solid var(--border)">' + line1 + line2 + line3 + line4 + "</div>";
     }).join("");
     list.innerHTML = rows;
   }
-  function escapeHtml(s) {
+  function escapeHtml2(s) {
     return String(s).replace(/[&<>"']/g, function(c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
