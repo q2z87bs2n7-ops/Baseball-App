@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.37
+**Current version:** v3.37.2
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -52,7 +52,6 @@ focusCard.js            — runtime dependency: defines window.FocusCard.renderC
 pulse-card-templates.js — runtime dependency: defines window.PulseCard.render()/demo() for HR/RBI card overlays
 daily-events.json       — runtime dependency: static snapshot for client-facing Demo Mode
 collectionCard.js       — runtime dependency: defines window.CollectionCard.renderBook/renderMiniCard/renderRailModule/demo() for Card Collection binder visuals
-demo.html               — non-production design test harness for collectionCard.js; publicly accessible on GitHub Pages but not linked from the app; safe to delete before any merge
 sw.js                   — service worker (PWA caching + push event handling)
 manifest.json           — PWA manifest (install metadata, icons)
 icons/                  — app icons (icon-192.png, icon-512.png, icon-180.png, icon-maskable-512.png, favicon.svg, icon-mono.svg)
@@ -221,7 +220,7 @@ let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by r
 ```
 
 ### Navigation
-`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `home`, `pulse`, `schedule`, `league`, `news`, `standings`, `stats`, `media`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
+`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `pulse`, `home`, `schedule`, `league`, `news`, `standings`, `stats`. Pulse is first and the default-active section. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
 
 `pulse` is lazy-initialised: `initLeaguePulse()` fires only on the first navigation to the section via a `pulseInitialized` guard inside `showSection`. The sound panel click-outside handler is also registered at that point.
 
@@ -260,7 +259,7 @@ let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by r
 - `.matchup-grid` — 3-column grid, repeat(3,1fr), 8px gap. Goes 2-col at 1024px, 1-col at 480px. (League matchups)
 - `.live-grid` — unequal 3-col (1fr 1.2fr 1.4fr). Collapses at 1024px. (Live game view)
 - `.live-card` — card inside `.live-grid`. Has `min-width:0` (required — grid items default to `min-width:auto`, which lets table content push the track wider than `1fr` and break the layout on mobile)
-- `.media-layout` — 25%/75% grid for media tab (video list + player). Collapses to 1-col at 480px.
+- `.media-layout` — 25%/75% grid for the Home YouTube widget (video list + player). Collapses to 1-col at 480px.
 - `.league-leaders-grid` — 2-col grid for league leader panels. Collapses to 1-col at 480px.
 - `.nav-label` — wraps nav button text. Visible at ≤480px at 9.5px (labels: Home/Pulse/Schedule/League/News/Standings/Stats/Media). Hidden at ≤1024px tablet band (icons only).
 - `.team-chip` — static team name pill in header between logo and nav. Shown at ≥481px, hidden at ≤480px. Updated by `applyTeamTheme`. Not a dropdown — no click handler.
@@ -307,6 +306,9 @@ let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by r
 ---
 
 ## CSS Variables Quick Reference
+
+> All variables below are **runtime-computed** — set dynamically by `applyTeamTheme()` and `applyPulseMLBTheme()`. They are not declared in `styles.css`. This table documents their names, purpose, and expected values only.
+
 ```css
 --primary       /* team primary — header, active nav */
 --secondary     /* team accent — highlights, badges, card titles */
@@ -416,6 +418,8 @@ Background is a 3-stop gradient: **opp primary → #111827 50% → active-team c
 **Division Snapshot** — compact standings for active team's division. Source: `/standings`
 
 **Latest News** — top 5 ESPN headlines. Source: ESPN News API
+
+**YouTube Widget** (`#homeYoutubeWidget`) — team's official YouTube channel in a two-panel layout (25% video list / 75% player) at the bottom of the Home tab. Loaded by `loadHomeYoutubeWidget()` which builds the team-colored header and calls `loadMediaFeed(uc)`. First video auto-selected on load. Teams without `youtubeUC` fall back to `MLB_FALLBACK_UC`. **⚠️ Requires deployed URL** — YouTube embeds return Error 153 on `file://`. Source: `/api/proxy-youtube` (Vercel serverless → YouTube channel RSS).
 
 ---
 
@@ -763,15 +767,6 @@ No explicit "mode" needed — the priority + decay math handles adaptation autom
 
 ---
 
-### 📺 Media
-Hidden by default — enabled via the **Media Tab → Show in Navigation** toggle inside the Dev Tools panel. Does not persist across page reloads.
-- Team gradient header, two-panel layout: 25% video list / 75% player
-- Most recent video auto-selected on load
-- Teams without `youtubeUC` fall back to MLB main channel
-- **⚠️ Requires deployed URL** — YouTube embeds return Error 153 on `file://`
-
-Source: YouTube RSS via allorigins.win proxy → 3-attempt retry (1s delay) → DOMParser XML
-
 ---
 
 ### 📰 News
@@ -816,7 +811,6 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **💫 Card Variants** (`Shift+V`) — calls `window.PulseCard.demo()` to cycle through all four HR card template variants
 - **🎴 Test Card** (`Shift+G`) — calls `generateTestCard()` to inject one random player card into the collection; bypasses demo mode guard via `force=true`; pool is `rosterData.hitting` (no pitchers) + hitting leaders from `leagueLeadersCache.hitting` and `dailyLeadersCache` (deduplicated, cross-team colors resolved via TEAMS); falls back to active team roster if leader caches are empty
 - **📽️ Test Clip** (`Shift+W`) — calls `devTestVideoClip()`; opens `#videoOverlay` with a real MLB clip. Fallback chain: `lastVideoClip` (most recent live match) → `yesterdayContentCache` (populated when Yesterday Recap is opened) → fetches yesterday's first game content on the fly
-- **Media Tab → Show in Navigation** — slide toggle; calls `toggleMedia()`; shows/hides the Media nav button and section
 - ~~Push Alerts → Show on Desktop~~ — removed; desktop hide is now CSS-only (`#pushRow { display:none }` at ≥1025px)
 - **⚡ Pulse Tuning** (`<details>` collapsible) — numeric inputs for `devTuning` (do **not** apply on keystroke — require Confirm Changes):
   - *Carousel Rotation (ms)* — `devTuning.rotateMs`; default 4500
@@ -876,8 +870,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `fetchPlayByPlay()` | Fetches `/game/{gamePk}/playByPlay`; renders completed at-bat log grouped by inning half into `#livePlayByPlay`. Scoring plays highlighted. Silent no-op on error. |
 | `closeLiveView()` | Clears refresh interval, hides live view, restores main |
 | `showSection(id, btn)` | Switches sections; calls closeLiveView() first if live view is active |
-| `loadMedia()` | Builds media card HTML, calls loadMediaFeed |
-| `loadMediaFeed(uc)` | Fetches YouTube RSS via allorigins proxy, 3-attempt retry |
+| `loadHomeYoutubeWidget()` | Builds team-colored YouTube header, calls `loadMediaFeed(uc)`; replaced old `loadMedia()` when Media tab was folded into Home section |
+| `loadMediaFeed(uc)` | Fetches YouTube channel RSS via `/api/proxy-youtube`, populates `mediaVideos[]`, auto-selects first video; serves the Home YouTube widget |
 | `gameGradient(g)` | Returns inline style string for two-team colour gradient (away primary → #111827 → home primary). Used by `renderGameBig` (schedule/history cards). **Not** used by `renderNextGame` — that card builds its own layout-aware gradient so opponent is always left and active team always right. |
 | `hueOf(hex)` | Extracts HSL hue (0–360) from a hex colour string |
 | `hslHex(h, s, l)` | Converts HSL values to hex colour string |
@@ -1270,9 +1264,6 @@ if (!demoMode) {
 
 **`#videoOverlay`** — top-level sibling of all other overlays. z-index: 800 (above `#playerCardOverlay` 600, `#focusOverlay` 700 — intentionally highest non-modal overlay so it covers the feed when open). Contains `#videoOverlayTitle` (clip headline) and `#videoOverlayPlayer` (`<video controls>`). Opened by `openVideoOverlay(url, title)`, closed by `closeVideoOverlay()` or backdrop click. Never auto-opens — always user-initiated via ▶ button on feed item or ▶ WATCH pill on story card.
 
-### demo.html
-
-`demo.html` at repo root is a non-production design test harness for `collectionCard.js` visuals. It is publicly accessible on GitHub Pages but not linked from the app. It can be deleted before merging to main if desired — it is not referenced by `index.html`, `sw.js`, or `manifest.json`.
 
 ---
 
@@ -1285,7 +1276,7 @@ Background terrestrial sports-radio audio that auto-pairs to the user's currentl
 Whether a team's flagship feed plays in 📻 Live Game Radio is controlled by **one place**:
 
 ```javascript
-// app.js ~line 4059
+// app.js ~line 4431
 const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
 ```
 
@@ -1451,7 +1442,7 @@ Date: YYYY-MM-DD
 2. ▶ test each station, mark ✅/❌, add notes (e.g. "plays ads from first pitch")
 3. 📋 Copy Results
 4. Paste into a Claude session
-5. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`index.html` ~line 4198) — add `teamId`s for newly-verified ✅ stations, remove any newly-failing ❌ ones
+5. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`app.js` ~line 4431) — add `teamId`s for newly-verified ✅ stations, remove any newly-failing ❌ ones
 6. Update the comment "last updated YYYY-MM-DD"
 7. Bump `<title>` + settings panel version + `sw.js` CACHE
 8. Commit + push to `claude/focus-mode-team-radio` (or current radio branch)
