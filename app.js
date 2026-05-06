@@ -2905,7 +2905,16 @@ async function pollPendingVideoClips() {
         return v==='statcast'||v==='savant';
       });
     }
-    var broadcastClips=clips.filter(function(c){return !isStatcast(c);});
+    // Exclude ABS challenge clips — they carry the batter's player_id but are pitch-review
+    // overlays, not batting highlight replays. Their timestamps fall before the actual hit
+    // clip, causing nearest-timestamp matching to pick them over the correct clip.
+    function isABSChallenge(clip){
+      var tax=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';});
+      var hasAbs=tax.some(function(kw){return (kw.value||kw.slug||'').toLowerCase()==='abs';});
+      var hasChallenge=tax.some(function(kw){return (kw.value||kw.slug||'').toLowerCase()==='challenge';});
+      return hasAbs&&hasChallenge;
+    }
+    var broadcastClips=clips.filter(function(c){return !isStatcast(c)&&!isABSChallenge(c);});
     // Prefer clips tagged home-run / scoring-play / walk-off (API uses hyphens, not underscores).
     var scoringClips=broadcastClips.filter(function(clip){
       return (clip.keywordsAll||[]).some(function(kw){
