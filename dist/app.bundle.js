@@ -91,6 +91,7 @@
   var WC_SPOTS = 3;
   var MLB_BASE = "https://statsapi.mlb.com/api/v1";
   var MLB_BASE_V1_1 = "https://statsapi.mlb.com/api/v1.1";
+  var API_BASE = "https://baseball-app-sigma.vercel.app";
   var TEAMS = [
     { id: 121, espnId: 21, name: "New York Mets", short: "Mets", division: "National League East", league: "NL", primary: "#002D72", secondary: "#FF5910", youtubeUC: "UCgIMbGazP0uBDy9JVCqBUaA" },
     { id: 144, espnId: 15, name: "Atlanta Braves", short: "Braves", division: "National League East", league: "NL", primary: "#CE1141", secondary: "#13274F", youtubeUC: "UCNWnkblY5_kmf4OQ9l0LgnA" },
@@ -231,6 +232,73 @@
       } catch (e) {
         console.warn("Wake lock release failed:", e);
       }
+    }
+  }
+
+  // src/push/push.js
+  var VAPID_PUBLIC_KEY = "BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE";
+  function urlBase64ToUint8Array(b64) {
+    var pad = "=".repeat((4 - b64.length % 4) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+  async function subscribeToPush() {
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+      await fetch((API_BASE || "") + "/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub)
+      });
+      localStorage.setItem("mlb_push", "1");
+      document.getElementById("pushStatusText").textContent = "On";
+    } catch (err) {
+      document.getElementById("pushToggle").style.background = "var(--border)";
+      document.getElementById("pushToggleKnob").style.left = "3px";
+      document.getElementById("pushStatusText").textContent = "Permission Denied";
+    }
+  }
+  async function unsubscribeFromPush() {
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await sub.unsubscribe();
+        await fetch((API_BASE || "") + "/api/subscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: sub.endpoint })
+        });
+      }
+    } catch (e) {
+    }
+    localStorage.removeItem("mlb_push");
+    document.getElementById("pushStatusText").textContent = "Off";
+  }
+  function togglePush() {
+    var tog = document.getElementById("pushToggle");
+    var knob = document.getElementById("pushToggleKnob");
+    var enabled = localStorage.getItem("mlb_push") === "1";
+    if (!enabled) {
+      if (!("serviceWorker" in navigator && "PushManager" in window)) {
+        document.getElementById("pushStatusText").textContent = "Not Supported On This Browser";
+        return;
+      }
+      if (!VAPID_PUBLIC_KEY) {
+        document.getElementById("pushStatusText").textContent = "Push Not Configured Yet";
+        return;
+      }
+      tog.style.background = "var(--secondary)";
+      knob.style.left = "21px";
+      subscribeToPush();
+    } else {
+      tog.style.background = "var(--border)";
+      knob.style.left = "3px";
+      unsubscribeFromPush();
     }
   }
 
@@ -8777,59 +8845,6 @@
     var cached = leagueLeadersCache[tab], stats = tab === "hitting" ? LEAGUE_HIT_STATS : LEAGUE_PIT_STATS;
     if (cached && Object.keys(cached).length) renderLeagueLeaders(cached, stats);
     else loadLeagueLeaders();
-  }
-  var API_BASE = "https://baseball-app-sigma.vercel.app";
-  var VAPID_PUBLIC_KEY = "BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE";
-  function urlBase64ToUint8Array(b64) {
-    var pad = "=".repeat((4 - b64.length % 4) % 4), raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
-    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
-  }
-  async function subscribeToPush() {
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
-      await fetch((API_BASE || "") + "/api/subscribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sub) });
-      localStorage.setItem("mlb_push", "1");
-      document.getElementById("pushStatusText").textContent = "On";
-    } catch (err) {
-      document.getElementById("pushToggle").style.background = "var(--border)";
-      document.getElementById("pushToggleKnob").style.left = "3px";
-      document.getElementById("pushStatusText").textContent = "Permission Denied";
-    }
-  }
-  async function unsubscribeFromPush() {
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        await sub.unsubscribe();
-        await fetch((API_BASE || "") + "/api/subscribe", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) });
-      }
-    } catch (e) {
-    }
-    localStorage.removeItem("mlb_push");
-    document.getElementById("pushStatusText").textContent = "Off";
-  }
-  function togglePush() {
-    var tog = document.getElementById("pushToggle"), knob = document.getElementById("pushToggleKnob");
-    var enabled = localStorage.getItem("mlb_push") === "1";
-    if (!enabled) {
-      if (!("serviceWorker" in navigator && "PushManager" in window)) {
-        document.getElementById("pushStatusText").textContent = "Not Supported On This Browser";
-        return;
-      }
-      if (!VAPID_PUBLIC_KEY) {
-        document.getElementById("pushStatusText").textContent = "Push Not Configured Yet";
-        return;
-      }
-      tog.style.background = "var(--secondary)";
-      knob.style.left = "21px";
-      subscribeToPush();
-    } else {
-      tog.style.background = "var(--border)";
-      knob.style.left = "3px";
-      unsubscribeFromPush();
-    }
   }
   (async function() {
     var sv = function(k) {

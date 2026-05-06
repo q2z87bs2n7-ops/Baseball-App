@@ -7,6 +7,10 @@ export const WC_SPOTS = 3;
 export const MLB_BASE = 'https://statsapi.mlb.com/api/v1';
 export const MLB_BASE_V1_1 = 'https://statsapi.mlb.com/api/v1.1';
 
+// Vercel-hosted serverless functions (push subscribe/unsubscribe, RSS proxies,
+// YouTube proxy, collection sync, OAuth flow, news aggregator).
+export const API_BASE = 'https://baseball-app-sigma.vercel.app';
+
 export const TEAMS = [
   {id:121,espnId:21,name:'New York Mets',short:'Mets',division:'National League East',league:'NL',primary:'#002D72',secondary:'#FF5910',youtubeUC:'UCgIMbGazP0uBDy9JVCqBUaA'},
   {id:144,espnId:15,name:'Atlanta Braves',short:'Braves',division:'National League East',league:'NL',primary:'#CE1141',secondary:'#13274F',youtubeUC:'UCNWnkblY5_kmf4OQ9l0LgnA'},

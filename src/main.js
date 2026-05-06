@@ -5,7 +5,7 @@
 import { DEV_LOG_CAP, devLog, pushDevLog, devTrace } from './diag/devLog.js';
 import { DEV_NET_CAP, devNetLog } from './diag/devNet.js';
 import {
-  SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1,
+  SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1, API_BASE,
   TEAMS, MLB_THEME,
   NEWS_SOURCE_LABELS, NEWS_SOURCE_ICONS,
   TIMING,
@@ -15,6 +15,10 @@ import {
 } from './utils/format.js';
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from './utils/news.js';
 import { requestScreenWakeLock, releaseScreenWakeLock } from './ui/wakelock.js';
+import {
+  VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
+  subscribeToPush, unsubscribeFromPush, togglePush,
+} from './push/push.js';
 
 const DEBUG=false; // Set true locally to enable verbose console logging
 devTrace('boot','app.js loaded · '+new Date().toISOString());
@@ -6821,48 +6825,9 @@ async function loadLeagueLeaders(){var el=document.getElementById('leagueLeaders
 function renderLeagueLeaders(leaderMap,stats){var el=document.getElementById('leagueLeaders'),html='<div class="league-leaders-grid">';stats.forEach(function(s){var leaders=leaderMap[s.cats]||[];html+='<div class="leader-stat-card"><div class="leader-stat-label">'+s.label+'</div>';if(!leaders.length)html+='<div class="empty-state" style="padding:6px;font-size:.8rem">No data</div>';leaders.slice(0,10).forEach(function(l,i){var val=l.value;if(val!=null){var n=parseFloat(val);if(!isNaN(n))val=s.noLeadZero&&n>0&&n<1?n.toFixed(s.decimals).slice(1):n.toFixed(s.decimals);}html+='<div class="leader-row"><div class="leader-row-left"><span class="leader-rank">'+(i+1)+'</span><span class="leader-name">'+((l.person&&l.person.fullName)||'—')+'</span></div><span class="leader-val">'+val+'</span></div>';});html+='</div>';});el.innerHTML=html+'</div>';}
 function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementById('leagueHitTab').classList.toggle('active',tab==='hitting');document.getElementById('leaguePitTab').classList.toggle('active',tab==='pitching');var cached=leagueLeadersCache[tab],stats=tab==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS;if(cached&&Object.keys(cached).length)renderLeagueLeaders(cached,stats);else loadLeagueLeaders();}
 
-const API_BASE='https://baseball-app-sigma.vercel.app';
-const VAPID_PUBLIC_KEY='BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE';
-
-function urlBase64ToUint8Array(b64){var pad='='.repeat((4-b64.length%4)%4),raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
-
-async function subscribeToPush(){
-  try{
-    var reg=await navigator.serviceWorker.ready;
-    var sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
-    await fetch((API_BASE||'')+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});
-    localStorage.setItem('mlb_push','1');
-    document.getElementById('pushStatusText').textContent='On';
-  }catch(err){
-    document.getElementById('pushToggle').style.background='var(--border)';
-    document.getElementById('pushToggleKnob').style.left='3px';
-    document.getElementById('pushStatusText').textContent='Permission Denied';
-  }
-}
-
-async function unsubscribeFromPush(){
-  try{
-    var reg=await navigator.serviceWorker.ready;
-    var sub=await reg.pushManager.getSubscription();
-    if(sub){await sub.unsubscribe();await fetch((API_BASE||'')+'/api/subscribe',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint:sub.endpoint})});}
-  }catch(e){}
-  localStorage.removeItem('mlb_push');
-  document.getElementById('pushStatusText').textContent='Off';
-}
-
-function togglePush(){
-  var tog=document.getElementById('pushToggle'),knob=document.getElementById('pushToggleKnob');
-  var enabled=localStorage.getItem('mlb_push')==='1';
-  if(!enabled){
-    if(!('serviceWorker' in navigator&&'PushManager' in window)){document.getElementById('pushStatusText').textContent='Not Supported On This Browser';return;}
-    if(!VAPID_PUBLIC_KEY){document.getElementById('pushStatusText').textContent='Push Not Configured Yet';return;}
-    tog.style.background='var(--secondary)';knob.style.left='21px';
-    subscribeToPush();
-  }else{
-    tog.style.background='var(--border)';knob.style.left='3px';
-    unsubscribeFromPush();
-  }
-}
+// Push notification module (VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
+// subscribeToPush, unsubscribeFromPush, togglePush) imported from
+// ./push/push.js. API_BASE moved to ./config/constants.js.
 
 (async function(){
   var sv=function(k){return localStorage.getItem(k);};
