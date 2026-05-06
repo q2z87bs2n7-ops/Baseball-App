@@ -3036,20 +3036,32 @@
       var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml2(r.firstTitle).slice(0, 140) + "</div>" : "";
       var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml2(r.error) + "</div>" : "";
       var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml2(r.sample) + "</pre></details>" : "";
-      return '<div style="padding:10px;border-bottom:1px solid var(--border)">' + line1 + line2 + line3 + line4 + "</div>";
+      var line5 = r.firstItemSample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:#8ad">first item / article (full)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto">' + escapeHtml2(r.firstItemSample) + "</pre></details>" : "";
+      return '<div style="padding:10px;border-bottom:1px solid var(--border)">' + line1 + line2 + line3 + line4 + line5 + "</div>";
     }).join("");
     html += rows;
     if (carouselDone) {
-      html += '<div style="padding:10px;border-bottom:2px solid var(--border);background:var(--card2);margin-top:10px"><b style="color:var(--text)">News Carousel Articles</b></div>';
+      html += '<div style="padding:10px;border-bottom:2px solid var(--border);background:var(--card2);margin-top:10px"><b style="color:var(--text)">News Pool (proxy-news \u2192 News tab + Home card)</b></div>';
       if (carouselDiagnostics.pending) {
-        html += '<div style="padding:10px;border-bottom:1px solid var(--border);color:var(--muted)">\u23F3 Loading carousel articles\u2026</div>';
+        html += '<div style="padding:10px;border-bottom:1px solid var(--border);color:var(--muted)">\u23F3 Loading\u2026</div>';
       } else if (carouselDiagnostics.error) {
         html += '<div style="padding:10px;border-bottom:1px solid var(--border);color:#e03030"><b>Error:</b> ' + escapeHtml2(carouselDiagnostics.error) + "</div>";
       } else if (!carouselDiagnostics.articles || !carouselDiagnostics.articles.length) {
         html += '<div style="padding:10px;border-bottom:1px solid var(--border);color:var(--muted)">No articles returned</div>';
       } else {
+        if (carouselDiagnostics.bySource) {
+          var summaryRows = Object.keys(carouselDiagnostics.bySource).sort().map(function(src) {
+            var s = carouselDiagnostics.bySource[src];
+            var pct = s.total ? Math.round(100 * s.withImage / s.total) : 0;
+            var color = pct >= 80 ? "#22c55e" : pct >= 40 ? "#e0a040" : "#ff6b6b";
+            return '<tr><td style="padding:3px 8px"><b>' + escapeHtml2(src) + '</b></td><td style="padding:3px 8px">' + s.total + ' items</td><td style="padding:3px 8px;color:' + color + '">' + s.withImage + " w/ image (" + pct + '%)</td><td style="padding:3px 8px;color:var(--muted)">' + s.withSafeImage + " pass safe-list</td></tr>";
+          }).join("");
+          html += '<div style="padding:10px;border-bottom:1px solid var(--border);font-size:.7rem"><div style="margin-bottom:6px"><b>Pool: ' + carouselDiagnostics.totalCount + ' articles</b> \xB7 per-source image extraction:</div><table style="width:100%;border-collapse:collapse;font-size:.68rem">' + summaryRows + "</table></div>";
+        }
+        html += '<div style="padding:10px;border-bottom:1px solid var(--border);background:var(--card2);font-size:.7rem;color:var(--muted)">First 10 articles (newest by pubDate):</div>';
         carouselDiagnostics.articles.forEach(function(a, i) {
           var headline = escapeHtml2(a.headline || a.title || "(no headline)");
+          var srcTag = a.source ? '<span style="display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:0 6px;font-size:.6rem;color:var(--muted);margin-right:6px">' + escapeHtml2(a.source) + "</span>" : "";
           var imageLine = "";
           if (a.image) {
             var safe = a.imageSafe ? "\u2705" : "\u274C";
@@ -3060,7 +3072,7 @@
           } else {
             imageLine = '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)"><b>Image:</b> (none)</div>';
           }
-          html += '<div style="padding:10px;border-bottom:1px solid var(--border)"><div style="font-size:.8rem;color:var(--text);margin-bottom:2px">' + (i + 1) + ". " + headline.slice(0, 100) + "</div>" + imageLine + "</div>";
+          html += '<div style="padding:10px;border-bottom:1px solid var(--border)"><div style="font-size:.8rem;color:var(--text);margin-bottom:2px">' + (i + 1) + ". " + srcTag + headline.slice(0, 100) + "</div>" + imageLine + "</div>";
         });
         if (carouselDiagnostics.allowlistSource) {
           html += '<div style="padding:10px;border-bottom:1px solid var(--border);font-size:.65rem;color:var(--muted)"><b>Allowlist regex:</b> <code style="word-break:break-all">' + escapeHtml2(carouselDiagnostics.allowlistSource) + "</code></div>";
@@ -3108,8 +3120,23 @@
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     }).then(function(d) {
-      var articles = Array.isArray(d.articles) ? d.articles.slice(0, 10) : [];
+      var allArticles = Array.isArray(d.articles) ? d.articles : [];
+      var bySource = {};
+      allArticles.forEach(function(a) {
+        var src = a.source || "(unknown)";
+        if (!bySource[src]) bySource[src] = { total: 0, withImage: 0, withSafeImage: 0, exampleNoImage: null };
+        bySource[src].total += 1;
+        if (a.image) {
+          bySource[src].withImage += 1;
+          if (isSafeNewsImage(a.image)) bySource[src].withSafeImage += 1;
+        } else if (!bySource[src].exampleNoImage) {
+          bySource[src].exampleNoImage = { title: a.title || a.headline || "", link: a.link || "" };
+        }
+      });
+      var articles = allArticles.slice(0, 10);
       carouselDiagnostics = {
+        totalCount: allArticles.length,
+        bySource,
         articles: articles.map(function(a) {
           var img = a.image || null;
           var imgDomain = null;
@@ -3137,6 +3164,7 @@
             }
           }
           return {
+            source: a.source || "(unknown)",
             headline: a.headline || a.title || null,
             image: img,
             imageDomain: imgDomain,
@@ -3179,21 +3207,44 @@
           lines.push("    " + ln);
         });
       }
+      if (r.firstItemSample) {
+        lines.push("  first item / article (full):");
+        r.firstItemSample.split("\n").forEach(function(ln) {
+          lines.push("    " + ln);
+        });
+      }
       lines.push("");
     });
     lines.push("");
-    lines.push("\u2500\u2500\u2500 News Carousel Articles \u2500\u2500\u2500");
+    lines.push("\u2500\u2500\u2500 News Pool (proxy-news \u2192 News tab + Home card) \u2500\u2500\u2500");
     if (carouselDiagnostics) {
       if (carouselDiagnostics.error) {
         lines.push("Error: " + carouselDiagnostics.error);
       } else if (carouselDiagnostics.articles && carouselDiagnostics.articles.length) {
+        lines.push("Total articles: " + (carouselDiagnostics.totalCount || carouselDiagnostics.articles.length));
+        if (carouselDiagnostics.bySource) {
+          lines.push("");
+          lines.push("Per-source image extraction:");
+          Object.keys(carouselDiagnostics.bySource).sort().forEach(function(src) {
+            var s = carouselDiagnostics.bySource[src];
+            var pct = s.total ? Math.round(100 * s.withImage / s.total) : 0;
+            lines.push("  " + src.padEnd(12) + " total=" + s.total + "  withImage=" + s.withImage + " (" + pct + "%)  passSafe=" + s.withSafeImage);
+            if (s.exampleNoImage && s.exampleNoImage.title) {
+              lines.push("    example with no image: " + s.exampleNoImage.title);
+              if (s.exampleNoImage.link) lines.push("      " + s.exampleNoImage.link);
+            }
+          });
+        }
+        lines.push("");
+        lines.push("First 10 articles:");
         carouselDiagnostics.articles.forEach(function(a, i) {
           lines.push("");
-          lines.push("[" + (i + 1) + "] " + (a.headline || "(no headline)"));
+          lines.push("[" + (i + 1) + "] [" + (a.source || "?") + "] " + (a.headline || "(no headline)"));
           if (a.image) {
             lines.push("  image: " + a.image);
             lines.push("  domain: " + (a.imageDomain || "?"));
             lines.push("  safe (passes isSafeNewsImage): " + (a.imageSafe ? "YES" : "NO"));
+            if (a.safeReason) lines.push("  reason: " + a.safeReason);
             if (a.image !== (a.imageAfterHttps || a.image)) {
               lines.push("  forceHttps: " + a.image + " \u2192 " + a.imageAfterHttps);
             }
