@@ -8,6 +8,11 @@ import {
   loadProbablePitcherStats, fetchMissingHRBatterStats, loadTransactionsCache, loadHighLowCache, loadDailyLeaders, loadLiveWPCache
 } from './generators.js';
 
+let rotationCallbacks = { refreshDebugPanel: null };
+function setRotationCallbacks(callbacks) {
+  Object.assign(rotationCallbacks, callbacks);
+}
+
 async function buildStoryPool(){
   var now=Date.now();
   if(now-state.dailyLeadersLastFetch>5*60000){loadDailyLeaders();state.dailyLeadersLastFetch=now;}
@@ -64,7 +69,7 @@ function showStoryCard(story){
   story.lastShown=new Date(); state.storyShownId=story.id;
   state.displayedStoryIds.add(story.id);
   renderStoryCard(story); updateStoryDots();
-  refreshDebugPanel();
+  if(rotationCallbacks.refreshDebugPanel) rotationCallbacks.refreshDebugPanel();
 }
 
 function renderStoryCard(story){
@@ -107,4 +112,4 @@ function onStoryVisibilityChange(){
   else if(state.pulseInitialized&&state.storyPool.length){rotateStory();state.storyRotateTimer=setInterval(rotateStory,state.devTuning.rotateMs);}
 }
 
-export { buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots, prevStory, nextStory, onStoryVisibilityChange };
+export { setRotationCallbacks, buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots, prevStory, nextStory, onStoryVisibilityChange };

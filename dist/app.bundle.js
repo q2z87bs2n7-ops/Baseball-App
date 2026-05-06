@@ -2576,6 +2576,10 @@
   }
 
   // src/carousel/rotation.js
+  var rotationCallbacks = { refreshDebugPanel: null };
+  function setRotationCallbacks(callbacks) {
+    Object.assign(rotationCallbacks, callbacks);
+  }
   async function buildStoryPool() {
     var now = Date.now();
     if (now - state.dailyLeadersLastFetch > 5 * 6e4) {
@@ -2673,7 +2677,7 @@
     state.displayedStoryIds.add(story.id);
     renderStoryCard(story);
     updateStoryDots();
-    refreshDebugPanel();
+    if (rotationCallbacks.refreshDebugPanel) rotationCallbacks.refreshDebugPanel();
   }
   function renderStoryCard(story) {
     var el = document.getElementById("storyCard");
@@ -2863,6 +2867,7 @@
   }
   function initReal() {
     setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore, localDateStr, getEffectiveDate, tcLookup });
+    setRotationCallbacks({ refreshDebugPanel });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -3089,7 +3094,7 @@
       renderSideRailGames();
       pollPendingVideoClips();
       selectFocusGame();
-      refreshDebugPanel2();
+      refreshDebugPanel();
       var live = Object.values(state.gameStates).filter(function(g) {
         return g.status === "Live" && g.detailedState === "In Progress";
       }).length;
@@ -3327,7 +3332,7 @@
   }
   function updateInningStates() {
   }
-  function refreshDebugPanel2() {
+  function refreshDebugPanel() {
     var panel = document.getElementById("debugPanel");
     if (!panel) return;
     var now = Date.now();
@@ -6938,7 +6943,7 @@
       } else if (action === "capturePulse") {
         captureCurrentTheme("pulse");
       } else if (action === "refreshDebug") {
-        refreshDebugPanel2();
+        refreshDebugPanel();
       } else if (action === "copyLog") {
         copyLogAsMarkdown();
       } else if (action === "clearLog") {

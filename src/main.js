@@ -37,7 +37,7 @@ import {
   openFocusOverlay, closeFocusOverlay, renderFocusOverlay, dismissFocusAlert,
 } from './focus/mode.js';
 import {
-  buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots,
+  setRotationCallbacks, buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots,
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
 import {
@@ -120,6 +120,7 @@ function initLeaguePulse() {
 }
 function initReal() {
   setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore, localDateStr: localDateStr, getEffectiveDate: getEffectiveDate, tcLookup: tcLookup });
+  setRotationCallbacks({ refreshDebugPanel: refreshDebugPanel });
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
   // Midnight window: at 0–5am local, seed state.pollDateStr to yesterday so West Coast games are found
