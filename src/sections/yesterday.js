@@ -15,6 +15,10 @@ import { loadCollection, tierRank, fetchCareerStats } from '../collection/book.j
 
 let ydPrevSection = null;
 
+function forceHttps(url) {
+  return url?url.replace(/^http:/,'https:'):url;
+}
+
 // Kept for backward compat; collection helpers now imported directly.
 export function setYesterdayCallbacks(cbs) {}
 
@@ -376,8 +380,9 @@ function buildAndRenderYesterdayHeroes() {
   var tiles=heroes.map(function(h){
     var lbl=typeof roleLabel[h.role]==='function'?roleLabel[h.role](h):roleLabel[h.role];
     var lastName=h.playerName?h.playerName.split(' ').pop():h.playerName;
+    var heroUrl=h.imageUrl?forceHttps(h.imageUrl):'';
     return '<div onclick="scrollToYdTile('+h.gamePk+')" style="cursor:pointer;flex-shrink:0;width:110px;position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border)">'
-      +'<img src="'+h.imageUrl+'" style="width:110px;height:74px;object-fit:cover;display:block" loading="lazy">'
+      +'<img src="'+heroUrl+'" style="width:110px;height:74px;object-fit:cover;display:block" loading="lazy" onerror="this.style.display=\'none\'">'
       +'<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.82));padding:4px 6px">'
       +'<div style="font-size:.58rem;font-weight:700;color:#f59e0b;letter-spacing:.06em">'+lbl+'</div>'
       +'<div style="font-size:.68rem;font-weight:700;color:#fff">'+lastName+'</div>'
@@ -421,10 +426,11 @@ function renderHighlightStrip(items, gamePk) {
   var item=items[0];
   if(!item) return '';
   var imgUrl=pickHeroImage(item)||'';
+  var safeUrl=imgUrl?forceHttps(imgUrl):'';
   var title=(item.headline||item.blurb||'Game Highlight').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return '<div class="yd-game-thumb" onclick="playYesterdayClip('+JSON.stringify(gamePk)+',0)">'
-    +(imgUrl
-      ?'<img src="'+imgUrl+'" loading="lazy" alt="">'
+    +(safeUrl
+      ?'<img src="'+safeUrl+'" loading="lazy" alt="" onerror="this.style.display=\'none\'">'
       :'<div style="width:100%;height:140px;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem">▶</div>')
     +'<div class="yd-game-thumb-play"><span>▶</span></div>'
     +'<div class="yd-game-thumb-label">'+title+'</div>'
