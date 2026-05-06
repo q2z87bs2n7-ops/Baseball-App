@@ -30,10 +30,12 @@ function renderPulseNewsCard() {
     var imgUrl=forceHttps(article.image);
     img='<img src="'+imgUrl+'" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block" onerror="this.style.display=\'none\'">';
   }
+  var headline=article.headline||article.title||'News';
+  var pubDate=article.pubDate||article.published||article.publishedAt||'';
   var html='<div style="padding:12px;display:flex;flex-direction:column;gap:8px">'
     +img
-    +'<div style="font-size:.8rem;font-weight:600;color:var(--text);line-height:1.35">'+article.headline+'</div>'
-    +'<div style="font-size:.65rem;color:var(--muted)">'+fmtNewsDate(article.pubDate)+'</div>'
+    +'<div style="font-size:.8rem;font-weight:600;color:var(--text);line-height:1.35">'+headline+'</div>'
+    +(pubDate?'<div style="font-size:.65rem;color:var(--muted)">'+fmtNewsDate(pubDate)+'</div>':'')
     +'</div>';
   container.innerHTML=html;
 }
