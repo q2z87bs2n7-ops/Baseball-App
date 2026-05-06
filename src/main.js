@@ -16,6 +16,10 @@ import {
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from './utils/news.js';
 import { requestScreenWakeLock, releaseScreenWakeLock } from './ui/wakelock.js';
 import {
+  soundSettings, playSound, setSoundPref,
+  toggleSoundPanel, onSoundPanelClickOutside,
+} from './ui/sound.js';
+import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
 } from './push/push.js';
@@ -60,7 +64,7 @@ let gameStates={},feedItems=[],enabledGames=new Set();
 let myTeamLens=(localStorage.getItem('mlb_my_team_lens')==='1');
 let countdownTimer=null,pulseTimer=null,isFirstPoll=true,pollDateStr=null;
 let pulseAbortCtrl=null,focusAbortCtrl=null,liveAbortCtrl=null;
-let soundSettings={master:false,hr:true,run:true,risp:true,dp:true,tp:true,gameStart:true,gameEnd:true,error:true};
+// soundSettings imported from ./ui/sound.js (hydrated from localStorage on import)
 // screenWakeLock state encapsulated inside ./ui/wakelock.js
 
 // ── Session Storage & Sync globals ────────────────────────────────────────────
@@ -4261,7 +4265,7 @@ function confirmDevToolsChanges(){
   btn.textContent='✓ Applied!';btn.classList.add('applied');
   setTimeout(function(){btn.textContent='Confirm Changes';btn.classList.remove('applied');},1500);
 }
-function toggleSoundPanel(){var p=document.getElementById('soundPanel');p.style.display=p.style.display==='none'?'':'none';}
+// toggleSoundPanel imported from ./ui/sound.js
 // MLB Stats API teamId → primary flagship radio broadcast (extracted from radio.net)
 // `format`: 'hls' uses Hls.js (or native Safari); 'direct' is plain <audio> AAC/MP3
 const MLB_TEAM_RADIO={
@@ -5710,25 +5714,8 @@ function toggleColorLock(enable){
   document.getElementById('lockThemeToggle').checked=devColorLocked;
 }
 
-function setSoundPref(key,val){soundSettings[key]=val;if(key==='master')document.getElementById('soundRows').classList.toggle('master-off',!val);localStorage.setItem('mlb_sound_settings',JSON.stringify(soundSettings));}
-function playSound(type){
-  if (!soundSettings.master||!soundSettings[type]) return;
-  if(type==='hr')playHrSound();else if(type==='run')playRunSound();else if(type==='risp')playRispSound();
-  else if(type==='dp')playDpSound();else if(type==='tp')playTpSound();
-  else if(type==='gameStart')playGameStartSound();else if(type==='gameEnd')playGameEndSound();else if(type==='error')playErrorSound();
-}
-function _makeCtx(){return new(window.AudioContext||window.webkitAudioContext)();}
-function _closeCtx(ctx,dur){setTimeout(function(){try{ctx.close();}catch(e){};},(dur+0.6)*1000);}
-function _osc(ctx,freq,t0,dur,vol,wave,attack){var osc=ctx.createOscillator(),g=ctx.createGain();osc.connect(g);g.connect(ctx.destination);osc.type=wave||'sine';osc.frequency.value=freq;var at=ctx.currentTime+t0,att=attack||0.005;g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+att);g.gain.exponentialRampToValueAtTime(0.0001,at+dur);osc.start(at);osc.stop(at+dur+0.05);}
-function _ns(ctx,t0,dur,vol,attack,filterType,filterFreq,filterQ){var len=Math.ceil(ctx.sampleRate*(dur+0.1)),buf=ctx.createBuffer(1,len,ctx.sampleRate),d=buf.getChannelData(0);for(var i=0;i<len;i++)d[i]=Math.random()*2-1;var src=ctx.createBufferSource();src.buffer=buf;var filt=ctx.createBiquadFilter();filt.type=filterType||'bandpass';filt.frequency.value=filterFreq||1000;filt.Q.value=filterQ!==undefined?filterQ:1;var g=ctx.createGain();src.connect(filt);filt.connect(g);g.connect(ctx.destination);var at=ctx.currentTime+t0,att=attack||0.003;g.gain.setValueAtTime(0.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+att);g.gain.exponentialRampToValueAtTime(0.0001,at+dur);src.start(at);src.stop(at+dur+0.05);}
-function playHrSound(){try{var ctx=_makeCtx();_ns(ctx,0,0.07,0.32,0.001,'highpass',2200,0.8);_ns(ctx,0,0.05,0.22,0.001,'bandpass',900,3.0);_osc(ctx,140,0,0.06,0.18,'sine',0.001);_ns(ctx,0.05,0.90,0.09,0.08,'lowpass',300,1.0);_closeCtx(ctx,1.2);}catch(e){}}
-function playRunSound(){try{var ctx=_makeCtx();_osc(ctx,523,0,0.55,0.18,'sine');_osc(ctx,659,0.15,0.50,0.18,'sine');_osc(ctx,784,0.30,0.60,0.18,'sine');_closeCtx(ctx,1.0);}catch(e){}}
-function playRispSound(){try{var ctx=_makeCtx();_ns(ctx,0,0.10,0.20,0.003,'lowpass',180,2.0);_ns(ctx,0.13,0.14,0.16,0.004,'lowpass',220,1.5);_closeCtx(ctx,0.4);}catch(e){}}
-function playDpSound(){try{var ctx=_makeCtx();_ns(ctx,0,0.06,0.28,0.001,'bandpass',750,5);_ns(ctx,0.10,0.06,0.28,0.001,'bandpass',750,5);_closeCtx(ctx,0.4);}catch(e){}}
-function playTpSound(){try{var ctx=_makeCtx();_osc(ctx,392,0,0.12,0.17,'triangle');_osc(ctx,523,0.11,0.12,0.17,'triangle');_osc(ctx,659,0.22,0.12,0.17,'triangle');_osc(ctx,784,0.33,0.32,0.17,'triangle');_closeCtx(ctx,0.8);}catch(e){}}
-function playGameStartSound(){try{var ctx=_makeCtx();_osc(ctx,523,0,0.14,0.16,'triangle');_osc(ctx,587,0.13,0.14,0.16,'triangle');_osc(ctx,659,0.26,0.14,0.16,'triangle');_osc(ctx,784,0.39,0.38,0.16,'triangle');_closeCtx(ctx,1.0);}catch(e){}}
-function playGameEndSound(){try{var ctx=_makeCtx();_osc(ctx,784,0,0.65,0.15,'sine');_osc(ctx,659,0.38,0.65,0.15,'sine');_osc(ctx,523,0.76,0.80,0.15,'sine');_closeCtx(ctx,1.8);}catch(e){}}
-function playErrorSound(){try{var ctx=_makeCtx();_ns(ctx,0,0.18,0.22,0.003,'lowpass',160,1.5);_osc(ctx,130,0.02,0.16,0.10,'sine');_closeCtx(ctx,0.5);}catch(e){}}
+// Sound system (setSoundPref, playSound, audio primitives, per-event sounds)
+// imported from ./ui/sound.js
 
 // fmt, fmtRate, fmtDateTime imported from ./utils/format.js
 function capImgError(el,primary,secondary,letter){el.onerror=null;var p=(primary||'#333').replace(/#/g,'%23'),s=(secondary||'#fff').replace(/#/g,'%23');el.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="'+p+'"/><text x="32" y="41" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="'+s+'">'+letter+'</text></svg>';}
@@ -6051,12 +6038,7 @@ function switchTeam(teamId){
 
 // requestScreenWakeLock + releaseScreenWakeLock imported from ./ui/wakelock.js
 
-function onSoundPanelClickOutside(e){
-  var panel=document.getElementById('soundPanel'),btn=document.getElementById('ptbSoundBtn');
-  if(panel&&panel.style.display!=='none'&&!panel.contains(e.target)&&btn&&!btn.contains(e.target))panel.style.display='none';
-  var dbgPanel=document.getElementById('devToolsPanel'),dbgBtn=document.getElementById('btnDevTools');
-  if(dbgPanel&&dbgPanel.style.display!=='none'&&!dbgPanel.contains(e.target)&&dbgBtn&&!dbgBtn.contains(e.target))dbgPanel.style.display='none';
-}
+// onSoundPanelClickOutside imported from ./ui/sound.js
 
 function showSection(id,btn){
   devTrace('nav','showSection · '+id);
@@ -6831,8 +6813,7 @@ function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementB
 
 (async function(){
   var sv=function(k){return localStorage.getItem(k);};
-  // Restore soundSettings from localStorage
-  if(sv('mlb_sound_settings')){try{soundSettings=JSON.parse(sv('mlb_sound_settings'));}catch(e){}}
+  // soundSettings is hydrated from localStorage inside ./ui/sound.js on import.
   // Restore session token
   mlbSessionToken=sv('mlb_session_token');mlbAuthUser=sv('mlb_auth_user');
   // Handle auth from OAuth redirect

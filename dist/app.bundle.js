@@ -235,6 +235,183 @@
     }
   }
 
+  // src/ui/sound.js
+  var soundSettings = {
+    master: false,
+    hr: true,
+    run: true,
+    risp: true,
+    dp: true,
+    tp: true,
+    gameStart: true,
+    gameEnd: true,
+    error: true
+  };
+  try {
+    stored = localStorage.getItem("mlb_sound_settings");
+    if (stored) Object.assign(soundSettings, JSON.parse(stored));
+  } catch (e) {
+  }
+  var stored;
+  function _makeCtx() {
+    return new (window.AudioContext || window.webkitAudioContext)();
+  }
+  function _closeCtx(ctx, dur) {
+    setTimeout(function() {
+      try {
+        ctx.close();
+      } catch (e) {
+      }
+    }, (dur + 0.6) * 1e3);
+  }
+  function _osc(ctx, freq, t0, dur, vol, wave, attack) {
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.type = wave || "sine";
+    osc.frequency.value = freq;
+    var at = ctx.currentTime + t0, att = attack || 5e-3;
+    g.gain.setValueAtTime(1e-4, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + att);
+    g.gain.exponentialRampToValueAtTime(1e-4, at + dur);
+    osc.start(at);
+    osc.stop(at + dur + 0.05);
+  }
+  function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ) {
+    var len = Math.ceil(ctx.sampleRate * (dur + 0.1));
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    var src = ctx.createBufferSource();
+    src.buffer = buf;
+    var filt = ctx.createBiquadFilter();
+    filt.type = filterType || "bandpass";
+    filt.frequency.value = filterFreq || 1e3;
+    filt.Q.value = filterQ !== void 0 ? filterQ : 1;
+    var g = ctx.createGain();
+    src.connect(filt);
+    filt.connect(g);
+    g.connect(ctx.destination);
+    var at = ctx.currentTime + t0, att = attack || 3e-3;
+    g.gain.setValueAtTime(1e-4, at);
+    g.gain.exponentialRampToValueAtTime(vol, at + att);
+    g.gain.exponentialRampToValueAtTime(1e-4, at + dur);
+    src.start(at);
+    src.stop(at + dur + 0.05);
+  }
+  function playHrSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.07, 0.32, 1e-3, "highpass", 2200, 0.8);
+      _ns(ctx, 0, 0.05, 0.22, 1e-3, "bandpass", 900, 3);
+      _osc(ctx, 140, 0, 0.06, 0.18, "sine", 1e-3);
+      _ns(ctx, 0.05, 0.9, 0.09, 0.08, "lowpass", 300, 1);
+      _closeCtx(ctx, 1.2);
+    } catch (e) {
+    }
+  }
+  function playRunSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 523, 0, 0.55, 0.18, "sine");
+      _osc(ctx, 659, 0.15, 0.5, 0.18, "sine");
+      _osc(ctx, 784, 0.3, 0.6, 0.18, "sine");
+      _closeCtx(ctx, 1);
+    } catch (e) {
+    }
+  }
+  function playRispSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.1, 0.2, 3e-3, "lowpass", 180, 2);
+      _ns(ctx, 0.13, 0.14, 0.16, 4e-3, "lowpass", 220, 1.5);
+      _closeCtx(ctx, 0.4);
+    } catch (e) {
+    }
+  }
+  function playDpSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.06, 0.28, 1e-3, "bandpass", 750, 5);
+      _ns(ctx, 0.1, 0.06, 0.28, 1e-3, "bandpass", 750, 5);
+      _closeCtx(ctx, 0.4);
+    } catch (e) {
+    }
+  }
+  function playTpSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 392, 0, 0.12, 0.17, "triangle");
+      _osc(ctx, 523, 0.11, 0.12, 0.17, "triangle");
+      _osc(ctx, 659, 0.22, 0.12, 0.17, "triangle");
+      _osc(ctx, 784, 0.33, 0.32, 0.17, "triangle");
+      _closeCtx(ctx, 0.8);
+    } catch (e) {
+    }
+  }
+  function playGameStartSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 523, 0, 0.14, 0.16, "triangle");
+      _osc(ctx, 587, 0.13, 0.14, 0.16, "triangle");
+      _osc(ctx, 659, 0.26, 0.14, 0.16, "triangle");
+      _osc(ctx, 784, 0.39, 0.38, 0.16, "triangle");
+      _closeCtx(ctx, 1);
+    } catch (e) {
+    }
+  }
+  function playGameEndSound() {
+    try {
+      var ctx = _makeCtx();
+      _osc(ctx, 784, 0, 0.65, 0.15, "sine");
+      _osc(ctx, 659, 0.38, 0.65, 0.15, "sine");
+      _osc(ctx, 523, 0.76, 0.8, 0.15, "sine");
+      _closeCtx(ctx, 1.8);
+    } catch (e) {
+    }
+  }
+  function playErrorSound() {
+    try {
+      var ctx = _makeCtx();
+      _ns(ctx, 0, 0.18, 0.22, 3e-3, "lowpass", 160, 1.5);
+      _osc(ctx, 130, 0.02, 0.16, 0.1, "sine");
+      _closeCtx(ctx, 0.5);
+    } catch (e) {
+    }
+  }
+  function playSound(type) {
+    if (!soundSettings.master || !soundSettings[type]) return;
+    if (type === "hr") playHrSound();
+    else if (type === "run") playRunSound();
+    else if (type === "risp") playRispSound();
+    else if (type === "dp") playDpSound();
+    else if (type === "tp") playTpSound();
+    else if (type === "gameStart") playGameStartSound();
+    else if (type === "gameEnd") playGameEndSound();
+    else if (type === "error") playErrorSound();
+  }
+  function setSoundPref(key, val) {
+    soundSettings[key] = val;
+    if (key === "master") document.getElementById("soundRows").classList.toggle("master-off", !val);
+    localStorage.setItem("mlb_sound_settings", JSON.stringify(soundSettings));
+  }
+  function toggleSoundPanel() {
+    var p = document.getElementById("soundPanel");
+    p.style.display = p.style.display === "none" ? "" : "none";
+  }
+  function onSoundPanelClickOutside(e) {
+    var panel = document.getElementById("soundPanel");
+    var btn = document.getElementById("ptbSoundBtn");
+    if (panel && panel.style.display !== "none" && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
+      panel.style.display = "none";
+    }
+    var dbgPanel = document.getElementById("devToolsPanel");
+    var dbgBtn = document.getElementById("btnDevTools");
+    if (dbgPanel && dbgPanel.style.display !== "none" && !dbgPanel.contains(e.target) && dbgBtn && !dbgBtn.contains(e.target)) {
+      dbgPanel.style.display = "none";
+    }
+  }
+
   // src/push/push.js
   var VAPID_PUBLIC_KEY = "BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE";
   function urlBase64ToUint8Array(b64) {
@@ -333,7 +510,6 @@
   var pulseAbortCtrl = null;
   var focusAbortCtrl = null;
   var liveAbortCtrl = null;
-  var soundSettings = { master: false, hr: true, run: true, risp: true, dp: true, tp: true, gameStart: true, gameEnd: true, error: true };
   var mlbSessionToken = null;
   var mlbAuthUser = null;
   var mlbSyncInterval = null;
@@ -5037,10 +5213,6 @@
       btn.classList.remove("applied");
     }, 1500);
   }
-  function toggleSoundPanel() {
-    var p = document.getElementById("soundPanel");
-    p.style.display = p.style.display === "none" ? "" : "none";
-  }
   var MLB_TEAM_RADIO = {
     108: { name: "KLAA Angels Radio", url: "https://klaa.streamguys1.com/live", format: "direct" },
     109: { name: "KTAR 620 AM", url: "https://playerservices.streamtheworld.com/api/livestream-redirect/KTARAMAAC.aac", format: "direct" },
@@ -6854,147 +7026,6 @@
     }
     document.getElementById("lockThemeToggle").checked = devColorLocked;
   }
-  function setSoundPref(key, val) {
-    soundSettings[key] = val;
-    if (key === "master") document.getElementById("soundRows").classList.toggle("master-off", !val);
-    localStorage.setItem("mlb_sound_settings", JSON.stringify(soundSettings));
-  }
-  function playSound(type) {
-    if (!soundSettings.master || !soundSettings[type]) return;
-    if (type === "hr") playHrSound();
-    else if (type === "run") playRunSound();
-    else if (type === "risp") playRispSound();
-    else if (type === "dp") playDpSound();
-    else if (type === "tp") playTpSound();
-    else if (type === "gameStart") playGameStartSound();
-    else if (type === "gameEnd") playGameEndSound();
-    else if (type === "error") playErrorSound();
-  }
-  function _makeCtx() {
-    return new (window.AudioContext || window.webkitAudioContext)();
-  }
-  function _closeCtx(ctx, dur) {
-    setTimeout(function() {
-      try {
-        ctx.close();
-      } catch (e) {
-      }
-      ;
-    }, (dur + 0.6) * 1e3);
-  }
-  function _osc(ctx, freq, t0, dur, vol, wave, attack) {
-    var osc = ctx.createOscillator(), g = ctx.createGain();
-    osc.connect(g);
-    g.connect(ctx.destination);
-    osc.type = wave || "sine";
-    osc.frequency.value = freq;
-    var at = ctx.currentTime + t0, att = attack || 5e-3;
-    g.gain.setValueAtTime(1e-4, at);
-    g.gain.exponentialRampToValueAtTime(vol, at + att);
-    g.gain.exponentialRampToValueAtTime(1e-4, at + dur);
-    osc.start(at);
-    osc.stop(at + dur + 0.05);
-  }
-  function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ) {
-    var len = Math.ceil(ctx.sampleRate * (dur + 0.1)), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
-    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    var src = ctx.createBufferSource();
-    src.buffer = buf;
-    var filt = ctx.createBiquadFilter();
-    filt.type = filterType || "bandpass";
-    filt.frequency.value = filterFreq || 1e3;
-    filt.Q.value = filterQ !== void 0 ? filterQ : 1;
-    var g = ctx.createGain();
-    src.connect(filt);
-    filt.connect(g);
-    g.connect(ctx.destination);
-    var at = ctx.currentTime + t0, att = attack || 3e-3;
-    g.gain.setValueAtTime(1e-4, at);
-    g.gain.exponentialRampToValueAtTime(vol, at + att);
-    g.gain.exponentialRampToValueAtTime(1e-4, at + dur);
-    src.start(at);
-    src.stop(at + dur + 0.05);
-  }
-  function playHrSound() {
-    try {
-      var ctx = _makeCtx();
-      _ns(ctx, 0, 0.07, 0.32, 1e-3, "highpass", 2200, 0.8);
-      _ns(ctx, 0, 0.05, 0.22, 1e-3, "bandpass", 900, 3);
-      _osc(ctx, 140, 0, 0.06, 0.18, "sine", 1e-3);
-      _ns(ctx, 0.05, 0.9, 0.09, 0.08, "lowpass", 300, 1);
-      _closeCtx(ctx, 1.2);
-    } catch (e) {
-    }
-  }
-  function playRunSound() {
-    try {
-      var ctx = _makeCtx();
-      _osc(ctx, 523, 0, 0.55, 0.18, "sine");
-      _osc(ctx, 659, 0.15, 0.5, 0.18, "sine");
-      _osc(ctx, 784, 0.3, 0.6, 0.18, "sine");
-      _closeCtx(ctx, 1);
-    } catch (e) {
-    }
-  }
-  function playRispSound() {
-    try {
-      var ctx = _makeCtx();
-      _ns(ctx, 0, 0.1, 0.2, 3e-3, "lowpass", 180, 2);
-      _ns(ctx, 0.13, 0.14, 0.16, 4e-3, "lowpass", 220, 1.5);
-      _closeCtx(ctx, 0.4);
-    } catch (e) {
-    }
-  }
-  function playDpSound() {
-    try {
-      var ctx = _makeCtx();
-      _ns(ctx, 0, 0.06, 0.28, 1e-3, "bandpass", 750, 5);
-      _ns(ctx, 0.1, 0.06, 0.28, 1e-3, "bandpass", 750, 5);
-      _closeCtx(ctx, 0.4);
-    } catch (e) {
-    }
-  }
-  function playTpSound() {
-    try {
-      var ctx = _makeCtx();
-      _osc(ctx, 392, 0, 0.12, 0.17, "triangle");
-      _osc(ctx, 523, 0.11, 0.12, 0.17, "triangle");
-      _osc(ctx, 659, 0.22, 0.12, 0.17, "triangle");
-      _osc(ctx, 784, 0.33, 0.32, 0.17, "triangle");
-      _closeCtx(ctx, 0.8);
-    } catch (e) {
-    }
-  }
-  function playGameStartSound() {
-    try {
-      var ctx = _makeCtx();
-      _osc(ctx, 523, 0, 0.14, 0.16, "triangle");
-      _osc(ctx, 587, 0.13, 0.14, 0.16, "triangle");
-      _osc(ctx, 659, 0.26, 0.14, 0.16, "triangle");
-      _osc(ctx, 784, 0.39, 0.38, 0.16, "triangle");
-      _closeCtx(ctx, 1);
-    } catch (e) {
-    }
-  }
-  function playGameEndSound() {
-    try {
-      var ctx = _makeCtx();
-      _osc(ctx, 784, 0, 0.65, 0.15, "sine");
-      _osc(ctx, 659, 0.38, 0.65, 0.15, "sine");
-      _osc(ctx, 523, 0.76, 0.8, 0.15, "sine");
-      _closeCtx(ctx, 1.8);
-    } catch (e) {
-    }
-  }
-  function playErrorSound() {
-    try {
-      var ctx = _makeCtx();
-      _ns(ctx, 0, 0.18, 0.22, 3e-3, "lowpass", 160, 1.5);
-      _osc(ctx, 130, 0.02, 0.16, 0.1, "sine");
-      _closeCtx(ctx, 0.5);
-    } catch (e) {
-    }
-  }
   function teamCapImg(teamId, name, primary, secondary, cls) {
     var letter = (name || "?")[0].toUpperCase();
     var p = encodeURIComponent(primary || "#333"), s = encodeURIComponent(secondary || "#fff");
@@ -7457,12 +7488,6 @@
     loadHomeYoutubeWidget();
     if (document.getElementById("schedule").classList.contains("active")) loadSchedule();
     if (myTeamLens) applyMyTeamLens(true);
-  }
-  function onSoundPanelClickOutside(e) {
-    var panel = document.getElementById("soundPanel"), btn = document.getElementById("ptbSoundBtn");
-    if (panel && panel.style.display !== "none" && !panel.contains(e.target) && btn && !btn.contains(e.target)) panel.style.display = "none";
-    var dbgPanel = document.getElementById("devToolsPanel"), dbgBtn = document.getElementById("btnDevTools");
-    if (dbgPanel && dbgPanel.style.display !== "none" && !dbgPanel.contains(e.target) && dbgBtn && !dbgBtn.contains(e.target)) dbgPanel.style.display = "none";
   }
   function showSection(id, btn) {
     devTrace("nav", "showSection \xB7 " + id);
@@ -8850,12 +8875,6 @@
     var sv = function(k) {
       return localStorage.getItem(k);
     };
-    if (sv("mlb_sound_settings")) {
-      try {
-        soundSettings = JSON.parse(sv("mlb_sound_settings"));
-      } catch (e) {
-      }
-    }
     mlbSessionToken = sv("mlb_session_token");
     mlbAuthUser = sv("mlb_auth_user");
     const params = new URLSearchParams(window.location.search);
