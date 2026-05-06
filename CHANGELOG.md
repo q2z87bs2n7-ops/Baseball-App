@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v3.42.1
+**Current version:** v3.42.2
+
+**v3.42.2** — Fix second module-extraction omission in `src/carousel/generators.js`: `fmtRate` was used at line 43 (HR story stat line — `fmtRate(statObj.avg) + ' AVG · ' + fmtRate(statObj.ops) + ' OPS'`) but never imported. Threw `ReferenceError: fmtRate is not defined` whenever `genHRStories` ran with a cached HR batter stat object — i.e. during normal carousel rotation, not only Demo Mode. Fix: add `import { fmtRate } from '../utils/format.js';` to `src/carousel/generators.js`. (The `fmt(start)` / `fmt(today)` calls at line 455 use a *local* `var fmt = function(d){...}` declared one line above — that one is fine and intentionally not the format.js export.)
 
 **v3.42.1** — Fix Demo Mode crash introduced by the modular refactor. `src/carousel/generators.js` referenced `DEBUG` at lines 285, 306, 329, 585 but never declared it locally — the original monolithic `app.js` had a top-level `const DEBUG=false` visible to all functions, but each esbuild module gets its own scope. Other extracted modules (`feed/render.js`, `collection/sync.js`, `dev/tuning.js`) declared their own local copy; `carousel/generators.js` was missed. References sit inside `if(state.demoMode){...}` guards, so the `ReferenceError: DEBUG is not defined` only fired when `initDemo` → `buildStoryPool` → `loadDailyLeaders` / `loadProbablePitcherStats` ran. Fix: add `const DEBUG = false;` to top of `src/carousel/generators.js`.
 

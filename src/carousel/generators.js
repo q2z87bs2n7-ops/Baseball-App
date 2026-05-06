@@ -1,5 +1,6 @@
 import { state } from '../state.js';
 import { SEASON, MLB_BASE } from '../config/constants.js';
+import { fmtRate } from '../utils/format.js';
 
 const DEBUG = false;
 

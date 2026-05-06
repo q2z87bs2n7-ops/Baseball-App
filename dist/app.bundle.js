@@ -166,7 +166,7 @@
     if (isNaN(n)) return v;
     return n.toFixed(d);
   }
-  function fmtRate2(v, d) {
+  function fmtRate(v, d) {
     d = d === void 0 ? 3 : d;
     if (v == null || v === "") return "\u2014";
     var n = parseFloat(v);
@@ -5604,9 +5604,9 @@
     var jerseyOverlay = state.selectedPlayer && state.selectedPlayer.jerseyNumber ? '<div class="headshot-jersey-pill">#' + state.selectedPlayer.jerseyNumber + "</div>" : "";
     var html = pid ? '<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/' + pid + '/headshot/67/current">' + jerseyOverlay + "</div>" : "";
     var boxes = [];
-    if (group === "hitting") boxes = [{ v: fmtRate2(s.avg), l: "AVG" }, { v: s.homeRuns, l: "HR" }, { v: s.rbi, l: "RBI" }, { v: fmtRate2(s.ops), l: "OPS" }, { v: s.hits, l: "H" }, { v: s.doubles, l: "2B" }, { v: s.triples, l: "3B" }, { v: s.strikeOuts, l: "K" }, { v: s.baseOnBalls, l: "BB" }, { v: s.runs, l: "R" }, { v: s.stolenBases, l: "SB" }, { v: s.plateAppearances, l: "PA" }];
+    if (group === "hitting") boxes = [{ v: fmtRate(s.avg), l: "AVG" }, { v: s.homeRuns, l: "HR" }, { v: s.rbi, l: "RBI" }, { v: fmtRate(s.ops), l: "OPS" }, { v: s.hits, l: "H" }, { v: s.doubles, l: "2B" }, { v: s.triples, l: "3B" }, { v: s.strikeOuts, l: "K" }, { v: s.baseOnBalls, l: "BB" }, { v: s.runs, l: "R" }, { v: s.stolenBases, l: "SB" }, { v: s.plateAppearances, l: "PA" }];
     else if (group === "pitching") boxes = [{ v: fmt(s.era, 2), l: "ERA" }, { v: fmt(s.whip, 2), l: "WHIP" }, { v: s.strikeOuts, l: "K" }, { v: s.wins + "-" + s.losses, l: "W-L" }, { v: fmt(s.inningsPitched, 1), l: "IP" }, { v: s.hits, l: "H" }, { v: s.baseOnBalls, l: "BB" }, { v: s.homeRuns, l: "HR" }, { v: fmt(s.strikeoutWalkRatio, 2), l: "K/BB" }, { v: fmt(s.strikeoutsPer9Inn, 2), l: "K/9" }, { v: fmt(s.walksPer9Inn, 2), l: "BB/9" }, { v: s.saves, l: "SV" }];
-    else boxes = [{ v: fmtRate2(s.fielding), l: "FPCT" }, { v: s.putOuts, l: "PO" }, { v: s.assists, l: "A" }, { v: s.errors, l: "E" }, { v: s.chances, l: "TC" }, { v: s.doublePlays, l: "DP" }];
+    else boxes = [{ v: fmtRate(s.fielding), l: "FPCT" }, { v: s.putOuts, l: "PO" }, { v: s.assists, l: "A" }, { v: s.errors, l: "E" }, { v: s.chances, l: "TC" }, { v: s.doublePlays, l: "DP" }];
     var cols = group === "fielding" ? 3 : 4;
     html += '<div class="stat-grid stat-grid--cols-' + cols + '">';
     boxes.forEach(function(b, i) {
@@ -5972,7 +5972,7 @@
           if (!br.ok) throw new Error(br.status);
           var bd = await br.json();
           var bst = bd.stats && bd.stats[0] && bd.stats[0].splits && bd.stats[0].splits[0] && bd.stats[0].splits[0].stat;
-          if (bst) batterStats = "AVG " + fmtRate2(bst.avg) + " \xB7 OBP " + fmtRate2(bst.obp) + " \xB7 OPS " + fmtRate2(bst.ops);
+          if (bst) batterStats = "AVG " + fmtRate(bst.avg) + " \xB7 OBP " + fmtRate(bst.obp) + " \xB7 OPS " + fmtRate(bst.ops);
         } catch (e) {
         }
       }
@@ -6337,7 +6337,7 @@
       var d = await r.json();
       var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
       if (!stat) return null;
-      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate2(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate2(stat.ops) };
+      var result = isPitcher ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 } : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate(stat.ops) };
       state.collectionCareerStatsCache[playerId] = result;
       return result;
     } catch (e) {
@@ -7205,8 +7205,8 @@
       position: position || "\u2014",
       hrCount,
       hrPrev: typeof hrCount === "number" && hrCount >= 1 ? hrCount - 1 : hrCount,
-      avg: stat ? fmtRate2(stat.avg) : "\u2014",
-      ops: stat ? fmtRate2(stat.ops) : "\u2014",
+      avg: stat ? fmtRate(stat.avg) : "\u2014",
+      ops: stat ? fmtRate(stat.ops) : "\u2014",
       rbi: stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014"
     };
   }
@@ -7296,8 +7296,8 @@
     }
     var rbiSeason = stat ? stat.rbi != null ? stat.rbi : "\u2014" : "\u2014";
     var hits = stat ? stat.hits != null ? stat.hits : "\u2014" : "\u2014";
-    var avg = stat ? fmtRate2(stat.avg) : "\u2014";
-    var ops = stat ? fmtRate2(stat.ops) : "\u2014";
+    var avg = stat ? fmtRate(stat.avg) : "\u2014";
+    var ops = stat ? fmtRate(stat.ops) : "\u2014";
     var rbiPrev = typeof rbiSeason === "number" && rbiSeason >= rbi ? rbiSeason - rbi : rbiSeason;
     var battingAfter = halfInning === "top" ? aScore : hScore;
     var fieldingScore = halfInning === "top" ? hScore : aScore;
