@@ -42,23 +42,23 @@ async function loadDailyEventsJSON(){
     var r=await fetch('./daily-events.json');
     if(!r.ok) return null;
     var data=await r.json();
-    if(data.state.feedItems){
-      data.state.feedItems.forEach(function(item){
+    if(data.feedItems){
+      data.feedItems.forEach(function(item){
         if(item.playTime&&typeof item.playTime==='string'){
           item.playTime=new Date(item.playTime);
         }
         if(item.playTime&&!item.ts) item.ts=item.playTime;
       });
     }
-    if(data.state.onThisDayCache){
-      data.state.onThisDayCache.forEach(function(item){
+    if(data.onThisDayCache){
+      data.onThisDayCache.forEach(function(item){
         if(item.ts&&typeof item.ts==='string'){
           item.ts=new Date(item.ts);
         }
       });
     }
-    if(data.state.yesterdayCache){
-      data.state.yesterdayCache.forEach(function(item){
+    if(data.yesterdayCache){
+      data.yesterdayCache.forEach(function(item){
         if(item.ts&&typeof item.ts==='string'){
           item.ts=new Date(item.ts);
         }
@@ -130,11 +130,11 @@ async function initDemo() {
   state.stolenBaseEvents=[];
   state.inningRecapsFired=new Set();state.inningRecapsPending={};state.lastInningState={};
   var jsonData=await loadDailyEventsJSON();
-  if(!jsonData||!jsonData.state.gameStates){
+  if(!jsonData||!jsonData.gameStates){
     _showAlert({icon:'⚠️',event:'Demo Load Failed',desc:'Could not load daily-events.json',color:'#e85d4f',duration:3000});
     return;
   }
-  state.gameStates=jsonData.state.gameStates;
+  state.gameStates=jsonData.gameStates;
   Object.values(state.gameStates).forEach(function(g){
     g.status='Preview';
     g.detailedState='Scheduled';
@@ -153,19 +153,19 @@ async function initDemo() {
     if(!(ts instanceof Date)) ts=new Date();
     return {gamePk:item.gamePk,data:item.data,ts:ts};
   });
-  state.dailyLeadersCache=jsonData.state.dailyLeadersCache||null;
-  state.onThisDayCache=jsonData.state.onThisDayCache||[];
-  state.yesterdayCache=jsonData.state.yesterdayCache||[];
-  state.hrBatterStatsCache=jsonData.state.hrBatterStatsCache||{};
-  state.probablePitcherStatsCache=jsonData.state.probablePitcherStatsCache||{};
-  state.dailyHitsTracker=jsonData.state.dailyHitsTracker||{};
-  state.dailyPitcherKs=jsonData.state.dailyPitcherKs||{};
-  state.storyCarouselRawGameData=jsonData.state.storyCarouselRawGameData||{};
-  state.stolenBaseEvents=jsonData.state.stolenBaseEvents||[];
-  state.scheduleData=jsonData.state.scheduleData||[];
-  if(jsonData.state.gameStates){
+  state.dailyLeadersCache=jsonData.dailyLeadersCache||null;
+  state.onThisDayCache=jsonData.onThisDayCache||[];
+  state.yesterdayCache=jsonData.yesterdayCache||[];
+  state.hrBatterStatsCache=jsonData.hrBatterStatsCache||{};
+  state.probablePitcherStatsCache=jsonData.probablePitcherStatsCache||{};
+  state.dailyHitsTracker=jsonData.dailyHitsTracker||{};
+  state.dailyPitcherKs=jsonData.dailyPitcherKs||{};
+  state.storyCarouselRawGameData=jsonData.storyCarouselRawGameData||{};
+  state.stolenBaseEvents=jsonData.stolenBaseEvents||[];
+  state.scheduleData=jsonData.scheduleData||[];
+  if(jsonData.gameStates){
     var earliestMs=Infinity;
-    Object.values(jsonData.state.gameStates).forEach(function(g){
+    Object.values(jsonData.gameStates).forEach(function(g){
       if(g.gameDateMs&&g.gameDateMs<earliestMs) earliestMs=g.gameDateMs;
     });
     if(earliestMs!==Infinity) state.demoDate=new Date(earliestMs);
