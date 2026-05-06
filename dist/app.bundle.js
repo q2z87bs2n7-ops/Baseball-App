@@ -2723,6 +2723,82 @@
     }
   }
 
+  // src/collection/sync.js
+  var syncCallbacks = { loadCollection: null, saveCollection: null, updateCollectionUI: null };
+  function setSyncCallbacks(callbacks) {
+    Object.assign(syncCallbacks, callbacks);
+  }
+  var DEBUG2 = false;
+  async function syncCollection() {
+    if (!state.mlbSessionToken) return;
+    try {
+      const local = syncCallbacks.loadCollection ? syncCallbacks.loadCollection() : {};
+      const r = await fetch((window.API_BASE || API_BASE || "") + "/api/collection-sync", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.mlbSessionToken },
+        body: JSON.stringify({ localCollection: local })
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.collection) {
+          if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(data.collection);
+          if (DEBUG2) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
+        }
+      }
+    } catch (e) {
+      console.error("[Sync] Collection error", e);
+    }
+  }
+  async function mergeCollectionOnSignIn() {
+    if (!state.mlbSessionToken) return;
+    try {
+      const r = await fetch((window.API_BASE || API_BASE || "") + "/api/collection/sync?token=" + state.mlbSessionToken);
+      if (r.ok) {
+        const data = await r.json();
+        if (data.collection && Object.keys(data.collection).length > 0) {
+          const local = syncCallbacks.loadCollection ? syncCallbacks.loadCollection() : {};
+          const merged = mergeCollectionSlots(local, data.collection);
+          if (syncCallbacks.saveCollection) syncCallbacks.saveCollection(merged);
+          if (syncCallbacks.updateCollectionUI) syncCallbacks.updateCollectionUI();
+          if (DEBUG2) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
+        }
+      }
+    } catch (e) {
+      console.error("[Sync] Merge error", e);
+    }
+  }
+  function mergeCollectionSlots(local, remote) {
+    function tierRank2(t) {
+      const ranks = { legendary: 4, epic: 3, rare: 2, common: 1 };
+      return ranks[t] || 0;
+    }
+    const merged = { ...local, ...remote };
+    Object.keys(local).forEach((k) => {
+      if (remote[k]) {
+        const lr = tierRank2(local[k].tier), rr = tierRank2(remote[k].tier);
+        if (lr > rr) {
+          merged[k] = local[k];
+        } else if (rr > lr) {
+          merged[k] = remote[k];
+        } else {
+          const newer = local[k].collectedAt >= remote[k].collectedAt ? local[k] : remote[k];
+          const em = /* @__PURE__ */ new Map();
+          (local[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
+          (remote[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
+          const events = Array.from(em.values()).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+          merged[k] = { ...newer, events };
+        }
+      }
+    });
+    return merged;
+  }
+  function startSyncInterval() {
+    if (state.mlbSyncInterval) return;
+    state.mlbSyncInterval = setInterval(async () => {
+      syncCollection();
+    }, TIMING.SYNC_INTERVAL_MS);
+  }
+
   // src/auth/oauth.js
   function signInWithGitHub() {
     const state2 = Math.random().toString(36).slice(2, 15);
@@ -2812,7 +2888,7 @@
   }
 
   // src/main.js
-  var DEBUG2 = false;
+  var DEBUG3 = false;
   devTrace("boot", "app.js loaded \xB7 " + (/* @__PURE__ */ new Date()).toISOString());
   var devTuningDefaults = {
     rotateMs: 4500,
@@ -2868,6 +2944,7 @@
   function initReal() {
     setCarouselCallbacks({ updateFeedEmpty, fetchBoxscore, localDateStr, getEffectiveDate, tcLookup });
     setRotationCallbacks({ refreshDebugPanel });
+    setSyncCallbacks({ loadCollection, saveCollection, updateCollectionUI });
     var mockBar = document.getElementById("mockBar");
     if (mockBar) {
       mockBar.style.display = "none";
@@ -3294,7 +3371,7 @@
     var upcomingHtml = "", completedHtml = "";
     var upcomingGames = [], completedGames = [];
     var filterDate = state.demoMode ? localDateStr(state.demoDate) : localDateStr(/* @__PURE__ */ new Date());
-    if (state.demoMode && DEBUG2) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(state.gameStates).length, "total games");
+    if (state.demoMode && DEBUG3) console.log("Demo: renderSideRailGames filtering to date", filterDate, "from", Object.keys(state.gameStates).length, "total games");
     Object.values(state.gameStates).forEach(function(g) {
       if (state.demoMode && localDateStr(new Date(g.gameDateMs)) !== filterDate) return;
       if (g.status === "Live") return;
@@ -3420,7 +3497,7 @@
     var halfInning = play.halfInning || gs.halfInning;
     var badgeText = play.desc.includes("walk-off") ? "WALK-OFF HOME RUN!" : "\u{1F4A5} HOME RUN!";
     showPlayerCard(batterId, batterName, awayTeamId, homeTeamId, halfInning, null, null, badgeText, item.gamePk);
-    if (DEBUG2) console.log("Replaying HR:", batterName, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
+    if (DEBUG3) console.log("Replaying HR:", batterName, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
   }
   function replayRBICard(itemIndex) {
     var rbis = state.feedItems.filter(function(item2) {
@@ -3443,7 +3520,7 @@
       return;
     }
     showRBICard(play.batterId, play.batterName, gs.awayId, gs.homeId, play.halfInning, 1, play.event, play.awayScore, play.homeScore, play.inning, item.gamePk);
-    if (DEBUG2) console.log("Replaying RBI:", play.batterName, play.event, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
+    if (DEBUG3) console.log("Replaying RBI:", play.batterName, play.event, "at", gs.awayAbbr + " @ " + gs.homeAbbr);
   }
   function tierRank(t) {
     return { legendary: 4, epic: 3, rare: 2, common: 1 }[t] || 0;
@@ -4944,7 +5021,7 @@
       state.tomorrowPreview.fetchedAt = Date.now();
       if (isPostSlate()) renderEmptyState(true);
     } catch (e) {
-      if (DEBUG2) console.warn("fetchTomorrowPreview", e);
+      if (DEBUG3) console.warn("fetchTomorrowPreview", e);
     } finally {
       state.tomorrowPreview.inFlight = false;
     }
@@ -7000,7 +7077,7 @@
   function updateTuning(param, val) {
     if (param === "basesloaded_enable") {
       state.devTuning[param] = val === "true";
-      if (DEBUG2) console.log("\u2713 Bases Loaded " + (state.devTuning[param] ? "enabled" : "disabled"));
+      if (DEBUG3) console.log("\u2713 Bases Loaded " + (state.devTuning[param] ? "enabled" : "disabled"));
       return;
     }
     var parsed = parseInt(val, 10);
@@ -7012,9 +7089,9 @@
         state.storyRotateTimer = null;
       }
       if (state.pulseInitialized && !state.demoMode) state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-      if (DEBUG2) console.log("\u2713 Carousel rotation updated to " + parsed + "ms");
+      if (DEBUG3) console.log("\u2713 Carousel rotation updated to " + parsed + "ms");
     } else {
-      if (DEBUG2) console.log("\u2713 " + param + " updated to " + parsed);
+      if (DEBUG3) console.log("\u2713 " + param + " updated to " + parsed);
     }
   }
   function resetTuning() {
@@ -7039,7 +7116,7 @@
       state.storyRotateTimer = null;
     }
     if (state.pulseInitialized && !state.demoMode) state.storyRotateTimer = setInterval(rotateStory, state.devTuning.rotateMs);
-    if (DEBUG2) console.log("\u2713 Dev tuning reset to defaults");
+    if (DEBUG3) console.log("\u2713 Dev tuning reset to defaults");
   }
   function updateColorOverride(context, colorVar, value) {
     state.devColorOverrides[context][colorVar] = value;
@@ -7047,7 +7124,7 @@
       if (context === "app") applyTeamTheme(state.activeTeam);
       else applyPulseMLBTheme();
     }
-    if (DEBUG2) console.log("\u2713 " + context + " theme." + colorVar + " \u2192 " + value);
+    if (DEBUG3) console.log("\u2713 " + context + " theme." + colorVar + " \u2192 " + value);
   }
   function captureCurrentTheme(context) {
     var cssVarMap = { dark: "--dark", card: "--card", card2: "--card2", border: "--border", primary: "--primary", secondary: "--secondary", accent: "--accent", accentText: "--accent-text", headerText: "--header-text" };
@@ -7059,7 +7136,7 @@
       var el = document.getElementById(elId);
       if (el) el.value = cssVal;
     });
-    if (DEBUG2) console.log("\u2713 Captured current " + context + " theme colors");
+    if (DEBUG3) console.log("\u2713 Captured current " + context + " theme colors");
   }
   function toggleColorLock(enable) {
     state.devColorLocked = enable;
@@ -7067,11 +7144,11 @@
       if (!state.devColorOverrides.app.primary) captureCurrentTheme("app");
       if (!state.devColorOverrides.pulse.primary) captureCurrentTheme("pulse");
       applyTeamTheme(state.activeTeam);
-      if (DEBUG2) console.log("\u2713 Theme lock enabled \u2014 auto-switching disabled");
+      if (DEBUG3) console.log("\u2713 Theme lock enabled \u2014 auto-switching disabled");
     } else {
       applyTeamTheme(state.activeTeam);
       applyPulseMLBTheme();
-      if (DEBUG2) console.log("\u2713 Theme lock disabled \u2014 auto-switching restored");
+      if (DEBUG3) console.log("\u2713 Theme lock disabled \u2014 auto-switching restored");
     }
     document.getElementById("lockThemeToggle").checked = state.devColorLocked;
   }
@@ -7384,71 +7461,6 @@
     } else {
       panel.innerHTML = '<button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">\u{1F510} Sign in with GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;margin-top:6px;text-align:left">\u2709\uFE0F Sign in with Email</button>';
     }
-  }
-  async function syncCollection() {
-    if (!state.mlbSessionToken) return;
-    try {
-      const local = loadCollection();
-      const r = await fetch((window.API_BASE || "") + "/api/collection-sync", { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.mlbSessionToken }, body: JSON.stringify({ localCollection: local }) });
-      if (r.ok) {
-        const data = await r.json();
-        if (data.collection) {
-          saveCollection(data.collection);
-          if (DEBUG2) console.log("[Sync] Collection synced", Object.keys(data.collection).length, "cards");
-        }
-      }
-    } catch (e) {
-      console.error("[Sync] Collection error", e);
-    }
-  }
-  async function mergeCollectionOnSignIn() {
-    if (!state.mlbSessionToken) return;
-    try {
-      const r = await fetch((window.API_BASE || "") + "/api/collection/sync?token=" + state.mlbSessionToken);
-      if (r.ok) {
-        const data = await r.json();
-        if (data.collection && Object.keys(data.collection).length > 0) {
-          const local = loadCollection();
-          const merged = mergeCollectionSlots(local, data.collection);
-          saveCollection(merged);
-          updateCollectionUI();
-          if (DEBUG2) console.log("[Sync] Merged", Object.keys(merged).length, "cards from server");
-        }
-      }
-    } catch (e) {
-      console.error("[Sync] Merge error", e);
-    }
-  }
-  function mergeCollectionSlots(local, remote) {
-    function tierRank2(t) {
-      const ranks = { legendary: 4, epic: 3, rare: 2, common: 1 };
-      return ranks[t] || 0;
-    }
-    const merged = { ...local, ...remote };
-    Object.keys(local).forEach((k) => {
-      if (remote[k]) {
-        const lr = tierRank2(local[k].tier), rr = tierRank2(remote[k].tier);
-        if (lr > rr) {
-          merged[k] = local[k];
-        } else if (rr > lr) {
-          merged[k] = remote[k];
-        } else {
-          const newer = local[k].collectedAt >= remote[k].collectedAt ? local[k] : remote[k];
-          const em = /* @__PURE__ */ new Map();
-          (local[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
-          (remote[k].events || []).forEach((e) => em.set(e.date + ":" + e.badge, e));
-          const events = Array.from(em.values()).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
-          merged[k] = { ...newer, events };
-        }
-      }
-    });
-    return merged;
-  }
-  function startSyncInterval() {
-    if (state.mlbSyncInterval) return;
-    state.mlbSyncInterval = setInterval(async () => {
-      syncCollection();
-    }, TIMING.SYNC_INTERVAL_MS);
   }
   function showSignInCTA() {
     if (state.mlbSessionToken || state.shownSignInCTA) return;
@@ -8002,7 +8014,7 @@
       video.innerHTML = '<div style="color:#e03030;padding:20px;text-align:center">Video failed to load. Please try refreshing.</div>';
     });
     video.addEventListener("canplay", function() {
-      if (DEBUG2) console.log("Video ready to play");
+      if (DEBUG3) console.log("Video ready to play");
       video.play().catch(function(err) {
         console.error("Autoplay blocked:", err);
       });

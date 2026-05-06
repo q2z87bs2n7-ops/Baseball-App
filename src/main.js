@@ -41,6 +41,9 @@ import {
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
 import {
+  setSyncCallbacks, syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval,
+} from './collection/sync.js';
+import {
   setCarouselCallbacks, loadOnThisDayCache, loadYesterdayCache, loadTransactionsCache, loadHighLowCache,
 } from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
@@ -121,6 +124,7 @@ function initLeaguePulse() {
 function initReal() {
   setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore, localDateStr: localDateStr, getEffectiveDate: getEffectiveDate, tcLookup: tcLookup });
   setRotationCallbacks({ refreshDebugPanel: refreshDebugPanel });
+  setSyncCallbacks({ loadCollection: loadCollection, saveCollection: saveCollection, updateCollectionUI: updateCollectionUI });
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
   // Midnight window: at 0–5am local, seed state.pollDateStr to yesterday so West Coast games are found
@@ -3986,62 +3990,8 @@ function updateSyncUI(){
     panel.innerHTML='<button onclick="signInWithGitHub()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:left">🔐 Sign in with GitHub</button><button onclick="signInWithEmail()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;padding:6px 12px;border-radius:8px;cursor:pointer;width:100%;margin-top:6px;text-align:left">✉️ Sign in with Email</button>';
   }
 }
-async function syncCollection(){
-  if(!state.mlbSessionToken)return;
-  try{
-    const local=loadCollection();
-    const r=await fetch((window.API_BASE||'')+'/api/collection-sync',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.mlbSessionToken},body:JSON.stringify({localCollection:local})});
-    if(r.ok){
-      const data=await r.json();
-      if(data.collection){
-        saveCollection(data.collection);
-        if(DEBUG) console.log('[Sync] Collection synced',Object.keys(data.collection).length,'cards');
-      }
-    }
-  }catch(e){console.error('[Sync] Collection error',e);}
-}
-async function mergeCollectionOnSignIn(){
-  if(!state.mlbSessionToken)return;
-  try{
-    const r=await fetch((window.API_BASE||'')+'/api/collection/sync?token='+state.mlbSessionToken);
-    if(r.ok){
-      const data=await r.json();
-      if(data.collection&&Object.keys(data.collection).length>0){
-        const local=loadCollection();
-        const merged=mergeCollectionSlots(local,data.collection);
-        saveCollection(merged);
-        updateCollectionUI();
-        if(DEBUG) console.log('[Sync] Merged',Object.keys(merged).length,'cards from server');
-      }
-    }
-  }catch(e){console.error('[Sync] Merge error',e);}
-}
-function mergeCollectionSlots(local,remote){
-  function tierRank(t){const ranks={legendary:4,epic:3,rare:2,common:1};return ranks[t]||0;}
-  const merged={...local,...remote};
-  Object.keys(local).forEach(k=>{
-    if(remote[k]){
-      const lr=tierRank(local[k].tier),rr=tierRank(remote[k].tier);
-      if(lr>rr){merged[k]=local[k];}
-      else if(rr>lr){merged[k]=remote[k];}
-      else{
-        const newer=local[k].collectedAt>=remote[k].collectedAt?local[k]:remote[k];
-        const em=new Map();
-        (local[k].events||[]).forEach(e=>em.set(e.date+':'+e.badge,e));
-        (remote[k].events||[]).forEach(e=>em.set(e.date+':'+e.badge,e));
-        const events=Array.from(em.values()).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
-        merged[k]={...newer,events:events};
-      }
-    }
-  });
-  return merged;
-}
-function startSyncInterval(){
-  if(state.mlbSyncInterval)return;
-  state.mlbSyncInterval=setInterval(async()=>{
-    syncCollection();
-  },TIMING.SYNC_INTERVAL_MS);
-}
+// ── Collection Sync (v3.39.20) ─── EXTRACTED to collection/sync.js
+// Functions imported: syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval
 function showSignInCTA(){
   if(state.mlbSessionToken||state.shownSignInCTA)return;
   state.signInCTACardCount++;
