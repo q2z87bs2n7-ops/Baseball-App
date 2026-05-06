@@ -38,7 +38,9 @@ export const MLB_RSS_FEEDS = {
 
 // Parse RSS XML into normalized item objects.
 // Returns: [{ title, link, image, pubDate, source, description }]
-//   - image precedence: <media:content> > <media:thumbnail> > <img src> in desc > <enclosure type=image/*>
+//   - image precedence: <media:content> > <media:thumbnail> > <itunes:image> > <image><url>
+//     > <img src> in desc > <img src> in content:encoded > <enclosure type=image/*>
+//     > <thumbnail> > scan for any image URL (fallback)
 //   - pubDate normalised to ISO 8601; falls back to '' on parse failure (caller can decide ranking)
 //   - description has HTML stripped + truncated to 150 chars (matches legacy proxy-rss shape)
 export function parseRssItems(xml, sourceKey) {
@@ -91,25 +93,37 @@ export function parseRssItems(xml, sourceKey) {
       if (m) image = pickAttr(m);
     }
 
-    // 4. <img src="..."> in description
+    // 4. <image><url>...</url></image> — native RSS image element
+    if (!image) {
+      m = /<image>\s*<url>([\s\S]*?)<\/url>\s*<\/image>/.exec(itemXml);
+      if (m) image = m[1].trim();
+    }
+
+    // 5. <img src="..."> in description
     if (!image && description) {
       m = new RegExp(`<img\\b[^>]+src=${ATTR}`).exec(description);
       if (m) image = pickAttr(m);
     }
 
-    // 5. <img src="..."> in content:encoded — WordPress (FanGraphs, MLBTR)
+    // 6. <img src="..."> in content:encoded — WordPress (FanGraphs, MLBTR)
     if (!image && contentEncoded) {
       m = new RegExp(`<img\\b[^>]+src=${ATTR}`).exec(contentEncoded);
       if (m) image = pickAttr(m);
     }
 
-    // 6. <enclosure url="..." type="image/...">
+    // 7. <enclosure url="..." type="image/...">
     if (!image) {
       m = new RegExp(`<enclosure\\b[^>]+url=${ATTR}[^>]+type=["']image/`).exec(itemXml);
       if (m) image = pickAttr(m);
     }
 
-    // 7. Last resort: scan the full item for any image-extension URL
+    // 8. <thumbnail>...</thumbnail> without namespace
+    if (!image) {
+      m = /<thumbnail>([\s\S]*?)<\/thumbnail>/.exec(itemXml);
+      if (m) image = m[1].trim();
+    }
+
+    // 9. Last resort: scan the full item for any image-extension URL
     if (!image) {
       m = /https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s"'<>]*)?/i.exec(itemXml);
       if (m) image = m[0];
