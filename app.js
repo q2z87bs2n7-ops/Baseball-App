@@ -193,6 +193,9 @@ let collectionSlotsDisplay=[];      // sorted slot array set by renderCollection
 
 // ── Yesterday Recap globals (v3.19.1) ─────────────────────────────────────────
 let yesterdayContentCache={};      // gamePk → content API response (session-only)
+let liveContentCache={};           // gamePk → {items:[],fetchedAt:ms} — re-fetched if >5min stale
+let lastVideoClip=null;            // most recent matched live clip — used by dev tool
+let videoClipPollTimer=null;
 let yesterdayOverlayOpen=false;
 let ydHighlightClips=[];           // top-5 editorial clips for the carousel (session)
 let ydDateOffset=-1;               // days relative to today shown in recap; -1=yesterday (default)
@@ -238,6 +241,8 @@ function initReal() {
   pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
   if(storyPoolTimer){clearInterval(storyPoolTimer);storyPoolTimer=null;}
   storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
+  if(videoClipPollTimer){clearInterval(videoClipPollTimer);videoClipPollTimer=null;}
+  videoClipPollTimer=setInterval(pollPendingVideoClips,30*1000);
   if(yesterdayRefreshTimer){clearInterval(yesterdayRefreshTimer);yesterdayRefreshTimer=null;}
   yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){
@@ -377,6 +382,7 @@ async function pollLeaguePulse() {
     updateInningStates();
     renderTicker(); updateFeedEmpty();
     renderSideRailGames();
+    pollPendingVideoClips();
     selectFocusGame();
     refreshDebugPanel();
   } catch(e){if(e.name!=='AbortError')console.error('poll error',e);}
@@ -1166,7 +1172,7 @@ function renderMLBNewsFeed() {
   var html='';
   mlbNewsFeed.forEach(function(item,idx){
     var active=idx===0?' active':'';
-    var imgHtml=item.image?'<img class="news-card-image" src="'+forceHttps(item.image)+'" onerror="this.style.display=\'none\'" alt="news">'
+    var imgHtml=isSafeNewsImage(item.image)?'<img class="news-card-image" src="'+forceHttps(item.image)+'" onerror="this.style.display=\'none\'" alt="news">'
       :'<div class="news-card-image" style="background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);">📰</div>';
     html+='<div class="news-card-item'+active+'">'
       +imgHtml
@@ -1870,7 +1876,7 @@ async function buildStoryPool(){
   if(now-transactionsLastFetch>120*60000){loadTransactionsCache();}
   if(now-highLowLastFetch>6*60*60000){loadHighLowCache();}
   if(now-liveWPLastFetch>(devTuning.livewp_refresh_ms||90000)){loadLiveWPCache();}
-  loadProbablePitcherStats();
+  await loadProbablePitcherStats();
   fetchMissingHRBatterStats();
   var multiHitStories=await genMultiHitDay();
   var wpStories=await genWinProbabilityStories();
@@ -2124,7 +2130,16 @@ async function loadYdForDate(dateStr){
         if(allHits.away===0||allHits.home===0) {sigPlay=' · No-hitter!';}
       }catch(e){}
       var headline=winner+' beat '+loser+' '+ws+'-'+ls+playerHighlight+sigPlay;
-      result.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:headline,sub:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
+      var videoTitle=null;
+      try{
+        var cr=await fetch(MLB_BASE+'/game/'+g.gamePk+'/content');
+        if(cr.ok){
+          var cd=await cr.json();
+          var items=(cd.highlights&&cd.highlights.highlights&&cd.highlights.highlights.items)||[];
+          if(items.length&&items[0].headline) videoTitle=items[0].headline;
+        }
+      }catch(e){}
+      result.push({id:'yday_'+g.gamePk+'_result',icon:'✅',headline:videoTitle||headline,sub:videoTitle?headline:(g.venue?g.venue.name:'')+dur,gamePk:g.gamePk,ts:new Date(g.gameDate||Date.now())});
     }
   }catch(e){}
   return result;
@@ -2785,6 +2800,309 @@ async function fetchGameContent(gamePk) {
   } catch(e){ yesterdayContentCache[gamePk]=null; return null; }
 }
 
+// ── 📽️ Video clip overlay ────────────────────────────────────────────────────
+
+function openVideoOverlay(url, title) {
+  var ov=document.getElementById('videoOverlay');
+  var vid=document.getElementById('videoOverlayPlayer');
+  var ttl=document.getElementById('videoOverlayTitle');
+  if(!ov||!vid) return;
+  if(ttl) ttl.textContent=title||'';
+  vid.src=url;
+  vid.load();
+  vid.play().catch(function(){});
+  ov.style.display='flex';
+}
+
+function closeVideoOverlay() {
+  var ov=document.getElementById('videoOverlay');
+  var vid=document.getElementById('videoOverlayPlayer');
+  if(vid){vid.pause();vid.src='';}
+  if(ov) ov.style.display='none';
+}
+
+async function devTestVideoClip() {
+  // 1. Use most recent matched live clip
+  if(lastVideoClip&&pickPlayback(lastVideoClip.playbacks)){
+    openVideoOverlay(pickPlayback(lastVideoClip.playbacks),lastVideoClip.headline||lastVideoClip.blurb||'Highlight');
+    return;
+  }
+  // 2. Use any cached yesterday content
+  var keys=Object.keys(yesterdayContentCache);
+  for(var i=0;i<keys.length;i++){
+    var c=yesterdayContentCache[keys[i]];
+    if(!c) continue;
+    var items=(c.highlights&&c.highlights.highlights&&c.highlights.highlights.items)||[];
+    var playable=items.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);});
+    if(playable.length){
+      var clip=playable[2]||playable[0];
+      lastVideoClip=clip;
+      openVideoOverlay(pickPlayback(clip.playbacks),clip.headline||clip.blurb||'Highlight');
+      return;
+    }
+  }
+  // 3. Fetch yesterday's first game as fallback
+  try{
+    var yd=new Date(); yd.setDate(yd.getDate()-1);
+    var ds=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+    var r=await fetch(MLB_BASE+'/schedule?date='+ds+'&sportId=1&hydrate=team');
+    if(!r.ok) throw new Error(r.status);
+    var d=await r.json();
+    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    if(!games.length){alert('No clip available — open Yesterday Recap first');return;}
+    var content=await fetchGameContent(games[0].gamePk);
+    if(!content) throw new Error('no content');
+    var items2=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    var playable2=items2.filter(function(it){return it.type==='video'&&pickPlayback(it.playbacks);});
+    if(!playable2.length){alert('No playable clip found for yesterday');return;}
+    lastVideoClip=playable2[0];
+    openVideoOverlay(pickPlayback(playable2[0].playbacks),playable2[0].headline||playable2[0].blurb||'Highlight');
+  }catch(e){alert('Could not load clip: '+(e&&e.message||e));}
+}
+
+async function pollPendingVideoClips() {
+  // Scan feedItems for HR and scoring plays whose feed element hasn't been patched with a clip yet.
+  var cutoff=Date.now()-2*60*60*1000;
+  var feed=document.getElementById('feed');
+  if(!feed) return;
+  var pending=feedItems.filter(function(item){
+    if(!item.data||!item.data.batterId) return false;
+    if(item.data.event!=='Home Run'&&!item.data.scoring) return false;
+    if(!item.ts||item.ts.getTime()<cutoff) return false;
+    var el=feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
+    return el&&!el.dataset.clipPatched;
+  });
+  if(!pending.length) return;
+  var byGame={};
+  pending.forEach(function(item){(byGame[item.gamePk]=byGame[item.gamePk]||[]).push(item);});
+  for(var pk in byGame){
+    var gpk=+pk;
+    var cached=liveContentCache[gpk];
+    if(!cached||(Date.now()-cached.fetchedAt)>5*60*1000){
+      try{
+        var r=await fetch(MLB_BASE+'/game/'+gpk+'/content');
+        if(!r.ok) continue;
+        var d=await r.json();
+        var all=(d.highlights&&d.highlights.highlights&&d.highlights.highlights.items)||[];
+        // Keep only playable video clips; exclude data-visualization (darkroom, bat-track, etc.)
+        liveContentCache[gpk]={items:all.filter(function(it){
+          if(it.type!=='video'||!pickPlayback(it.playbacks)) return false;
+          return !(it.keywordsAll||[]).some(function(kw){
+            var v=(kw.value||kw.slug||'').toLowerCase();
+            return v==='data-visualization'||v==='data_visualization';
+          });
+        }),fetchedAt:Date.now()};
+      }catch(e){continue;}
+    }
+    var clips=(liveContentCache[gpk]&&liveContentCache[gpk].items)||[];
+    if(!clips.length) continue;
+    // Exclude Statcast/Savant clips — analysis overlays, not broadcast replays.
+    function isStatcast(clip){
+      var title=(clip.headline||clip.blurb||'').toLowerCase();
+      if(title.indexOf('statcast')!==-1||title.indexOf('savant')!==-1) return true;
+      return (clip.keywordsAll||[]).some(function(kw){
+        var v=(kw.value||kw.slug||'').toLowerCase();
+        return v==='statcast'||v==='savant';
+      });
+    }
+    // Exclude ABS challenge clips — they carry the batter's player_id but are pitch-review
+    // overlays, not batting highlight replays. Their timestamps fall before the actual hit
+    // clip, causing nearest-timestamp matching to pick them over the correct clip.
+    function isABSChallenge(clip){
+      var tax=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';});
+      var hasAbs=tax.some(function(kw){return (kw.value||kw.slug||'').toLowerCase()==='abs';});
+      var hasChallenge=tax.some(function(kw){return (kw.value||kw.slug||'').toLowerCase()==='challenge';});
+      return hasAbs&&hasChallenge;
+    }
+    var broadcastClips=clips.filter(function(c){return !isStatcast(c)&&!isABSChallenge(c);});
+    // Prefer clips tagged home-run / scoring-play / walk-off (API uses hyphens, not underscores).
+    var scoringClips=broadcastClips.filter(function(clip){
+      return (clip.keywordsAll||[]).some(function(kw){
+        var v=kw.value||kw.slug||'';
+        return v==='home-run'||v==='scoring-play'||v==='walk-off';
+      });
+    });
+    byGame[pk].forEach(function(item){
+      var playTs=item.ts.getTime();
+      var bid=String(item.data.batterId);
+      function hasPlayer(clip){
+        return (clip.keywordsAll||[]).some(function(kw){
+          if(kw.type==='player_id') return String(kw.value||'')===bid;
+          if(kw.slug&&kw.slug.startsWith('player_id-')) return kw.slug.split('-')[1]===bid;
+          return false;
+        });
+      }
+      // Only match when the clip carries the batter's player_id.
+      // Timestamp fallback was removed: it confidently patched the wrong play's clip
+      // (e.g. a sac fly clip onto a HR feed item) whenever the real clip wasn't
+      // published yet. No clip is better than the wrong clip — unpatched items retry
+      // on the next 30s poll.
+      var playerFromScoring=scoringClips.filter(hasPlayer);
+      var playerFromBroadcast=broadcastClips.filter(hasPlayer);
+      var pool=playerFromScoring.length?playerFromScoring:playerFromBroadcast;
+      var best=null,bestDiff=Infinity;
+      pool.forEach(function(clip){
+        var clipTs=clip.date?new Date(clip.date).getTime():null;
+        if(!clipTs) return;
+        var diff=Math.abs(clipTs-playTs);
+        if(diff<bestDiff){bestDiff=diff;best=clip;}
+      });
+      if(best){
+        lastVideoClip=best;
+        patchFeedItemWithClip(playTs,gpk,best);
+      }
+    });
+  }
+}
+
+function openVideoDebugPanel(){
+  var p=document.getElementById('videoDebugPanel');
+  if(!p) return;
+  p.style.display='flex';
+  renderVideoDebugPanel();
+}
+function closeVideoDebugPanel(){
+  var p=document.getElementById('videoDebugPanel');
+  if(p) p.style.display='none';
+}
+async function refreshVideoDebugPanel(){
+  var btn=document.getElementById('videoDebugRefreshBtn');
+  if(btn){btn.textContent='⏳ Fetching...';btn.disabled=true;}
+  await pollPendingVideoClips();
+  renderVideoDebugPanel();
+  if(btn){btn.textContent='↻ Fetch Now';btn.disabled=false;}
+}
+function renderVideoDebugPanel(){
+  var el=document.getElementById('videoDebugList');
+  if(!el) return;
+  var html='';
+
+  // ── Section 1: HR / scoring play feed items and their clip-patch state ──────
+  var feed=document.getElementById('feed');
+  var cutoff=Date.now()-2*60*60*1000;
+  var hrItems=feedItems.filter(function(item){
+    if(!item.data||!item.data.batterId) return false;
+    if(item.data.event!=='Home Run'&&!item.data.scoring) return false;
+    return item.ts&&item.ts.getTime()>=cutoff;
+  });
+  html+='<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+  html+='<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text)">🎯 HR / scoring plays in last 2h — '+hrItems.length+' found</div>';
+  if(!hrItems.length){
+    html+='<div style="padding:8px 12px;color:var(--muted)">No qualifying plays in feedItems yet.</div>';
+  } else {
+    hrItems.slice().reverse().forEach(function(item){
+      var domEl=feed&&feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
+      var patched=domEl&&domEl.dataset.clipPatched==='1';
+      var patchBadge=patched?'<span style="background:rgba(34,197,94,.2);color:#4ade80;padding:1px 6px;border-radius:4px">✓ clip attached</span>':'<span style="background:rgba(245,158,11,.18);color:#fbbf24;padding:1px 6px;border-radius:4px">⏳ pending</span>';
+      var domBadge=domEl?'<span style="color:var(--muted)">in DOM</span>':'<span style="color:#f87171">not in DOM</span>';
+      html+='<div style="padding:7px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+      html+=patchBadge+' '+domBadge;
+      html+='<span style="color:var(--text)">'+escHtml(item.data.batterName||'?')+'</span>';
+      html+='<span style="color:var(--muted)">'+escHtml(item.data.event||'')+'</span>';
+      html+='<span style="color:var(--muted);font-size:.65rem">pk:'+item.gamePk+' ts:'+new Date(item.ts).toLocaleTimeString()+'</span>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+
+  // ── Section 2: liveContentCache per game ───────────────────────────────────
+  var pks=Object.keys(liveContentCache);
+  html+='<div style="margin-bottom:8px;font-weight:700;color:var(--text);font-size:.8rem">📦 liveContentCache — '+pks.length+' game'+(pks.length===1?'':'s')+'</div>';
+  if(!pks.length){
+    html+='<div style="color:var(--muted);padding:8px 0 4px">No content fetched yet. Click "↻ Fetch Now" above after HR plays appear in the feed.</div>';
+  }
+  pks.forEach(function(pk){
+    var entry=liveContentCache[pk];
+    var clips=entry.items||[];
+    var age=Math.round((Date.now()-entry.fetchedAt)/1000);
+    html+='<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+    html+='<div style="background:var(--card2);padding:8px 12px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center">';
+    html+='<span>Game '+pk+' &nbsp;<span style="color:var(--muted);font-weight:400">('+clips.length+' video clips)</span></span>';
+    html+='<span style="color:var(--muted);font-size:.65rem;font-weight:400">fetched '+age+'s ago</span>';
+    html+='</div>';
+    if(!clips.length){
+      html+='<div style="padding:8px 12px;color:var(--muted)">No playable video clips returned from API.</div>';
+    } else {
+      clips.forEach(function(clip,i){
+        var title=(clip.headline||clip.blurb||'').toLowerCase();
+        var isStatcast2=(title.indexOf('statcast')!==-1||title.indexOf('savant')!==-1)||
+          (clip.keywordsAll||[]).some(function(kw){var v=(kw.value||kw.slug||'').toLowerCase();return v==='statcast'||v==='savant';});
+        var hasScoringKw=(clip.keywordsAll||[]).some(function(kw){var v=kw.value||kw.slug||'';return v==='home-run'||v==='scoring-play'||v==='walk-off';});
+        var playerIds=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='player_id'||(kw.slug&&kw.slug.startsWith('player_id-'));}).map(function(kw){return kw.type==='player_id'?kw.value:kw.slug.split('-')[1];});
+        var hasPlayback=!!pickPlayback(clip.playbacks);
+        var clipTs=clip.date?new Date(clip.date).getTime():null;
+        var clipAge=clipTs?Math.round((Date.now()-clipTs)/60000)+'m ago':'no date';
+        var statcastBadge=isStatcast2?'<span style="background:rgba(220,60,60,.25);color:#f87171;padding:1px 5px;border-radius:4px">🚫SC</span>':'<span style="background:rgba(34,197,94,.15);color:#4ade80;padding:1px 5px;border-radius:4px">✓bc</span>';
+        var scoringBadge=hasScoringKw?'<span style="background:rgba(245,158,11,.2);color:#fbbf24;padding:1px 5px;border-radius:4px">✓kw</span>':'<span style="color:var(--muted);padding:1px 5px">—kw</span>';
+        var playbackBadge=hasPlayback?'<span style="color:#4ade80">✓mp4</span>':'<span style="color:#f87171">✗mp4</span>';
+        html+='<div style="padding:6px 12px;border-top:1px solid var(--border);'+(isStatcast2?'opacity:.4':'')+'">';
+        html+='<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:3px">';
+        html+='<span style="color:var(--muted);min-width:16px">'+i+'.</span>';
+        html+=statcastBadge+' '+scoringBadge+' '+playbackBadge;
+        html+='<span style="color:var(--muted);font-size:.62rem">'+clipAge+'</span>';
+        html+='</div>';
+        html+='<div style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px" title="'+escHtml(clip.headline||'')+'">'+escHtml(clip.headline||clip.blurb||'(no title)')+'</div>';
+        if(playerIds.length) html+='<div style="color:var(--muted);font-size:.62rem">player_ids: '+escHtml(playerIds.join(', '))+'</div>';
+        var kwTax=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';}).map(function(kw){return kw.value||kw.slug;}).join(', ');
+        if(kwTax) html+='<div style="color:var(--muted);font-size:.62rem">taxonomy: '+escHtml(kwTax)+'</div>';
+        html+='</div>';
+      });
+    }
+    html+='</div>';
+  });
+
+  el.innerHTML=html;
+}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function copyVideoDebug(){
+  var btn=document.getElementById('videoDebugCopyBtn');
+  function flash(t){if(btn){var o=btn.textContent;btn.textContent=t;setTimeout(function(){btn.textContent=o;},1800);}}
+  var feed=document.getElementById('feed');
+  var cutoff=Date.now()-2*60*60*1000;
+  var pendingItems=feedItems.filter(function(item){
+    return item.data&&item.data.batterId&&(item.data.event==='Home Run'||item.data.scoring)&&item.ts&&item.ts.getTime()>=cutoff;
+  }).map(function(item){
+    var domEl=feed&&feed.querySelector('[data-ts="'+item.ts.getTime()+'"][data-gamepk="'+item.gamePk+'"]');
+    return {gamePk:item.gamePk,batterName:item.data.batterName,batterId:item.data.batterId,event:item.data.event,ts:item.ts.toISOString(),clipPatched:!!(domEl&&domEl.dataset.clipPatched==='1')};
+  });
+  var cacheOut={};
+  Object.keys(liveContentCache).forEach(function(pk){
+    var entry=liveContentCache[pk];
+    cacheOut[pk]={fetchedAt:new Date(entry.fetchedAt).toISOString(),clipCount:(entry.items||[]).length,clips:(entry.items||[]).map(function(clip){
+      var playerIds=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='player_id'||(kw.slug&&kw.slug.startsWith('player_id-'));}).map(function(kw){return kw.type==='player_id'?kw.value:kw.slug.split('-')[1];});
+      var taxonomy=(clip.keywordsAll||[]).filter(function(kw){return kw.type==='taxonomy';}).map(function(kw){return kw.value||kw.slug;});
+      var isStatcast=(clip.headline||clip.blurb||'').toLowerCase().indexOf('statcast')!==-1||taxonomy.some(function(v){return v==='statcast'||v==='savant';});
+      return {id:clip.id,headline:clip.headline||clip.blurb,date:clip.date,isStatcast:isStatcast,hasScoringKw:taxonomy.some(function(v){return v==='home-run'||v==='scoring-play'||v==='walk-off';}),playerIds:playerIds,taxonomy:taxonomy,hasPlayback:!!pickPlayback(clip.playbacks)};
+    })};
+  });
+  var text=JSON.stringify({pendingFeedItems:pendingItems,liveContentCache:cacheOut},null,2);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){flash('✓ Copied!');}).catch(function(){fallbackCopy(text);flash('✓ Copied (fallback)');});
+  } else { fallbackCopy(text); flash('✓ Copied (fallback)'); }
+}
+
+
+function patchFeedItemWithClip(feedItemTs,gamePk,clip){
+  var url=pickPlayback(clip.playbacks);
+  var thumb=pickHeroImage(clip);
+  var title=clip.headline||clip.blurb||'Watch Highlight';
+  if(!url) return;
+  var el=document.querySelector('#feed [data-ts="'+feedItemTs+'"][data-gamepk="'+gamePk+'"]');
+  if(!el||el.dataset.clipPatched) return;
+  el.dataset.clipPatched='1';
+  var wrap=document.createElement('div');
+  wrap.style.cssText='margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto';
+  wrap.innerHTML=(thumb?'<img src="'+thumb+'" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block">':'<div style="width:100%;aspect-ratio:16/9;background:#111"></div>')
+    +'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'
+    +'<div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">▶</div>'
+    +'</div>';
+  wrap.onclick=function(e){e.stopPropagation();openVideoOverlay(url,title);};
+  el.appendChild(wrap);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function pickPlayback(playbacks) {
   if(!playbacks||!playbacks.length) return null;
   var mp4=playbacks.find(function(p){return p.name==='mp4Avc';});
@@ -3057,7 +3375,14 @@ function buildYesterdayHeroes() {
   ydCache.forEach(function(cacheItem){
     var content=yesterdayContentCache[cacheItem.gamePk];
     if(!content) return;
-    var items=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    var allItems=(content.highlights&&content.highlights.highlights&&content.highlights.highlights.items)||[];
+    // Exclude data-visualization (darkroom) clips — they share player_ids but are analysis overlays
+    var items=allItems.filter(function(clip){
+      return !(clip.keywordsAll||[]).some(function(kw){
+        var v=(kw.value||kw.slug||'').toLowerCase();
+        return v==='data-visualization'||v==='data_visualization';
+      });
+    });
     // Group clips by player_id keyword
     var playerClips={};
     items.forEach(function(clip){
@@ -3069,12 +3394,12 @@ function buildYesterdayHeroes() {
       if(!playerClips[pid]) playerClips[pid]={clips:[],name:'',isHR:false,isWalkoff:false,teamAbbr:''};
       playerClips[pid].clips.push(clip);
       // Detect HR
-      var isHRClip=clip.keywordsAll.some(function(kw){return (kw.type==='taxonomy'&&kw.value==='home_run')||kw.slug==='home_run';});
+      var isHRClip=clip.keywordsAll.some(function(kw){return (kw.type==='taxonomy'&&kw.value==='home-run')||kw.slug==='home-run';});
       if(isHRClip) playerClips[pid].isHR=true;
       // Detect walk-off
       var isWO=(clip.headline||'').toLowerCase().indexOf('walk-off')!==-1||
                (clip.blurb||'').toLowerCase().indexOf('walk-off')!==-1||
-               clip.keywordsAll.some(function(kw){return kw.value==='walk_off'||kw.slug==='walk_off';});
+               clip.keywordsAll.some(function(kw){return kw.value==='walk-off'||kw.slug==='walk-off';});
       if(isWO) playerClips[pid].isWalkoff=true;
       // Capture player name from headline if not yet set
       if(!playerClips[pid].name&&clip.headline) playerClips[pid].name=clip.headline.split("'")[0].split(' ').slice(0,2).join(' ');
@@ -3085,11 +3410,11 @@ function buildYesterdayHeroes() {
       seenPlayers[pid]=true;
       var pc=playerClips[pid];
       if(!pc.isHR&&!pc.isWalkoff) return; // only HR hitters and walk-off heroes
-      var hrCount=pc.clips.filter(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});}).length;
+      var hrCount=pc.clips.filter(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home-run'||kw.slug==='home-run';});}).length;
       var role=pc.isWalkoff?'walkoff':hrCount>=2?'multi-HR':'HR';
       // Pick best clip: walk-off/HR first, then longest
       var clip=pc.clips.find(function(c){return pc.isWalkoff&&((c.headline||'').toLowerCase().indexOf('walk-off')!==-1);});
-      if(!clip) clip=pc.clips.find(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home_run'||kw.slug==='home_run';});});
+      if(!clip) clip=pc.clips.find(function(c){return c.keywordsAll&&c.keywordsAll.some(function(kw){return kw.value==='home-run'||kw.slug==='home-run';});});
       if(!clip) clip=pc.clips[0];
       var imgUrl=pickHeroImage(clip)||'';
       if(!imgUrl) return; // skip if no photo
@@ -4450,8 +4775,10 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(action==='replayRBI'){replayRBICard();toggleDevTools();}
     else if(action==='cardVariants'){window.PulseCard.demo();toggleDevTools();}
     else if(action==='testCard'){generateTestCard();toggleDevTools();}
+    else if(action==='testClip'){devTestVideoClip();toggleDevTools();}
     else if(action==='resetCollection'){resetCollection();}
     else if(action==='newsTest'){openNewsSourceTest();toggleDevTools();}
+    else if(action==='videoDebug'){openVideoDebugPanel();toggleDevTools();}
     else if(action==='resetTuning'){resetTuning();}
     else if(action==='captureApp'){captureCurrentTheme('app');}
     else if(action==='capturePulse'){captureCurrentTheme('pulse');}
@@ -5451,13 +5778,17 @@ function renderPlayerStats(s,group){
 
 function escapeNewsHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function forceHttps(url){return url?url.replace(/^http:/,'https:'):url;}
+// Only load images from known news CDN domains — prevents browser requests to unexpected
+// third-party hosts (e.g. podcast avatars in RSS feeds) which can trigger corporate firewalls.
+var NEWS_IMAGE_HOSTS=/\.(mlb\.com|mlbstatic\.com|espn\.com|espncdn\.com|cbssports\.com|cbsi\.com|fangraphs\.com|mlbtraderumors\.com|wp\.com|wordpress\.com|cloudfront\.net|fastly\.net|akamaized\.net|amazonaws\.com|imgix\.net|twimg\.com)$/;
+function isSafeNewsImage(url){if(!url)return false;try{return NEWS_IMAGE_HOSTS.test(new URL(url).hostname);}catch(e){return false;}}
 function decodeNewsHtml(s){var map={'&quot;':'"','&amp;':'&','&lt;':'<','&gt;':'>','&#39;':"'",'&apos;':"'"};return String(s||'').replace(/&(?:#\d+|#x[0-9a-f]+|quot|amp|lt|gt|apos?);/gi,function(e){return map[e.toLowerCase()]||e;}).replace(/&#(\d+);/g,function(m,code){return String.fromCharCode(parseInt(code,10));}).replace(/&#x([0-9a-f]+);/gi,function(m,code){return String.fromCharCode(parseInt(code,16));}); }
 function fmtNewsDate(iso){if(!iso)return '';var d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
 function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var headline=escapeNewsHtml(decodeNewsHtml(a.headline||''));return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
 function mkProxyNewsRow(item){
   var icon=NEWS_SOURCE_ICONS[item.source]||'📰';
   var sourceClass=item.source?' news-thumb--'+item.source:'';
-  var thumb=item.image
+  var thumb=isSafeNewsImage(item.image)
     ? '<div class="news-thumb'+sourceClass+'"><img src="'+escapeNewsHtml(forceHttps(item.image))+'" alt="" onerror="this.parentNode.innerHTML=\'<span class=&quot;news-thumb-placeholder&quot;>'+icon+'</span>\'"></div>'
     : '<div class="news-thumb'+sourceClass+'"><span class="news-thumb-placeholder">'+icon+'</span></div>';
   var src=NEWS_SOURCE_LABELS[item.source]||item.source||'';
@@ -5778,13 +6109,16 @@ document.addEventListener('visibilitychange',function(){
     if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
     if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}
   } else {
-    tabHiddenAt=null;
     if(pulseInitialized&&!demoMode){
-      // Immediate catch-up poll, then resume normal intervals
-      pollLeaguePulse();
+      // Keep tabHiddenAt set during catch-up so pollGamePlays treats missed plays as history
+      // (suppresses HR/RBI cards and sounds for plays that fired while tab was hidden).
+      // Clear it only after the catch-up poll completes.
+      pollLeaguePulse().finally(function(){tabHiddenAt=null;});
       pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
       storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
       if(focusGamePk) focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
+    } else {
+      tabHiddenAt=null;
     }
   }
 });
@@ -5799,6 +6133,7 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'F') { window.FocusCard && window.FocusCard.demo(); }
   if(e.shiftKey && e.key === 'G') { generateTestCard(); }
   if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
+  if(e.shiftKey && e.key === 'W') { devTestVideoClip(); }
   if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
 });
 

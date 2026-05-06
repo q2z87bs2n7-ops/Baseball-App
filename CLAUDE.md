@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. The app is split across three files: `index.html` (HTML structure), `styles.css` (all CSS), and `app.js` (all JavaScript).
 
-**Current version:** v3.34.11
+**Current version:** v3.37.5
 
 **Version history** (full detail in `CHANGELOG.md`):
 
@@ -18,18 +18,12 @@ An MLB sports tracker for MLB, defaulting to the New York Mets. All data is pull
 - **v3.31** — multi-source news aggregator; team color updates (Rockies/Tigers/Royals/Mariners/Brewers per 2026 brand)
 - **v3.32** — floating panels (Settings/Sound/DevTools/RadioCheck) follow Pulse light/dark theme via `:has()` CSS scoping
 - **v3.33** — tech-debt sprint (see `docs/technical-debt/sprints/`)
-- **v3.34** — monolith split: `index.html` → `index.html` + `styles.css` + `app.js`
-- **v3.34.1** — `MLB_TEAM_RADIO` station corrections (7 stations repointed; StreamTheWorld URL pattern for CIN/COL/LAD/MIL/CWS)
-- **v3.34.2** — tab visibility pause: 5 poll timers cleared on hide, immediate catch-up poll on return; `pollGamePlays` `isHistory` extended (`||tabHiddenAt!==null`) to suppress sounds/popups during catch-up sweep
-- **v3.34.3** — Pulse dark mode set as default color scheme
-- **v3.34.4** — Theme Scope setting: "Full App" (existing behavior) vs "Nav Only" (team vars scoped to `<header>` element; rest of app uses Default neutral theme); Theme Scope dropdown added to Settings; `themeScope` global + `switchThemeScope()` function; persisted to `localStorage('mlb_theme_scope')`
-- **v3.34.5** — theme system overhaul: `MLB_THEME` updated to Cubs colors (`#0E3386`/`#CC3433`) and renamed "Default"; Color Theme dropdown order swapped (Default first, Follow Team second); new users default to Default theme on first load; hero gradient in `renderEmptyState` uses dynamic `MLB_THEME.primary`
-- **v3.34.6** — end-of-session CLAUDE.md + version/cache housekeeping
-- **v3.34.7** — Yesterday's Highlights date picker: `‹ date ›` nav in `#ydSectionBar`; `ydChangeDate()` fetches any past date via `loadYdForDate()`; `ydDisplayCache` holds non-yesterday results without polluting `yesterdayCache` used by story carousel; empty state shows "No games played on [date]."
-- **v3.34.8** — end-of-session CLAUDE.md + version/cache housekeeping
-- **v3.34.9** — (reverted version label; no functional changes)
-- **v3.34.10** — fix mixed-content console errors: `forceHttps()` helper upgrades `http://` news image URLs to `https://` in Pulse side-rail carousel and News tab; switch Media tab `loadMediaFeed` from unreliable `api.allorigins.win` proxy to `/api/proxy-youtube` Vercel backend
-- **v3.34.11** — end-of-session CLAUDE.md + version/cache housekeeping
+- **v3.34** — monolith split: `index.html` → `index.html` + `styles.css` + `app.js`; bug fixes: YouTube proxy regex, HR/RBI card flood on tab return, news image allowlist (corporate firewall), YouTube media layout swap (player left, list right 260px)
+- **v3.35** — version bump to main; consolidates v3.34.x patch series
+- **v3.36** — HR video clips: fix 4 bugs (historical plays not queued, player_id slug fallback, undated clips, 30s poll); drop pendingVideoQueue, scan feedItems directly; filter scoring/HR taxonomy; restore player_id as primary match; exclude Statcast/Savant clips; Video Debug panel in Dev Tools
+- **v3.37** — taxonomy hyphens fix (`home_run`→`home-run`); exclude data-visualization (darkroom) clips; 4-tier player matching; restore scoring plays to clip matching; remove carousel video clip integration (`patchStoryWithClip`)
+- **v3.37.3** — exclude ABS challenge clips from video clip matching; ABS clips carry the batter's `player_id` but are pitch-review overlays whose timestamps beat the actual hit clip, causing wrong clip to show
+- **v3.37.5** — remove timestamp fallback from clip matching; only player_id matches produce a clip patch; unmatched plays retry on next 30s poll rather than showing a clip from a different play
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages compatibility)
 **Default team:** New York Mets (id: 121)
@@ -60,7 +54,6 @@ focusCard.js            — runtime dependency: defines window.FocusCard.renderC
 pulse-card-templates.js — runtime dependency: defines window.PulseCard.render()/demo() for HR/RBI card overlays
 daily-events.json       — runtime dependency: static snapshot for client-facing Demo Mode
 collectionCard.js       — runtime dependency: defines window.CollectionCard.renderBook/renderMiniCard/renderRailModule/demo() for Card Collection binder visuals
-demo.html               — non-production design test harness for collectionCard.js; publicly accessible on GitHub Pages but not linked from the app; safe to delete before any merge
 sw.js                   — service worker (PWA caching + push event handling)
 manifest.json           — PWA manifest (install metadata, icons)
 icons/                  — app icons (icon-192.png, icon-512.png, icon-180.png, icon-maskable-512.png, favicon.svg, icon-mono.svg)
@@ -163,6 +156,10 @@ let soundSettings    = { master:false, hr:true, run:true, risp:true,
                          dp:true, tp:true, gameStart:true, gameEnd:true, error:true }
 let rbiCardCooldowns = {}              // gamePk → ms timestamp of last key RBI card shown (90s cooldown)
 let pulseColorScheme = (...)           // 'dark' | 'light' — active Pulse color scheme; persisted to localStorage('mlb_pulse_scheme'); defaults 'light'
+let pendingVideoQueue= []              // unused stub — feedItems is source of truth for clip matching
+let liveContentCache = {}             // gamePk → {items:[], fetchedAt:ms} — re-fetched if >5min stale; data-visualization clips excluded at fill time; separate from yesterdayContentCache
+let lastVideoClip    = null           // most recent matched live clip object — used by devTestVideoClip() as first fallback
+let videoClipPollTimer = null         // setInterval handle (30s) for pollPendingVideoClips()
 
 // ── 📖 Story Carousel globals (v2.7.1+) ──────────────────────────────────────
 let storyPool        = []               // array of story objects ready to rotate
@@ -225,7 +222,7 @@ let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by r
 ```
 
 ### Navigation
-`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `home`, `pulse`, `schedule`, `league`, `news`, `standings`, `stats`, `media`. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
+`showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `pulse`, `home`, `schedule`, `league`, `news`, `standings`, `stats`. Pulse is first and the default-active section. Live game view is a separate overlay (`#liveView`), not a section. **Calling `showSection` while the live view is active automatically closes it first.**
 
 `pulse` is lazy-initialised: `initLeaguePulse()` fires only on the first navigation to the section via a `pulseInitialized` guard inside `showSection`. The sound panel click-outside handler is also registered at that point.
 
@@ -264,7 +261,7 @@ let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by r
 - `.matchup-grid` — 3-column grid, repeat(3,1fr), 8px gap. Goes 2-col at 1024px, 1-col at 480px. (League matchups)
 - `.live-grid` — unequal 3-col (1fr 1.2fr 1.4fr). Collapses at 1024px. (Live game view)
 - `.live-card` — card inside `.live-grid`. Has `min-width:0` (required — grid items default to `min-width:auto`, which lets table content push the track wider than `1fr` and break the layout on mobile)
-- `.media-layout` — 25%/75% grid for media tab (video list + player). Collapses to 1-col at 480px.
+- `.media-layout` — 25%/75% grid for the Home YouTube widget (video list + player). Collapses to 1-col at 480px.
 - `.league-leaders-grid` — 2-col grid for league leader panels. Collapses to 1-col at 480px.
 - `.nav-label` — wraps nav button text. Visible at ≤480px at 9.5px (labels: Home/Pulse/Schedule/League/News/Standings/Stats/Media). Hidden at ≤1024px tablet band (icons only).
 - `.team-chip` — static team name pill in header between logo and nav. Shown at ≥481px, hidden at ≤480px. Updated by `applyTeamTheme`. Not a dropdown — no click handler.
@@ -311,6 +308,9 @@ let collectionSlotsDisplay=[]          // sorted/filtered slot snapshot set by r
 ---
 
 ## CSS Variables Quick Reference
+
+> All variables below are **runtime-computed** — set dynamically by `applyTeamTheme()` and `applyPulseMLBTheme()`. They are not declared in `styles.css`. This table documents their names, purpose, and expected values only.
+
 ```css
 --primary       /* team primary — header, active nav */
 --secondary     /* team accent — highlights, badges, card titles */
@@ -420,6 +420,8 @@ Background is a 3-stop gradient: **opp primary → #111827 50% → active-team c
 **Division Snapshot** — compact standings for active team's division. Source: `/standings`
 
 **Latest News** — top 5 ESPN headlines. Source: ESPN News API
+
+**YouTube Widget** (`#homeYoutubeWidget`) — team's official YouTube channel in a two-panel layout (25% video list / 75% player) at the bottom of the Home tab. Loaded by `loadHomeYoutubeWidget()` which builds the team-colored header and calls `loadMediaFeed(uc)`. First video auto-selected on load. Teams without `youtubeUC` fall back to `MLB_FALLBACK_UC`. **⚠️ Requires deployed URL** — YouTube embeds return Error 153 on `file://`. Source: `/api/proxy-youtube` (Vercel serverless → YouTube channel RSS).
 
 ---
 
@@ -661,7 +663,7 @@ A rotating single-card digest layer surfacing high-level game narratives alongsi
 
 12. **`genOnThisDay()`** — Source: `/schedule?date={MM/DD, 3-year lookback}&season={year}&hydrate=linescore,boxscore,playByPlay` (fetched once at Pulse init, cached). Extracts top batter (by avg), starting pitcher stats (W/L/IP/K/ER), multi-HR hitters, walk-offs, grand slams, no-hitters. ID: `otd_{year}_{gamePk}`. Headline: "On this day 2024: Mets beat PHI 5-2 · deGrom 12K". Priority: 20 (low, contextual only). Cooldown: 60 min.
 
-13. **`genYesterdayHighlights()`** — Source: `/schedule?date={yesterday}&hydrate=linescore,boxscore` (fetched once at Pulse init, cached). Filters for Final games (excludes PPD/Cancelled/Suspended). Extracts: W/L pitcher (by `gameStatus.isWinningPitcher` / `isLosingPitcher` flags) with IP/K/ER stats, save pitcher (if exists), top batter (by batting avg), multi-HR hitters. ID: `yday_{gamePk}_{type}`. Headline: "Yesterday: NYM 5, PHI 2 · W: deGrom 7IP, 10K · L: Wheeler 6IP, 2ER". Priority: 45. Cooldown: 30 min. Shown prominently when <2 live games.
+13. **`genYesterdayHighlights()`** — Source: `/schedule?date={yesterday}&hydrate=linescore,boxscore` (fetched once at Pulse init, cached). Filters for Final games (excludes PPD/Cancelled/Suspended). Extracts: W/L pitcher (by `gameStatus.isWinningPitcher` / `isLosingPitcher` flags) with IP/K/ER stats, save pitcher (if exists), top batter (by batting avg), multi-HR hitters. ID: `yday_{gamePk}_{type}`. **Headline:** uses MLB video title from `/game/{pk}/content` `items[0].headline` when available (e.g. "Aaron Judge's homer leads Yankees over Red Sox"); stats line moves to `sub`. Falls back to generated "Yesterday: NYM 5, PHI 2 · W: deGrom…" when content endpoint returns nothing. Priority: 45. Cooldown: 30 min. Shown prominently when <2 live games.
 
 14. **`genProbablePitchers()`** — Source: `scheduleData` (today only) OR `gameStates` fallback. Hydrate param: `probablePitcher`. Filters: `abstractGameState !== 'Final'` AND `localDate === today`. Extracts pitcher names from `g.teams.away/home.probablePitcher.fullName` or "TBD". ID: `probable_{gamePk}`. Headline: "Scherzer [NYM] vs Kershaw [LAD] · 7:05 PM". Priority: 40. Cooldown: 60 min.
 
@@ -767,15 +769,6 @@ No explicit "mode" needed — the priority + decay math handles adaptation autom
 
 ---
 
-### 📺 Media
-Hidden by default — enabled via the **Media Tab → Show in Navigation** toggle inside the Dev Tools panel. Does not persist across page reloads.
-- Team gradient header, two-panel layout: 25% video list / 75% player
-- Most recent video auto-selected on load
-- Teams without `youtubeUC` fall back to MLB main channel
-- **⚠️ Requires deployed URL** — YouTube embeds return Error 153 on `file://`
-
-Source: YouTube RSS via allorigins.win proxy → 3-attempt retry (1s delay) → DOMParser XML
-
 ---
 
 ### 📰 News
@@ -819,7 +812,7 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **💰 Replay RBI** (`Shift+E`) — calls `replayRBICard()` to replay most recent non-HR RBI card from live feed; bypasses cooldown
 - **💫 Card Variants** (`Shift+V`) — calls `window.PulseCard.demo()` to cycle through all four HR card template variants
 - **🎴 Test Card** (`Shift+G`) — calls `generateTestCard()` to inject one random player card into the collection; bypasses demo mode guard via `force=true`; pool is `rosterData.hitting` (no pitchers) + hitting leaders from `leagueLeadersCache.hitting` and `dailyLeadersCache` (deduplicated, cross-team colors resolved via TEAMS); falls back to active team roster if leader caches are empty
-- **Media Tab → Show in Navigation** — slide toggle; calls `toggleMedia()`; shows/hides the Media nav button and section
+- **📽️ Test Clip** (`Shift+W`) — calls `devTestVideoClip()`; opens `#videoOverlay` with a real MLB clip. Fallback chain: `lastVideoClip` (most recent live match) → `yesterdayContentCache` (populated when Yesterday Recap is opened) → fetches yesterday's first game content on the fly
 - ~~Push Alerts → Show on Desktop~~ — removed; desktop hide is now CSS-only (`#pushRow { display:none }` at ≥1025px)
 - **⚡ Pulse Tuning** (`<details>` collapsible) — numeric inputs for `devTuning` (do **not** apply on keystroke — require Confirm Changes):
   - *Carousel Rotation (ms)* — `devTuning.rotateMs`; default 4500
@@ -879,8 +872,8 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `fetchPlayByPlay()` | Fetches `/game/{gamePk}/playByPlay`; renders completed at-bat log grouped by inning half into `#livePlayByPlay`. Scoring plays highlighted. Silent no-op on error. |
 | `closeLiveView()` | Clears refresh interval, hides live view, restores main |
 | `showSection(id, btn)` | Switches sections; calls closeLiveView() first if live view is active |
-| `loadMedia()` | Builds media card HTML, calls loadMediaFeed |
-| `loadMediaFeed(uc)` | Fetches YouTube RSS via allorigins proxy, 3-attempt retry |
+| `loadHomeYoutubeWidget()` | Builds team-colored YouTube header, calls `loadMediaFeed(uc)`; replaced old `loadMedia()` when Media tab was folded into Home section |
+| `loadMediaFeed(uc)` | Fetches YouTube channel RSS via `/api/proxy-youtube`, populates `mediaVideos[]`, auto-selects first video; serves the Home YouTube widget |
 | `gameGradient(g)` | Returns inline style string for two-team colour gradient (away primary → #111827 → home primary). Used by `renderGameBig` (schedule/history cards). **Not** used by `renderNextGame` — that card builds its own layout-aware gradient so opponent is always left and active team always right. |
 | `hueOf(hex)` | Extracts HSL hue (0–360) from a hex colour string |
 | `hslHex(h, s, l)` | Converts HSL values to hex colour string |
@@ -941,6 +934,11 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 | `updateInningStates()` | Called post-poll; placeholder for inning transition detection (logic in `genInningRecapStories`) |
 | `genInningRecapStories()` | Generates one-shot end-of-inning recap cards. **Primary path (v2.59):** processes `inningRecapsPending{}` keys queued by `pollGamePlays()` at `outs===3` — fires immediately when the inning ends with feedItems fully populated. **Fallback path:** `lastInningState` linescore transition detection for edge cases (zero-play innings, isHistory catch-up). Inner `genRecap(g, recapInning, recapHalf, recapKey)` closure shared by both paths. `inningRecapsFired` Set deduplicates across paths. 19 templates with priorities 0–100. Tier-2, no cooldown/decay. |
 | `replayRBICard(itemIndex)` | Dev tool — scans `feedItems` for most recent non-HR scoring play, calls `showRBICard()` directly (bypasses cooldown). `itemIndex` optional (0 = most recent). Callable from console or `Shift+E`. |
+| `openVideoOverlay(url, title)` | Shows `#videoOverlay` (z-index 800) with the given MP4 URL and title string. Sets `<video src>`, calls `play()`. Backdrop click or ✕ button calls `closeVideoOverlay()`. |
+| `closeVideoOverlay()` | Pauses and clears `#videoOverlayPlayer` src, hides `#videoOverlay`. |
+| `devTestVideoClip()` | Dev tool — opens video overlay using fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game. Wired to `Shift+W` and Dev Tools panel. |
+| `pollPendingVideoClips()` | Background poll (every 30s, also called at end of each `pollLeaguePulse()`). Scans `feedItems` for HR and scoring plays whose DOM element lacks `data-clip-patched`. Fetches `/game/{pk}/content` per game (cached in `liveContentCache`, 5min TTL; data-visualization/darkroom clips excluded at fill time). Excludes Statcast/Savant clips and ABS challenge clips (taxonomy contains both `"abs"` and `"challenge"`) from matching. Match strategy: player_id in scoring-tagged clips (has `home-run`/`scoring-play`/`walk-off` taxonomy) → player_id in broadcast clips. No timestamp fallback — if no player_id match is found the item remains unpatched and retries next poll (clips typically publish 1–2 min after the play). On match: picks nearest timestamp within the player_id pool, sets `lastVideoClip`, calls `patchFeedItemWithClip`. |
+| `patchFeedItemWithClip(feedItemTs, gamePk, clip)` | Finds the HR/scoring-play feed item DOM node via `data-ts` + `data-gamepk`, appends a thumbnail + ▶ overlay div. Clicking opens `openVideoOverlay()`. Guards against double-patching via `el.dataset.clipPatched`. |
 | `calcFocusScore(g)` | Returns a numeric tension score for a live game object from `gameStates`. Formula: closeness (0–60) + situation bonus (runners/RISP/bases-loaded/walk-off/no-hitter) + count bonus (full count +20, 2-strike +12, 2-out +8) × inning multiplier (0.6 early → 2.0 extras). Higher = more exciting. Used by `selectFocusGame()` to auto-pick the best game. |
 | `selectFocusGame()` | Evaluates all live games via `calcFocusScore()`. If a non-focused game scores ≥20pts higher, fires a soft alert via `showFocusAlert()`. On first call with no focused game, calls `setFocusGame()` with the top scorer. Hooked into end of `pollLeaguePulse()`. |
 | `setFocusGame(pk)` | Switches focus to `gamePk pk`. Resets `focusPitchSequence`, `focusCurrentAbIdx`, player stats, dismisses any open alert. If overlay is open, re-renders it. Starts `pollFocusLinescore()` immediately and schedules it every 5s via `focusFastTimer`. Does not modify `focusIsManual` — callers control that flag. |
@@ -1266,9 +1264,8 @@ if (!demoMode) {
 
 **`#playerCardOverlay` must remain at top-level DOM** (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`, `#soundPanel`) — never nested inside `#pulse` or any other section. Sections create stacking contexts and can be `display:none`, which either traps the overlay's z-index or hides it entirely when the collection is opened from non-Pulse sections. This is the same established pattern as `#soundPanel` (moved in v2.57.6). Current z-index: 600 (above binder's 500).
 
-### demo.html
+**`#videoOverlay`** — top-level sibling of all other overlays. z-index: 800 (above `#playerCardOverlay` 600, `#focusOverlay` 700 — intentionally highest non-modal overlay so it covers the feed when open). Contains `#videoOverlayTitle` (clip headline) and `#videoOverlayPlayer` (`<video controls>`). Opened by `openVideoOverlay(url, title)`, closed by `closeVideoOverlay()` or backdrop click. Never auto-opens — always user-initiated via ▶ button on feed item or ▶ WATCH pill on story card.
 
-`demo.html` at repo root is a non-production design test harness for `collectionCard.js` visuals. It is publicly accessible on GitHub Pages but not linked from the app. It can be deleted before merging to main if desired — it is not referenced by `index.html`, `sw.js`, or `manifest.json`.
 
 ---
 
@@ -1281,7 +1278,7 @@ Background terrestrial sports-radio audio that auto-pairs to the user's currentl
 Whether a team's flagship feed plays in 📻 Live Game Radio is controlled by **one place**:
 
 ```javascript
-// app.js ~line 4059
+// app.js ~line 4431
 const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
 ```
 
@@ -1447,7 +1444,7 @@ Date: YYYY-MM-DD
 2. ▶ test each station, mark ✅/❌, add notes (e.g. "plays ads from first pitch")
 3. 📋 Copy Results
 4. Paste into a Claude session
-5. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`index.html` ~line 4198) — add `teamId`s for newly-verified ✅ stations, remove any newly-failing ❌ ones
+5. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`app.js` ~line 4431) — add `teamId`s for newly-verified ✅ stations, remove any newly-failing ❌ ones
 6. Update the comment "last updated YYYY-MM-DD"
 7. Bump `<title>` + settings panel version + `sw.js` CACHE
 8. Commit + push to `claude/focus-mode-team-radio` (or current radio branch)
@@ -1647,6 +1644,7 @@ On every commit that changes app content, bump **three** things:
 | `Shift+D` | `toggleDevTools()` | Toggle Dev Tools panel open/closed |
 | `Shift+F` | `window.FocusCard.demo()` | Open Focus Mode demo overlay with sample data |
 | `Shift+G` | `generateTestCard()` | Inject one random card into the collection (bypasses demo mode guard) |
+| `Shift+W` | `devTestVideoClip()` | Open video overlay with most recent live clip → yesterdayContentCache fallback → fetches yesterday's first game |
 
 ### Demo Mode (Shift+H)
 
@@ -1689,15 +1687,13 @@ document.addEventListener('keydown', function(e) {
 
 ---
 
-## Known Open Issues
+## ⚠️ Critical Gotchas
 
-1. **News fallback** — if ESPN API is CORS-blocked, no fallback source.
-4. **Around the League leaders index mapping** — empirically derived, fragile. Re-test if API response order changes.
-5. **allorigins.win proxy** — no SLA, free service. Retry logic (3 attempts, 1s gap) mitigates failures.
-6. **YouTube channel IDs** — 27 of 30 `youtubeUC` values unverified. QC needed each offseason.
-7. **Date strings use local time** — all `startDate`/`endDate` params in `index.html` are built from `getFullYear`/`getMonth`/`getDate` (local). Avoid `toISOString().split('T')[0]` for date params — it returns UTC and will be one day ahead after ~8 PM ET, causing games to be skipped (fixed v1.45.5). `api/notify.js` intentionally uses UTC since it runs on Vercel servers and compares timestamps, not dates. **Calendar `gameByDate` key also uses local timezone conversion (fixed v1.61)** — previously used `gameDate.split('T')[0]` (UTC), which placed evening US games on the wrong calendar cell.
-8. **Audacy radio rights gap** — ~14 MLB market flagships hosted by Audacy (URLs `live.amperwave.net/manifest/audacy-*`) play alternate content during games (talk shows / ads) instead of the OTA simulcast, because Audacy holds OTA rights but not MLB streaming rights. The radio.net-published URL is correct for the station but useless for game audio. Affected teams default to Fox Sports fallback via `APPROVED_RADIO_TEAM_IDS`. Fix requires sourcing replacement URLs from non-Audacy CDNs (iHeartRadio / StreamTheWorld / Bonneville / station apps). See "📻 Live Game Radio System" → "Audacy rights gap".
-9. **Hls.js CDN dependency** — `hls.light.min.js@1.5.18` loaded from `cdn.jsdelivr.net` (not stored in repo, not in `sw.js` SHELL cache). If the CDN goes down, all `format:'hls'` radio streams break in non-Safari browsers; Safari users keep working via native HLS. Worth bundling locally if the CDN ever becomes unreliable.
+These are subtle bugs that could be silently re-introduced. Full project issue list: `docs/KNOWN_ISSUES.md`.
+
+1. **Date strings use local time** — all `startDate`/`endDate` params are built from `getFullYear`/`getMonth`/`getDate` (local). Avoid `toISOString().split('T')[0]` for date params — it returns UTC and will be one day ahead after ~8 PM ET, causing games to be skipped (fixed v1.45.5). `api/notify.js` intentionally uses UTC since it runs on Vercel servers and compares timestamps, not dates. **Calendar `gameByDate` key also uses local timezone conversion (fixed v1.61)** — previously used `gameDate.split('T')[0]` (UTC), which placed evening US games on the wrong calendar cell.
+
+2. **Audacy radio rights gap** — ~14 MLB market flagships hosted by Audacy (URLs `live.amperwave.net/manifest/audacy-*`) play alternate content during games (talk shows / ads) instead of the OTA simulcast. The radio.net-published URL is correct for the station but useless for game audio. Affected teams must stay off `APPROVED_RADIO_TEAM_IDS`. Adding an Audacy-hosted team to the approved list will silently stream ads instead of game audio. Fix requires sourcing replacement URLs from non-Audacy CDNs. See "📻 Live Game Radio System" → "Audacy rights gap".
 
 ---
 
@@ -1718,6 +1714,7 @@ document.addEventListener('keydown', function(e) {
 | `MLB_TEAM_RADIO` URLs | radio.net-sourced; stations may change CDNs or drop streams | Re-run 🔍 Radio Check sweep periodically; replace broken URLs |
 | `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated from Radio Check sweep — last updated 2026-05-02 | Update Set when sweep results change; comment date should match |
 | Hls.js CDN URL | `cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.light.min.js` — pinned version, free CDN, no SLA | Bundle locally if CDN unreliable; pinned version avoids surprise upgrades |
+| `NEWS_IMAGE_HOSTS` allowlist (`app.js`) | Hand-curated CDN domain list — if a news source migrates image CDN, their thumbnails silently fall back to placeholder icon with no visible error | If thumbnails go missing after source change, add new hostname to `NEWS_IMAGE_HOSTS` regex in `app.js` |
 
 ---
 
@@ -1734,141 +1731,7 @@ document.addEventListener('keydown', function(e) {
 
 ## Feature Backlog
 
-- [x] 🎯 Focus Mode — `calcFocusScore()` auto-selects most exciting live game; `selectFocusGame()` hooked into `pollLeaguePulse()` (v2.61)
-- [x] 🎯 Focus Mode — Tier 1 linescore poll every 5s: balls/strikes/outs/runners/matchup names/score/team colors (v2.61)
-- [x] 🎯 Focus Mode — Tier 2 GUMBO fetch every 5s: full `focusPitchSequence` for current at-bat; new-AB detection resets sequence (v2.61)
-- [x] 🎯 Focus Mode — `#focusCard` compact card in right side rail (desktop/iPad landscape); full-width within 320px rail (v2.61)
-- [x] 🎯 Focus Mode — `#focusMiniBar` slim strip below ticker; visible on phone and iPad portrait, hidden on desktop/iPad landscape via CSS (v2.61)
-- [x] 🎯 Focus Mode — `#focusOverlay` full modal with hero count pips, diamond, matchup stats, pitch sequence, game switcher; custom 4px scrollbar (v2.61)
-- [x] 🎯 Focus Mode — Soft alert `#focusAlertStack` for game-switch suggestions; 90s per-game cooldown (v2.61)
-- [x] 🎯 Focus Mode — `focusCard.js` visual templates: `window.FocusCard.renderCard/renderOverlay/renderPitchPill/demo()`; `Shift+F` shortcut (v2.61)
-- [x] 🎯 Focus Mode — Session-cached player stats (`focusStatsCache`); batter AVG/OPS/HR/RBI + pitcher ERA/WHIP/W/L in overlay (v2.61)
-- [x] 🎯 Focus Mode — Pitch types shown as full name (`typeName`: "Sinker", "Sweeper") not abbreviated code; `typeCode` fallback if absent (v2.61)
-- [x] 🎯 Focus Mode — Last-pitch strip in both compact card and overlay: pitch name + speed + result with color-coded dot (v2.61)
-- [x] 🎯 Focus Mode — Demo Mode guard: all focus polls return early when `demoMode=true`; focus card hidden during demo (v2.61)
-- [x] ⚡ Pulse — League-wide live play-by-play feed merged into index.html as lazy-loaded nav section (v2.1)
-- [x] ⚡ Pulse — Mock mode toggle and Sound Alerts trigger moved to Settings panel (v2.1)
-- [x] ⚡ Pulse — Mock bar inline (not fixed-position); no conflict with mobile nav (v2.1)
-- [x] ⚡ Pulse — Game-start fires on `detailedState === 'In Progress'` only, not warmup (v2.1)
-- [x] ⚡ Pulse — Timestamps stale check skips playByPlay fetch when game state unchanged (v2.1)
-- [x] ⚡ Pulse — Historical plays load on first poll without alerts/sounds; sorted chronologically across all games (v2.1)
-- [x] Calendar — Postponed/Cancelled/Suspended games show grey `PPD` badge instead of crashing to "L undefined-undefined"; `selectCalGame` renders info card, skips linescore fetch (v2.2)
-- [x] Calendar — Doubleheader support: `gamesByDate` array per date; DH cells show `DH` badge + stacked G1/G2 rows each independently clickable; dot reflects combined result (v2.2)
-- [x] Calendar — DH cell mobile fix: outer onclick restored (defaults to G1); inner rows hidden on mobile so outer was the only target — tapping did nothing and left two cells highlighted (v2.5)
-- [x] Calendar — DH detail panel shows both games: `buildGameDetailPanel` extracted, called for all games on date in parallel; each state (PPD, Upcoming, Live, Final) handled independently with Game 1/2 labels (v2.6)
-- [x] Calendar — PPD mobile dot: `cal-dot-ppd` (grey `--muted`) added; shown when all games on a date are PPD and no result recorded; W+PPD and L+PPD still show result dot (v2.6)
-- [x] News — MLB/Team toggle pills added to News Feed section; defaults to MLB stream; team pill label updates on team switch; home card always shows team news (v2.6.1)
-- [x] Calendar — Linescore R/H/E null guards tightened (`!=null` per field) to prevent `undefined` display on partial-data games (v2.2)
-- [x] ⚡ Pulse — Ticker shows `PPD` instead of `FINAL` for postponed/cancelled/suspended games (v2.2)
-- [x] ⚡ Pulse — 🌧️ "Game Postponed" feed item fired instead of 🏁 "Game Final" + gameEnd sound for PPD transitions (v2.2)
-- [x] ⚡ Pulse — Historical status items synthesised on first load: Game Final (with `linescore.gameDurationMinutes` duration label + accurate end-time sort), Game Postponed, Game Underway, Game Delayed (v2.2)
-- [x] ⚡ Pulse — Game Final feed item anchored after last play timestamp (`pendingFinalItems` deferred insert); omitted if no plays found; PPD item suppressed before scheduled game time (v2.3)
-- [x] ⚡ Pulse — Feed items inserted at correct timestamp position on every poll; late-arriving plays no longer float to top (v2.3)
-- [x] ⚡ Pulse — Player card flash on HR: baseball-card overlay with headshot, AVG/OPS/HR count-up animation/RBI, milestone + team-leader context pill; auto-dismisses 5.5s; mock plays have embedded stats to bypass API (v2.7)
-- [x] ⚡ Pulse — HR toast suppressed — player card replaces it; run/TP toasts unaffected (v2.7)
-- [x] ⚡ Pulse — HR feed items: stronger amber background + 3px amber left border stripe; visually outranks green scoring plays (v2.7)
-- [x] ⚡ Pulse — RISP left accent stripe removed; ⚡ badge + base diamond chip on ticker are sufficient (v2.7)
-- [x] ⚡ Pulse — Game Delayed feed items now show team abbreviations ("SD @ AZ · Delayed Start") in both initial-load and live-update paths (v2.7)
-- [x] ⚡ Pulse — Real poll interval leak into mock mode fixed: `pulseTimer` global stores `setInterval` handle; `switchMode()` clears it (v2.7)
-- [x] 📖 Story Carousel — Event stream with priority-weighted rotation, cooldowns, and decay (v2.7.1+). 13 story generators covering realtime (HR, no-hitter, walk-off, bases loaded, big inning), game status (final, streak), daily stats (multi-hit, leaders, pitcher gem), and historical (yesterday, on this day, probable pitchers)
-- [x] 📖 Story Carousel — Auto-rotate every 20s with manual prev/next; Display winning/losing/save pitcher with IP/K/ER stats in yesterday/on-this-day stories
-- [x] 📖 Story Carousel — HR card redesign: past-tense headline, YTD stats sub-line (HR/RBI/AVG/OPS), HIGHLIGHT badge, multi-homer collapse with priority boost (v2.9)
-- [x] 📖 Story Carousel — Probable pitcher W-L record shown in matchup headline (fetched via `loadProbablePitcherStats`); defaults to 0-0 (v2.9)
-- [x] 📖 Story Carousel — Streak/leader sub-lines cleaned up; Season Leader badge replaces TODAY badge on leader cards (v2.9)
-- [x] 📖 Story Carousel — Auto-rotate reduced to 10s (was 20s) (v2.9)
-- [x] 📖 Story Carousel — Probable Pitchers badge changed from UPCOMING to TODAY'S PROBABLE PITCHERS (v2.9)
-- [x] ⚡ Pulse — DH game 2 excluded from NEXT UP empty-state hero card while game 1 is live (v2.9)
-- [x] 📖 Story Carousel — Lazy Statcast distance: `pollGamePlays` patches `item.data.distance` on subsequent fetches once `hitData.totalDistance` populates; HR headline shows "Xft" when available (v2.9)
-- [x] 📖 Story Carousel — Big-inning card: HIGHLIGHT badge + crimson background (`rgba(220,60,60,0.13)`) via `.story-biginning` CSS class, distinct from HR amber (v2.9.1)
-- [x] 📖 Story Carousel — Big-inning card sub-line simplified to "AWAY @ HOME" — score removed (v2.12.2)
-- [x] 📖 Story Carousel — Cooldowns dynamically capped to `pool.length × devTuning.rotateMs × 1.5` (floor 2 min) so thin pre-game pools recycle cards in seconds rather than hitting 60-min nominal cooldowns (v2.12.3)
-- [x] ⚡ Pulse — Ticker chips stacked vertically: away-team row / home-team row / inning+outs row; reduces chip width significantly vs prior horizontal layout (v2.13)
-- [x] ⚡ Pulse — Out-dot indicators on ticker chips: 3 small circles (red hollow outline → filled `#e03030`) showing current out count; displayed on both normal and RISP chips' inning row; only visible for live games (v2.13)
-- [x] ⚡ Pulse — Live dot changed from red to green (`#22c55e`, pulse-ring animation updated to match) to avoid visual clash with red out-dot indicators (v2.13)
-- [x] ⚡ Pulse — Dot-spacer on home-team row of normal chips so both team abbreviations share the same left edge regardless of live-dot presence (v2.13)
-- [x] ⚡ Pulse — RISP chip bottom row left-aligns diamond + inning + outs with `gap: 6px`; removed `justify-content: space-between` that previously pushed inning to the far right (v2.13)
-- [x] 📖 Story Carousel — Stolen base story card: 💨 tier-2/priority-55 for 2B/3B steals, 🏃 tier-1/priority-85 for steal of home; carousel-only (stolen base plays intercepted before feed via `stolenBaseEvents[]` tracker); `isHistory` guard ensures only live events fire (v2.14)
-- [x] ⚡ Pulse — HR play description patched on subsequent polls when MLB API delivers initial play without season count in parentheses; `pollGamePlays` patch loop extended to update `item.data.desc` alongside distance (v2.9.1)
-- [x] ⚡ Pulse — Player card +1 fix: `desc` passed to `showPlayerCard` as `descHint`; HR number extracted from description used as floor for `hrCount` when stats API is stale; milestone context pill uses resolved `hrCount` (v2.9.1)
-- [x] 📖 Story Carousel — Daily leaders consolidated to one story per stat with MLB top-5 ranked list (last name + value, `<br>`-separated); stats expanded from {HR, H, RBI, K, SV} to {HR, AVG, RBI, SB, Pitching Wins, Saves}; fetch limit raised 1→5 (v2.9.2)
-- [x] ⚡ Pulse — Distinct HR colors: Story Carousel tier-1 HR cards use teal (`rgba(0,195,175)`); feed HR play items use violet (`rgba(160,100,255)`) via `--hr-bg`/`--hr-border`; previously both shared amber (v2.10/v2.11)
-- [x] ⚡ Pulse — ⚡ Pulse banner: flush-left label only (hairline rule removed); bolt uses `var(--accent)`, text in `var(--muted)` uppercase (v2.10/v2.11)
-- [x] ⚡ Pulse — feedWrap contained-module: `1px solid var(--border)` border + `border-radius` gives the feed a self-contained card feel distinct from the carousel above (v2.10)
-- [x] 📖 Story Carousel — Daily leader sub-lines (1–5 rankings) now single horizontal row joined with ` · ` instead of stacked `<br>` lines; `.story-leaders` CSS class makes sub-text match headline size (14px, `var(--text)`, weight 600) (v2.11)
-- [x] 📖 Story Carousel — Walk-off story fires on game state alone (bottom 9th+, tied/1-run) — no runner on base required; per-inning ID (`walkoff_{pk}_{inning}`) so extra innings each get a fresh card; cooldown raised 1m → 5m to prevent repeated firing within the same inning (v2.11)
-- [x] 📖 Story Carousel — Walk-off detection tightened to winning-run-at-bat logic: `deficit ≤ runnersOn + 1` — correctly fires for tied/down-1-with-runner/down-2-with-2-runners/bases-loaded-down-3; no longer fires when home leads or trailing by more than runners can cover (v2.12.1)
-- [x] 📖 Story Carousel — Bases loaded story card: tier-1, priority 88, fires any inning/half when all three bases occupied; per half-inning ID prevents duplicate; 3-min cooldown, 80% decay (v2.12)
-- [ ] 📖 Card Collection — Binder scrolls on desktop because `#collectionBook` uses `max-height:90vh` (not an explicit `height`), so `.cc-binder{height:100%}` resolves against content height and the flex chain has no definite reference; `.cc-page` overflows when `.cc-grid{min-height:600px}` + 44px padding exceeds available space. Fix: change `#collectionBook` to `height:min(96vh,920px)` (definite height) + widen `max-width:960px` → `1200px` + drop `min-height:600px` from `.cc-grid` so `height:100%` fills naturally. Needs visual QA before shipping — previous attempt at the fix was reverted due to look/feel concerns.
-- [ ] ⚡ Pulse — HR/RBI player cards: Career stats expansion — 2024 career HR high by year, hot streak context (last 10-game average, current streak), populate from `/people/{id}/stats` with season=all; currently shows placeholders (deferred to future branch, v2.31)
-- [ ] 📖 Story Carousel — HR distance via Statcast (`hitData.totalDistance` in `/game/{pk}/playByPlay`) needs real-world verification — field may not populate for all games or all parks; confirm distance appears in headlines during live play
-- [ ] ⚡ Pulse — "Game underway!" feed ordering: status items for games transitioning to In Progress appear near the top of the newest-first feed instead of being anchored to the game's scheduled start time; root cause likely `gameDateMs` null/stale or else-branch `playTime` missing at line 1162; deferred — data usage too high to investigate further
-- [ ] ⚡ Pulse — Sound system upgrade: replace Web Audio API synthesis with real CC0 MP3 samples. Infrastructure is fully in place (branch `claude/explore-platform-sound-LSGL8`, merged fixes to main via v2.64.x). To complete: source 9 CC0 audio files from Pixabay (no attribution required), encode each as base64 (`base64 -i file.mp3` on macOS), paste into `SOUND_DATA` object in index.html. Events needing samples: `hr` (bat crack + crowd), `run` (bell/chime), `risp` (heartbeat/tension), `sb` (whoosh), `dp` (glove pop ×2), `tp` (bugle fanfare), `gameStart` (organ riff), `gameEnd` (descending chime), `error` (thud). Synthesis fallbacks remain active for any key left as empty string. iOS/shared-context fix already landed (v2.64.4): single `_audioCtx` created on master-toggle user gesture, `playSound()` awaits resume via `.then()` before dispatching, prevents silent audio on suspended context. UAT checklist: `Shift+R` (HR), `Shift+E` (RBI/run), demo at 10x for DP/TP/SB/error/RISP, 1x for gameStart/gameEnd.
-- [ ] ⚡ Pulse — Feed item cap logos (small team image in meta row alongside coloured dot)
-- [ ] ⚡ Pulse — Probable pitchers on empty state hero card (`hydrate=probablePitcher`)
-- [ ] ⚡ Pulse — Persist `enabledGames` to localStorage (game filter survives reload)
-- [ ] ⚡ Pulse — 30-team colour QA across ticker chips and empty state gradients
-- [ ] ⚡ Pulse — Push notification integration for league-wide game-start alerts
-- [ ] Switch cron trigger from GitHub Actions to Vercel Cron (`vercel.json`) — GitHub Actions scheduled workflows are unreliable on free tier (fires ~once per hour in practice vs every 5 min as configured), making game-start alerts miss most windows; Vercel Cron runs directly on the same infra as the notify function and is more reliable
-- [ ] Push notification team filter — currently fires for any MLB game start; add per-user team preference stored with subscription in Redis
-- [ ] Clean up KV naming — rename `const kv` variable to `redis` in all three api files; rename env vars `KV_REST_API_URL`/`KV_REST_API_TOKEN` to clearer Upstash-prefixed names in both code and Vercel dashboard (env var names were auto-generated by Vercel's Upstash integration)
-- [x] Rename `--blue`/`--orange` CSS vars to `--primary`/`--secondary` — names are misleading for non-blue/orange teams (v1.45.1)
-- [x] Fix live header text colour — `.live-team-name` and `.live-team-score` now use `var(--header-text)` instead of hardcoded `#fff`/`--accent-text` (v1.54)
-- [x] Team-aware live badge — tinted/outlined using `--accent` (v1.53); W/L badges intentionally kept as fixed green/red (semantic meaning)
-- [x] Team cap logos in Around the League matchup grid — `teamCapImg()` with `capImgError()` SVG fallback; drop-shadow for dark logo visibility (v1.55)
-- [x] Yesterday/Today/Tomorrow day toggle on Around the League matchups — opacity fade transition, resets to Today on tab open (v1.58)
-- [x] Live game view shows FINAL (not LIVE) for completed games — `/schedule?gamePk=` fetched in same `Promise.all`, stops auto-refresh when Final (v1.58)
-- [x] Standardise stat display formatting — `fmtRate` for no-leading-zero rate stats; ERA 2dp; WHIP 3dp everywhere; K/BB, K/9, BB/9 2dp (v1.59)
-- [x] Mobile: hide "Refresh" label on matchup day controls (≤480px), icon-only ↻ with adequate touch target, prevents row overflow on narrow screens (v1.60)
-- [x] Warmup/Pre-Game state no longer shown as Live — `detailedState` exclusion applied in home card, calendar, and Around the League (v1.61)
-- [x] Calendar date timezone fix — `gameByDate` keyed by local date (via `new Date()`) instead of UTC `gameDate.split('T')[0]`; fixes evening games appearing on wrong calendar day (v1.61)
-- [ ] News fallback source (MLB RSS)
-- [ ] Last 10 games record widget
-- [ ] Dynamic season year
-- [ ] QC all 30 team YouTube channel IDs
-- [ ] Consider more reliable CORS proxy for YouTube RSS
-- [x] --accent / --header-text theme vars, cross-team contrast safety (v1.39)
-- [x] Theme flash prevention — localStorage pre-render hydration (v1.39)
-- [x] W/L outlined neutral badge pills; cal LIVE pill (v1.39)
-- [x] Nav active state soft pill; header text via --header-text (v1.39)
-- [x] Hero stat box (first stat spans 2-col at 2.2rem) (v1.39)
-- [x] Jersey # overlay pill on player headshot (v1.39)
-- [x] Leader stat filter pills above select dropdowns (v1.39)
-- [x] Opposition-forward home cards — 5-col Next Game, ghosted Next Series (v1.39.1)
-- [x] Live game play-by-play log — every at-bat result grouped by inning, scoring plays highlighted (v1.45)
-- [x] Remove redundant At Bat card from live game view — Current Matchup already shows batter (v1.44)
-- [x] Mobile calendar game stats fix — tap now shows tooltip AND populates #gameDetail panel below (v1.43)
-- [x] iPhone horizontal scroll fix — `html{overflow-x:hidden}` + `.live-view` side padding zeroed + `.game-big{padding:16px}` (v1.42)
-- [x] Home screen horizontal scroll fix — `html,body{overflow-x:hidden}` + `.ng-grid`/`.ng-name`/`.ng-score` mobile font overrides on Next Game card (v1.43.1)
-- [x] Today card live state: remove LIVE duplication from label, replace red badge-live pill with subtle inline dot + inning indicator (v1.42.1)
-- [x] Mobile calendar: dot indicators + tap tooltip (v1.41.4)
-- [x] Mobile nav: short labels back, backdrop-blur bg, safe-area padding, accent underline active (v1.41.1)
-- [x] iPad portrait header: stays one line, team chip added, logo wordmark collapses (v1.41.2)
-- [x] Diamond PWA icon set — team-neutral, maskable/monochrome/favicon variants (v1.41.3)
-- [x] PWA install support — manifest, service worker, icons, apple meta tags (v1.40)
-- [x] Web Push game-start notifications — Vercel + Upstash Redis + GitHub Actions cron (v1.40)
-- [x] Game Start Alerts toggle in Settings panel (v1.40)
-- [x] Today's matchup subtle card surfaces, 3-col grid (v1.40)
-- [x] iPhone layout — fixed bottom icon nav bar, scrollable header, settings scrolls with header (v1.38)
-- [x] Extract inline grid styles to CSS classes (.media-layout, .league-leaders-grid) for responsive control (v1.38)
-- [x] Persist user settings via localStorage — team, theme, invert, media tab (v1.37)
-- [x] Player headshots in stats panel with layout-shift-free placeholder (v1.37)
-- [x] Probable pitcher hydration fix — no longer shows TBD when pitchers are announced (v1.37)
-- [x] Schedule tab auto-loads on first visit (`scheduleLoaded` flag — v1.31)
-- [x] Auto-select first player in stats; player name in card title (v1.32)
-- [x] Stats tab shows 40-man roster (includes IL players) instead of active 26-man only (v1.33)
-- [x] Next Game / Next Series home cards
-- [x] Team-aware backgrounds (hue from primary, all bg vars dynamic)
-- [x] Series record on cold load (±7 day fetch in loadTodayGame)
-- [x] Next Series shows series after current, not current series
-- [x] Live game enriched — box score, pitcher game line, game info
-- [x] Nav works from live view — showSection closes live view first
-- [x] Version number in settings panel
-- [x] Giants/Orioles dark accent fix — luminance floor enforced
-- [x] Nav team logo (SVG from mlbstatic.com) replaces ⚾ emoji; team name only, no "Tracker" suffix (v1.36)
-- [x] Color Theme override dropdown in settings — pick any team's colours independently of active team (v1.36)
-- [x] Invert Colours toggle in settings — swaps primary and secondary colours (v1.36)
-- [x] Settings panel closes on click outside (v1.36)
-- [x] iPad responsive layout — CSS grid classes + media queries at ≤1024px and ≤767px (v1.35)
+Full backlog in `docs/BACKLOG.md`. Active blocker: card binder scroll on desktop (see `docs/KNOWN_ISSUES.md` #7).
 
 ---
 
