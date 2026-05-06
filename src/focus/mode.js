@@ -62,6 +62,9 @@ export function selectFocusGame() {
 export function setFocusGame(pk) {
   if(!pk) return;
   state.focusGamePk=pk;
+  if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+    window.Recorder._captureFocusTrack();
+  }
   state.focusPitchSequence=[];
   state.focusCurrentAbIdx=null;
   state.focusLastTimecode=null;
@@ -139,6 +142,9 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
       var d=await r.json();
       var s=(d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat)||{};
       state.focusStatsCache[batterId]={avg:s.avg||'—',obp:s.obp||'—',ops:s.ops||'—',hr:s.homeRuns!=null?s.homeRuns:'—',rbi:s.rbi!=null?s.rbi:'—'};
+      if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+        window.Recorder._captureFocusStat(batterId, 'hitting', state.focusStatsCache[batterId]);
+      }
       changed=true;
     } catch(e){}
   }
@@ -149,6 +155,9 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
       var d2=await r2.json();
       var s2=(d2.stats&&d2.stats[0]&&d2.stats[0].splits&&d2.stats[0].splits[0]&&d2.stats[0].splits[0].stat)||{};
       state.focusStatsCache[pitcherId]={era:s2.era||'—',whip:s2.whip||'—',wins:s2.wins!=null?s2.wins:'—',losses:s2.losses!=null?s2.losses:'—'};
+      if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+        window.Recorder._captureFocusStat(pitcherId, 'pitching', state.focusStatsCache[pitcherId]);
+      }
       changed=true;
     } catch(e){}
   }
@@ -200,6 +209,9 @@ async function pollFocusRich(sig) {
       };
     });
     if(state.focusPitchSequence.length) state.focusState.lastPitch=state.focusPitchSequence[state.focusPitchSequence.length-1];
+    if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+      window.Recorder._captureFocusPitches(cp, state.focusGamePk);
+    }
     renderFocusCard();
     if(state.focusOverlayOpen) renderFocusOverlay();
   } catch(e) { if(e.name!=='AbortError') console.error('pollFocusRich error',e); }

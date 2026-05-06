@@ -163,6 +163,10 @@ export async function pollLeaguePulse() {
     renderSideRailGames();
     pollPendingVideoClips();
     selectFocusGame();
+    if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+      window.Recorder._captureGameStates();
+      window.Recorder._captureFocusTrack();
+    }
     if (_refreshDebugPanel) _refreshDebugPanel();
     var live = Object.values(state.gameStates).filter(function(g) { return g.status === 'Live' && g.detailedState === 'In Progress'; }).length;
     var final = Object.values(state.gameStates).filter(function(g) { return g.status === 'Final'; }).length;
@@ -216,6 +220,9 @@ export async function pollGamePlays(gamePk) {
       var pitcherName = (play.matchup && play.matchup.pitcher && play.matchup.pitcher.fullName) || '';
       var hrDistance = (event === 'Home Run' && play.hitData && play.hitData.totalDistance > 0) ? Math.round(play.hitData.totalDistance) : null;
       addFeedItem(gamePk, { type: 'play', event: event, desc: desc, scoring: isScoringP, awayScore: aScore, homeScore: hScore, inning: inning, halfInning: halfInning, outs: outs, risp: hasRISP, playClass: playClass, playTime: playTime, batterId: batterId, batterName: batterName, pitcherName: pitcherName, distance: hrDistance });
+      if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+        window.Recorder._capturePlayPitches(play, gamePk, g);
+      }
       var isHitEvt = ['Single', 'Double', 'Triple', 'Home Run'].indexOf(event) !== -1;
       if (state.perfectGameTracker[gamePk] === undefined) state.perfectGameTracker[gamePk] = true;
       if (['Walk', 'Hit By Pitch', 'Intentional Walk', 'Error', 'Fielders Choice', 'Catcher Interference'].indexOf(event) !== -1) state.perfectGameTracker[gamePk] = false;

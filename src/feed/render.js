@@ -205,6 +205,9 @@ function addFeedItem(gamePk,data) {
   var idx=state.feedItems.findIndex(function(fi){return fi.ts<=item.ts;});
   if(idx===-1) state.feedItems.push(item); else state.feedItems.splice(idx,0,item);
   if(state.feedItems.length>600) state.feedItems.length=600;
+  if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+    window.Recorder._captureFeedItem(item);
+  }
   var el=buildFeedEl(item);
   el.dataset.ts=item.ts.getTime();
   if(!state.enabledGames.has(+gamePk)) el.classList.add('feed-hidden');

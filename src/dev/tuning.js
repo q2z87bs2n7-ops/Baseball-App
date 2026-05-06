@@ -25,6 +25,7 @@ import { openNewsSourceTest } from './news-test.js';
 import { generateTestCard, resetCollection } from '../collection/book.js';
 import { replayHRCard, replayRBICard } from '../cards/playerCard.js';
 import { openRadioCheck } from '../radio/check.js';
+import { Recorder } from './recorder.js';
 
 const DEBUG = false;
 
@@ -65,6 +66,8 @@ export function toggleDevTools() {
     document.getElementById('tuneFocusSwitchMargin').value = state.devTuning.focus_switch_margin;
     document.getElementById('tuneFocusAlertCooldown').value = state.devTuning.focus_alert_cooldown;
     document.getElementById('lockThemeToggle').checked = state.devColorLocked;
+    Recorder._updateStatus();
+    Recorder._updateButtonState();
   }
 }
 
@@ -218,6 +221,10 @@ export function initDevToolsClickDelegator() {
       else if (action === 'forceFocusGo')      { forceFocusGo(); }
       else if (action === 'forceRecapGo')      { forceRecapGo(); }
       else if (action === 'copySnapshot')      { copyDiagnosticSnapshot(); }
+      else if (action === 'recorderToggle')    { Recorder.toggle(); }
+      else if (action === 'recorderDownload')  { Recorder.download(); }
+      else if (action === 'recorderCopy')      { Recorder.copy(); }
+      else if (action === 'recorderReset')     { Recorder.reset(); }
       else if (action === 'confirm')           { confirmDevToolsChanges(); }
     });
   }

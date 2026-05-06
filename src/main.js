@@ -53,6 +53,10 @@ import {
   openVideoDebugPanel, closeVideoDebugPanel,
   refreshVideoDebugPanel, copyVideoDebug,
 } from './dev/video-debug.js';
+// Demo Recorder — registers window.Recorder as a side-effect of import so the
+// observer hooks in poll.js / feed/render.js / clips.js / focus/mode.js can
+// guard on `window.Recorder?.active` without each module taking a dependency.
+import { Recorder } from './dev/recorder.js';
 import {
   setPanelsCallbacks,
   renderLogCapture, copyLogAsMarkdown, clearDevLog,
@@ -194,7 +198,11 @@ const NEWS_ROTATE_MS=30000;
 // tcLookup imported from ./utils/format.js
 async function fetchBoxscore(gamePk){
   if(!state.boxscoreCache[gamePk]){
-    try{var bsR=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore');if(!bsR.ok)throw new Error(bsR.status);state.boxscoreCache[gamePk]=await bsR.json();}
+    try{var bsR=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore');if(!bsR.ok)throw new Error(bsR.status);state.boxscoreCache[gamePk]=await bsR.json();
+      if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+        window.Recorder._captureBoxscore(gamePk, state.boxscoreCache[gamePk]);
+      }
+    }
     catch(e){return null;}
   }
   return state.boxscoreCache[gamePk];

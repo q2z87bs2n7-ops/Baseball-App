@@ -44,6 +44,9 @@ export async function fetchGameContent(gamePk) {
     var r = await fetch(MLB_BASE + '/game/' + gamePk + '/content');
     var d = await r.json();
     state.yesterdayContentCache[gamePk] = d;
+    if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+      window.Recorder._captureYesterdayContent(gamePk, d);
+    }
     return d;
   } catch (e) {
     state.yesterdayContentCache[gamePk] = null;
@@ -109,6 +112,9 @@ export async function pollPendingVideoClips() {
           }),
           fetchedAt: Date.now()
         };
+        if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+          window.Recorder._captureContentDelta(gpk, state.liveContentCache[gpk].items);
+        }
       } catch (e) { continue; }
     }
     var clips = (state.liveContentCache[gpk] && state.liveContentCache[gpk].items) || [];
