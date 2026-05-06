@@ -3,7 +3,7 @@
 
 // Map feed names to RSS URLs (also used by other endpoints — exported)
 export const MLB_RSS_FEEDS = {
-  mlb: 'https://www.mlb.com/feeds/rss.xml',
+  mlb: 'https://www.mlb.com/feeds/news/rss.xml',
   yankees: 'https://www.mlb.com/yankees/feeds/rss.xml',
   mets: 'https://www.mlb.com/mets/feeds/rss.xml',
   redsox: 'https://www.mlb.com/redsox/feeds/rss.xml',
@@ -38,7 +38,10 @@ export const MLB_RSS_FEEDS = {
 
 // Parse RSS XML into normalized item objects.
 // Returns: [{ title, link, image, pubDate, source, description }]
-//   - image precedence: <media:content> > <media:thumbnail> > <img src> in desc > <enclosure type=image/*>
+//   - image precedence: <media:content> > <media:thumbnail> > <itunes:image>
+//     > <image href> (MLB.com style) > <image><url> > <img src> in desc
+//     > <img src> in content:encoded > <enclosure type=image/*>
+//     > <thumbnail> > scan for any image URL (fallback)
 //   - pubDate normalised to ISO 8601; falls back to '' on parse failure (caller can decide ranking)
 //   - description has HTML stripped + truncated to 150 chars (matches legacy proxy-rss shape)
 export function parseRssItems(xml, sourceKey) {
@@ -85,31 +88,51 @@ export function parseRssItems(xml, sourceKey) {
       if (m) image = pickAttr(m);
     }
 
-    // 3. <itunes:image href="..."> — MLB.com news feeds use this
+    // 3. <itunes:image href="..."> — used by some podcast-flavored feeds
     if (!image) {
       m = new RegExp(`<itunes:image\\b[^>]+href=${ATTR}`).exec(itemXml);
       if (m) image = pickAttr(m);
     }
 
-    // 4. <img src="..."> in description
+    // 4. <image href="..."/> — self-closing image element with href attribute.
+    //    MLB.com /feeds/news/rss.xml uses exactly this; URLs are extension-less
+    //    (img.mlbstatic.com/...) so the last-resort URL scan can't catch them.
+    if (!image) {
+      m = new RegExp(`<image\\b[^>]+href=${ATTR}`).exec(itemXml);
+      if (m) image = pickAttr(m);
+    }
+
+    // 5. <image><url>...</url></image> — native RSS image element
+    if (!image) {
+      m = /<image>\s*<url>([\s\S]*?)<\/url>\s*<\/image>/.exec(itemXml);
+      if (m) image = m[1].trim();
+    }
+
+    // 6. <img src="..."> in description
     if (!image && description) {
       m = new RegExp(`<img\\b[^>]+src=${ATTR}`).exec(description);
       if (m) image = pickAttr(m);
     }
 
-    // 5. <img src="..."> in content:encoded — WordPress (FanGraphs, MLBTR)
+    // 7. <img src="..."> in content:encoded — WordPress (FanGraphs, MLBTR)
     if (!image && contentEncoded) {
       m = new RegExp(`<img\\b[^>]+src=${ATTR}`).exec(contentEncoded);
       if (m) image = pickAttr(m);
     }
 
-    // 6. <enclosure url="..." type="image/...">
+    // 8. <enclosure url="..." type="image/...">
     if (!image) {
       m = new RegExp(`<enclosure\\b[^>]+url=${ATTR}[^>]+type=["']image/`).exec(itemXml);
       if (m) image = pickAttr(m);
     }
 
-    // 7. Last resort: scan the full item for any image-extension URL
+    // 9. <thumbnail>...</thumbnail> without namespace
+    if (!image) {
+      m = /<thumbnail>([\s\S]*?)<\/thumbnail>/.exec(itemXml);
+      if (m) image = m[1].trim();
+    }
+
+    // 10. Last resort: scan the full item for any image-extension URL
     if (!image) {
       m = /https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s"'<>]*)?/i.exec(itemXml);
       if (m) image = m[0];
@@ -141,7 +164,30 @@ export function parseRssItems(xml, sourceKey) {
 }
 
 export default async function handler(req, res) {
-  const { feed = 'mlb' } = req.query;
+  const { feed = 'mlb', debug } = req.query;
+
+  // Debug endpoint: test all feeds from server
+  if (debug === 'all') {
+    const results = { ok: [], errors: [] };
+    for (const [key, url] of Object.entries(MLB_RSS_FEEDS)) {
+      const start = Date.now();
+      try {
+        const response = await fetch(url, { timeout: 8000 });
+        const elapsed = Date.now() - start;
+        if (!response.ok) {
+          results.errors.push({ feed: key, url, status: response.status, elapsed });
+        } else {
+          const xml = await response.text();
+          const itemCount = (xml.match(/<item>/g) || []).length;
+          results.ok.push({ feed: key, url, status: response.status, itemCount, elapsed, size: xml.length });
+        }
+      } catch (e) {
+        const elapsed = Date.now() - start;
+        results.errors.push({ feed: key, url, error: e.message, elapsed });
+      }
+    }
+    return res.status(200).json(results);
+  }
 
   const feedUrl = MLB_RSS_FEEDS[feed];
   if (!feedUrl) {

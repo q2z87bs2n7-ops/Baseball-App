@@ -240,7 +240,7 @@
   .hl-card-right{position:sticky;top:calc(var(--header-h) + 16px);height:fit-content}
   .final-game-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .game-notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:12px}
-  .media-layout{display:grid;grid-template-columns:40% 60%;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px}
+  .media-layout{display:grid;grid-template-columns:1fr 260px;background:#000;border-radius:0 0 12px 12px;overflow:hidden;min-height:520px}
   #homeYoutubeList::-webkit-scrollbar { width: 4px; }
   #homeYoutubeList::-webkit-scrollbar-track { background: transparent; }
   #homeYoutubeList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -838,7 +838,9 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
 .sound-toggle input:checked + .sound-knob { background: color-mix(in srgb, var(--accent) 22%, var(--card)); border-color: var(--accent); }
 .sound-toggle input:checked + .sound-knob::after { transform: translateX(16px); background: var(--accent); }
 
-#devToolsPanel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(560px, 94vw); max-height: 90vh; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 400; overflow-y: auto; display: none; }
+#devToolsPanel { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(760px, 94vw); max-height: 92vh; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 400; overflow-y: auto; display: none; }
+@media (min-width: 1280px) { #devToolsPanel { width: 820px; } }
+.dt-group-hd { padding: 10px 16px 6px; font-size: .58rem; font-weight: 700; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; background: var(--card2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .dev-panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 11px; border-bottom: 1px solid var(--border); }
 .dev-panel-title { font-size: .81rem; font-weight: 700; color: var(--text); }
 .dev-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: .81rem; padding: 2px 5px; border-radius: 4px; line-height: 1; font-family: inherit; }
@@ -935,3 +937,10 @@ body:has(#yesterday.active) #newsSourceTestOverlay {
 .dt-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .dt-box{padding:8px;background:var(--card2);border-radius:4px}
 .dt-color-input{width:100%;height:30px;cursor:pointer;border:1px solid var(--border);border-radius:3px}
+.dt-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.65rem;line-height:1.45;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.dt-log-row{padding:2px 0;border-bottom:1px solid var(--border)}
+.dt-log-row:last-child{border-bottom:none}
+.dt-log-row.lv-error{color:#ff6b6b}
+.dt-log-row.lv-warn{color:#f59e0b}
+.dt-log-row .lv-ts{color:var(--muted);margin-right:6px}
+.dt-log-row .lv-tag{color:var(--muted);margin-right:6px;font-weight:600}

@@ -27,7 +27,7 @@
    4. The HR-count animation (`.pc-hr-val` / `.pc-rbi-val` count-up) still works —
       this module emits matching class names on the value cells.
 
-   5. Demo trigger — see PulseCard.demo() at bottom. Wire to Shift+H if desired.
+   5. Demo trigger — see PulseCard.demo() at bottom. Wired to Shift+V in src/main.js.
    ──────────────────────────────────────────────────────────────────────────── */
 
 (function () {
@@ -221,7 +221,7 @@
     return '<div class="pc-variant pc-' + LABELS[i] + '" data-pulse-card="' + LABELS[i] + '">' + VARIANTS[i](fullCtx) + '</div>';
   }
 
-  // Demo: fire a sample card. Wire to Shift+H during dev.
+  // Demo: fire a sample card. Wired to Shift+V in src/main.js.
   function demo(opts) {
     opts = opts || {};
     var samples = [

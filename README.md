@@ -81,8 +81,9 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 
 | Layer | Technology |
 |---|---|
-| Frontend | Vanilla HTML/CSS/JS — `index.html` (structure) + `styles.css` (all CSS) + `app.js` (all JS, `defer`) |
-| Sidecar JS | `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` (IIFE modules, all `defer` in `<head>`) |
+| Frontend | Vanilla HTML + CSS + ES6 modules — `index.html` + `styles.css` + ~30 modules under `src/` bundled into `dist/app.bundle.js` via esbuild |
+| Sidecar JS | `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` (IIFE modules, all `defer` in `<head>` — exposed via `window.*`) |
+| Bundler | [esbuild](https://esbuild.github.io/) — single command (`npm run build`), IIFE output, ~464KB |
 | Streaming | [Hls.js](https://github.com/video-dev/hls.js) (light build, CDN, ~50KB) for HLS radio streams |
 | Data | [MLB Stats API](https://statsapi.mlb.com/api/v1/) — public, no auth |
 | News | ESPN news endpoint + MLB RSS via Vercel proxy |
@@ -92,7 +93,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 | Hosting | GitHub Pages (static app) + Vercel (serverless API) |
 | Cron | GitHub Actions scheduled workflow |
 
-**No build system.** No bundler, no transpiler, no npm install for the app itself. Edit the right file, push to `main`, GitHub Pages serves it.
+**Build pipeline is opt-in for source edits only.** Push to `main` and GitHub Actions rebuilds the bundle automatically — but `dist/app.bundle.js` is also committed so a manual run isn't required for static hosting. Emergency revert: `git checkout pre-bundle-cleanup-v3.41` restores the legacy `app.js` + `USE_BUNDLE` flag setup.
 
 ---
 
@@ -143,7 +144,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 - `feedItems` capped at 600 entries (oldest trimmed)
 - GUMBO `diffPatch` after initial seed — first call ~500KB, subsequent ~1–5KB
 - Boxscore cache shared across story generators
-- Service worker caches app shell (`index.html`, `styles.css`, `app.js`, sidecar JS) for offline boot
+- Service worker caches app shell (`index.html`, `styles.css`, `dist/app.bundle.js`, sidecar JS) for offline boot
 - Theme variables persisted to localStorage and applied via inline `<script>` in `<head>` to prevent flash-of-wrong-theme on reload
 
 ---
@@ -156,9 +157,9 @@ cd Baseball-App
 python3 -m http.server 8000   # or any static server
 ```
 
-Open `http://localhost:8000`. That's the whole setup — no npm, no env vars required for the app. Push notifications and card sync require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#vercel-environment-variables), but everything else works against the public MLB Stats API.
+Open `http://localhost:8000`. That's the whole setup — no npm, no env vars required for the app. Auth (GitHub OAuth, email magic-link) and push notifications require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#session-storage--cross-device-sync-v38) — they will silently fail without Vercel. Everything else works against the public MLB Stats API.
 
-> Note: YouTube embeds in the Media tab return `Error 153` on `file://` URLs. Use a local server, not double-click.
+> Note: YouTube embeds in the Home tab YouTube widget return `Error 153` on `file://` URLs. Use a local server, not double-click.
 
 ---
 
@@ -167,7 +168,13 @@ Open `http://localhost:8000`. That's the whole setup — no npm, no env vars req
 ```
 index.html                — HTML structure only (no CSS, no JS)
 styles.css                — all CSS
-app.js                    — all JavaScript
+src/                      — ES6 module source (~30 files): main.js + state.js
+                            + config/ + diag/ + utils/ + data/ + ui/ + feed/
+                            + pulse/ + carousel/ + focus/ + cards/ + collection/
+                            + radio/ + push/ + auth/ + sections/ + demo/ + dev/
+                            (full map: docs/module-graph.md)
+build.mjs                 — esbuild driver
+dist/app.bundle.js        — bundled IIFE build (~464KB), served by GitHub Pages
 focusCard.js              — At-Bat Focus Mode visual templates
 pulse-card-templates.js   — HR/RBI player card variants (4 templates)
 collectionCard.js         — Card Collection binder visuals
@@ -184,21 +191,23 @@ api/
   ├── auth/github.js      — GitHub OAuth callback
   ├── auth/email-*.js     — email magic-link request + verify
   └── collection-sync.js  — cross-device card sync
-.github/workflows/        — notify cron + manual test push
-CLAUDE.md                 — full project handoff (~200KB)
+.github/workflows/        — build (auto bundle on push to main)
+                            + notify cron + manual test push
+CLAUDE.md                 — full project handoff (~28KB)
+docs/                     — per-feature deep-dives + module graph + backlog
 ```
 
-For the full breakdown of architecture, every API endpoint, every CSS variable, every story generator, and every quirk — see **[CLAUDE.md](./CLAUDE.md)**.
+For the full breakdown of architecture, every API endpoint, every CSS variable, every story generator, and every quirk — see **[CLAUDE.md](./CLAUDE.md)** and the per-subsystem docs in [`docs/`](./docs).
 
 ---
 
 ## Status & roadmap
 
-**Current version:** v3.34 (May 2026).
+**Current version:** v3.40.0 (May 2026).
 
-The app is feature-complete for personal use and stable in daily operation. Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh.
+The app is feature-complete for personal use and stable in daily operation. Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh. v3.40.0 completes the modular refactor: source lives under `src/` as ES6 modules and ships through esbuild.
 
-Open backlog items live at the bottom of [CLAUDE.md → Feature Backlog](./CLAUDE.md#feature-backlog). Highlights:
+Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
 
 - Career stats expansion on player cards (last 10-game average, hot streak context)
 - Replacement radio URLs for Audacy-affected stations (rights gap)
