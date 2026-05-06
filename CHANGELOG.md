@@ -5,7 +5,44 @@
 
 ---
 
-**Current version:** v3.39.9
+**Current version:** v3.40.0
+
+**v3.40.0** — **Modular refactor complete.** The original 7,127-line `app.js` is now distributed across ~30 ES6 modules under `src/`, with `src/main.js` reduced to ~680 LOC of boot/orchestration glue. All hot mutable state lives in a single `src/state.js` container; importers receive live bindings rather than copying state. Cumulative changes from v3.39.10 → v3.39.35 collapsed below.
+
+  Subsystem extractions (each its own commit on `claude/code-review-MyyeV`):
+  - **Radio Check** sweep tool → `src/radio/check.js` (~210 LOC)
+  - **YouTube Debug** dev panel → `src/dev/youtube-debug.js` (~165 LOC)
+  - **News Source Test** dev panel → `src/dev/news-test.js` (~78 LOC)
+  - **Video Debug** clip-pipeline inspector → `src/dev/video-debug.js` (~125 LOC)
+  - **Dev Tools Panels** (Log Capture, App State, Network Trace, Storage, Service Worker, Test Notification, Live Controls, Diagnostic Snapshot) → `src/dev/panels.js` (~765 LOC)
+  - **Yesterday Recap** overlay → `src/sections/yesterday.js` (~470 LOC)
+  - **UI Overlays** (video overlay, dismissPlayerCard, closeSignInCTA) → `src/ui/overlays.js` (~50 LOC)
+  - **Video clip resolution** (pickPlayback, pickHeroImage, fetchGameContent, patchFeedItemWithClip, pollPendingVideoClips, devTestVideoClip) → `src/data/clips.js` (~210 LOC)
+  - **Card Collection** (tier system + book overlay + collectCard + sync hooks) → `src/collection/book.js` (~458 LOC)
+  - **HR/RBI Player Cards** (resolvePlayerCardData, showPlayerCard, showRBICard, badge helpers, replay shortcuts) → `src/cards/playerCard.js` (~289 LOC)
+  - **Pulse Polling** (pollLeaguePulse, pollGamePlays, getEffectiveDate) → `src/pulse/poll.js` (~261 LOC)
+  - **Dev Tools Tuning UI** + panel-wide click delegator → `src/dev/tuning.js` (~219 LOC)
+  - **Auth Session** (signOut, updateSyncUI, showSignInCTA) → `src/auth/session.js` (~47 LOC)
+  - **My Team Lens** + game toggle → `src/ui/lens.js` (~53 LOC)
+
+  Architectural patterns established:
+  - `src/state.js` single mutable container — all importers receive live bindings.
+  - Callback injection (`setXCallbacks({ ... })`) for the few unavoidable circular dependencies (e.g. `cards/playerCard.js` ⇄ `collection/book.js`).
+  - Layering rule (Layer 1 foundation → Layer 6 boot) — every module imports only from strictly lower layers; verified by esbuild.
+  - Window-global bridge in `src/main.js` re-exposes ~95 functions to HTML inline handlers.
+
+  Bug fixes during refactor:
+  - **Boot IIFE restoration** (v3.39.25) — boot async-IIFE was accidentally deleted during a section-loader extraction; restored with module-aware adaptations (clearHomeTimer/clearLeagueTimer exports). Symptom was "Pulse broken with no console errors" — fixed by tracing the 60-line deletion via git blame.
+  - **`loadYdForDate` exposed** (v3.39.30) — was called from main.js but never exported from `carousel/generators.js`; silent runtime bug only triggered by Yesterday Recap date picker.
+  - **Stale bundle cache-bust** (v3.39.35) — `dist/app.bundle.js?v=3.39.X` querystring was frozen at `?v=3.39.26` for 8 versions because earlier replace_all only matched `v3.39.X` not `v=3.39.X`. Users were getting cached bundles.
+  - **Dev Tools click handler + inspector toggle handlers never attached** (v3.39.35) — bundle is loaded via dynamic `<script>` insertion in `index.html`, which makes it execute async; DOMContentLoaded had already fired by the time `initDevToolsClickDelegator()` and `initPanelsLazyRendering()` registered their listeners, so the panel-wide delegated click handler and every `<details>`-toggle hookup never attached. Fixed with `if (document.readyState === 'loading') addEventListener... else attach()` guard.
+
+  Documentation:
+  - `docs/module-graph.md` rewritten to reflect final ~30-module layout, layering rule, hot-state contract, callback injection pattern, and revert paths.
+  - `docs/refactor-status.md` deleted (was a session-resume aid for the in-progress refactor; obsolete now that work is complete).
+  - `CLAUDE.md` and `README.md` updated to describe the modular architecture.
+
+  Bundle: 463.7 → 463.8 KB (no significant size change across all 14 extractions; the IIFE wrapper amortizes well). Legacy `app.js` preserved verbatim — flipping `USE_BUNDLE = false` is a one-line revert at any future point.
 
 **v3.39.9** — Adds `docs/refactor-status.md` — durable session-resume document that summarizes current state of the modularize-app.js work, lists every extracted module with line counts and import semantics, audits the ~30 hot-state reassignment sites still blocking deeper extraction, and captures the Path A (single state-object container) vs Path B (per-subsystem state colocation + event bus) decision the user is choosing between. Recommended for any fresh Claude Code session picking up the work — eliminates the need to re-explore the codebase and re-derive context from the chat scrollback. Resume prompt included at the bottom of the file. No source code changes.
 

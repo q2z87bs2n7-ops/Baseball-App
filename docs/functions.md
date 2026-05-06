@@ -1,12 +1,21 @@
 # MLB Tracker — Key Functions Reference
 
-All functions live in `app.js` unless noted. For Pulse-specific subsystems see also:
-- `docs/pulse-feed.md` — `showPlayerCard`, `showRBICard`, `pollLeaguePulse`, video clip matching
-- `docs/story-carousel.md` — all `gen*` story generators, `buildStoryPool`, `rotateStory`
-- `docs/focus-mode.md` — `calcFocusScore`, `pollFocusLinescore`, `pollFocusRich`, `renderFocusCard`
-- `docs/card-collection.md` — `collectCard`, `renderCollectionBook`, `openCardFromCollection`
-- `docs/radio-system.md` — `pickRadioForFocus`, `loadRadioStream`, `radioCheck*`
-- `docs/demo-mode.md` — `initDemo`, `pollDemoFeeds`, `advanceDemoPlay`, `exitDemo`
+Functions are split across ~30 ES6 modules under `src/` (full file map: `docs/module-graph.md`). The brief locator below points each cluster to its module; per-subsystem deep-dives have full signatures + behavior.
+
+| Subsystem | Module | Deep-dive |
+|---|---|---|
+| Pulse polling, video clips, HR/RBI cards | `src/pulse/poll.js`, `src/data/clips.js`, `src/cards/playerCard.js` | `docs/pulse-feed.md` |
+| Story carousel + generators | `src/carousel/rotation.js`, `src/carousel/generators.js` | `docs/story-carousel.md` |
+| Focus Mode | `src/focus/mode.js` | `docs/focus-mode.md` |
+| Card collection + sync | `src/collection/book.js`, `src/collection/sync.js` | `docs/card-collection.md` |
+| Radio | `src/radio/stations.js`, `src/radio/engine.js`, `src/radio/check.js` | `docs/radio-system.md` |
+| Demo Mode | `src/demo/mode.js` | `docs/demo-mode.md` |
+| Theme + UI primitives | `src/ui/theme.js`, `src/ui/sound.js`, `src/ui/overlays.js`, `src/ui/lens.js`, `src/ui/wakelock.js` | `docs/css-variables.md` |
+| Section loaders + Yesterday Recap | `src/sections/loaders.js`, `src/sections/yesterday.js` | (this file) |
+| Dev Tools | `src/dev/tuning.js`, `src/dev/panels.js`, `src/dev/{youtube,video,news}-debug.js` | `docs/dev-tools.md` |
+| Auth + push | `src/auth/oauth.js`, `src/auth/session.js`, `src/push/push.js` | `docs/pwa-push.md` |
+
+The signatures listed in the rest of this file are organised by topic, not by module. The legacy `app.js` (preserved as `USE_BUNDLE=false` fallback) still inlines all of these — function names are identical so external onclick handlers and keyboard shortcuts work for both code paths.
 
 ## Theme & CSS
 

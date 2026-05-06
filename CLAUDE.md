@@ -1,27 +1,15 @@
 # MLB Tracker — Project Handoff
 
 ## What This Is
-An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs — no build system, no dependencies beyond the push notification backend. Split across three files: `index.html` (HTML structure), `styles.css` (all CSS), `app.js` (all JavaScript).
+An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v3.39.0
+**Current version:** v3.40.0
 
-**Version history** (full detail in `CHANGELOG.md`):
-- **v1.x** — initial build: schedule, standings, stats, live game view, PWA install, push notifications, team theming
-- **v2.1** — League Pulse merged: live league-wide feed, story carousel, sound alerts, demo mode
-- **v2.x** — incremental: doubleheader/PPD support, HR/RBI player cards (Topps-style, 4 variants), Focus Mode pitch-by-pitch tracker (v2.61), Card Collection binder (v3.0), radio engine (v3.9)
-- **v3.9** — performance: `feedItems` cap, story pool timer decoupled from poll, diffPatch GUMBO; Live Game Radio focus-paired engine + Radio Check sweep tool
-- **v3.11–v3.20** — 6 new story generators; Pulse-first rebrand; Yesterday Recap section
-- **v3.30** — V3 design unification: design tokens, CSS class system, inline-style elimination
-- **v3.31–v3.33** — multi-source news aggregator; floating panels Pulse-themed; tech-debt sprint
-- **v3.34** — monolith split: `index.html` → `index.html` + `styles.css` + `app.js`
-- **v3.35** — version bump to main; consolidates v3.34.x patch series
-- **v3.36** — HR video clips: fix 4 bugs; drop pendingVideoQueue; Video Debug panel in Dev Tools
-- **v3.37** — taxonomy hyphens fix; exclude darkroom clips; 4-tier player matching; remove `patchStoryWithClip`
-- **v3.37.3** — exclude ABS challenge clips (carry batter player_id but are pitch-review overlays)
-- **v3.37.5** — remove timestamp fallback from clip matching; player_id match only
-- **v3.38** — carousel logic improvements: clawback requires trailing/tied score; inning recap runs use actual differential
-- **v3.38.1–v3.38.10** — Dev Tools enhancement series: in-app Log Capture (console wrap + uncaught errors); App State Inspector (gameStates / feedItems / focusState / storyPool); Network Trace (fetch wrap with metadata-only ring buffer); localStorage + Service Worker inspectors; Test Notification + 🎯 Live Controls (Force Focus, Force Inning Recap); 📋 Diagnostic Snapshot one-tap clipboard export; panel reflow (Actions / Inspectors / Tuning / Export with width bump 560→760); cleaner shortcut mnemonics (Shift+M deMo, Shift+H Home run, Shift+B rBi, Shift+P Play clip, Shift+S State, Shift+I Info dump); custom-URL testers for radio + YouTube channels
-- **v3.39.0** — Modular build pipeline + ES6 module scaffolding: esbuild bundles `src/main.js` → `dist/app.bundle.js`; `index.html` carries a `USE_BUNDLE` flag that switches between bundle and legacy `app.js`; `src/config/constants.js` extracts `SEASON`, `TEAMS`, `TIMING`, `MLB_BASE`, etc. as the first demonstration module; window-global bridge at the bottom of `src/main.js` re-exposes ~95 functions for HTML inline handlers; `sw.js` SHELL caches both files so flag flips need no SW rebuild. Legacy `app.js` preserved verbatim — flipping `USE_BUNDLE = false` is a one-line revert. See `docs/module-graph.md`.
+**Recent versions** (full history in `CHANGELOG.md`):
+- **v3.40.0** — Modular refactor complete. `src/main.js` is now ~680 LOC of boot/orchestration glue; the rest of the original 7,127-line `app.js` has been extracted into ~30 modules under `src/` (config, diag, utils, data, ui, feed, pulse, carousel, focus, cards, collection, radio, push, auth, sections, demo, dev). Single `state.js` container holds hot mutable state. Legacy `app.js` preserved verbatim; flipping `USE_BUNDLE = false` in `index.html` is a one-line revert. See `docs/module-graph.md`.
+- **v3.39.0** — Initial bundle scaffolding (esbuild + USE_BUNDLE flag + first module extraction).
+- **v3.38** — Dev Tools enhancement series: Log Capture, App State Inspector, Network Trace, localStorage + SW inspectors, Diagnostic Snapshot, Live Controls.
+- **v3.37** — HR video clip pipeline hardening: ABS-challenge filter, player_id-only clip matching, taxonomy hyphens fix.
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
@@ -47,27 +35,46 @@ An MLB sports tracker, defaulting to the New York Mets. All data is pulled live 
 ```
 index.html              — HTML skeleton only: structure, overlays, nav, section divs. No CSS or JS. Carries `window.USE_BUNDLE` flag that selects between `dist/app.bundle.js` (modular) and `app.js` (legacy).
 styles.css              — all CSS: variables, layout classes, media queries, animations
-src/main.js             — current source-of-truth for JS. Imports from src/config/constants.js, contains the boot IIFE, and ends with the window-global bridge that exposes ~95 functions to HTML inline handlers and keyboard shortcuts. Edit this when changing JS behavior.
-src/config/constants.js — extracted constants: SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1, TEAMS, MLB_THEME, NEWS_SOURCE_LABELS/ICONS, TIMING.
+src/main.js             — boot IIFE + initReal callback wiring + top-level event listeners + window-global bridge. ~680 LOC of orchestration; everything substantive lives under src/<subsystem>/.
+src/state.js            — single mutable hot-state container; all importers receive a live binding.
+src/config/constants.js — SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1, API_BASE, TEAMS, MLB_THEME, NEWS_SOURCE_LABELS/ICONS, TIMING.
+src/diag/               — devLog.js (console wrap + ring buffer) + devNet.js (fetch wrap). SIDE EFFECTS ON IMPORT.
+src/utils/              — format.js (fmt/fmtRate/tcLookup/pickOppColor) + news.js (NEWS_IMAGE_HOSTS allowlist).
+src/data/               — boxscore.js + clips.js (pickPlayback/pickHeroImage/pollPendingVideoClips/devTestVideoClip).
+src/ui/                 — overlays.js (video + player-card overlays), theme.js (applyTeamTheme/applyPulseMLBTheme), sound.js, wakelock.js, lens.js (My Team filter).
+src/feed/render.js      — renderTicker, renderFeed, addFeedItem, showAlert, pulseGreeting, ticker chips.
+src/pulse/poll.js       — pollLeaguePulse, pollGamePlays, getEffectiveDate.
+src/carousel/           — rotation.js (buildStoryPool, rotateStory) + generators.js (~22 gen* story generators + cache loaders).
+src/focus/mode.js       — Focus Mode (calcFocusScore, polling, overlay).
+src/cards/playerCard.js — showPlayerCard, showRBICard, getHRBadge, getRBIBadge, calcRBICardScore, replayHR/RBICard.
+src/collection/         — book.js (tier system + binder UI + collectCard) + sync.js (cross-device Redis sync).
+src/radio/              — stations.js (data) + engine.js (toggleRadio/loadRadioStream) + check.js (sweep tool).
+src/push/push.js        — Web Push lifecycle.
+src/auth/               — oauth.js (sign-in initiators) + session.js (signOut/updateSyncUI/showSignInCTA).
+src/sections/           — loaders.js (every section loader) + yesterday.js (Yesterday Recap overlay).
+src/demo/mode.js        — Demo Mode (replay engine, speed controls).
+src/dev/                — tuning.js (panel UI + click delegator), panels.js (Log/AppState/Net/Storage/SW/LiveControls/Snapshot inspectors), youtube-debug.js, video-debug.js, news-test.js.
 build.mjs               — esbuild driver. `npm run build` → `dist/app.bundle.js` + sourcemap. `npm run watch` for dev.
-dist/app.bundle.js      — committed IIFE bundle that GitHub Pages serves. Regenerated by GitHub Actions on push to main.
-app.js                  — legacy fallback (the v3.38.x monolith). Loaded only when `USE_BUNDLE = false`. Do NOT edit; will be removed in a future version once the bundle is fully proven.
-focusCard.js            — runtime dependency: window.FocusCard.renderCard/renderOverlay/renderPitchPill/demo()
-pulse-card-templates.js — runtime dependency: window.PulseCard.render()/demo() for HR/RBI card overlays
-daily-events.json       — runtime dependency: static snapshot for client-facing Demo Mode
-collectionCard.js       — runtime dependency: window.CollectionCard.renderBook/renderMiniCard/renderRailModule/demo()
-sw.js                   — service worker (PWA caching + push event handling)
-manifest.json           — PWA manifest (install metadata, icons)
-icons/                  — app icons (icon-192.png, icon-512.png, icon-180.png, icon-maskable-512.png, favicon.svg, icon-mono.svg)
-api/subscribe.js        — Vercel serverless: store/remove push subscriptions in Upstash Redis
-api/notify.js           — Vercel serverless: check MLB schedule, fire push notifications
-api/test-push.js        — Vercel serverless: sends a test push immediately
-api/proxy-rss.js        — Vercel serverless: fetch + parse MLB RSS feeds, return JSON (bypasses CORS)
-api/proxy-youtube.js    — Vercel serverless: fetch + parse YouTube channel feeds, return JSON (bypasses CORS)
-.github/workflows/      — notify-cron.yml (*/5 * * * *); test-push.yml (manual)
-vercel.json             — Vercel function config (maxDuration)
-package.json            — web-push + @upstash/redis (for Vercel functions only)
+dist/app.bundle.js      — committed IIFE bundle (~464KB) that GitHub Pages serves. Regenerated by GitHub Actions on push to main.
+app.js                  — legacy fallback (the v3.38.x monolith). Loaded only when `USE_BUNDLE = false`. Do NOT edit; will be removed once the bundle is fully proven.
+focusCard.js            — runtime dependency: window.FocusCard.renderCard/renderOverlay/renderPitchPill/demo().
+pulse-card-templates.js — runtime dependency: window.PulseCard.render()/demo() for HR/RBI card overlays.
+daily-events.json       — runtime dependency: static snapshot for client-facing Demo Mode.
+collectionCard.js       — runtime dependency: window.CollectionCard.renderBook/renderMiniCard/renderRailModule/demo().
+sw.js                   — service worker (PWA caching + push event handling).
+manifest.json           — PWA manifest (install metadata, icons).
+icons/                  — app icons (icon-192.png, icon-512.png, icon-180.png, icon-maskable-512.png, favicon.svg, icon-mono.svg).
+api/subscribe.js        — Vercel serverless: store/remove push subscriptions in Upstash Redis.
+api/notify.js           — Vercel serverless: check MLB schedule, fire push notifications.
+api/test-push.js        — Vercel serverless: sends a test push immediately.
+api/proxy-rss.js        — Vercel serverless: fetch + parse MLB RSS feeds, return JSON (bypasses CORS).
+api/proxy-youtube.js    — Vercel serverless: fetch + parse YouTube channel feeds, return JSON (bypasses CORS).
+.github/workflows/      — build.yml (auto-rebuild bundle on push to main) + notify-cron.yml (*/5 * * * *) + test-push.yml (manual).
+vercel.json             — Vercel function config (maxDuration).
+package.json            — esbuild devDep + web-push + @upstash/redis (Vercel functions).
 ```
+
+Full module map and layering rule: `docs/module-graph.md`.
 
 ### Deployment
 - **Static app**: GitHub Pages — `main` branch, root directory
@@ -82,11 +89,12 @@ Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: Gi
 | File | Loaded by | Purpose |
 |---|---|---|
 | `styles.css` | `index.html` `<link rel="stylesheet">` | All app CSS |
-| `app.js` | `index.html` `<script defer>` | All app JavaScript |
+| `dist/app.bundle.js` | `index.html` dynamic `<script>` insert (USE_BUNDLE=true) | Bundled modular JS |
+| `app.js` | `index.html` dynamic `<script>` insert (USE_BUNDLE=false) | Legacy fallback |
 | `focusCard.js` | `index.html` `<script defer>` | At-Bat Focus Mode visuals |
 | `pulse-card-templates.js` | `index.html` `<script defer>` | HR/RBI player card overlays |
 | `collectionCard.js` | `index.html` `<script defer>` | Card Collection binder visuals |
-| `daily-events.json` | `app.js` `fetch('./daily-events.json')` | Demo Mode — client-facing feature |
+| `daily-events.json` | `src/demo/mode.js` `fetch('./daily-events.json')` | Demo Mode — client-facing feature |
 | `manifest.json` | `index.html` `<link rel="manifest">` | PWA install metadata |
 | `icons/favicon.svg` | `index.html` `<link rel="icon">` | Browser tab icon |
 | `icons/icon-180.png` | `index.html` `<link rel="apple-touch-icon">` | iOS home screen icon |
@@ -95,7 +103,7 @@ Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: Gi
 | `icons/icon-maskable-512.png` | `manifest.json` | PWA maskable icon |
 | `icons/icon-mono.svg` | `manifest.json` | iOS 16.4+ monochrome icon |
 
-**Rule:** before deleting any file in repo root or `icons/`, grep `index.html`, `app.js`, `sw.js`, and `manifest.json` for references first.
+**Rule:** before deleting any file in repo root or `icons/`, grep `index.html`, `src/`, `app.js`, `sw.js`, and `manifest.json` for references first.
 
 ### File responsibilities
 
@@ -103,36 +111,46 @@ Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: Gi
 |---|---|
 | Add/move an HTML element, section, overlay, button | `index.html` |
 | Change how something looks (colours, layout, spacing, animations) | `styles.css` |
-| Add/fix a function, API call, global variable, game logic | `app.js` |
-| New feature with HTML + CSS + JS aspects | all three |
+| Add/fix a JS function, API call, game logic | `src/<subsystem>/*.js` (find module via `docs/module-graph.md`) |
+| New cross-cutting state | `src/state.js` |
+| New section loader / overlay | `src/sections/loaders.js` or new `src/sections/<name>.js` |
+| New feature with HTML + CSS + JS aspects | `index.html` + `styles.css` + relevant `src/` modules |
 | PWA caching behaviour or push notification handler | `sw.js` |
-| Version bump (`<title>` tag + settings panel `<div class="settings-version">`) | `index.html` |
+| Version bump | `index.html` (title + settings-version + bundle cache-bust `?v=`) |
 | `CACHE` constant bump (forces PWA refresh) | `sw.js` |
 
-**Script load order (all `defer`):** `pulse-card-templates.js` → `focusCard.js` → `collectionCard.js` → `app.js`. `app.js` must remain last. Theme-flash prevention snippet at `index.html:7` is the only inline script — must stay inline.
+**Script load chain:** `pulse-card-templates.js` → `focusCard.js` → `collectionCard.js` (all `<script defer>` in `<head>`) → bundle/legacy script appended dynamically by the inline script after `<head>`. The dynamic script-insert means the bundle executes **async** rather than truly deferred — code that depends on DOMContentLoaded must guard with `document.readyState === 'loading'` (see `src/dev/tuning.js` for the pattern). Theme-flash prevention snippet at `index.html:7` is the only inline-and-synchronous script — must stay inline.
+
+**Where to edit:** never edit `app.js` (legacy fallback, frozen). Always edit `src/**/*.js` and rebuild the bundle (`npm run build`) before pushing.
 
 ### Key global state
 
-Full declarations with all fields: `docs/global-state.md`. Key variables:
+All hot mutable state lives in `src/state.js` as properties of a single exported `state` object — every importer receives a live binding. Constants are in `src/config/constants.js`. Full declarations: `docs/global-state.md`.
 
 ```javascript
-const SEASON = 2026                    // hardcoded — update each season
-const MLB_BASE = 'https://statsapi.mlb.com/api/v1'
-const MLB_BASE_V1_1 = 'https://statsapi.mlb.com/api/v1.1'  // Pulse only — v1 timestamps path 404s
-const TEAMS = [...]                    // 30 teams with colors, IDs, YouTube channel IDs
+// src/config/constants.js
+export const SEASON = 2026                    // hardcoded — update each season
+export const MLB_BASE = 'https://statsapi.mlb.com/api/v1'
+export const MLB_BASE_V1_1 = 'https://statsapi.mlb.com/api/v1.1'  // Pulse only — v1 timestamps path 404s
+export const TEAMS = [...]                    // 30 teams with colors, IDs, YouTube channel IDs
 
-let activeTeam = TEAMS.find(t => t.id === 121)   // defaults to Mets
-let scheduleData = [], scheduleLoaded = false
-let rosterData = { hitting, pitching, fielding }
-let statsCache = { hitting, pitching }
-let feedItems = []             // all feed items newest-first
-let gameStates = {}            // gamePk → { awayAbbr, homeAbbr, awayScore, homeScore, status,
-                               //   detailedState, inning, halfInning, outs, onFirst/Second/Third, ... }
-let focusGamePk = null         // gamePk of focused game (Focus Mode)
-let demoMode = false           // true when Demo Mode active
-let devColorLocked = false     // when true, theme uses devColorOverrides instead of computed values
-const devTuning = { rotateMs:4500, rbiThreshold:10, rbiCooldown:90000, ... }  // full object in docs/global-state.md
+// src/state.js
+export const state = {
+  activeTeam: TEAMS.find(t => t.id === 121),  // defaults to Mets
+  scheduleData: [], scheduleLoaded: false,
+  rosterData: { hitting, pitching, fielding },
+  statsCache: { hitting, pitching },
+  feedItems: [],                              // all feed items newest-first
+  gameStates: {},                             // gamePk → { awayAbbr, homeAbbr, awayScore, ... }
+  focusGamePk: null,                          // gamePk of focused game (Focus Mode)
+  demoMode: false,                            // true when Demo Mode active
+  devColorLocked: false,
+  devTuning: { rotateMs: 4500, rbiThreshold: 10, rbiCooldown: 90000, ... },
+  // ...
+};
 ```
+
+**Mutation rule:** importers must mutate via `state.X` (e.g. `state.gameStates[pk] = newGame`). Never `let local = state.gameStates;` and reassign — that breaks the live binding for other modules. Reads via destructuring or `Object.values(state.gameStates)` are fine.
 
 ### Navigation
 `showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `pulse`, `home`, `schedule`, `league`, `news`, `standings`, `stats`. Pulse is first and the default-active section. Live game view is a separate overlay (`#liveView`), not a section. Calling `showSection` while live view is active automatically closes it first.
@@ -290,11 +308,10 @@ Full tier definitions, data model, lifecycle, `window.CollectionCard` API: `docs
 
 ## 📻 Live Game Radio System
 
-Background terrestrial sports-radio that auto-pairs to the focused game. Source of truth (read first):
+Background terrestrial sports-radio that auto-pairs to the focused game. Source of truth (`src/radio/stations.js`):
 
 ```javascript
-// app.js ~line 4431
-const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
+export const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
 ```
 
 To enable a team: add `teamId` to this Set, bump comment date, bump version + `sw.js` CACHE. Falls through to Fox Sports Radio when no approved team is focused. ⚠️ Audacy-hosted stations (`live.amperwave.net/manifest/audacy-*`) play alternate content during games — never add Audacy URLs to `APPROVED_RADIO_TEAM_IDS`.
@@ -370,7 +387,7 @@ These are subtle bugs that could be silently re-introduced. Full issue list: `do
 | `MLB_TEAM_RADIO` URLs | radio.net-sourced; stations may change CDNs | Re-run 🔍 Radio Check sweep periodically |
 | `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated — last updated 2026-05-02 | Update Set when sweep results change |
 | Hls.js CDN URL | `cdn.jsdelivr.net/npm/hls.js@1.5.18` — pinned, free CDN | Bundle locally if CDN unreliable |
-| `NEWS_IMAGE_HOSTS` allowlist | Hand-curated CDN domain list — thumbnails silently fall back to placeholder if CDN changes | Add new hostname to `NEWS_IMAGE_HOSTS` regex in `app.js` |
+| `NEWS_IMAGE_HOSTS` allowlist | Hand-curated CDN domain list — thumbnails silently fall back to placeholder if CDN changes | Add new hostname to `NEWS_IMAGE_HOSTS` regex in `src/utils/news.js` |
 
 ---
 

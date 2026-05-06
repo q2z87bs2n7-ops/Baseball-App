@@ -126,5 +126,5 @@ const devTuningDefaults = {
 | File | Role |
 |---|---|
 | `daily-events.json` | Static snapshot (8 games, 619 plays, all caches) — served via GitHub Pages; required for Demo Mode in production |
-| `app.js` | All demo code: loadDailyEventsJSON, initDemo, pollDemoFeeds, advanceDemoPlay, UI controls |
+| `src/demo/mode.js` | All demo code: toggleDemoMode, setDemoSpeed, toggleDemoPause, backDemoPlay, forwardDemoPlay, demoNextHR, exitDemo, loadDemoGames, buildDemoPlayQueue |
 | `sw.js` | Cache versioning for PWA update |
