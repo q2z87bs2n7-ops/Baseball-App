@@ -8943,7 +8943,12 @@
       return;
     }
     state.gameStates = jsonData.gameStates;
+    var gamesWithPlays = /* @__PURE__ */ new Set();
+    (jsonData.feedItems || []).forEach(function(item) {
+      if (item.gamePk) gamesWithPlays.add(+item.gamePk);
+    });
     Object.values(state.gameStates).forEach(function(g) {
+      if (!gamesWithPlays.has(+g.gamePk)) return;
       g.status = "Preview";
       g.detailedState = "Scheduled";
       g.inning = 0;

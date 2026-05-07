@@ -149,7 +149,16 @@ async function initDemo() {
     return;
   }
   state.gameStates=jsonData.gameStates;
+  // Build the set of games that actually have plays we'll replay. Games
+  // outside this set (typically Final games whose Game Final status item
+  // was pushed off the recorder's 200-item baseline cap, plus genuine
+  // Preview games that hadn't started yet) keep their captured state —
+  // otherwise they appear in Upcoming forever, since no play in the queue
+  // will flip their status. Only reset games we'll actually animate.
+  var gamesWithPlays=new Set();
+  (jsonData.feedItems||[]).forEach(function(item){ if(item.gamePk) gamesWithPlays.add(+item.gamePk); });
   Object.values(state.gameStates).forEach(function(g){
+    if(!gamesWithPlays.has(+g.gamePk)) return; // keep captured Final/Preview state
     g.status='Preview';
     g.detailedState='Scheduled';
     g.inning=0;
