@@ -10,9 +10,11 @@ A real-time pitch-by-pitch tracker that auto-focuses on the most exciting MLB ga
 
 ## Why this exists
 
-I wanted a personal scoreboard that did three things at once: aggregate every meaningful play across all live MLB games into one stream, auto-detect which game I should actually be watching, and read like a sports broadcast graphics package rather than a stats table. None of the apps I tried did all three, so I started building one in a single HTML file and kept going.
+This started as a hobby experiment: how far could a single developer get building a genuinely complex, data-rich web application working almost exclusively with Claude? Not in weeks — in days. The MLB Stats API turned out to be a near-perfect testbed. It's public, well-structured, covers a sport with rich real-time data (pitch-by-pitch, player stats, play-by-play, media), and baseball is inherently fun to build around. The fact that the API is as good as it is — free, no authentication required, returning deeply nested hydrated game data — made it genuinely enjoyable to push against.
 
-It's a personal project, not a product. There's no business model, no sign-up gate, no analytics. Optional account sync exists only so card collections survive across devices. Everything else works fully unsigned-in.
+What started as a single HTML file is now a modular ES6 app with a build pipeline, PWA support, cross-device sync, serverless push notifications, a card collection system, an in-app demo recorder, and a classic radio atmosphere layer. Each feature was a prompt away. The project is less about the MLB Tracker itself and more about what that kind of collaboration can produce.
+
+It's not a product. There's no business model, no sign-up gate, no analytics. Optional account sync exists only so card collections survive across devices. Everything else works fully unsigned-in.
 
 ---
 
@@ -21,7 +23,7 @@ It's a personal project, not a product. There's no business model, no sign-up ga
 ### ⚡ Pulse — league-wide live feed
 The app's landing section. Every scoring play, home run, and runner-in-scoring-position moment across all simultaneous games in one chronological stream. Two-column desktop layout: ~700px left column (ticker, Story Carousel, feed) + 320px right rail (upcoming/completed games, news carousel, At-Bat Focus card).
 
-A ⚡ MLB PULSE top bar carries icon-only buttons for Sound Alerts (🔊), Live Game Radio (📻), and a Pulse light/dark theme toggle (☀️/🌙). A **MY TEAM** lens pill filters the feed and ticker to the active team's game only — useful when you want team-specific focus inside the league-wide stream.
+A ⚡ MLB PULSE top bar carries icon-only buttons for Sound Alerts (🔊), Live Game Radio (📻), Yesterday's Recap, and a Pulse light/dark theme toggle (☀️/🌙). A **MY TEAM** lens pill filters the feed and ticker to the active team's game only — useful when you want team-specific focus inside the league-wide stream.
 
 The feed is state-aware across the day: a pre-game hype card shows a countdown to first pitch; mid-day intermissions between games show a countdown to the next game rather than the hype state; once every game is final a post-slate screen shows "Slate complete" with a countdown to tomorrow's first pitch. Sound alerts (HR bat crack, run chime, RISP heartbeat, etc.) are synthesised live with the Web Audio API — no audio files. A sticky ticker shows every game as a chip with team scores, inning, base diamond, and out indicators.
 
@@ -44,7 +46,7 @@ score = (closeness + situation + countBonus) * inningMultiplier
 // 9th-inning, bases loaded, full count, tied = ~2× extras-multiplier territory
 ```
 
-Polls linescore (~5KB) every 5s for B/S/O and runners; pitches come from the GUMBO v1.1 feed using `diffPatch` deltas (~5KB instead of ~500KB) once seeded. A compact card sits in the side rail on desktop, a slim mini-bar appears on phone/iPad portrait, and a full overlay with pitch sequence, count pips, base diamond, and matchup stats is one tap away. Manual game switcher chips with a sky-blue `↩ AUTO` pill let you override the auto-pick.
+Polls linescore (~5KB) every 5s for B/S/O and runners; pitches come from the GUMBO v1.1 feed using `diffPatch` deltas (~5KB instead of ~500KB) once seeded. A compact card sits in the side rail on desktop, a slim mini-bar appears on phone/iPad portrait, and a full overlay with pitch sequence, count pips, base diamond, and matchup stats is one tap away. Manual game switcher chips with a sky-blue `↩ AUTO` pill let you override the auto-pick. In Demo Mode, Focus follows the recorded focus track faithfully — including any manual overrides captured during the recording session.
 
 ### 📼 Yesterday's Recap
 A dedicated full-screen section (accessible from the ⚡ top bar when yesterday's data is ready) that replays the previous day's slate as a media-rich digest. Features a shared video player with a scrollable playlist of official MLB highlight clips per game, a heroes strip (top batter and W/L pitcher per game), and per-game recap tiles with linescore and headline. Video content is sourced from the MLB `/game/{pk}/content` endpoint. The section shares the Pulse navy theme and uses the same top bar for visual consistency.
@@ -64,10 +66,22 @@ Higher-tier events upgrade existing slots; same-tier duplicates are appended to 
 Optional cross-device sync via GitHub OAuth or email magic-link, backed by Upstash Redis. Sign-in is fully optional — localStorage works alone.
 
 ### 📻 Live Game Radio
-Auto-pairs the focused game's flagship terrestrial radio station to a `<audio>` element, with Hls.js for HLS streams and native audio for direct AAC/MP3. Currently 9 verified teams: LAA, CLE, DET, HOU, TEX, MIN, ATL, MIA, NYY. The remaining 21 stations are in the codebase but excluded from auto-pairing — most are Audacy-owned flagships that hold OTA simulcast rights but not MLB streaming rights, so their digital streams play alternate content (talk shows, ads) during games. A built-in **Radio Check** sweep tool lets me test, mark ✅/❌, take notes per station, and copy categorised markdown to update the approved list.
+Auto-pairs the focused game's flagship terrestrial radio station to a `<audio>` element, with Hls.js for HLS streams and native audio for direct AAC/MP3. Currently 10 verified teams: LAA, CLE, DET, HOU, TEX, MIN, ATL, MIA, NYY, SF. The remaining 20 stations are in the codebase but excluded from auto-pairing — most are Audacy-owned flagships that hold OTA simulcast rights but not MLB streaming rights, so their digital streams play alternate content (talk shows, ads) during games. A built-in **Radio Check** sweep tool (under Dev Tools) lets you test, mark ✅/❌, take notes per station, and copy categorised markdown to update the approved list.
 
-### 🎬 Demo Mode
-Full-day replay of 23 games (8 with full play-by-play) and 619 plays from a static `daily-events.json` snapshot. No API calls — works fully offline. Speeds 1×/10×/100×, pause/resume, and a "Next HR" button to fast-forward. Story Carousel filters stories temporally so future events don't appear before the replay reaches them.
+### 🎙️ Classic Radio — Demo Mode atmosphere
+When Demo Mode is active, the 📻 radio button streams full-length classic MLB broadcasts from the Internet Archive rather than live radio. A curated pool of four legendary calls — Vin Scully on the 1957 Giants/Dodgers, the 1968 Mantle farewell Yankees/Red Sox game, the 1969 Mets/Orioles World Series Game 5, and Tom Seaver's 19-strikeout game in 1970 — plays from a random offset between the 30-minute and 90-minute mark, skipping pre-game and post-game dead air. On every auto-focus switch in demo, a fresh broadcast + offset is rolled. The 📻 nav button and the status indicator work identically to live radio — the green "Playing" badge and broadcast title update the same way. Accessible independently via Dev Tools → 🎙️ Classic Radio.
+
+### 🎬 Demo Mode v2
+Full-day replay of a recorded MLB slate with no API calls — works fully offline. The demo snapshot covers 23 games (8 with full play-by-play) and 619 plays from April 27–28, 2026.
+
+Key capabilities:
+- **In-app Recorder** (`src/dev/recorder.js`) — captures live Pulse state passively with zero added API calls. Exports a `daily-events.json` with pitch timelines, boxscore snapshots, content cache, focus track, and story carousel caches. `trimClip()` strips to demo essentials (~87% smaller). Hard cap at 10 MB with a 5 MB soft warning.
+- **Backlog + queue replay** — feed items before recording started play as a pre-load backlog (tune-into-Pulse-mid-game UX); plays captured during recording form the live queue.
+- **Faithful focus replay** — demo follows the `focusTrack[]` recorded during the session, including user-triggered manual switches. A manual switch during demo correctly overrides auto behaviour.
+- **Speed controls** — 1× (10s/play), 10× (1s/play), 30× (100ms/play). ⏹ Exit Demo button. 🔥 Next HR fast-forwards at 20× through plays until an HR fires, then auto-pauses.
+- **Video tiles in demo** — `pollPendingVideoClips` walks the `contentCacheTimeline` and patches feed items with ▶ video tiles at the right replay moment.
+- **Clean exit** — `exitDemo` clears every demo cache and calls `resumeLivePulse`, which re-fires loaders, restarts all polling timers, and runs `pollLeaguePulse → buildStoryPool → setFocusGame`. No blank Pulse after exit.
+- **Dev Tools QC panel** — shows all 4 archive.org broadcasts individually with ▶ Play buttons and broadcast titles for independent testing.
 
 ### 🔔 PWA + Push Notifications
 Installable as a native app on iOS and Android. Game-start alerts via Web Push, with subscriptions stored in Upstash Redis. A GitHub Actions cron pings the `/api/notify` Vercel function every 5 minutes, which checks the MLB schedule and fires VAPID-signed push messages to subscribers, deduplicating per-game with a 24h TTL key.
@@ -93,7 +107,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 | Hosting | GitHub Pages (static app) + Vercel (serverless API) |
 | Cron | GitHub Actions scheduled workflow |
 
-**Build pipeline is opt-in for source edits only.** Push to `main` and GitHub Actions rebuilds the bundle automatically — but `dist/app.bundle.js` is also committed so a manual run isn't required for static hosting. Emergency revert: `git checkout pre-bundle-cleanup-v3.41` restores the legacy `app.js` + `USE_BUNDLE` flag setup.
+**Build pipeline is opt-in for source edits only.** Push to `main` and GitHub Actions rebuilds the bundle automatically — but `dist/app.bundle.js` is also committed so a manual run isn't required for static hosting.
 
 ---
 
@@ -116,7 +130,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
                  ▼              ▼             ▼
        MLB Stats API    Vercel /api/*    Hls.js → radio CDN
        (live data)      (push, auth,     (terrestrial AAC/HLS)
-                         RSS proxy,
+                         RSS proxy,      + archive.org (demo)
                          card sync)
                               │
                               ▼
@@ -157,7 +171,7 @@ cd Baseball-App
 python3 -m http.server 8000   # or any static server
 ```
 
-Open `http://localhost:8000`. That's the whole setup — no npm, no env vars required for the app. Auth (GitHub OAuth, email magic-link) and push notifications require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#session-storage--cross-device-sync-v38) — they will silently fail without Vercel. Everything else works against the public MLB Stats API.
+Open `http://localhost:8000`. That's the whole setup — no npm, no env vars required for the app. Auth (GitHub OAuth, email magic-link) and push notifications require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#session-storage--cross-device-sync) — they will silently fail without Vercel. Everything else works against the public MLB Stats API.
 
 > Note: YouTube embeds in the Home tab YouTube widget return `Error 153` on `file://` URLs. Use a local server, not double-click.
 
@@ -178,7 +192,7 @@ dist/app.bundle.js        — bundled IIFE build (~464KB), served by GitHub Page
 focusCard.js              — At-Bat Focus Mode visual templates
 pulse-card-templates.js   — HR/RBI player card variants (4 templates)
 collectionCard.js         — Card Collection binder visuals
-daily-events.json         — Demo Mode static snapshot (562KB)
+daily-events.json         — Demo Mode static snapshot (562KB, 619 plays)
 sw.js                     — service worker (PWA cache + push handler)
 manifest.json             — PWA install metadata
 icons/                    — diamond-themed PWA icon set
@@ -203,17 +217,17 @@ For the full breakdown of architecture, every API endpoint, every CSS variable, 
 
 ## Status & roadmap
 
-**Current version:** v3.40.0 (May 2026).
+**Current version:** v3.47 (May 2026).
 
-The app is feature-complete for personal use and stable in daily operation. Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh. v3.40.0 completes the modular refactor: source lives under `src/` as ES6 modules and ships through esbuild.
+Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh. v3.40.0 completed the modular refactor; source lives under `src/` as ES6 modules and ships through esbuild. v3.46 overhauled Demo Mode with a full in-app recorder and replay engine. v3.47 added classic radio atmosphere and UX polish to the demo experience.
 
 Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
 
 - Career stats expansion on player cards (last 10-game average, hot streak context)
 - Replacement radio URLs for Audacy-affected stations (rights gap)
-- Sound system upgrade from Web Audio synthesis to CC0 MP3 samples (infrastructure already in place)
+- Expanding Classic Radio pool to a per-team URL map
 - Dynamic season year (currently `SEASON = 2026` is hardcoded)
-- News fallback source (MLB RSS) when ESPN endpoint is CORS-blocked
+- GitHub Actions cron reliability (free tier runs ~once/hour rather than every 5 min)
 
 ---
 
@@ -227,6 +241,7 @@ Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
 - **GitHub Actions cron is approximate.** Configured for `*/5` but in practice runs closer to once per hour on the free tier — switching to Vercel Cron is on the backlog.
 - **Theming relies on contrast heuristics.** Teams with very dark secondary colours (Giants, Orioles) get a luminance floor applied to keep accents readable.
 - **Leaders index mapping is empirical.** The `/stats/leaders` endpoint doesn't guarantee response order matches the requested category order. Re-test if results look wrong after API changes.
+- **Classic Radio is a POC.** The archive.org broadcast pool is hardcoded (4 recordings). Easy to expand to a `teamId → URL[]` map — just hasn't been needed yet.
 
 </details>
 
@@ -237,6 +252,7 @@ Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
 - **[MLB Stats API](https://statsapi.mlb.com/)** — every live data point in the app
 - **[ESPN](https://www.espn.com/)** — news headlines (unofficial endpoint)
 - **[Hls.js](https://github.com/video-dev/hls.js)** — HLS streaming for radio
+- **[Internet Archive](https://archive.org/)** — classic MLB broadcast recordings used in Demo Mode
 - **[Upstash](https://upstash.com/)** — Redis for push subscriptions and card sync
 - **[Vercel](https://vercel.com/)** — serverless hosting for the API layer
 - **Built primarily in collaboration with [Claude](https://claude.com/)** — see [CLAUDE.md](./CLAUDE.md) for the full handoff doc that drives the development loop
