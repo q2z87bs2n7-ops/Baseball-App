@@ -2557,6 +2557,16 @@
       playClassicRandom();
     }
   }
+  function playArchiveUrl(url) {
+    if (!url) return;
+    _active = true;
+    try {
+      stopRadio();
+    } catch (e) {
+    }
+    console.log("[classic radio] play archive:", _broadcastLabel(url));
+    _playUrl(url);
+  }
 
   // src/radio/engine.js
   var radioAudio = null;
@@ -5525,28 +5535,22 @@
   function renderDemoFeedsTester() {
     var body = document.getElementById("demoFeedsBody");
     if (!body) return;
-    var games = Object.values(state.gameStates || {});
-    if (!games.length) {
-      body.innerHTML = '<div class="dt-label-muted" style="padding:8px 0">No demo games loaded. Enter Demo Mode first.</div>';
-      return;
-    }
-    body.innerHTML = games.map(function(g) {
-      var matchup = g.awayAbbr + " @ " + g.homeAbbr;
-      var score = g.awayScore + "-" + g.homeScore;
-      var inning = g.inning ? " \xB7 " + g.inning + g.halfInning.charAt(0).toUpperCase() : "";
-      var status = g.status === "Live" ? "\u{1F534} " : g.status === "Final" ? "\u26AA " : "\u{1F535} ";
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;font-size:.7rem"><div style="flex:1"><div style="font-weight:600;color:var(--text)">' + status + matchup + '</div><div style="color:var(--muted);margin-top:2px">' + score + inning + '</div></div><button data-dt-action="demoFeedPlay" data-demo-feed-pk="' + g.gamePk + '" style="background:var(--secondary);color:var(--accent-text);border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:.65rem;flex-shrink:0;margin-left:8px">\u25B6 Play</button></div>';
+    var feeds = [
+      { url: "https://archive.org/download/classicmlbbaseballradio/1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3", title: "1969 Mets vs Orioles WS Game 5" },
+      { url: "https://archive.org/download/classicmlbbaseballradio/1970%2004%2022%20Padres%20vs%20New%20York%20Mets%20Seaver%2019ks%20Complete%20Broadcast%20Bob%20Murphy.mp3", title: "1970 Padres vs Mets \xB7 Seaver 19Ks" },
+      { url: "https://archive.org/download/classicmlbbaseballradio/19570805GiantsAtDodgersvinScullyRadioBroadcast.mp3", title: "1957 Giants vs Dodgers \xB7 Vin Scully" },
+      { url: "https://archive.org/download/classicmlbbaseballradio/1968%2009%2028%20Yankees%20vs%20Red%20Sox%20Mantles%20FINAL%20Game%20Messer%20Coleman%20Rizzuto%20Radio%20Broadcast.mp3", title: "1968 Yankees vs Red Sox \xB7 Mantle Final" }
+    ];
+    body.innerHTML = feeds.map(function(feed, idx) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;font-size:.7rem"><div style="flex:1"><div style="font-weight:600;color:var(--text)">\u{1F4FB} ' + feed.title + '</div><div style="color:var(--muted);margin-top:2px;font-size:.6rem;font-family:ui-monospace,monospace;word-break:break-all">' + feed.url.split("/").pop().substring(0, 40) + '\u2026</div></div><button data-dt-action="demoFeedPlay" data-demo-feed-url="' + feed.url + '" style="background:var(--secondary);color:var(--accent-text);border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:.65rem;flex-shrink:0;margin-left:8px">\u25B6 Play</button></div>';
     }).join("");
   }
-  function testDemoFeedGame(gamePk) {
-    if (!gamePk) return;
-    var g = state.gameStates[gamePk];
-    if (!g) return;
+  function testDemoFeedUrl(url) {
+    if (!url) return;
     try {
-      setFocusGameManual(gamePk);
-      playClassicRandom();
+      playArchiveUrl(url);
     } catch (e) {
-      console.error("demo feed test failed:", e);
+      console.error("archive feed test failed:", e);
     }
   }
   function _liveGamesForControls() {
@@ -9735,8 +9739,8 @@
             renderDemoFeedsTester();
           }
         } else if (action === "demoFeedPlay") {
-          var pk = btn.dataset.demoFeedPk;
-          if (pk) testDemoFeedGame(parseInt(pk, 10));
+          var url = btn.dataset.demoFeedUrl;
+          if (url) testDemoFeedUrl(url);
         } else if (action === "resetTuning") {
           resetTuning();
         } else if (action === "captureApp") {

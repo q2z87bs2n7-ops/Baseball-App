@@ -174,3 +174,12 @@ export function devTestClassicRadio() {
 export function devTestDemoArchiveFeeds() {
   playClassicRandom();
 }
+
+// QC test: play a specific archive URL at random offset.
+export function playArchiveUrl(url) {
+  if (!url) return;
+  _active = true;
+  try { stopRadio(); } catch (e) {}
+  console.log('[classic radio] play archive:', _broadcastLabel(url));
+  _playUrl(url);
+}

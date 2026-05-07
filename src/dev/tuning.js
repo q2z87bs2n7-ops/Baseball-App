@@ -18,7 +18,7 @@ import {
   testLocalNotification,
   renderLiveControls, forceFocusGo, forceRecapGo,
   copyDiagnosticSnapshot,
-  renderDemoFeedsTester, testDemoFeedGame,
+  renderDemoFeedsTester, testDemoFeedUrl,
 } from './panels.js';
 import { openYoutubeDebug } from './youtube-debug.js';
 import { openVideoDebugPanel } from './video-debug.js';
@@ -201,8 +201,8 @@ export function initDevToolsClickDelegator() {
         if (det) { det.open = true; renderDemoFeedsTester(); }
       }
       else if (action === 'demoFeedPlay') {
-        var pk = btn.dataset.demoFeedPk;
-        if (pk) testDemoFeedGame(parseInt(pk, 10));
+        var url = btn.dataset.demoFeedUrl;
+        if (url) testDemoFeedUrl(url);
       }
       else if (action === 'resetTuning')       { resetTuning(); }
       else if (action === 'captureApp')        { captureCurrentTheme('app'); }

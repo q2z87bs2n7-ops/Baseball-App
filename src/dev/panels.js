@@ -15,7 +15,7 @@ import { devNetLog, DEV_NET_CAP } from '../diag/devNet.js';
 import { pulseGreeting } from '../feed/render.js';
 import { getCurrentTeamId } from '../radio/engine.js';
 import { setFocusGameManual } from '../focus/mode.js';
-import { playClassicRandom } from '../radio/classic.js';
+import { playClassicRandom, playArchiveUrl } from '../radio/classic.js';
 
 let _buildStoryPool = null;
 let _fallbackCopy = null;
@@ -603,39 +603,34 @@ export function testLocalNotification(){
   else Notification.requestPermission().then(function(p){ if(p==='granted') show(); else alert('Permission not granted ('+p+').'); });
 }
 
-// ── Demo Feeds Tester (QC Panel) ────────────────────────────────────────────────
+// ── Demo Archive Feeds Tester (QC Panel) ───────────────────────────────────────
 export function renderDemoFeedsTester() {
   var body = document.getElementById('demoFeedsBody');
   if (!body) return;
-  var games = Object.values(state.gameStates || {});
-  if (!games.length) {
-    body.innerHTML = '<div class="dt-label-muted" style="padding:8px 0">No demo games loaded. Enter Demo Mode first.</div>';
-    return;
-  }
-  body.innerHTML = games.map(function(g) {
-    var matchup = g.awayAbbr + ' @ ' + g.homeAbbr;
-    var score = g.awayScore + '-' + g.homeScore;
-    var inning = g.inning ? ' · ' + g.inning + g.halfInning.charAt(0).toUpperCase() : '';
-    var status = g.status === 'Live' ? '🔴 ' : g.status === 'Final' ? '⚪ ' : '🔵 ';
+  // Archive broadcasts available for testing
+  var feeds = [
+    { url: 'https://archive.org/download/classicmlbbaseballradio/1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3', title: '1969 Mets vs Orioles WS Game 5' },
+    { url: 'https://archive.org/download/classicmlbbaseballradio/1970%2004%2022%20Padres%20vs%20New%20York%20Mets%20Seaver%2019ks%20Complete%20Broadcast%20Bob%20Murphy.mp3', title: '1970 Padres vs Mets · Seaver 19Ks' },
+    { url: 'https://archive.org/download/classicmlbbaseballradio/19570805GiantsAtDodgersvinScullyRadioBroadcast.mp3', title: '1957 Giants vs Dodgers · Vin Scully' },
+    { url: 'https://archive.org/download/classicmlbbaseballradio/1968%2009%2028%20Yankees%20vs%20Red%20Sox%20Mantles%20FINAL%20Game%20Messer%20Coleman%20Rizzuto%20Radio%20Broadcast.mp3', title: '1968 Yankees vs Red Sox · Mantle Final' }
+  ];
+  body.innerHTML = feeds.map(function(feed, idx) {
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;font-size:.7rem">'
       + '<div style="flex:1">'
-        + '<div style="font-weight:600;color:var(--text)">' + status + matchup + '</div>'
-        + '<div style="color:var(--muted);margin-top:2px">' + score + inning + '</div>'
+        + '<div style="font-weight:600;color:var(--text)">📻 ' + feed.title + '</div>'
+        + '<div style="color:var(--muted);margin-top:2px;font-size:.6rem;font-family:ui-monospace,monospace;word-break:break-all">' + feed.url.split('/').pop().substring(0, 40) + '…</div>'
       + '</div>'
-      + '<button data-dt-action="demoFeedPlay" data-demo-feed-pk="' + g.gamePk + '" style="background:var(--secondary);color:var(--accent-text);border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:.65rem;flex-shrink:0;margin-left:8px">▶ Play</button>'
+      + '<button data-dt-action="demoFeedPlay" data-demo-feed-url="' + feed.url + '" style="background:var(--secondary);color:var(--accent-text);border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:.65rem;flex-shrink:0;margin-left:8px">▶ Play</button>'
       + '</div>';
   }).join('');
 }
 
-export function testDemoFeedGame(gamePk) {
-  if (!gamePk) return;
-  var g = state.gameStates[gamePk];
-  if (!g) return;
+export function testDemoFeedUrl(url) {
+  if (!url) return;
   try {
-    setFocusGameManual(gamePk);
-    playClassicRandom();
+    playArchiveUrl(url);
   } catch (e) {
-    console.error('demo feed test failed:', e);
+    console.error('archive feed test failed:', e);
   }
 }
 
