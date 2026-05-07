@@ -27,6 +27,8 @@ A ⚡ MLB PULSE top bar carries icon-only buttons for Sound Alerts (🔊), Live 
 
 The feed is state-aware across the day: a pre-game hype card shows a countdown to first pitch; mid-day intermissions between games show a countdown to the next game rather than the hype state; once every game is final a post-slate screen shows "Slate complete" with a countdown to tomorrow's first pitch. Sound alerts (HR bat crack, run chime, RISP heartbeat, etc.) are synthesised live with the Web Audio API — no audio files. A sticky ticker shows every game as a chip with team scores, inning, base diamond, and out indicators.
 
+When a home run or key scoring play fires, a full-screen player card overlay pops up with the batter's headshot and situation detail. Where an official MLB highlight clip is available, a ▶ tile appears in the feed and the video plays inline via the same overlay.
+
 ### 📖 Story Carousel — 22 narrative generators
 A rotating digest layer that surfaces story-level moments alongside the play feed. Generators cover home runs, walk-off threats, no-hitter watches, perfect game tracking, big innings, bases-loaded situations, stolen bases, end-of-inning recaps, multi-hit days, daily MLB leaders, hitting streaks, roster moves, win probability swings, award winners, season highs, on-this-day, yesterday's highlights, probable pitchers, and pre-game editorial matchup cards. Stories rotate via a priority × decay scoring algorithm with per-story cooldowns:
 
@@ -71,8 +73,8 @@ Auto-pairs the focused game's flagship terrestrial radio station to a `<audio>` 
 ### 🎙️ Classic Radio — Demo Mode atmosphere
 When Demo Mode is active, the 📻 radio button streams full-length classic MLB broadcasts from the Internet Archive rather than live radio. A curated pool of four legendary calls — Vin Scully on the 1957 Giants/Dodgers, the 1968 Mantle farewell Yankees/Red Sox game, the 1969 Mets/Orioles World Series Game 5, and Tom Seaver's 19-strikeout game in 1970 — plays from a random offset between the 30-minute and 90-minute mark, skipping pre-game and post-game dead air. On every auto-focus switch in demo, a fresh broadcast + offset is rolled. The 📻 nav button and the status indicator work identically to live radio — the green "Playing" badge and broadcast title update the same way. Accessible independently via Dev Tools → 🎙️ Classic Radio.
 
-### 🎬 Demo Mode v2
-Full-day replay of a recorded MLB slate with no API calls — works fully offline. The demo snapshot covers 23 games (8 with full play-by-play) and 619 plays from April 27–28, 2026.
+### 🎬 Demo Mode
+Full-day replay of a recorded MLB slate with no API calls — works fully offline.
 
 Key capabilities:
 - **In-app Recorder** (`src/dev/recorder.js`) — captures live Pulse state passively with zero added API calls. Exports a `daily-events.json` with pitch timelines, boxscore snapshots, content cache, focus track, and story carousel caches. `trimClip()` strips to demo essentials (~87% smaller). Hard cap at 10 MB with a 5 MB soft warning.
@@ -192,7 +194,7 @@ dist/app.bundle.js        — bundled IIFE build (~464KB), served by GitHub Page
 focusCard.js              — At-Bat Focus Mode visual templates
 pulse-card-templates.js   — HR/RBI player card variants (4 templates)
 collectionCard.js         — Card Collection binder visuals
-daily-events.json         — Demo Mode static snapshot (562KB, 619 plays)
+daily-events.json         — Demo Mode static snapshot (2.2MB)
 sw.js                     — service worker (PWA cache + push handler)
 manifest.json             — PWA install metadata
 icons/                    — diamond-themed PWA icon set
