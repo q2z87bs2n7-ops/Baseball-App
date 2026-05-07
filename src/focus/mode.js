@@ -8,7 +8,7 @@ import { state } from '../state.js';
 import { SEASON, TIMING, MLB_BASE, MLB_BASE_V1_1 } from '../config/constants.js';
 import { devTrace } from '../diag/devLog.js';
 import { updateRadioForFocus } from '../radio/engine.js';
-import { rollClassicOnSwitch } from '../radio/classic.js';
+import { rollClassicOnSwitch, isClassicActive } from '../radio/classic.js';
 
 export function calcFocusScore(g) {
   if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
@@ -104,7 +104,9 @@ export function setFocusGame(pk) {
   if(state.focusFastTimer){clearInterval(state.focusFastTimer);state.focusFastTimer=null;}
   if(state.focusAbortCtrl){state.focusAbortCtrl.abort();state.focusAbortCtrl=null;}
   if(state.focusOverlayOpen) renderFocusOverlay();
-  updateRadioForFocus();
+  // Skip live radio re-pairing while classic radio is active — otherwise
+  // Fox Sports (the live fallback) plays over the classic broadcast.
+  if(!isClassicActive()) updateRadioForFocus();
   pollFocusLinescore();
   state.focusFastTimer=setInterval(pollFocusLinescore,TIMING.FOCUS_POLL_MS);
 }

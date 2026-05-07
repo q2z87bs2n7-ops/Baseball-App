@@ -4270,6 +4270,10 @@
   }
   function playClassicRandom() {
     _active = true;
+    try {
+      stopRadio();
+    } catch (e) {
+    }
     _playUrl(pickRandomUrl());
   }
   function pauseClassic() {
@@ -4282,6 +4286,9 @@
     _audio.pause();
     _audio.removeAttribute("src");
     _audio.load();
+  }
+  function isClassicActive() {
+    return _active;
   }
   function rollClassicOnSwitch() {
     if (!_active) return;
@@ -4390,7 +4397,7 @@
       state.focusAbortCtrl = null;
     }
     if (state.focusOverlayOpen) renderFocusOverlay();
-    updateRadioForFocus();
+    if (!isClassicActive()) updateRadioForFocus();
     pollFocusLinescore();
     state.focusFastTimer = setInterval(pollFocusLinescore, TIMING.FOCUS_POLL_MS);
   }

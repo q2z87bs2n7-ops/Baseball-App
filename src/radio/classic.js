@@ -3,8 +3,14 @@
 // background atmosphere. No timestamp sync — picks a random URL from a
 // hardcoded pool and a random offset between 30 min and 90 min into the
 // broadcast (skipping pre-game and post-game). Used for Demo Mode
-// classic-game vibe; does not interact with the live radio system in
-// src/radio/engine.js.
+// classic-game vibe.
+//
+// Coexists with the live radio system in src/radio/engine.js by stopping
+// it on activation and instructing setFocusGame to skip
+// updateRadioForFocus while classic is active (see isClassicActive
+// check in src/focus/mode.js).
+
+import { stopRadio } from './engine.js';
 
 const POC_POOL = [
   'https://archive.org/download/classicmlbbaseballradio/1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3',
@@ -73,9 +79,12 @@ function _playUrl(url) {
 }
 
 // Pick a random URL from the pool and play at a random in-game offset.
-// Sets _active = true so subsequent focus-switch re-rolls fire.
+// Sets _active = true so subsequent focus-switch re-rolls fire. Also
+// silences the live radio engine so the user doesn't hear Fox Sports
+// (or any other live stream) on top of the classic broadcast.
 export function playClassicRandom() {
   _active = true;
+  try { stopRadio(); } catch (e) {}
   _playUrl(pickRandomUrl());
 }
 
