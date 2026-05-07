@@ -11,6 +11,11 @@ import { calcRBICardScore } from '../cards/playerCard.js';
 // Encapsulated demo-only state
 let demoPaused = false;
 let demoSpeedMs = 10000;
+// Home Run seek: when active, demoSpeedMs is overridden to 500ms (20x)
+// until advanceDemoPlay sees a Home Run, at which point we restore the
+// prior speed and auto-pause so the user can take in the HR card.
+let _hrSeekActive = false;
+let _hrSeekPriorSpeed = 0;
 
 // Forward declarations for functions in main.js that demo calls
 // These will be set by main.js after demo module is imported
@@ -122,6 +127,8 @@ async function initDemo() {
     document.getElementById('demoNextHRBtn').style.display='';
     document.getElementById('demoPauseBtn').style.display='';
     document.getElementById('demoForwardBtn').style.display='';
+    var _exitBtn=document.getElementById('demoExitBtn');
+    if(_exitBtn) _exitBtn.style.display='';
     document.getElementById('demoPauseBtn').textContent='⏸ Pause';
   }
   state.gameStates={};
@@ -401,24 +408,26 @@ export function forwardDemoPlay(){
 }
 
 export function demoNextHR(){
-  var nextHRIdx=-1;
+  if(_hrSeekActive) return; // already seeking
+  // Confirm there's an HR ahead so we don't fast-forward to the end
+  var found=false;
   for(var i=state.demoPlayIdx;i<state.demoPlayQueue.length;i++){
-    if(state.demoPlayQueue[i].event==='Home Run'){nextHRIdx=i;break;}
+    if(state.demoPlayQueue[i].event==='Home Run'){found=true;break;}
   }
-  if(nextHRIdx===-1){_showAlert({icon:'⚠️',event:'No more HRs',desc:'Reached end of demo',duration:2000});return;}
-  state.demoPlayIdx=nextHRIdx-1;
+  if(!found){_showAlert({icon:'⚠️',event:'No more HRs',desc:'Reached end of demo',duration:2000});return;}
+  // Engage seek mode: 20x cadence until an HR fires. Plays still animate
+  // through the feed/ticker/focus card so the user sees the buildup
+  // instead of a hard jump.
+  _hrSeekActive=true;
+  _hrSeekPriorSpeed=demoSpeedMs;
+  demoSpeedMs=500;
+  if(demoPaused){
+    demoPaused=false;
+    var btn=document.getElementById('demoPauseBtn');
+    if(btn) btn.textContent='⏸ Pause';
+  }
   clearTimeout(state.demoTimer);
-  if(state.demoPlayIdx<state.demoPlayQueue.length) state.demoPlayIdx++;
-  var play=state.demoPlayQueue[state.demoPlayIdx];
-  if(play){
-    state.demoCurrentTime=play.ts;
-    advanceDemoPlay(play).then(function(){
-      state.demoPlayIdx++;
-      demoPaused=true;
-      var btn=document.getElementById('demoPauseBtn');
-      if(btn) btn.textContent='▶ Resume';
-    });
-  }
+  state.demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
 }
 
 async function advanceDemoPlay(play) {
@@ -476,6 +485,15 @@ async function advanceDemoPlay(play) {
     if(play.event==='Home Run'){
       _playSound('hr');
       if(play.batterId) _showPlayerCard(play.batterId,play.batterName||'',g.awayId,g.homeId,play.halfInning,null,play.desc,null,play.gamePk);
+      // HR seek complete: restore prior speed, pause so the user can take
+      // in the HR card overlay before resuming.
+      if(_hrSeekActive){
+        _hrSeekActive=false;
+        demoSpeedMs=_hrSeekPriorSpeed||10000;
+        demoPaused=true;
+        var pauseBtn=document.getElementById('demoPauseBtn');
+        if(pauseBtn) pauseBtn.textContent='▶ Resume';
+      }
     }else if(play.scoring){
       // Infer RBI from the score delta we captured before mutating g.
       // Negative deltas (defensive corrections, rare) fall back to 1.
@@ -528,6 +546,7 @@ function renderDemoEndScreen() {
 export function exitDemo() {
   state.demoMode=false;
   demoPaused=false;
+  _hrSeekActive=false;
   clearTimeout(state.demoTimer);
   if(state.storyRotateTimer) clearInterval(state.storyRotateTimer);
   if(state.pulseAbortCtrl){state.pulseAbortCtrl.abort();state.pulseAbortCtrl=null;}
@@ -579,6 +598,8 @@ export function exitDemo() {
     if(demoPauseBtn) demoPauseBtn.style.display='none';
     var demoForwardBtn=document.getElementById('demoForwardBtn');
     if(demoForwardBtn) demoForwardBtn.style.display='none';
+    var demoExitBtn=document.getElementById('demoExitBtn');
+    if(demoExitBtn) demoExitBtn.style.display='none';
     var badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='⚡ Mock';
   }

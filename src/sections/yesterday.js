@@ -76,13 +76,21 @@ export function closeYesterdayRecap() {
   });
 }
 
+// In demo mode, anchor "today" to state.demoDate (set by initDemo from the
+// earliest captured gameDateMs) so "yesterday" maps to the day before the
+// recording instead of today's real-clock date.
+function _ydAnchorDate() {
+  if (state.demoMode && state.demoDate) return new Date(state.demoDate);
+  return new Date();
+}
+
 function getYesterdayDateStr() {
-  var d=new Date(); d.setDate(d.getDate()+state.ydDateOffset);
+  var d=_ydAnchorDate(); d.setDate(d.getDate()+state.ydDateOffset);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
 function getYesterdayDisplayStr() {
-  var d=new Date(); d.setDate(d.getDate()+state.ydDateOffset);
+  var d=_ydAnchorDate(); d.setDate(d.getDate()+state.ydDateOffset);
   var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
 }

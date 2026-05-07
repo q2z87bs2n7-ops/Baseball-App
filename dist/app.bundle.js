@@ -7508,13 +7508,17 @@
       if (onclick.indexOf("'" + returnId + "'") !== -1) b.classList.add("active");
     });
   }
+  function _ydAnchorDate() {
+    if (state.demoMode && state.demoDate) return new Date(state.demoDate);
+    return /* @__PURE__ */ new Date();
+  }
   function getYesterdayDateStr() {
-    var d = /* @__PURE__ */ new Date();
+    var d = _ydAnchorDate();
     d.setDate(d.getDate() + state.ydDateOffset);
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function getYesterdayDisplayStr() {
-    var d = /* @__PURE__ */ new Date();
+    var d = _ydAnchorDate();
     d.setDate(d.getDate() + state.ydDateOffset);
     var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return months[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
@@ -8805,6 +8809,8 @@
   // src/demo/mode.js
   var demoPaused = false;
   var demoSpeedMs = 1e4;
+  var _hrSeekActive = false;
+  var _hrSeekPriorSpeed = 0;
   var _addFeedItem = null;
   var _renderTicker = null;
   var _renderSideRailGames = null;
@@ -8915,6 +8921,8 @@
       document.getElementById("demoNextHRBtn").style.display = "";
       document.getElementById("demoPauseBtn").style.display = "";
       document.getElementById("demoForwardBtn").style.display = "";
+      var _exitBtn = document.getElementById("demoExitBtn");
+      if (_exitBtn) _exitBtn.style.display = "";
       document.getElementById("demoPauseBtn").textContent = "\u23F8 Pause";
     }
     state.gameStates = {};
@@ -9131,30 +9139,28 @@
     if (!demoPaused) pollDemoFeeds();
   }
   function demoNextHR() {
-    var nextHRIdx = -1;
+    if (_hrSeekActive) return;
+    var found = false;
     for (var i = state.demoPlayIdx; i < state.demoPlayQueue.length; i++) {
       if (state.demoPlayQueue[i].event === "Home Run") {
-        nextHRIdx = i;
+        found = true;
         break;
       }
     }
-    if (nextHRIdx === -1) {
+    if (!found) {
       _showAlert({ icon: "\u26A0\uFE0F", event: "No more HRs", desc: "Reached end of demo", duration: 2e3 });
       return;
     }
-    state.demoPlayIdx = nextHRIdx - 1;
-    clearTimeout(state.demoTimer);
-    if (state.demoPlayIdx < state.demoPlayQueue.length) state.demoPlayIdx++;
-    var play = state.demoPlayQueue[state.demoPlayIdx];
-    if (play) {
-      state.demoCurrentTime = play.ts;
-      advanceDemoPlay(play).then(function() {
-        state.demoPlayIdx++;
-        demoPaused = true;
-        var btn = document.getElementById("demoPauseBtn");
-        if (btn) btn.textContent = "\u25B6 Resume";
-      });
+    _hrSeekActive = true;
+    _hrSeekPriorSpeed = demoSpeedMs;
+    demoSpeedMs = 500;
+    if (demoPaused) {
+      demoPaused = false;
+      var btn = document.getElementById("demoPauseBtn");
+      if (btn) btn.textContent = "\u23F8 Pause";
     }
+    clearTimeout(state.demoTimer);
+    state.demoTimer = setTimeout(pollDemoFeeds, demoSpeedMs);
   }
   async function advanceDemoPlay(play) {
     state.demoCurrentTime = play.ts;
@@ -9203,6 +9209,13 @@
       if (play.event === "Home Run") {
         _playSound("hr");
         if (play.batterId) _showPlayerCard2(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
+        if (_hrSeekActive) {
+          _hrSeekActive = false;
+          demoSpeedMs = _hrSeekPriorSpeed || 1e4;
+          demoPaused = true;
+          var pauseBtn = document.getElementById("demoPauseBtn");
+          if (pauseBtn) pauseBtn.textContent = "\u25B6 Resume";
+        }
       } else if (play.scoring) {
         var rbi = Math.max(0, play.awayScore - prevAway + (play.homeScore - prevHome));
         if (!rbi) rbi = 1;
@@ -9243,6 +9256,7 @@
   function exitDemo() {
     state.demoMode = false;
     demoPaused = false;
+    _hrSeekActive = false;
     clearTimeout(state.demoTimer);
     if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
     if (state.pulseAbortCtrl) {
@@ -9298,6 +9312,8 @@
       if (demoPauseBtn) demoPauseBtn.style.display = "none";
       var demoForwardBtn = document.getElementById("demoForwardBtn");
       if (demoForwardBtn) demoForwardBtn.style.display = "none";
+      var demoExitBtn = document.getElementById("demoExitBtn");
+      if (demoExitBtn) demoExitBtn.style.display = "none";
       var badge = document.getElementById("mockBarBadge");
       if (badge) badge.textContent = "\u26A1 Mock";
     }
