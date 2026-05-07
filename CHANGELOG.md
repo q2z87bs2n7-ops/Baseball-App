@@ -5,11 +5,11 @@
 
 ---
 
-**Current version:** v3.47.6
+**Current version:** v3.47
 
-**v3.47.6** — **Radio button stays ON during archive feed loading.** UX fix: when loading an archive broadcast, the radio button now displays immediately in a "loading…" state instead of flickering off then back on. Once metadata loads and playback starts, the label updates to the final broadcast title. Improves the perceived smoothness of feed switching.
+**v3.47** — **Radio button stays ON during archive feed loading.** UX fix: when loading an archive broadcast, the radio button now displays immediately in a "loading…" state instead of flickering off then back on. Once metadata loads and playback starts, the label updates to the final broadcast title. Improves the perceived smoothness of feed switching.
 
-  Files: `src/radio/classic.js`. Version v3.47.5 → v3.47.6, CACHE v628 → v629.
+  Files: `src/radio/classic.js`. Version v3.47.5 → v3.47, CACHE v628 → v629.
 
 **v3.47.5** — **Demo Feeds QC panel for archive broadcast testing.** Replaced random archive feed test button with a QC panel showing all 4 available archive.org broadcasts individually. Panel displays:
   - Broadcast title (e.g., "1969 Mets vs Orioles WS Game 5")

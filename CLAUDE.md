@@ -3,10 +3,10 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v3.47.6
+**Current version:** v3.47
 
 **Recent versions** (full history in `CHANGELOG.md`):
-- **v3.47.6** — **Radio button stays ON during archive feed loading.** UX polish: when loading an archive broadcast, the radio button now displays immediately in a "(loading…)" state instead of flickering off then back on. Once metadata loads and playback starts, the label updates to the final broadcast title. Improves perceived smoothness of feed switching in Dev Tools QC panel.
+- **v3.47** — **Radio button stays ON during archive feed loading.** UX polish: when loading an archive broadcast, the radio button now displays immediately in a "(loading…)" state instead of flickering off then back on. Once metadata loads and playback starts, the label updates to the final broadcast title. Improves perceived smoothness of feed switching in Dev Tools QC panel.
 - **v3.47.5** — **Demo Feeds QC panel.** Replaced random archive test button with a Dev Tools panel showing all 4 available archive.org broadcasts individually. Each broadcast has a ▶ Play button for independent testing. Panel displays broadcast title (e.g., "1969 Mets vs Orioles WS Game 5"), truncated URL filename, and plays at random offset (30-90 min) when triggered. New `playArchiveUrl(url)` export allows QA to test each historical broadcast separately and know exactly which one is playing.
 - **v3.47.4** — **Fix demo mode audio dropout.** When Demo Mode rapidly switches focus games (every play tick), the classic radio was calling `_playUrl()` with a random archive URL, causing unnecessary pause-load cycles. Added URL caching: if the same URL is already queued/playing, skip the pause-load sequence and just update the offset. Eliminates audio fluttering during demo replay.
 - **v3.47.3** — **Add demo archive test button.** New 🎬 Test Demo Feeds button in Dev Tools Actions for testing archive radio playback with random offset matching demo behavior.
