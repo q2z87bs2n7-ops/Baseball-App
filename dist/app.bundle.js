@@ -9351,6 +9351,63 @@
     if (_resumeLivePulse) _resumeLivePulse();
   }
 
+  // src/radio/classic.js
+  var _audio = null;
+  var _currentUrl = null;
+  function ensureAudio() {
+    if (_audio) return _audio;
+    _audio = document.createElement("audio");
+    _audio.id = "classicRadioAudio";
+    _audio.preload = "none";
+    _audio.volume = 0.4;
+    document.body.appendChild(_audio);
+    _audio.addEventListener("error", function() {
+      console.warn("classic radio: audio element error", _audio.error);
+    });
+    return _audio;
+  }
+  function playClassic(url) {
+    if (!url) return;
+    var a = ensureAudio();
+    if (_currentUrl === url && a.readyState >= 2 && a.duration) {
+      a.currentTime = pickOffset(a.duration);
+      a.play().catch(function(e) {
+        console.warn("classic radio: play blocked", e);
+      });
+      return;
+    }
+    _currentUrl = url;
+    a.pause();
+    a.src = url;
+    a.load();
+    var onMeta = function() {
+      a.removeEventListener("loadedmetadata", onMeta);
+      var dur = a.duration || 0;
+      if (dur > 120) a.currentTime = pickOffset(dur);
+      a.play().catch(function(e) {
+        console.warn("classic radio: play blocked", e);
+      });
+    };
+    a.addEventListener("loadedmetadata", onMeta);
+  }
+  function pickOffset(dur) {
+    return 60 + Math.random() * Math.max(0, dur - 120);
+  }
+  function pauseClassic() {
+    if (_audio) _audio.pause();
+  }
+  function isClassicPlaying() {
+    return !!(_audio && !_audio.paused && !_audio.ended);
+  }
+  var POC_TEST_URL = "https://archive.org/download/classicmlbbaseballradio/1963%2006%2009%20New%20York%20Mets%20vs%20Cardinals%20Complete%20Radio%20Broadcast.mp3";
+  function devTestClassicRadio() {
+    if (isClassicPlaying()) {
+      pauseClassic();
+      return;
+    }
+    playClassic(POC_TEST_URL);
+  }
+
   // src/dev/tuning.js
   var DEBUG5 = false;
   var _refreshDebugPanel2 = null;
@@ -9558,6 +9615,8 @@
         } else if (action === "radioCheck") {
           openRadioCheck();
           toggleDevTools();
+        } else if (action === "testClassicRadio") {
+          devTestClassicRadio();
         } else if (action === "resetTuning") {
           resetTuning();
         } else if (action === "captureApp") {

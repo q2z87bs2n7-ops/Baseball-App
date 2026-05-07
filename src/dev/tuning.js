@@ -25,6 +25,7 @@ import { openNewsSourceTest } from './news-test.js';
 import { generateTestCard, resetCollection } from '../collection/book.js';
 import { replayHRCard, replayRBICard } from '../cards/playerCard.js';
 import { openRadioCheck } from '../radio/check.js';
+import { devTestClassicRadio } from '../radio/classic.js';
 import { Recorder } from './recorder.js';
 
 const DEBUG = false;
@@ -193,6 +194,7 @@ export function initDevToolsClickDelegator() {
       else if (action === 'youtubeDebug')      { openYoutubeDebug(); toggleDevTools(); }
       else if (action === 'videoDebug')        { openVideoDebugPanel(); toggleDevTools(); }
       else if (action === 'radioCheck')        { openRadioCheck(); toggleDevTools(); }
+      else if (action === 'testClassicRadio')  { devTestClassicRadio(); }
       else if (action === 'resetTuning')       { resetTuning(); }
       else if (action === 'captureApp')        { captureCurrentTheme('app'); }
       else if (action === 'capturePulse')      { captureCurrentTheme('pulse'); }
