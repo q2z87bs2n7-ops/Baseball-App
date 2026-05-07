@@ -170,5 +170,12 @@ export const state = {
   demoTimer: null,
   demoStartTime: 0,
   demoDate: null,
-  demoCurrentTime: 0
+  demoCurrentTime: 0,
+  // Demo Mode v2 hydration targets (populated only by initDemo from
+  // daily-events.json; consumed by PR-3 demo branches in Focus Mode,
+  // pollPendingVideoClips, fetchBoxscore, etc.)
+  pitchTimeline: {},          // gamePk → [{atBatIndex, ts, pitches:[...], ...}]
+  boxscoreSnapshots: {},      // gamePk → [{ts, data}]
+  contentCacheTimeline: {},   // gamePk → [{ts, items:[trimmed clips]}]
+  focusTrack: []              // [{ts, focusGamePk, isManual, tensionLabel}]
 };

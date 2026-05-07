@@ -581,7 +581,18 @@
     demoTimer: null,
     demoStartTime: 0,
     demoDate: null,
-    demoCurrentTime: 0
+    demoCurrentTime: 0,
+    // Demo Mode v2 hydration targets (populated only by initDemo from
+    // daily-events.json; consumed by PR-3 demo branches in Focus Mode,
+    // pollPendingVideoClips, fetchBoxscore, etc.)
+    pitchTimeline: {},
+    // gamePk → [{atBatIndex, ts, pitches:[...], ...}]
+    boxscoreSnapshots: {},
+    // gamePk → [{ts, data}]
+    contentCacheTimeline: {},
+    // gamePk → [{ts, items:[trimmed clips]}]
+    focusTrack: []
+    // [{ts, focusGamePk, isManual, tensionLabel}]
   };
 
   // src/ui/theme.js
@@ -8688,6 +8699,8 @@
           if (item.playTime && typeof item.playTime === "string") {
             item.playTime = new Date(item.playTime);
           }
+          if (typeof item.ts === "number") item.ts = new Date(item.ts);
+          else if (typeof item.ts === "string") item.ts = new Date(item.ts);
           if (item.playTime && !item.ts) item.ts = item.playTime;
         });
       }
@@ -8798,20 +8811,32 @@
     });
     state.feedItems = (jsonData.feedItems || []).map(function(item) {
       var ts = item.ts || item.playTime;
-      if (ts && typeof ts === "string") ts = new Date(ts);
+      if (typeof ts === "number") ts = new Date(ts);
+      else if (typeof ts === "string") ts = new Date(ts);
       if (!(ts instanceof Date)) ts = /* @__PURE__ */ new Date();
       return { gamePk: item.gamePk, data: item.data, ts };
     });
-    state.dailyLeadersCache = jsonData.dailyLeadersCache || null;
-    state.onThisDayCache = jsonData.onThisDayCache || [];
-    state.yesterdayCache = jsonData.yesterdayCache || [];
-    state.hrBatterStatsCache = jsonData.hrBatterStatsCache || {};
-    state.probablePitcherStatsCache = jsonData.probablePitcherStatsCache || {};
-    state.dailyHitsTracker = jsonData.dailyHitsTracker || {};
-    state.dailyPitcherKs = jsonData.dailyPitcherKs || {};
-    state.storyCarouselRawGameData = jsonData.storyCarouselRawGameData || {};
-    state.stolenBaseEvents = jsonData.stolenBaseEvents || [];
+    var c = jsonData.caches || {};
+    state.dailyLeadersCache = c.dailyLeadersCache || jsonData.dailyLeadersCache || null;
+    state.onThisDayCache = c.onThisDayCache || jsonData.onThisDayCache || [];
+    state.yesterdayCache = c.yesterdayCache || jsonData.yesterdayCache || [];
+    state.hrBatterStatsCache = c.hrBatterStatsCache || jsonData.hrBatterStatsCache || {};
+    state.probablePitcherStatsCache = c.probablePitcherStatsCache || jsonData.probablePitcherStatsCache || {};
+    state.dailyHitsTracker = c.dailyHitsTracker || jsonData.dailyHitsTracker || {};
+    state.dailyPitcherKs = c.dailyPitcherKs || jsonData.dailyPitcherKs || {};
+    state.storyCarouselRawGameData = c.storyCarouselRawGameData || jsonData.storyCarouselRawGameData || {};
+    state.stolenBaseEvents = c.stolenBaseEvents || jsonData.stolenBaseEvents || [];
+    state.transactionsCache = c.transactionsCache || jsonData.transactionsCache || [];
+    state.liveWPCache = c.liveWPCache || jsonData.liveWPCache || {};
+    state.perfectGameTracker = c.perfectGameTracker || jsonData.perfectGameTracker || {};
+    state.highLowCache = c.highLowCache || jsonData.highLowCache || null;
     state.scheduleData = jsonData.scheduleData || [];
+    state.pitchTimeline = jsonData.pitchTimeline || {};
+    state.boxscoreSnapshots = jsonData.boxscoreSnapshots || {};
+    state.contentCacheTimeline = jsonData.contentCacheTimeline || {};
+    state.focusStatsCache = jsonData.focusStatsCache || {};
+    state.focusTrack = jsonData.focusTrack || [];
+    if (jsonData.lastVideoClip) state.lastVideoClip = jsonData.lastVideoClip;
     if (jsonData.gameStates) {
       var earliestMs = Infinity;
       Object.values(jsonData.gameStates).forEach(function(g) {
@@ -9045,6 +9070,10 @@
     state.inningRecapsFired = /* @__PURE__ */ new Set();
     state.inningRecapsPending = {};
     state.lastInningState = {};
+    state.pitchTimeline = {};
+    state.boxscoreSnapshots = {};
+    state.contentCacheTimeline = {};
+    state.focusTrack = [];
     var feed = document.getElementById("feed");
     if (feed) feed.innerHTML = "";
     var ticker = document.getElementById("gameTicker");
