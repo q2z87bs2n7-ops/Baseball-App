@@ -127,18 +127,21 @@ export async function pollLeaguePulse() {
         var prev = state.gameStates[pk];
         if (gameTime) prev.gameTime = gameTime; if (gameDateMs) prev.gameDateMs = gameDateMs;
         if (prev.detailedState !== 'In Progress' && detailed === 'In Progress') {
-          addFeedItem(pk, { type: 'status', icon: '⚾', label: 'Game underway!', sub: prev.awayAbbr + ' @ ' + prev.homeAbbr });
+          var ts1 = gameDateMs ? new Date(gameDateMs) : new Date();
+          addFeedItem(pk, { type: 'status', icon: '⚾', label: 'Game underway!', sub: prev.awayAbbr + ' @ ' + prev.homeAbbr, playTime: ts1 });
           playSound('gameStart');
         }
         if (prev.status !== 'Final' && newStatus === 'Final') {
           devTrace('poll', 'game final · ' + prev.awayAbbr + ' @ ' + prev.homeAbbr + ' · ' + prev.awayScore + '-' + prev.homeScore);
           var isGamePostponed = detailed === 'Postponed' || detailed === 'Cancelled' || detailed === 'Suspended';
-          if (isGamePostponed) { addFeedItem(pk, { type: 'status', icon: '🌧️', label: 'Game Postponed', sub: prev.awayAbbr + ' @ ' + prev.homeAbbr }); }
-          else { addFeedItem(pk, { type: 'status', icon: '🏁', label: 'Game Final', sub: prev.awayAbbr + ' ' + (away.score || 0) + ', ' + prev.homeAbbr + ' ' + (home.score || 0) }); playSound('gameEnd'); }
+          var tsFinal = gameDateMs ? new Date(gameDateMs + (ls.gameDurationMinutes || 180) * 60000) : new Date();
+          if (isGamePostponed) { addFeedItem(pk, { type: 'status', icon: '🌧️', label: 'Game Postponed', sub: prev.awayAbbr + ' @ ' + prev.homeAbbr, playTime: tsFinal }); }
+          else { addFeedItem(pk, { type: 'status', icon: '🏁', label: 'Game Final', sub: prev.awayAbbr + ' ' + (away.score || 0) + ', ' + prev.homeAbbr + ' ' + (home.score || 0), playTime: tsFinal }); playSound('gameEnd'); }
           delete state.perfectGameTracker[pk];
         }
         if (detailed.toLowerCase().indexOf('delay') !== -1 && prev.detailedState.toLowerCase().indexOf('delay') === -1) {
-          addFeedItem(pk, { type: 'status', icon: '🌧️', label: 'Game Delayed', sub: prev.awayAbbr + ' @ ' + prev.homeAbbr + ' · ' + detailed });
+          var tsDelay = gameDateMs ? new Date(gameDateMs) : new Date();
+          addFeedItem(pk, { type: 'status', icon: '🌧️', label: 'Game Delayed', sub: prev.awayAbbr + ' @ ' + prev.homeAbbr + ' · ' + detailed, playTime: tsDelay });
         }
         prev.detailedState = detailed; prev.status = newStatus;
         prev.awayScore = away.score || 0; prev.homeScore = home.score || 0;

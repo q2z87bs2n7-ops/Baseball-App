@@ -8551,22 +8551,25 @@
           if (gameTime) prev.gameTime = gameTime;
           if (gameDateMs) prev.gameDateMs = gameDateMs;
           if (prev.detailedState !== "In Progress" && detailed === "In Progress") {
-            addFeedItem(pk, { type: "status", icon: "\u26BE", label: "Game underway!", sub: prev.awayAbbr + " @ " + prev.homeAbbr });
+            var ts1 = gameDateMs ? new Date(gameDateMs) : /* @__PURE__ */ new Date();
+            addFeedItem(pk, { type: "status", icon: "\u26BE", label: "Game underway!", sub: prev.awayAbbr + " @ " + prev.homeAbbr, playTime: ts1 });
             playSound("gameStart");
           }
           if (prev.status !== "Final" && newStatus === "Final") {
             devTrace("poll", "game final \xB7 " + prev.awayAbbr + " @ " + prev.homeAbbr + " \xB7 " + prev.awayScore + "-" + prev.homeScore);
             var isGamePostponed = detailed === "Postponed" || detailed === "Cancelled" || detailed === "Suspended";
+            var tsFinal = gameDateMs ? new Date(gameDateMs + (ls.gameDurationMinutes || 180) * 6e4) : /* @__PURE__ */ new Date();
             if (isGamePostponed) {
-              addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Postponed", sub: prev.awayAbbr + " @ " + prev.homeAbbr });
+              addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Postponed", sub: prev.awayAbbr + " @ " + prev.homeAbbr, playTime: tsFinal });
             } else {
-              addFeedItem(pk, { type: "status", icon: "\u{1F3C1}", label: "Game Final", sub: prev.awayAbbr + " " + (away.score || 0) + ", " + prev.homeAbbr + " " + (home.score || 0) });
+              addFeedItem(pk, { type: "status", icon: "\u{1F3C1}", label: "Game Final", sub: prev.awayAbbr + " " + (away.score || 0) + ", " + prev.homeAbbr + " " + (home.score || 0), playTime: tsFinal });
               playSound("gameEnd");
             }
             delete state.perfectGameTracker[pk];
           }
           if (detailed.toLowerCase().indexOf("delay") !== -1 && prev.detailedState.toLowerCase().indexOf("delay") === -1) {
-            addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Delayed", sub: prev.awayAbbr + " @ " + prev.homeAbbr + " \xB7 " + detailed });
+            var tsDelay = gameDateMs ? new Date(gameDateMs) : /* @__PURE__ */ new Date();
+            addFeedItem(pk, { type: "status", icon: "\u{1F327}\uFE0F", label: "Game Delayed", sub: prev.awayAbbr + " @ " + prev.homeAbbr + " \xB7 " + detailed, playTime: tsDelay });
           }
           prev.detailedState = detailed;
           prev.status = newStatus;
