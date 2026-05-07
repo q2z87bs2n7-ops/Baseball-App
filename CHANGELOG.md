@@ -5,7 +5,31 @@
 
 ---
 
-**Current version:** v3.46
+**Current version:** v3.47
+
+**v3.47** — **Classic Radio in demo.** Streams full-length classic MLB radio broadcasts from archive.org as background atmosphere when the user toggles radio in Demo Mode. Atmospheric only — no timestamp sync, no per-play matching.
+
+  **Module.** New `src/radio/classic.js`:
+  - Hardcoded `POC_POOL` of 4 archive.org direct-MP3 URLs (1957-08-05 Giants @ Dodgers Vin Scully; 1968-09-28 Yankees vs Red Sox Mantle's final game; 1969-10-16 Mets vs Orioles WS Game 5; 1970-04-22 Padres vs Mets, Seaver 19K, Bob Murphy).
+  - `playClassicRandom()` picks a random URL from the pool, calls `stopRadio()` defensively to kill any live radio that's currently playing, then calls `_playUrl(url)` which sets `<audio>` src, waits for `loadedmetadata`, jumps to a random offset between 30 min and 90 min into the broadcast (skips pre-game / post-game; caps to `dur - 60s` if a file is shorter than 91 min), and plays at volume 0.4.
+  - `pauseClassic()` / `stopClassic()` clear `_active` and call `setRadioUI(false, null)` to flip the existing radio toggle visual off.
+  - `rollClassicOnSwitch()` is a no-op when `_active` is false; otherwise re-runs the random pool pick + offset selection so the user gets fresh classic atmosphere on every focus change. Also defensively calls `stopRadio()` first as belt-and-suspenders against live radio leaking back on between switches.
+  - `devTestClassicRadio()` toggles play/pause; same code path used by both the Dev Tools button and (in demo) the existing `toggleRadio()`.
+  - Same-URL re-roll (when the pool happens to pick the same file) skips the metadata round-trip and just sets `currentTime` to a fresh offset.
+  - `_audio.crossOrigin` is intentionally NOT set — plain `<audio>` playback uses no-cors media mode which archive.org allows. Only need crossOrigin for Web Audio API sample access (visualizers etc.), which we don't do.
+  - Console logs `[classic radio] play: <decoded title>` and `[classic radio] roll on focus switch: <decoded title>` for diagnostics. `_audio.error` listener logs media errors with the underlying `MediaError` (browsers' AbortError + transient MediaErrors during rapid switches are expected and don't block playback — desktop logs them more verbosely than mobile because Safari historically returns `undefined` from `play()` on iOS).
+
+  **Existing toggleRadio is demo-aware.** `src/radio/engine.js` `toggleRadio()` now checks `state.demoMode`. In demo, both the focus-card 📻 button and the Settings radio toggle delegate to `devTestClassicRadio()` — same play/pause UX as live, but routed through the classic system. Out of demo, behaviour is unchanged. `setRadioUI` was promoted to an export so `classic.js` can drive the same green "Playing" dot + "Playing · CLASSIC · <broadcast title>" status label that live radio uses; visually identical to live radio.
+
+  **Focus-switch hook.** `src/focus/mode.js` `setFocusGame()` calls `rollClassicOnSwitch()` whenever the focused game changes (gated on `_active` so it's a no-op when classic isn't running). `setFocusGame` also gates the existing `updateRadioForFocus()` on `!isClassicActive()` — without that gate, a live `radioAudio` element that was un-paused before classic activated could end up loading new team-flagship streams on each focus switch in demo, producing the "live mapping ruleset firing on focus changes" symptom user reported during testing.
+
+  **Cleanup.** `src/demo/mode.js` `exitDemo()` calls `stopClassic()` so audio doesn't bleed into live mode after the user leaves demo.
+
+  **Dev Tools button.** New 🎙️ Classic Radio (POC) action under Dev Tools alongside Radio Check. Same toggle semantics; useful for testing classic radio outside demo (and as a backup activation path).
+
+  **Note: archive.org availability.** This is opt-in atmosphere over a public archive — if archive.org changes URL paths or removes a file, that one entry will silently fail to load and console-warn; classic radio simply stays silent until a successful subsequent roll. Not a deal-breaker, just a known dependency. Can be moved to R2/B2/own hosting later if reliability matters.
+
+  Files: `src/radio/classic.js` (new, ~150 LOC), `src/radio/engine.js` (demo-aware `toggleRadio` + `setRadioUI` exported), `src/focus/mode.js` (`rollClassicOnSwitch` + `isClassicActive` gate), `src/demo/mode.js` (`stopClassic` in `exitDemo`), `src/dev/tuning.js` (`testClassicRadio` action), `index.html` (Dev Tools button declaration), `sw.js`, `dist/app.bundle.js`. Version v3.46.5 → v3.47, CACHE v621 → v622.
 
 **v3.46** — **Demo Mode v2.** End-to-end overhaul of the static demo experience.
 

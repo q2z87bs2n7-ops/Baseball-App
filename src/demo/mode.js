@@ -292,7 +292,7 @@ async function initDemo() {
   _showAlert({
     icon:'▶',
     event:'Demo Mode · '+state.enabledGames.size+' games · '+state.feedItems.length+' plays loaded',
-    desc:'Heads up — this is a replay of a recorded session. Focus mode pitch data is limited to games that were captured live. Radio is simulated (in live mode it plays the real broadcast); audio support is coming next session.',
+    desc:'Heads up — this is a replay of a recorded session. Focus mode pitch data is limited to games that were captured live. Toggle 📻 for Classic Radio: random vintage broadcast (Vin Scully, Mantle’s final game, WS69, Seaver 19K) re-rolls on focus switch — atmosphere only, not synced to plays.',
     color:'#7dd89e',
     duration:12000
   });

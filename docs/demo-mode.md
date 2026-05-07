@@ -139,6 +139,25 @@ Demo isn't just `pollDemoFeeds` — every consumer that would otherwise hit a li
 - **Yesterday Recap.** `getYesterdayDateStr` / `getYesterdayDisplayStr` anchor on `state.demoDate` so "yesterday" maps to `demoDate - 1`. Forward navigation capped by `offset >= 0`. `openYesterdayRecap` and `ydChangeDate` both call `loadYdForDate(getYesterdayDateStr())` — fetches real `/schedule` + per-game `/playByPlay` + `/content` for the demo's anchor day. We deliberately don't read `state.yesterdayCache` in demo because it holds the recorder user's wall-clock yesterday, which doesn't match the demo anchor.
 - **`fetchGameContent`** (`src/data/clips.js`). No `demoMode` guard. Yesterday Recap and `devTestVideoClip` both call it for real historical content. The Pulse demo replay path uses its own `pollPendingVideoClips`/`contentCacheTimeline` branch — it never touches `fetchGameContent`.
 
+## Classic Radio (atmosphere audio)
+
+**Added v3.47.** When the user toggles the radio button (📻 in the focus card or in Settings) while demo mode is active, `toggleRadio()` delegates to `devTestClassicRadio()` instead of the live-radio engine. Classic Radio (`src/radio/classic.js`) streams full-length classic MLB broadcasts directly from archive.org as background atmosphere — no timestamp sync, just vintage commentary + crowd noise.
+
+| Behaviour | Detail |
+|---|---|
+| Pool | Hardcoded list of 4 archive.org MP3 URLs (1957 Giants/Dodgers Vin Scully, 1968 Yankees/Red Sox Mantle final, 1969 Mets/Orioles WS Game 5, 1970 Padres/Mets Seaver 19K) |
+| Pick | Random from pool on each activation and each focus switch |
+| Offset | Random in [30 min, 90 min] of the broadcast (skips pre-game / post-game; caps to `dur - 60s` if file shorter than 91 min) |
+| Volume | Defaults 0.4 (`setClassicVolume` exposed for future UI) |
+| Re-roll | `rollClassicOnSwitch()` fires from `setFocusGame` on every focus change while `_active` is true; defensively calls `stopRadio()` before rolling so live radio can't leak back |
+| UI | `setRadioUI(true, {abbr:'CLASSIC', name: <title>})` makes the existing radio button show green + "Playing · CLASSIC · <title>" — same visual feedback as live |
+| Live radio interlock | While classic is active, `setFocusGame` skips `updateRadioForFocus()` so live streams can't switch on focus change |
+| Exit | `exitDemo` calls `stopClassic()` so audio doesn't bleed into live mode |
+
+CORS: archive.org serves direct-MP3 with permissive CORS for plain `<audio>` playback. We don't set `crossOrigin` (would only matter for Web Audio API sample access).
+
+Console diagnostics: `[classic radio] play: <title>` and `[classic radio] roll on focus switch: <title>` log on each pick. Transient `MediaError` / `AbortError` warnings on desktop during rapid focus switches are expected (race between `audio.pause()` and pending `play()` promise) and don't block playback.
+
 ## Exit demo
 
 `exitDemo()`:

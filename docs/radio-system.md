@@ -147,10 +147,45 @@ Self-test panel for sweeping every station in `MLB_TEAM_RADIO` + Fox Sports fall
 
 `MLB_TEAM_RADIO` URL map only needs editing when a station's stream URL itself changes.
 
+## 🎙️ Classic Radio (`src/radio/classic.js`) — demo mode only
+
+Added v3.47. Streams full-length classic MLB broadcasts from archive.org as background atmosphere when the user toggles radio while demo mode is active. No timestamp sync — just vintage commentary + crowd noise as ambient texture.
+
+**Activation:**
+- `toggleRadio()` (`src/radio/engine.js`) checks `state.demoMode`. In demo, delegates to `devTestClassicRadio()` instead of starting a live stream. So the same 📻 button (focus card + Settings) the user already knows starts classic radio in demo.
+- Dev Tools → 🎙️ Classic Radio (POC) is a parallel entry point sharing the same `_active` state.
+
+**Behaviour:**
+
+| | |
+|---|---|
+| Pool | Hardcoded `POC_POOL` of 4 archive.org MP3 URLs (1957 Vin Scully, 1968 Mantle final, 1969 WS Game 5, 1970 Seaver 19K) |
+| URL pick | `pickRandomUrl()` — uniform random from the pool on each play / re-roll |
+| Offset | `pickOffset(dur)` returns random in [30 × 60, 90 × 60] of the file (skips pre-game / post-game). Caps `max` to `dur - 60s` if a file is shorter than 91 min. |
+| Volume | 0.4 default; `setClassicVolume(v)` exposed |
+| Focus-switch re-roll | `rollClassicOnSwitch()` called from `setFocusGame` on every focus change. No-op when `_active=false`; otherwise `stopRadio()` defensively + new pool pick + new offset. |
+| Live-radio interlock | While `isClassicActive()`, `setFocusGame` skips `updateRadioForFocus()` so live streams can't load on focus changes |
+| UI | `playClassicRandom` / `_playUrl` call exported `setRadioUI(true, {abbr:'CLASSIC', name: <broadcast title>})` so the existing green "Playing" dot + status text reflect classic state — identical to live |
+| Exit | `exitDemo` calls `stopClassic` — pauses, clears `<audio>` src, flips UI off |
+
+**Coexistence with live radio:**
+- `playClassicRandom` calls `stopRadio()` before starting so any live audio is silenced first.
+- `setFocusGame`'s `if (!isClassicActive()) updateRadioForFocus()` gate prevents `radioAudio` from re-loading team flagships on focus change while classic is active. Without this gate the user reported "live mapping ruleset firing on focus switches" during testing (fixed pre-v3.47).
+
+**Diagnostics:**
+- `console.log('[classic radio] play:', <title>)` on initial play
+- `console.log('[classic radio] roll on focus switch:', <title>)` on each switch
+- `MediaError` / `AbortError` warnings on desktop during rapid switches are expected race-warnings between `audio.pause()` and a pending `play()` promise — don't block playback. Less verbose on iOS (Safari historically returns `undefined` from `play()`).
+
+**CORS:** plain `<audio>` streaming from archive.org works in no-cors media mode. We don't set `crossOrigin` (would only matter for Web Audio API sample access).
+
+**Hosting:** archive.org direct-MP3 URLs only — we never copy or re-host. Repo cost zero, our bandwidth zero. If archive.org changes a path or removes a file, that one entry silently fails until a subsequent roll picks a different URL.
+
 ## Known issues / backlog
 
 - **Audacy rights gap** — ~14 stations; needs URL replacements from iHeart / StreamTheWorld / Bonneville
 - **Oakland flagship** — KSTE Sacramento may not be the current flagship after A's move; needs research
 - **Toronto** — CJCL Sportsnet 590 may be Canada-geo-locked
 - **Per-team override UI** — user can't choose away team when both teams approved (always picks home)
-- **Demo Mode** — toggle is functional but `pickRadioForFocus()` returns Fox Sports (no real focus game)
+- **Live radio in demo** (resolved v3.47) — `toggleRadio()` now delegates to Classic Radio in demo. Live `pickRadioForFocus()` is bypassed.
+- **Classic Radio pool size** — hardcoded 4-URL array in `src/radio/classic.js POC_POOL`. Easy to expand (just add URLs). Future: optional `teamId → URL[]` map so the pool can prefer broadcasts featuring the focused team.
