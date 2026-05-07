@@ -33,6 +33,7 @@ let _localDateStr = null;
 let _selectFocusGame = null;
 let _pollFocusLinescore = null;
 let _pollPendingVideoClips = null;
+let _resumeLivePulse = null;
 
 export function setDemoCallbacks(callbacks) {
   _addFeedItem = callbacks.addFeedItem;
@@ -49,6 +50,7 @@ export function setDemoCallbacks(callbacks) {
   _selectFocusGame = callbacks.selectFocusGame;
   _pollFocusLinescore = callbacks.pollFocusLinescore;
   _pollPendingVideoClips = callbacks.pollPendingVideoClips;
+  _resumeLivePulse = callbacks.resumeLivePulse;
 }
 
 async function loadDailyEventsJSON(){
@@ -571,6 +573,28 @@ export function exitDemo() {
   state.contentCacheTimeline={};
   state.focusTrack=[];
   state.demoCardCount=0;
+  // Reset all the carousel + content caches that initDemo hydrated from
+  // the JSON. Without this, post-exit Pulse shows stale demo carousel
+  // entries (e.g. yesterday's HR leaders) until each cache's individual
+  // refresh timer fires. resumeLivePulse triggers fresh loaders below.
+  state.dailyLeadersCache=null; state.dailyLeadersLastFetch=0;
+  state.onThisDayCache=null;
+  state.yesterdayCache=null;
+  state.hrBatterStatsCache={};
+  state.probablePitcherStatsCache={};
+  state.dailyHitsTracker={};
+  state.dailyPitcherKs={};
+  state.storyCarouselRawGameData={};
+  state.stolenBaseEvents=[];
+  state.transactionsCache=[]; state.transactionsLastFetch=0;
+  state.liveWPCache={}; state.liveWPLastFetch=0;
+  state.perfectGameTracker={};
+  state.highLowCache=null; state.highLowLastFetch=0;
+  state.focusStatsCache={};
+  state.lastVideoClip=null;
+  state.liveContentCache={};
+  state.yesterdayContentCache={};
+  state.boxscoreCache={};
 
   var feed=document.getElementById('feed');
   if(feed) feed.innerHTML='';
@@ -604,6 +628,10 @@ export function exitDemo() {
     if(badge) badge.textContent='⚡ Mock';
   }
   updateDemoBtnLabel();
+  // Restart live polling so Pulse repopulates with real data (or shows
+  // the hype/empty card if no live games). Without this, exit leaves
+  // Pulse staring at empty state arrays.
+  if(_resumeLivePulse) _resumeLivePulse();
 }
 
 export { loadDemoGames, buildDemoPlayQueue };

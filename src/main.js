@@ -579,6 +579,34 @@ function renderNextGame(g,label){
     selectFocusGame: selectFocusGame,
     pollFocusLinescore: pollFocusLinescore,
     pollPendingVideoClips: pollPendingVideoClips,
+    // Called by exitDemo to restart live polling. Mirrors the live-init
+    // section of initReal so Pulse fully resumes — fresh poll, story
+    // pool rebuild, focus selection, and all the recurring timers. The
+    // immediate updateFeedEmpty paints the hype/empty card so there's no
+    // flash of empty Pulse while the first poll is in flight.
+    resumeLivePulse: function() {
+      if (state.pulseTimer) { clearInterval(state.pulseTimer); state.pulseTimer = null; }
+      if (state.storyPoolTimer) { clearInterval(state.storyPoolTimer); state.storyPoolTimer = null; }
+      if (state.videoClipPollTimer) { clearInterval(state.videoClipPollTimer); state.videoClipPollTimer = null; }
+      state.pollDateStr = localDateStr(new Date());
+      updateFeedEmpty();
+      renderTicker();
+      renderSideRailGames();
+      // Refire the once-at-init carousel loaders so the day/yesterday
+      // caches refresh from real APIs instead of staying empty until
+      // their individual refresh windows expire.
+      loadOnThisDayCache();
+      loadYesterdayCache();
+      loadTransactionsCache();
+      loadHighLowCache();
+      pollLeaguePulse().then(function(){
+        buildStoryPool();
+        if (state.focusGamePk) setFocusGame(state.focusGamePk);
+      });
+      state.pulseTimer = setInterval(pollLeaguePulse, TIMING.PULSE_POLL_MS);
+      state.storyPoolTimer = setInterval(buildStoryPool, TIMING.STORY_POOL_MS);
+      state.videoClipPollTimer = setInterval(pollPendingVideoClips, 30 * 1000);
+    },
   });
   state.pulseInitialized=true;initLeaguePulse();
   // Pulse-first cold-open: mirror showSection('pulse') side-effects so theme + wake-lock match the active landing section

@@ -3389,7 +3389,6 @@
     return cuts.length ? cuts[0].src || cuts[0].url || null : null;
   }
   async function fetchGameContent(gamePk) {
-    if (state.demoMode) return state.yesterdayContentCache[gamePk] || null;
     if (state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
     try {
       var r = await fetch(MLB_BASE + "/game/" + gamePk + "/content");
@@ -8834,6 +8833,7 @@
   var _selectFocusGame = null;
   var _pollFocusLinescore = null;
   var _pollPendingVideoClips = null;
+  var _resumeLivePulse = null;
   function setDemoCallbacks(callbacks) {
     _addFeedItem = callbacks.addFeedItem;
     _renderTicker = callbacks.renderTicker;
@@ -8849,6 +8849,7 @@
     _selectFocusGame = callbacks.selectFocusGame;
     _pollFocusLinescore = callbacks.pollFocusLinescore;
     _pollPendingVideoClips = callbacks.pollPendingVideoClips;
+    _resumeLivePulse = callbacks.resumeLivePulse;
   }
   async function loadDailyEventsJSON() {
     try {
@@ -9296,6 +9297,28 @@
     state.contentCacheTimeline = {};
     state.focusTrack = [];
     state.demoCardCount = 0;
+    state.dailyLeadersCache = null;
+    state.dailyLeadersLastFetch = 0;
+    state.onThisDayCache = null;
+    state.yesterdayCache = null;
+    state.hrBatterStatsCache = {};
+    state.probablePitcherStatsCache = {};
+    state.dailyHitsTracker = {};
+    state.dailyPitcherKs = {};
+    state.storyCarouselRawGameData = {};
+    state.stolenBaseEvents = [];
+    state.transactionsCache = [];
+    state.transactionsLastFetch = 0;
+    state.liveWPCache = {};
+    state.liveWPLastFetch = 0;
+    state.perfectGameTracker = {};
+    state.highLowCache = null;
+    state.highLowLastFetch = 0;
+    state.focusStatsCache = {};
+    state.lastVideoClip = null;
+    state.liveContentCache = {};
+    state.yesterdayContentCache = {};
+    state.boxscoreCache = {};
     var feed = document.getElementById("feed");
     if (feed) feed.innerHTML = "";
     var ticker = document.getElementById("gameTicker");
@@ -9327,6 +9350,7 @@
       if (badge) badge.textContent = "\u26A1 Mock";
     }
     updateDemoBtnLabel();
+    if (_resumeLivePulse) _resumeLivePulse();
   }
 
   // src/dev/tuning.js
@@ -10227,7 +10251,41 @@
       localDateStr,
       selectFocusGame,
       pollFocusLinescore,
-      pollPendingVideoClips
+      pollPendingVideoClips,
+      // Called by exitDemo to restart live polling. Mirrors the live-init
+      // section of initReal so Pulse fully resumes — fresh poll, story
+      // pool rebuild, focus selection, and all the recurring timers. The
+      // immediate updateFeedEmpty paints the hype/empty card so there's no
+      // flash of empty Pulse while the first poll is in flight.
+      resumeLivePulse: function() {
+        if (state.pulseTimer) {
+          clearInterval(state.pulseTimer);
+          state.pulseTimer = null;
+        }
+        if (state.storyPoolTimer) {
+          clearInterval(state.storyPoolTimer);
+          state.storyPoolTimer = null;
+        }
+        if (state.videoClipPollTimer) {
+          clearInterval(state.videoClipPollTimer);
+          state.videoClipPollTimer = null;
+        }
+        state.pollDateStr = localDateStr(/* @__PURE__ */ new Date());
+        updateFeedEmpty();
+        renderTicker();
+        renderSideRailGames();
+        loadOnThisDayCache();
+        loadYesterdayCache();
+        loadTransactionsCache();
+        loadHighLowCache();
+        pollLeaguePulse().then(function() {
+          buildStoryPool();
+          if (state.focusGamePk) setFocusGame(state.focusGamePk);
+        });
+        state.pulseTimer = setInterval(pollLeaguePulse, TIMING.PULSE_POLL_MS);
+        state.storyPoolTimer = setInterval(buildStoryPool, TIMING.STORY_POOL_MS);
+        state.videoClipPollTimer = setInterval(pollPendingVideoClips, 30 * 1e3);
+      }
     });
     state.pulseInitialized = true;
     initLeaguePulse();

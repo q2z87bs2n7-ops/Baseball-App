@@ -38,10 +38,10 @@ export function pickHeroImage(item) {
 
 // Fetch /game/{pk}/content with one-shot caching in state.yesterdayContentCache.
 // Yes the cache name says "yesterday" — it's been overloaded for live games too.
+// Allowed to fetch in demo mode: callers (Yesterday Recap, devTestVideoClip)
+// use this for real historical data. The Pulse demo replay path goes through
+// pollPendingVideoClips's own demo branch (contentCacheTimeline), not here.
 export async function fetchGameContent(gamePk) {
-  // Demo replay never makes network calls. Yesterday Recap is out of demo
-  // scope, so returning the existing cache (or null) is correct.
-  if (state.demoMode) return state.yesterdayContentCache[gamePk] || null;
   if (state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
   try {
     var r = await fetch(MLB_BASE + '/game/' + gamePk + '/content');
