@@ -8,6 +8,7 @@ import { state } from '../state.js';
 import { SEASON, TIMING, MLB_BASE, MLB_BASE_V1_1 } from '../config/constants.js';
 import { devTrace } from '../diag/devLog.js';
 import { updateRadioForFocus } from '../radio/engine.js';
+import { rollClassicOnSwitch } from '../radio/classic.js';
 
 export function calcFocusScore(g) {
   if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
@@ -86,10 +87,14 @@ export function selectFocusGame() {
 
 export function setFocusGame(pk) {
   if(!pk) return;
+  var changed = state.focusGamePk !== pk;
   state.focusGamePk=pk;
   if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
     window.Recorder._captureFocusTrack();
   }
+  // Classic radio: re-roll on every focus change (no-op if user hasn't
+  // turned it on). Random URL from the pool, random in-game offset.
+  if (changed) rollClassicOnSwitch();
   state.focusPitchSequence=[];
   state.focusCurrentAbIdx=null;
   state.focusLastTimecode=null;

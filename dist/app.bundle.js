@@ -4214,6 +4214,87 @@
   };
   if (typeof window !== "undefined") window.Recorder = Recorder;
 
+  // src/radio/classic.js
+  var POC_POOL = [
+    "https://archive.org/download/classicmlbbaseballradio/1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3",
+    "https://archive.org/download/classicmlbbaseballradio/1970%2004%2022%20Padres%20vs%20New%20York%20Mets%20Seaver%2019ks%20Complete%20Broadcast%20Bob%20Murphy.mp3",
+    "https://archive.org/download/classicmlbbaseballradio/19570805GiantsAtDodgersvinScullyRadioBroadcast.mp3",
+    "https://archive.org/download/classicmlbbaseballradio/1968%2009%2028%20Yankees%20vs%20Red%20Sox%20Mantles%20FINAL%20Game%20Messer%20Coleman%20Rizzuto%20Radio%20Broadcast.mp3"
+  ];
+  var _audio = null;
+  var _active = false;
+  function ensureAudio() {
+    if (_audio) return _audio;
+    _audio = document.createElement("audio");
+    _audio.id = "classicRadioAudio";
+    _audio.preload = "none";
+    _audio.volume = 0.4;
+    document.body.appendChild(_audio);
+    _audio.addEventListener("error", function() {
+      console.warn("classic radio: audio element error", _audio.error);
+    });
+    return _audio;
+  }
+  function pickRandomUrl() {
+    return POC_POOL[Math.floor(Math.random() * POC_POOL.length)];
+  }
+  function pickOffset(dur) {
+    var minS = 30 * 60;
+    var maxS = 90 * 60;
+    if (dur && dur < maxS + 60) maxS = Math.max(minS, dur - 60);
+    if (maxS <= minS) return minS;
+    return minS + Math.random() * (maxS - minS);
+  }
+  function _playUrl(url) {
+    if (!url) return;
+    var a = ensureAudio();
+    if (a.src && a.src.indexOf(url) !== -1 && a.readyState >= 2 && a.duration) {
+      a.currentTime = pickOffset(a.duration);
+      a.play().catch(function(e) {
+        console.warn("classic radio: play blocked", e);
+      });
+      return;
+    }
+    a.pause();
+    a.src = url;
+    a.load();
+    var onMeta = function() {
+      a.removeEventListener("loadedmetadata", onMeta);
+      var dur = a.duration || 0;
+      if (dur > 60) a.currentTime = pickOffset(dur);
+      a.play().catch(function(e) {
+        console.warn("classic radio: play blocked", e);
+      });
+    };
+    a.addEventListener("loadedmetadata", onMeta);
+  }
+  function playClassicRandom() {
+    _active = true;
+    _playUrl(pickRandomUrl());
+  }
+  function pauseClassic() {
+    _active = false;
+    if (_audio) _audio.pause();
+  }
+  function stopClassic() {
+    _active = false;
+    if (!_audio) return;
+    _audio.pause();
+    _audio.removeAttribute("src");
+    _audio.load();
+  }
+  function rollClassicOnSwitch() {
+    if (!_active) return;
+    _playUrl(pickRandomUrl());
+  }
+  function devTestClassicRadio() {
+    if (_active) {
+      pauseClassic();
+    } else {
+      playClassicRandom();
+    }
+  }
+
   // src/focus/mode.js
   function calcFocusScore(g) {
     if (g.status !== "Live" || g.detailedState !== "In Progress") return 0;
@@ -4288,10 +4369,12 @@
   }
   function setFocusGame(pk) {
     if (!pk) return;
+    var changed = state.focusGamePk !== pk;
     state.focusGamePk = pk;
     if (typeof window !== "undefined" && window.Recorder && window.Recorder.active) {
       window.Recorder._captureFocusTrack();
     }
+    if (changed) rollClassicOnSwitch();
     state.focusPitchSequence = [];
     state.focusCurrentAbIdx = null;
     state.focusLastTimecode = null;
@@ -9265,6 +9348,7 @@
     state.demoMode = false;
     demoPaused = false;
     _hrSeekActive = false;
+    stopClassic();
     clearTimeout(state.demoTimer);
     if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
     if (state.pulseAbortCtrl) {
@@ -9349,63 +9433,6 @@
     }
     updateDemoBtnLabel();
     if (_resumeLivePulse) _resumeLivePulse();
-  }
-
-  // src/radio/classic.js
-  var _audio = null;
-  var _currentUrl = null;
-  function ensureAudio() {
-    if (_audio) return _audio;
-    _audio = document.createElement("audio");
-    _audio.id = "classicRadioAudio";
-    _audio.preload = "none";
-    _audio.volume = 0.4;
-    document.body.appendChild(_audio);
-    _audio.addEventListener("error", function() {
-      console.warn("classic radio: audio element error", _audio.error);
-    });
-    return _audio;
-  }
-  function playClassic(url) {
-    if (!url) return;
-    var a = ensureAudio();
-    if (_currentUrl === url && a.readyState >= 2 && a.duration) {
-      a.currentTime = pickOffset(a.duration);
-      a.play().catch(function(e) {
-        console.warn("classic radio: play blocked", e);
-      });
-      return;
-    }
-    _currentUrl = url;
-    a.pause();
-    a.src = url;
-    a.load();
-    var onMeta = function() {
-      a.removeEventListener("loadedmetadata", onMeta);
-      var dur = a.duration || 0;
-      if (dur > 120) a.currentTime = pickOffset(dur);
-      a.play().catch(function(e) {
-        console.warn("classic radio: play blocked", e);
-      });
-    };
-    a.addEventListener("loadedmetadata", onMeta);
-  }
-  function pickOffset(dur) {
-    return 60 + Math.random() * Math.max(0, dur - 120);
-  }
-  function pauseClassic() {
-    if (_audio) _audio.pause();
-  }
-  function isClassicPlaying() {
-    return !!(_audio && !_audio.paused && !_audio.ended);
-  }
-  var POC_TEST_URL = "https://archive.org/download/classicmlbbaseballradio/1963%2006%2009%20New%20York%20Mets%20vs%20Cardinals%20Complete%20Radio%20Broadcast.mp3";
-  function devTestClassicRadio() {
-    if (isClassicPlaying()) {
-      pauseClassic();
-      return;
-    }
-    playClassic(POC_TEST_URL);
   }
 
   // src/dev/tuning.js

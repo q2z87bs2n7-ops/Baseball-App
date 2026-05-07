@@ -7,6 +7,7 @@ import { state } from '../state.js';
 import { devTrace } from '../diag/devLog.js';
 import { MLB_BASE } from '../config/constants.js';
 import { calcRBICardScore } from '../cards/playerCard.js';
+import { stopClassic } from '../radio/classic.js';
 
 // Encapsulated demo-only state
 let demoPaused = false;
@@ -549,6 +550,7 @@ export function exitDemo() {
   state.demoMode=false;
   demoPaused=false;
   _hrSeekActive=false;
+  stopClassic();
   clearTimeout(state.demoTimer);
   if(state.storyRotateTimer) clearInterval(state.storyRotateTimer);
   if(state.pulseAbortCtrl){state.pulseAbortCtrl.abort();state.pulseAbortCtrl=null;}
