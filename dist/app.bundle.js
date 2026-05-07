@@ -2484,6 +2484,10 @@
     a.pause();
     a.src = url;
     a.load();
+    try {
+      setRadioUI(true, { abbr: "CLASSIC", name: label + " (loading\u2026)" });
+    } catch (e) {
+    }
     var onMeta = function() {
       a.removeEventListener("loadedmetadata", onMeta);
       var dur = a.duration || 0;

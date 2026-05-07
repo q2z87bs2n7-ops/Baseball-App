@@ -88,6 +88,8 @@ function _playUrl(url) {
   a.pause();
   a.src = url;
   a.load();
+  // Show UI in "loading" state immediately so button doesn't flicker off/on
+  try { setRadioUI(true, { abbr: 'CLASSIC', name: label + ' (loading…)' }); } catch (e) {}
   var onMeta = function() {
     a.removeEventListener('loadedmetadata', onMeta);
     var dur = a.duration || 0;
