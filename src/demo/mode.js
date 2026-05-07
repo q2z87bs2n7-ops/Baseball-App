@@ -6,6 +6,7 @@
 import { state } from '../state.js';
 import { devTrace } from '../diag/devLog.js';
 import { MLB_BASE } from '../config/constants.js';
+import { calcRBICardScore } from '../cards/playerCard.js';
 
 // Encapsulated demo-only state
 let demoPaused = false;
@@ -21,6 +22,7 @@ let _updateFeedEmpty = null;
 let _showAlert = null;
 let _playSound = null;
 let _showPlayerCard = null;
+let _showRBICard = null;
 let _rotateStory = null;
 let _localDateStr = null;
 let _selectFocusGame = null;
@@ -36,6 +38,7 @@ export function setDemoCallbacks(callbacks) {
   _showAlert = callbacks.showAlert;
   _playSound = callbacks.playSound;
   _showPlayerCard = callbacks.showPlayerCard;
+  _showRBICard = callbacks.showRBICard;
   _rotateStory = callbacks.rotateStory;
   _localDateStr = callbacks.localDateStr;
   _selectFocusGame = callbacks.selectFocusGame;
@@ -397,6 +400,9 @@ async function advanceDemoPlay(play) {
       g.status='Live';
       g.detailedState='In Progress';
     }
+    // Capture pre-update score so we can infer RBI count from the delta —
+    // recorded feedItems don't carry play.result.rbi from /playByPlay.
+    var prevAway=g.awayScore||0, prevHome=g.homeScore||0;
     g.inning=play.inning;
     g.halfInning=play.halfInning;
     g.outs=play.outs;
@@ -423,7 +429,18 @@ async function advanceDemoPlay(play) {
       _playSound('hr');
       if(play.batterId) _showPlayerCard(play.batterId,play.batterName||'',g.awayId,g.homeId,play.halfInning,null,play.desc,null,play.gamePk);
     }else if(play.scoring){
-      _showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.awayScore+', '+g.homeAbbr+' '+play.homeScore,desc:play.desc,color:g.homePrimary,duration:4000});
+      // Infer RBI from the score delta we captured before mutating g.
+      // Negative deltas (defensive corrections, rare) fall back to 1.
+      var rbi=Math.max(0,(play.awayScore-prevAway)+(play.homeScore-prevHome));
+      if(!rbi) rbi=1;
+      var rbiOk=(Date.now()-(state.rbiCardCooldowns[play.gamePk]||0))>=state.devTuning.rbiCooldown;
+      var rbiScore=calcRBICardScore(rbi,play.event,play.awayScore,play.homeScore,play.inning,play.halfInning);
+      if(_showRBICard&&rbiScore>=state.devTuning.rbiThreshold&&play.batterId&&rbiOk){
+        state.rbiCardCooldowns[play.gamePk]=Date.now();
+        _showRBICard(play.batterId,play.batterName||'',g.awayId,g.homeId,play.halfInning,rbi,play.event,play.awayScore,play.homeScore,play.inning,play.gamePk);
+      }else{
+        _showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.awayScore+', '+g.homeAbbr+' '+play.homeScore,desc:play.desc,color:g.homePrimary,duration:4000});
+      }
       _playSound('run');
     }
   }

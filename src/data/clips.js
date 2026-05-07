@@ -79,7 +79,11 @@ export function patchFeedItemWithClip(feedItemTs, gamePk, clip) {
 // feed DOM hasn't been patched yet, fetch /game/{pk}/content per-game (5min cache),
 // match clips by player_id only (no timestamp fallback — see comment below), patch on hit.
 export async function pollPendingVideoClips() {
-  var cutoff = Date.now() - 2 * 60 * 60 * 1000;
+  // Anchor the 2h cutoff to demoCurrentTime when replaying — feed items
+  // baseline-captured from a previous day have ts values far older than
+  // real Date.now(), so a real-clock cutoff filters them all out.
+  var anchorMs = state.demoMode ? (state.demoCurrentTime || 0) : Date.now();
+  var cutoff = anchorMs - 2 * 60 * 60 * 1000;
   var feed = document.getElementById('feed');
   if (!feed) return;
   var pending = state.feedItems.filter(function(item) {

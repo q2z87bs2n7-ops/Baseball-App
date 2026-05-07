@@ -47,14 +47,19 @@ export function selectFocusGame() {
       var nowMs=state.demoCurrentTime||0;
       var entry=null;
       for(var ti=ft.length-1;ti>=0;ti--) { if(ft[ti].ts<=nowMs) { entry=ft[ti]; break; } }
-      if(entry&&entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
-        state.focusIsManual=!!entry.isManual;
-        setFocusGame(entry.focusGamePk);
+      if(entry) {
+        if(entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
+          state.focusIsManual=!!entry.isManual;
+          setFocusGame(entry.focusGamePk);
+        }
+        return;
       }
-      return;
+      // Bootstrap: focusTrack starts at metadata.startedAt (recording-begin
+      // time), which is later than the earliest baselined feed items.
+      // Until demoCurrentTime crosses the first track entry, fall through
+      // to tension scoring so the focus card isn't dark for the opening
+      // stretch of demo replay.
     }
-    // Fallback: no focusTrack hydrated → tension-score against demo gameStates
-    // (treats Live + In Progress filter the same as live mode would)
   }
   var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
   if(!liveGames.length) return;

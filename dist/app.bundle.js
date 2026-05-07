@@ -3419,7 +3419,8 @@
     el.appendChild(wrap);
   }
   async function pollPendingVideoClips() {
-    var cutoff = Date.now() - 2 * 60 * 60 * 1e3;
+    var anchorMs = state.demoMode ? state.demoCurrentTime || 0 : Date.now();
+    var cutoff = anchorMs - 2 * 60 * 60 * 1e3;
     var feed = document.getElementById("feed");
     if (!feed) return;
     var pending = state.feedItems.filter(function(item) {
@@ -4253,11 +4254,13 @@
             break;
           }
         }
-        if (entry && entry.focusGamePk && state.focusGamePk !== entry.focusGamePk) {
-          state.focusIsManual = !!entry.isManual;
-          setFocusGame(entry.focusGamePk);
+        if (entry) {
+          if (entry.focusGamePk && state.focusGamePk !== entry.focusGamePk) {
+            state.focusIsManual = !!entry.isManual;
+            setFocusGame(entry.focusGamePk);
+          }
+          return;
         }
-        return;
       }
     }
     var liveGames = Object.values(state.gameStates).filter(function(g) {
@@ -8802,6 +8805,7 @@
   var _showAlert = null;
   var _playSound = null;
   var _showPlayerCard2 = null;
+  var _showRBICard2 = null;
   var _rotateStory = null;
   var _localDateStr2 = null;
   var _selectFocusGame = null;
@@ -8816,6 +8820,7 @@
     _showAlert = callbacks.showAlert;
     _playSound = callbacks.playSound;
     _showPlayerCard2 = callbacks.showPlayerCard;
+    _showRBICard2 = callbacks.showRBICard;
     _rotateStory = callbacks.rotateStory;
     _localDateStr2 = callbacks.localDateStr;
     _selectFocusGame = callbacks.selectFocusGame;
@@ -9130,6 +9135,7 @@
         g.status = "Live";
         g.detailedState = "In Progress";
       }
+      var prevAway = g.awayScore || 0, prevHome = g.homeScore || 0;
       g.inning = play.inning;
       g.halfInning = play.halfInning;
       g.outs = play.outs;
@@ -9156,7 +9162,16 @@
         _playSound("hr");
         if (play.batterId) _showPlayerCard2(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, null, play.desc, null, play.gamePk);
       } else if (play.scoring) {
-        _showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + play.awayScore + ", " + g.homeAbbr + " " + play.homeScore, desc: play.desc, color: g.homePrimary, duration: 4e3 });
+        var rbi = Math.max(0, play.awayScore - prevAway + (play.homeScore - prevHome));
+        if (!rbi) rbi = 1;
+        var rbiOk = Date.now() - (state.rbiCardCooldowns[play.gamePk] || 0) >= state.devTuning.rbiCooldown;
+        var rbiScore = calcRBICardScore(rbi, play.event, play.awayScore, play.homeScore, play.inning, play.halfInning);
+        if (_showRBICard2 && rbiScore >= state.devTuning.rbiThreshold && play.batterId && rbiOk) {
+          state.rbiCardCooldowns[play.gamePk] = Date.now();
+          _showRBICard2(play.batterId, play.batterName || "", g.awayId, g.homeId, play.halfInning, rbi, play.event, play.awayScore, play.homeScore, play.inning, play.gamePk);
+        } else {
+          _showAlert({ icon: "\u{1F7E2}", event: "RUN SCORES \xB7 " + g.awayAbbr + " " + play.awayScore + ", " + g.homeAbbr + " " + play.homeScore, desc: play.desc, color: g.homePrimary, duration: 4e3 });
+        }
         _playSound("run");
       }
     }
@@ -10140,6 +10155,7 @@
       showAlert,
       playSound,
       showPlayerCard,
+      showRBICard,
       rotateStory,
       localDateStr,
       selectFocusGame,

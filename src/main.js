@@ -573,6 +573,7 @@ function renderNextGame(g,label){
     showAlert: showAlert,
     playSound: playSound,
     showPlayerCard: showPlayerCard,
+    showRBICard: showRBICard,
     rotateStory: rotateStory,
     localDateStr: localDateStr,
     selectFocusGame: selectFocusGame,
