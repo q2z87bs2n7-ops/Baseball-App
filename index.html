@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v3.47.3</title>
+<title>MLB Pulse v3.47.4</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,7 +16,7 @@
 <script defer src="pulse-card-templates.js"></script>
 <script defer src="focusCard.js"></script>
 <script defer src="collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=3.46"></script>
+<script defer src="dist/app.bundle.js?v=3.47"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -79,7 +79,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v3.47.3</div>
+        <div class="settings-version">v3.47.4</div>
       </div>
     </div>
   </div>
@@ -427,9 +427,9 @@
     <button class="dev-btn" data-dt-action="testClassicRadio">
       <div class="dev-btn-label">🎙️ Classic Radio (POC)</div>
     </button>
-    <button class="dev-btn" data-dt-action="testDemoFeeds">
-      <div class="dev-btn-label">🎬 Test Demo Feeds</div>
-      <div class="dev-btn-shortcut">Random offset</div>
+    <button class="dev-btn" data-dt-action="openDemoFeeds">
+      <div class="dev-btn-label">📽️ Demo Feeds QC</div>
+      <div class="dev-btn-shortcut">QC tester</div>
     </button>
   </div>
   <div style="padding:12px 15px;border-top:1px solid var(--border)">
@@ -452,6 +452,12 @@
     <details id="liveControlsDetails" style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🎯 Live Controls</summary>
       <div id="liveControlsBody" style="margin-top:0.625rem;display:flex;flex-direction:column;gap:10px;font-size:.65rem"></div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details id="demoFeedsDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">📽️ Demo Feeds QC</summary>
+      <div id="demoFeedsBody" style="margin-top:0.625rem;display:flex;flex-direction:column;gap:6px;font-size:.65rem;max-height:400px;overflow-y:auto"></div>
     </details>
   </div>
   <div class="dt-group-hd">Inspectors</div>

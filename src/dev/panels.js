@@ -15,6 +15,7 @@ import { devNetLog, DEV_NET_CAP } from '../diag/devNet.js';
 import { pulseGreeting } from '../feed/render.js';
 import { getCurrentTeamId } from '../radio/engine.js';
 import { setFocusGameManual } from '../focus/mode.js';
+import { playClassicRandom } from '../radio/classic.js';
 
 let _buildStoryPool = null;
 let _fallbackCopy = null;
@@ -602,6 +603,42 @@ export function testLocalNotification(){
   else Notification.requestPermission().then(function(p){ if(p==='granted') show(); else alert('Permission not granted ('+p+').'); });
 }
 
+// ── Demo Feeds Tester (QC Panel) ────────────────────────────────────────────────
+export function renderDemoFeedsTester() {
+  var body = document.getElementById('demoFeedsBody');
+  if (!body) return;
+  var games = Object.values(state.gameStates || {});
+  if (!games.length) {
+    body.innerHTML = '<div class="dt-label-muted" style="padding:8px 0">No demo games loaded. Enter Demo Mode first.</div>';
+    return;
+  }
+  body.innerHTML = games.map(function(g) {
+    var matchup = g.awayAbbr + ' @ ' + g.homeAbbr;
+    var score = g.awayScore + '-' + g.homeScore;
+    var inning = g.inning ? ' · ' + g.inning + g.halfInning.charAt(0).toUpperCase() : '';
+    var status = g.status === 'Live' ? '🔴 ' : g.status === 'Final' ? '⚪ ' : '🔵 ';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;font-size:.7rem">'
+      + '<div style="flex:1">'
+        + '<div style="font-weight:600;color:var(--text)">' + status + matchup + '</div>'
+        + '<div style="color:var(--muted);margin-top:2px">' + score + inning + '</div>'
+      + '</div>'
+      + '<button data-dt-action="demoFeedPlay" data-demo-feed-pk="' + g.gamePk + '" style="background:var(--secondary);color:var(--accent-text);border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:.65rem;flex-shrink:0;margin-left:8px">▶ Play</button>'
+      + '</div>';
+  }).join('');
+}
+
+export function testDemoFeedGame(gamePk) {
+  if (!gamePk) return;
+  var g = state.gameStates[gamePk];
+  if (!g) return;
+  try {
+    setFocusGameManual(gamePk);
+    playClassicRandom();
+  } catch (e) {
+    console.error('demo feed test failed:', e);
+  }
+}
+
 // ── 🎯 Live Controls: Force Focus + Force Recap ─────────────────────────────
 function _liveGamesForControls(){
   if(typeof state.gameStates==='undefined') return [];
@@ -767,6 +804,8 @@ export function initPanelsLazyRendering(){
   function attach(){
     var stateDet=document.getElementById('appStateDetails');
     if(stateDet) stateDet.addEventListener('toggle',function(){if(stateDet.open)renderAppState();});
+    var demoFeedsDet=document.getElementById('demoFeedsDetails');
+    if(demoFeedsDet) demoFeedsDet.addEventListener('toggle',function(){if(demoFeedsDet.open)renderDemoFeedsTester();});
     var netDet=document.getElementById('netTraceDetails');
     if(netDet) netDet.addEventListener('toggle',function(){if(netDet.open)renderNetTrace();});
     var stoDet=document.getElementById('storageDetails');

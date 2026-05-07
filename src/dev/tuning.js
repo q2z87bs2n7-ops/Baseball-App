@@ -18,6 +18,7 @@ import {
   testLocalNotification,
   renderLiveControls, forceFocusGo, forceRecapGo,
   copyDiagnosticSnapshot,
+  renderDemoFeedsTester, testDemoFeedGame,
 } from './panels.js';
 import { openYoutubeDebug } from './youtube-debug.js';
 import { openVideoDebugPanel } from './video-debug.js';
@@ -25,7 +26,7 @@ import { openNewsSourceTest } from './news-test.js';
 import { generateTestCard, resetCollection } from '../collection/book.js';
 import { replayHRCard, replayRBICard } from '../cards/playerCard.js';
 import { openRadioCheck } from '../radio/check.js';
-import { devTestClassicRadio, devTestDemoArchiveFeeds } from '../radio/classic.js';
+import { devTestClassicRadio } from '../radio/classic.js';
 import { Recorder } from './recorder.js';
 
 const DEBUG = false;
@@ -195,7 +196,14 @@ export function initDevToolsClickDelegator() {
       else if (action === 'videoDebug')        { openVideoDebugPanel(); toggleDevTools(); }
       else if (action === 'radioCheck')        { openRadioCheck(); toggleDevTools(); }
       else if (action === 'testClassicRadio')  { devTestClassicRadio(); }
-      else if (action === 'testDemoFeeds')     { devTestDemoArchiveFeeds(); toggleDevTools(); }
+      else if (action === 'openDemoFeeds')     {
+        var det = document.getElementById('demoFeedsDetails');
+        if (det) { det.open = true; renderDemoFeedsTester(); }
+      }
+      else if (action === 'demoFeedPlay') {
+        var pk = btn.dataset.demoFeedPk;
+        if (pk) testDemoFeedGame(parseInt(pk, 10));
+      }
       else if (action === 'resetTuning')       { resetTuning(); }
       else if (action === 'captureApp')        { captureCurrentTheme('app'); }
       else if (action === 'capturePulse')      { captureCurrentTheme('pulse'); }

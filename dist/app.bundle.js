@@ -2557,9 +2557,6 @@
       playClassicRandom();
     }
   }
-  function devTestDemoArchiveFeeds() {
-    playClassicRandom();
-  }
 
   // src/radio/engine.js
   var radioAudio = null;
@@ -5525,6 +5522,33 @@
       else alert("Permission not granted (" + p + ").");
     });
   }
+  function renderDemoFeedsTester() {
+    var body = document.getElementById("demoFeedsBody");
+    if (!body) return;
+    var games = Object.values(state.gameStates || {});
+    if (!games.length) {
+      body.innerHTML = '<div class="dt-label-muted" style="padding:8px 0">No demo games loaded. Enter Demo Mode first.</div>';
+      return;
+    }
+    body.innerHTML = games.map(function(g) {
+      var matchup = g.awayAbbr + " @ " + g.homeAbbr;
+      var score = g.awayScore + "-" + g.homeScore;
+      var inning = g.inning ? " \xB7 " + g.inning + g.halfInning.charAt(0).toUpperCase() : "";
+      var status = g.status === "Live" ? "\u{1F534} " : g.status === "Final" ? "\u26AA " : "\u{1F535} ";
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;font-size:.7rem"><div style="flex:1"><div style="font-weight:600;color:var(--text)">' + status + matchup + '</div><div style="color:var(--muted);margin-top:2px">' + score + inning + '</div></div><button data-dt-action="demoFeedPlay" data-demo-feed-pk="' + g.gamePk + '" style="background:var(--secondary);color:var(--accent-text);border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:.65rem;flex-shrink:0;margin-left:8px">\u25B6 Play</button></div>';
+    }).join("");
+  }
+  function testDemoFeedGame(gamePk) {
+    if (!gamePk) return;
+    var g = state.gameStates[gamePk];
+    if (!g) return;
+    try {
+      setFocusGameManual(gamePk);
+      playClassicRandom();
+    } catch (e) {
+      console.error("demo feed test failed:", e);
+    }
+  }
   function _liveGamesForControls() {
     if (typeof state.gameStates === "undefined") return [];
     return Object.keys(state.gameStates).map(function(pk) {
@@ -5681,6 +5705,10 @@
       var stateDet = document.getElementById("appStateDetails");
       if (stateDet) stateDet.addEventListener("toggle", function() {
         if (stateDet.open) renderAppState();
+      });
+      var demoFeedsDet = document.getElementById("demoFeedsDetails");
+      if (demoFeedsDet) demoFeedsDet.addEventListener("toggle", function() {
+        if (demoFeedsDet.open) renderDemoFeedsTester();
       });
       var netDet = document.getElementById("netTraceDetails");
       if (netDet) netDet.addEventListener("toggle", function() {
@@ -9700,9 +9728,15 @@
           toggleDevTools();
         } else if (action === "testClassicRadio") {
           devTestClassicRadio();
-        } else if (action === "testDemoFeeds") {
-          devTestDemoArchiveFeeds();
-          toggleDevTools();
+        } else if (action === "openDemoFeeds") {
+          var det = document.getElementById("demoFeedsDetails");
+          if (det) {
+            det.open = true;
+            renderDemoFeedsTester();
+          }
+        } else if (action === "demoFeedPlay") {
+          var pk = btn.dataset.demoFeedPk;
+          if (pk) testDemoFeedGame(parseInt(pk, 10));
         } else if (action === "resetTuning") {
           resetTuning();
         } else if (action === "captureApp") {
