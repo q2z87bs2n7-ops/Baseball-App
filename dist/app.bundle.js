@@ -3313,8 +3313,6 @@
     if (ttl) ttl.textContent = title || "";
     vid.src = url;
     vid.load();
-    vid.play().catch(function() {
-    });
     ov.style.display = "flex";
   }
   function closeVideoOverlay() {
