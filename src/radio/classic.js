@@ -25,6 +25,10 @@ let _audio = null;
 // they pause/stop or exit demo. Focus-switch re-rolls only fire while
 // _active is true so we don't surprise users with autoplay.
 let _active = false;
+// Track the last rolled URL to avoid unnecessary pause-load cycles when
+// the random pool happens to return the same URL on consecutive calls.
+// This reduces audio fluttering during rapid focus-game changes.
+let _lastRolledUrl = null;
 
 function ensureAudio() {
   if (_audio) return _audio;
@@ -64,6 +68,7 @@ function _playUrl(url) {
   if (!url) return;
   var a = ensureAudio();
   var label = _broadcastLabel(url);
+  // If the URL is already playing or loaded, just seek to a new offset
   if (a.src && a.src.indexOf(url) !== -1 && a.readyState >= 2 && a.duration) {
     a.currentTime = pickOffset(a.duration);
     a.play().then(function() {
@@ -71,6 +76,15 @@ function _playUrl(url) {
     }).catch(function(e) { console.warn('classic radio: play blocked', e); });
     return;
   }
+  // Skip pause-load cycle if this URL is already queued from a previous call
+  // within the same rapid focus-change window. Avoids audio dropout during
+  // demo mode replay where selectFocusGame fires on every play tick.
+  if (url === _lastRolledUrl && !a.paused && a.readyState >= 2) {
+    // Audio is already playing the right URL, just update offset if metadata is ready
+    if (a.duration > 0) a.currentTime = pickOffset(a.duration);
+    return;
+  }
+  _lastRolledUrl = url;
   a.pause();
   a.src = url;
   a.load();
@@ -115,6 +129,7 @@ export function pauseClassic() {
 
 export function stopClassic() {
   _active = false;
+  _lastRolledUrl = null;
   if (!_audio) return;
   _audio.pause();
   _audio.removeAttribute('src');

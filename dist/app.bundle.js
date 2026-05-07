@@ -2437,6 +2437,7 @@
   ];
   var _audio = null;
   var _active = false;
+  var _lastRolledUrl = null;
   function ensureAudio() {
     if (_audio) return _audio;
     _audio = document.createElement("audio");
@@ -2475,6 +2476,11 @@
       });
       return;
     }
+    if (url === _lastRolledUrl && !a.paused && a.readyState >= 2) {
+      if (a.duration > 0) a.currentTime = pickOffset(a.duration);
+      return;
+    }
+    _lastRolledUrl = url;
     a.pause();
     a.src = url;
     a.load();
@@ -2521,6 +2527,7 @@
   }
   function stopClassic() {
     _active = false;
+    _lastRolledUrl = null;
     if (!_audio) return;
     _audio.pause();
     _audio.removeAttribute("src");
