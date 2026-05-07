@@ -10,7 +10,7 @@ A real-time pitch-by-pitch tracker that auto-focuses on the most exciting MLB ga
 
 ## Why this exists
 
-This started as a hobby experiment: how far could a single developer get building a genuinely complex, data-rich web application working almost exclusively with Claude? Not in weeks — in days. The MLB Stats API turned out to be a near-perfect testbed. It's public, well-structured, covers a sport with rich real-time data (pitch-by-pitch, player stats, play-by-play, media), and baseball is inherently fun to build around. The fact that the API is as good as it is — free, no authentication required, returning deeply nested hydrated game data — made it genuinely enjoyable to push against.
+This project began as a learning experience — exploring what could actually be achieved using Claude Code — and stretched into a hobby project over a couple of weeks because it became genuinely fun to keep building. The MLB Stats API turned out to be a near-perfect testbed — public, no authentication required, rich real-time data covering every pitch, play, and player stat across the league. Baseball is fun to build around, and an API this good made it easy to keep going.
 
 What started as a single HTML file is now a modular ES6 app with a build pipeline, PWA support, cross-device sync, serverless push notifications, a card collection system, an in-app demo recorder, and a classic radio atmosphere layer. Each feature was a prompt away. The project is less about the MLB Tracker itself and more about what that kind of collaboration can produce.
 
