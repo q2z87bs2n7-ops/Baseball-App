@@ -1556,6 +1556,7 @@
   async function genWinProbabilityStories() {
     var out = [];
     if (!state.focusGamePk) return out;
+    if (state.demoMode) return out;
     var g = state.gameStates[state.focusGamePk];
     if (!g || g.status !== "Live" || g.detailedState !== "In Progress") return out;
     try {

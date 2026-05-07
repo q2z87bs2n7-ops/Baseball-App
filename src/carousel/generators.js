@@ -522,6 +522,11 @@ function genRosterMoveStories(){
 async function genWinProbabilityStories(){
   var out=[];
   if(!state.focusGamePk) return out;
+  // Demo: skip the /contextMetrics API call. It returns final-game metrics
+  // for the completed games we're replaying (homeWinProbability=100 for the
+  // winning team), producing nonsense "100% favorites" cards. genLiveWinProbStories
+  // below reads from state.liveWPCache (hydrated from the recording) instead.
+  if(state.demoMode) return out;
   var g=state.gameStates[state.focusGamePk];
   if(!g||g.status!=='Live'||g.detailedState!=='In Progress') return out;
   try{
