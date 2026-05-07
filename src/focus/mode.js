@@ -43,6 +43,11 @@ export function selectFocusGame() {
   // (auto + manual switches recorded with their timestamps) instead of
   // re-running tension scoring against synthetic game states.
   if(state.demoMode) {
+    // Respect the demo viewer's manual focus pick — same UX as live
+    // mode. Without this gate, every play tick re-runs the focusTrack
+    // walk and yanks the user back to whatever game the recorder user
+    // had focused (usually the same one for the whole session).
+    if(state.focusIsManual) return;
     var ft=state.focusTrack||[];
     if(ft.length) {
       var nowMs=state.demoCurrentTime||0;
@@ -58,7 +63,11 @@ export function selectFocusGame() {
       // data. Normal ts-based lookup resumes once demoCurrentTime catches up.
       if(!entry) entry=ft[0];
       if(entry&&entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
-        state.focusIsManual=!!entry.isManual;
+        // Don't write entry.isManual into state.focusIsManual — that's
+        // the recorder user's flag, not the demo viewer's. The viewer's
+        // manual flag is set/cleared by setFocusGameManual / resetFocusAuto
+        // at runtime; mixing recording metadata into it caused manual
+        // overrides in demo to flip back unexpectedly.
         setFocusGame(entry.focusGamePk);
       }
       return;

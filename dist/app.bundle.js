@@ -4370,6 +4370,7 @@
   }
   function selectFocusGame() {
     if (state.demoMode) {
+      if (state.focusIsManual) return;
       var ft = state.focusTrack || [];
       if (ft.length) {
         var nowMs = state.demoCurrentTime || 0;
@@ -4382,7 +4383,6 @@
         }
         if (!entry) entry = ft[0];
         if (entry && entry.focusGamePk && state.focusGamePk !== entry.focusGamePk) {
-          state.focusIsManual = !!entry.isManual;
           setFocusGame(entry.focusGamePk);
         }
         return;

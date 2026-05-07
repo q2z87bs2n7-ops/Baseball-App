@@ -5,7 +5,19 @@
 
 ---
 
-**Current version:** v3.47
+**Current version:** v3.47.1
+
+**v3.47.1** — **Demo focus respects manual override.** Bug fix: in demo mode, every `advanceDemoPlay` tick was calling `selectFocusGame()`, which walked `focusTrack[]` and called `setFocusGame(entry.focusGamePk)` regardless of whether the demo viewer had manually picked a different game. Result: the recorder user's heavy ATH @ PHI focus track (11/12 entries in the current sample) yanked the demo viewer back within a play or two of any manual switch.
+
+  Two fixes in `src/focus/mode.js` `selectFocusGame()` demo branch:
+  1. Early-return when `state.focusIsManual` is true. Same gate as live mode — manual focus blocks auto-switching.
+  2. Stop assigning `state.focusIsManual = !!entry.isManual` on each switch. The captured `isManual` flag is the recorder user's runtime state from the original session; conflating it with the demo viewer's runtime manual flag was polluting the viewer's intent. State.focusIsManual is now controlled solely by `setFocusGameManual` / `resetFocusAuto` (runtime UI actions), not by playback data.
+
+  Net effect: demo viewer can manually pick any game via the focus switcher chips, and the demo will respect that choice. The ↩ AUTO pill (existing UI) returns control to the recording's focusTrack-driven auto-switching.
+
+  Doc updates: `docs/demo-mode.md` "Consumer demo branches" table updated for `selectFocusGame`.
+
+  Files: `src/focus/mode.js`, `docs/demo-mode.md`, `CLAUDE.md`, `CHANGELOG.md`, `index.html`, `sw.js`, `dist/app.bundle.js`. Version v3.47 → v3.47.1, CACHE v623 → v624.
 
 **v3.47** — **Classic Radio in demo.** Streams full-length classic MLB radio broadcasts from archive.org as background atmosphere when the user toggles radio in Demo Mode. Atmospheric only — no timestamp sync, no per-play matching.
 
