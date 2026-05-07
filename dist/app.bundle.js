@@ -4268,13 +4268,23 @@
     };
     a.addEventListener("loadedmetadata", onMeta);
   }
+  function _broadcastLabel(url) {
+    try {
+      var name = decodeURIComponent(url.split("/").pop().replace(/\.mp3$/i, ""));
+      return name.length > 60 ? name.slice(0, 57) + "\u2026" : name;
+    } catch (e) {
+      return url;
+    }
+  }
   function playClassicRandom() {
     _active = true;
     try {
       stopRadio();
     } catch (e) {
     }
-    _playUrl(pickRandomUrl());
+    var url = pickRandomUrl();
+    console.log("[classic radio] play:", _broadcastLabel(url));
+    _playUrl(url);
   }
   function pauseClassic() {
     _active = false;
@@ -4292,7 +4302,13 @@
   }
   function rollClassicOnSwitch() {
     if (!_active) return;
-    _playUrl(pickRandomUrl());
+    try {
+      stopRadio();
+    } catch (e) {
+    }
+    var url = pickRandomUrl();
+    console.log("[classic radio] roll on focus switch:", _broadcastLabel(url));
+    _playUrl(url);
   }
   function devTestClassicRadio() {
     if (_active) {

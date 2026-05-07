@@ -78,6 +78,16 @@ function _playUrl(url) {
   a.addEventListener('loadedmetadata', onMeta);
 }
 
+function _broadcastLabel(url) {
+  // Pull the filename slug for diagnostic display: e.g.
+  // "1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3"
+  // → "1969 10 16 New York Mets vs Baltimore Orioles World Series Game 5"
+  try {
+    var name = decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, ''));
+    return name.length > 60 ? name.slice(0, 57) + '…' : name;
+  } catch (e) { return url; }
+}
+
 // Pick a random URL from the pool and play at a random in-game offset.
 // Sets _active = true so subsequent focus-switch re-rolls fire. Also
 // silences the live radio engine so the user doesn't hear Fox Sports
@@ -85,7 +95,9 @@ function _playUrl(url) {
 export function playClassicRandom() {
   _active = true;
   try { stopRadio(); } catch (e) {}
-  _playUrl(pickRandomUrl());
+  var url = pickRandomUrl();
+  console.log('[classic radio] play:', _broadcastLabel(url));
+  _playUrl(url);
 }
 
 export function pauseClassic() {
@@ -115,10 +127,14 @@ export function setClassicVolume(v) {
 
 // Called by setFocusGame on every focus change. Re-rolls a fresh URL +
 // offset so the user gets a new bit of classic atmosphere whenever they
-// switch games. No-op when classic radio isn't active.
+// switch games. No-op when classic radio isn't active. Also defensively
+// kills the live radio in case it slipped back on between switches.
 export function rollClassicOnSwitch() {
   if (!_active) return;
-  _playUrl(pickRandomUrl());
+  try { stopRadio(); } catch (e) {}
+  var url = pickRandomUrl();
+  console.log('[classic radio] roll on focus switch:', _broadcastLabel(url));
+  _playUrl(url);
 }
 
 // Dev Tools toggle: starts classic radio if off, pauses if on.
