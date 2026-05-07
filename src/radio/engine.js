@@ -2,10 +2,14 @@
 // Manages live-game terrestrial radio playback with HLS support.
 // Encapsulates: radioAudio (HTML5 Audio), radioHls (HLS.js instance), radioCurrentTeamId
 // Auto-pairs to focused game via pickRadioForFocus().
+//
+// In demo mode, toggleRadio() routes to the Classic Radio system
+// (src/radio/classic.js) instead of live streams.
 
 import { state } from '../state.js';
 import { devTrace } from '../diag/devLog.js';
 import { MLB_TEAM_RADIO, FALLBACK_RADIO, APPROVED_RADIO_TEAM_IDS } from './stations.js';
+import { devTestClassicRadio } from './classic.js';
 
 // Encapsulated radio state
 let radioAudio = null;
@@ -39,6 +43,11 @@ export function stopAllMedia(except) {
 }
 
 export function toggleRadio() {
+  // In demo, the 📻 button (and the settings toggle) route to Classic
+  // Radio — random clip from the archive.org pool, random in-game offset,
+  // re-rolls on focus switch. Same toggle semantics: click to start, click
+  // again to pause.
+  if (state.demoMode) { devTestClassicRadio(); return; }
   if (radioAudio && !radioAudio.paused) { stopRadio(); }
   else { startRadio(); }
 }
@@ -87,7 +96,7 @@ function handleRadioError(err) {
   setRadioUI(false, null);
 }
 
-function setRadioUI(on, pick) {
+export function setRadioUI(on, pick) {
   var t = document.getElementById('radioToggle'), k = document.getElementById('radioToggleKnob'), s = document.getElementById('radioStatusText');
   if (t) {
     if (on) {

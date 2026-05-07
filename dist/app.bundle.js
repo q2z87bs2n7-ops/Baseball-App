@@ -2428,6 +2428,129 @@
     "158": "URL updated v3.34.1 \u2014 not yet confirmed"
   };
 
+  // src/radio/classic.js
+  var POC_POOL = [
+    "https://archive.org/download/classicmlbbaseballradio/1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3",
+    "https://archive.org/download/classicmlbbaseballradio/1970%2004%2022%20Padres%20vs%20New%20York%20Mets%20Seaver%2019ks%20Complete%20Broadcast%20Bob%20Murphy.mp3",
+    "https://archive.org/download/classicmlbbaseballradio/19570805GiantsAtDodgersvinScullyRadioBroadcast.mp3",
+    "https://archive.org/download/classicmlbbaseballradio/1968%2009%2028%20Yankees%20vs%20Red%20Sox%20Mantles%20FINAL%20Game%20Messer%20Coleman%20Rizzuto%20Radio%20Broadcast.mp3"
+  ];
+  var _audio = null;
+  var _active = false;
+  function ensureAudio() {
+    if (_audio) return _audio;
+    _audio = document.createElement("audio");
+    _audio.id = "classicRadioAudio";
+    _audio.preload = "none";
+    _audio.volume = 0.4;
+    document.body.appendChild(_audio);
+    _audio.addEventListener("error", function() {
+      console.warn("classic radio: audio element error", _audio.error);
+    });
+    return _audio;
+  }
+  function pickRandomUrl() {
+    return POC_POOL[Math.floor(Math.random() * POC_POOL.length)];
+  }
+  function pickOffset(dur) {
+    var minS = 30 * 60;
+    var maxS = 90 * 60;
+    if (dur && dur < maxS + 60) maxS = Math.max(minS, dur - 60);
+    if (maxS <= minS) return minS;
+    return minS + Math.random() * (maxS - minS);
+  }
+  function _playUrl(url) {
+    if (!url) return;
+    var a = ensureAudio();
+    var label = _broadcastLabel(url);
+    if (a.src && a.src.indexOf(url) !== -1 && a.readyState >= 2 && a.duration) {
+      a.currentTime = pickOffset(a.duration);
+      a.play().then(function() {
+        try {
+          setRadioUI(true, { abbr: "CLASSIC", name: label });
+        } catch (e) {
+        }
+      }).catch(function(e) {
+        console.warn("classic radio: play blocked", e);
+      });
+      return;
+    }
+    a.pause();
+    a.src = url;
+    a.load();
+    var onMeta = function() {
+      a.removeEventListener("loadedmetadata", onMeta);
+      var dur = a.duration || 0;
+      if (dur > 60) a.currentTime = pickOffset(dur);
+      a.play().then(function() {
+        try {
+          setRadioUI(true, { abbr: "CLASSIC", name: label });
+        } catch (e) {
+        }
+      }).catch(function(e) {
+        console.warn("classic radio: play blocked", e);
+      });
+    };
+    a.addEventListener("loadedmetadata", onMeta);
+  }
+  function _broadcastLabel(url) {
+    try {
+      var name = decodeURIComponent(url.split("/").pop().replace(/\.mp3$/i, ""));
+      return name.length > 60 ? name.slice(0, 57) + "\u2026" : name;
+    } catch (e) {
+      return url;
+    }
+  }
+  function playClassicRandom() {
+    _active = true;
+    try {
+      stopRadio();
+    } catch (e) {
+    }
+    var url = pickRandomUrl();
+    console.log("[classic radio] play:", _broadcastLabel(url));
+    _playUrl(url);
+  }
+  function pauseClassic() {
+    _active = false;
+    if (_audio) _audio.pause();
+    try {
+      setRadioUI(false, null);
+    } catch (e) {
+    }
+  }
+  function stopClassic() {
+    _active = false;
+    if (!_audio) return;
+    _audio.pause();
+    _audio.removeAttribute("src");
+    _audio.load();
+    try {
+      setRadioUI(false, null);
+    } catch (e) {
+    }
+  }
+  function isClassicActive() {
+    return _active;
+  }
+  function rollClassicOnSwitch() {
+    if (!_active) return;
+    try {
+      stopRadio();
+    } catch (e) {
+    }
+    var url = pickRandomUrl();
+    console.log("[classic radio] roll on focus switch:", _broadcastLabel(url));
+    _playUrl(url);
+  }
+  function devTestClassicRadio() {
+    if (_active) {
+      pauseClassic();
+    } else {
+      playClassicRandom();
+    }
+  }
+
   // src/radio/engine.js
   var radioAudio = null;
   var radioHls = null;
@@ -2462,6 +2585,10 @@
     }
   }
   function toggleRadio() {
+    if (state.demoMode) {
+      devTestClassicRadio();
+      return;
+    }
     if (radioAudio && !radioAudio.paused) {
       stopRadio();
     } else {
@@ -4213,110 +4340,6 @@
     }
   };
   if (typeof window !== "undefined") window.Recorder = Recorder;
-
-  // src/radio/classic.js
-  var POC_POOL = [
-    "https://archive.org/download/classicmlbbaseballradio/1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3",
-    "https://archive.org/download/classicmlbbaseballradio/1970%2004%2022%20Padres%20vs%20New%20York%20Mets%20Seaver%2019ks%20Complete%20Broadcast%20Bob%20Murphy.mp3",
-    "https://archive.org/download/classicmlbbaseballradio/19570805GiantsAtDodgersvinScullyRadioBroadcast.mp3",
-    "https://archive.org/download/classicmlbbaseballradio/1968%2009%2028%20Yankees%20vs%20Red%20Sox%20Mantles%20FINAL%20Game%20Messer%20Coleman%20Rizzuto%20Radio%20Broadcast.mp3"
-  ];
-  var _audio = null;
-  var _active = false;
-  function ensureAudio() {
-    if (_audio) return _audio;
-    _audio = document.createElement("audio");
-    _audio.id = "classicRadioAudio";
-    _audio.preload = "none";
-    _audio.volume = 0.4;
-    document.body.appendChild(_audio);
-    _audio.addEventListener("error", function() {
-      console.warn("classic radio: audio element error", _audio.error);
-    });
-    return _audio;
-  }
-  function pickRandomUrl() {
-    return POC_POOL[Math.floor(Math.random() * POC_POOL.length)];
-  }
-  function pickOffset(dur) {
-    var minS = 30 * 60;
-    var maxS = 90 * 60;
-    if (dur && dur < maxS + 60) maxS = Math.max(minS, dur - 60);
-    if (maxS <= minS) return minS;
-    return minS + Math.random() * (maxS - minS);
-  }
-  function _playUrl(url) {
-    if (!url) return;
-    var a = ensureAudio();
-    if (a.src && a.src.indexOf(url) !== -1 && a.readyState >= 2 && a.duration) {
-      a.currentTime = pickOffset(a.duration);
-      a.play().catch(function(e) {
-        console.warn("classic radio: play blocked", e);
-      });
-      return;
-    }
-    a.pause();
-    a.src = url;
-    a.load();
-    var onMeta = function() {
-      a.removeEventListener("loadedmetadata", onMeta);
-      var dur = a.duration || 0;
-      if (dur > 60) a.currentTime = pickOffset(dur);
-      a.play().catch(function(e) {
-        console.warn("classic radio: play blocked", e);
-      });
-    };
-    a.addEventListener("loadedmetadata", onMeta);
-  }
-  function _broadcastLabel(url) {
-    try {
-      var name = decodeURIComponent(url.split("/").pop().replace(/\.mp3$/i, ""));
-      return name.length > 60 ? name.slice(0, 57) + "\u2026" : name;
-    } catch (e) {
-      return url;
-    }
-  }
-  function playClassicRandom() {
-    _active = true;
-    try {
-      stopRadio();
-    } catch (e) {
-    }
-    var url = pickRandomUrl();
-    console.log("[classic radio] play:", _broadcastLabel(url));
-    _playUrl(url);
-  }
-  function pauseClassic() {
-    _active = false;
-    if (_audio) _audio.pause();
-  }
-  function stopClassic() {
-    _active = false;
-    if (!_audio) return;
-    _audio.pause();
-    _audio.removeAttribute("src");
-    _audio.load();
-  }
-  function isClassicActive() {
-    return _active;
-  }
-  function rollClassicOnSwitch() {
-    if (!_active) return;
-    try {
-      stopRadio();
-    } catch (e) {
-    }
-    var url = pickRandomUrl();
-    console.log("[classic radio] roll on focus switch:", _broadcastLabel(url));
-    _playUrl(url);
-  }
-  function devTestClassicRadio() {
-    if (_active) {
-      pauseClassic();
-    } else {
-      playClassicRandom();
-    }
-  }
 
   // src/focus/mode.js
   function calcFocusScore(g) {

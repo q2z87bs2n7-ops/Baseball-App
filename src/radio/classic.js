@@ -10,7 +10,7 @@
 // updateRadioForFocus while classic is active (see isClassicActive
 // check in src/focus/mode.js).
 
-import { stopRadio } from './engine.js';
+import { stopRadio, setRadioUI } from './engine.js';
 
 const POC_POOL = [
   'https://archive.org/download/classicmlbbaseballradio/1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3',
@@ -57,13 +57,18 @@ function pickOffset(dur) {
 }
 
 // Internal: load `url`, wait for metadata, jump to a random in-game
-// offset, play. Same URL re-roll skips the metadata round-trip.
+// offset, play. Same URL re-roll skips the metadata round-trip. Updates
+// the existing radio button UI to "Playing · Classic Radio" so the
+// user gets the same visual feedback as live radio.
 function _playUrl(url) {
   if (!url) return;
   var a = ensureAudio();
+  var label = _broadcastLabel(url);
   if (a.src && a.src.indexOf(url) !== -1 && a.readyState >= 2 && a.duration) {
     a.currentTime = pickOffset(a.duration);
-    a.play().catch(function(e) { console.warn('classic radio: play blocked', e); });
+    a.play().then(function() {
+      try { setRadioUI(true, { abbr: 'CLASSIC', name: label }); } catch (e) {}
+    }).catch(function(e) { console.warn('classic radio: play blocked', e); });
     return;
   }
   a.pause();
@@ -73,7 +78,9 @@ function _playUrl(url) {
     a.removeEventListener('loadedmetadata', onMeta);
     var dur = a.duration || 0;
     if (dur > 60) a.currentTime = pickOffset(dur);
-    a.play().catch(function(e) { console.warn('classic radio: play blocked', e); });
+    a.play().then(function() {
+      try { setRadioUI(true, { abbr: 'CLASSIC', name: label }); } catch (e) {}
+    }).catch(function(e) { console.warn('classic radio: play blocked', e); });
   };
   a.addEventListener('loadedmetadata', onMeta);
 }
@@ -103,6 +110,7 @@ export function playClassicRandom() {
 export function pauseClassic() {
   _active = false;
   if (_audio) _audio.pause();
+  try { setRadioUI(false, null); } catch (e) {}
 }
 
 export function stopClassic() {
@@ -111,6 +119,7 @@ export function stopClassic() {
   _audio.pause();
   _audio.removeAttribute('src');
   _audio.load();
+  try { setRadioUI(false, null); } catch (e) {}
 }
 
 export function isClassicActive() {
