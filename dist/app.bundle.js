@@ -2550,6 +2550,9 @@
       playClassicRandom();
     }
   }
+  function devTestDemoArchiveFeeds() {
+    playClassicRandom();
+  }
 
   // src/radio/engine.js
   var radioAudio = null;
@@ -9690,6 +9693,9 @@
           toggleDevTools();
         } else if (action === "testClassicRadio") {
           devTestClassicRadio();
+        } else if (action === "testDemoFeeds") {
+          devTestDemoArchiveFeeds();
+          toggleDevTools();
         } else if (action === "resetTuning") {
           resetTuning();
         } else if (action === "captureApp") {

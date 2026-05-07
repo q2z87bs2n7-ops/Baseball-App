@@ -154,3 +154,8 @@ export function devTestClassicRadio() {
     playClassicRandom();
   }
 }
+
+// Dev Tools test: always starts fresh playback at random offset (matching demo behavior).
+export function devTestDemoArchiveFeeds() {
+  playClassicRandom();
+}
