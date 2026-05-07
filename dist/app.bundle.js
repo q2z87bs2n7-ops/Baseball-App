@@ -8943,30 +8943,6 @@
       return;
     }
     state.gameStates = jsonData.gameStates;
-    var gamesWithPlays = /* @__PURE__ */ new Set();
-    (jsonData.feedItems || []).forEach(function(item) {
-      if (item.gamePk) gamesWithPlays.add(+item.gamePk);
-    });
-    Object.values(state.gameStates).forEach(function(g) {
-      if (!gamesWithPlays.has(+g.gamePk)) return;
-      g.status = "Preview";
-      g.detailedState = "Scheduled";
-      g.inning = 0;
-      g.halfInning = null;
-      g.outs = 0;
-      g.awayScore = 0;
-      g.homeScore = 0;
-      g.onFirst = false;
-      g.onSecond = false;
-      g.onThird = false;
-    });
-    state.feedItems = (jsonData.feedItems || []).map(function(item) {
-      var ts = item.ts || item.playTime;
-      if (typeof ts === "number") ts = new Date(ts);
-      else if (typeof ts === "string") ts = new Date(ts);
-      if (!(ts instanceof Date)) ts = /* @__PURE__ */ new Date();
-      return { gamePk: item.gamePk, data: item.data, ts };
-    });
     var c = jsonData.caches || {};
     state.dailyLeadersCache = c.dailyLeadersCache || jsonData.dailyLeadersCache || null;
     state.onThisDayCache = c.onThisDayCache || jsonData.onThisDayCache || [];
@@ -8995,29 +8971,78 @@
       });
       if (earliestMs !== Infinity) state.demoDate = new Date(earliestMs);
     }
-    state.feedItems.forEach(function(item) {
-      if (item.playTime && typeof item.playTime === "string") item.playTime = new Date(item.playTime);
-    });
     state.onThisDayCache.forEach(function(item) {
       if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
     });
     state.yesterdayCache.forEach(function(item) {
       if (item.ts && typeof item.ts === "string") item.ts = new Date(item.ts);
     });
-    var gamesWithPlays = /* @__PURE__ */ new Set();
-    state.feedItems.forEach(function(item) {
-      if (item.gamePk) gamesWithPlays.add(item.gamePk);
+    var cutoff = jsonData.metadata && jsonData.metadata.startedAt || 0;
+    var allItems = (jsonData.feedItems || []).map(function(item) {
+      var ts = item.ts || item.playTime;
+      if (typeof ts === "number") ts = new Date(ts);
+      else if (typeof ts === "string") ts = new Date(ts);
+      if (!(ts instanceof Date)) ts = /* @__PURE__ */ new Date();
+      return { gamePk: item.gamePk, data: item.data, ts };
+    });
+    allItems.sort(function(a, b) {
+      return a.ts.getTime() - b.ts.getTime();
+    });
+    var backlogItems = [], queueItems = [];
+    allItems.forEach(function(item) {
+      if (item.ts.getTime() < cutoff) backlogItems.push(item);
+      else queueItems.push(item);
+    });
+    var touched = /* @__PURE__ */ new Set();
+    allItems.forEach(function(item) {
+      if (item.gamePk) touched.add(+item.gamePk);
+    });
+    Object.values(state.gameStates).forEach(function(g) {
+      if (!touched.has(+g.gamePk)) return;
+      g.status = "Preview";
+      g.detailedState = "Scheduled";
+      g.inning = 0;
+      g.halfInning = null;
+      g.outs = 0;
+      g.awayScore = 0;
+      g.homeScore = 0;
+      g.onFirst = false;
+      g.onSecond = false;
+      g.onThird = false;
     });
     Object.keys(state.gameStates).forEach(function(pk) {
-      if (state.demoMode) {
-        if (gamesWithPlays.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
-      } else {
-        state.enabledGames.add(parseInt(pk));
+      if (touched.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
+    });
+    state.feedItems = [];
+    backlogItems.forEach(function(item) {
+      var g = state.gameStates[item.gamePk];
+      var d = item.data || {};
+      d.playTime = item.ts;
+      if (g) {
+        if (d.type === "play") {
+          if (g.status !== "Final") {
+            g.status = "Live";
+            g.detailedState = "In Progress";
+          }
+          if (d.inning) g.inning = d.inning;
+          if (d.halfInning) g.halfInning = d.halfInning;
+          if (d.outs != null) g.outs = d.outs;
+          if (d.awayScore != null) g.awayScore = d.awayScore;
+          if (d.homeScore != null) g.homeScore = d.homeScore;
+        } else if (d.type === "status") {
+          if (d.label === "Game underway!") {
+            g.status = "Live";
+            g.detailedState = "In Progress";
+          } else if (d.label === "Game Final") {
+            g.status = "Final";
+          }
+        }
       }
+      _addFeedItem(item.gamePk, d);
     });
     state.demoPlayQueue = [];
-    state.feedItems.forEach(function(item) {
-      var ts = item.playTime && item.playTime.getTime ? item.playTime.getTime() : new Date(item.ts).getTime();
+    queueItems.forEach(function(item) {
+      var ts = item.ts.getTime();
       var d = item.data || {};
       state.demoPlayQueue.push({
         gamePk: item.gamePk,
@@ -9047,9 +9072,7 @@
       return a.ts - b.ts;
     });
     state.demoPlayIdx = 0;
-    state.demoCurrentTime = state.demoPlayQueue.length > 0 ? state.demoPlayQueue[0].ts : 0;
-    var feed = document.getElementById("feed");
-    if (feed) feed.innerHTML = "";
+    state.demoCurrentTime = state.demoPlayQueue.length > 0 ? state.demoPlayQueue[0].ts : cutoff;
     _renderTicker();
     _renderSideRailGames();
     await _buildStoryPool2();

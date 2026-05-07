@@ -149,34 +149,6 @@ async function initDemo() {
     return;
   }
   state.gameStates=jsonData.gameStates;
-  // Build the set of games that actually have plays we'll replay. Games
-  // outside this set (typically Final games whose Game Final status item
-  // was pushed off the recorder's 200-item baseline cap, plus genuine
-  // Preview games that hadn't started yet) keep their captured state —
-  // otherwise they appear in Upcoming forever, since no play in the queue
-  // will flip their status. Only reset games we'll actually animate.
-  var gamesWithPlays=new Set();
-  (jsonData.feedItems||[]).forEach(function(item){ if(item.gamePk) gamesWithPlays.add(+item.gamePk); });
-  Object.values(state.gameStates).forEach(function(g){
-    if(!gamesWithPlays.has(+g.gamePk)) return; // keep captured Final/Preview state
-    g.status='Preview';
-    g.detailedState='Scheduled';
-    g.inning=0;
-    g.halfInning=null;
-    g.outs=0;
-    g.awayScore=0;
-    g.homeScore=0;
-    g.onFirst=false;
-    g.onSecond=false;
-    g.onThird=false;
-  });
-  state.feedItems=(jsonData.feedItems||[]).map(function(item){
-    var ts=item.ts||item.playTime;
-    if(typeof ts==='number') ts=new Date(ts);
-    else if(typeof ts==='string') ts=new Date(ts);
-    if(!(ts instanceof Date)) ts=new Date();
-    return {gamePk:item.gamePk,data:item.data,ts:ts};
-  });
   // Recorder v2 nests story-carousel caches under `caches.*`. Legacy
   // daily-events.json had them at the top level — keep both paths so
   // either shape loads cleanly.
@@ -195,9 +167,7 @@ async function initDemo() {
   state.perfectGameTracker=c.perfectGameTracker||jsonData.perfectGameTracker||{};
   state.highLowCache=c.highLowCache||jsonData.highLowCache||null;
   state.scheduleData=jsonData.scheduleData||[];
-  // Recorder v2 keys — consumed by PR-3 demo branches in Focus Mode,
-  // pollPendingVideoClips, fetchBoxscore, etc. Hydrating now is harmless
-  // when consumers haven't been wired yet (data sits in state, unused).
+  // Recorder v2 keys consumed by Focus Mode / video clips / fetchBoxscore demo branches.
   state.pitchTimeline=jsonData.pitchTimeline||{};
   state.boxscoreSnapshots=jsonData.boxscoreSnapshots||{};
   state.contentCacheTimeline=jsonData.contentCacheTimeline||{};
@@ -211,23 +181,83 @@ async function initDemo() {
     });
     if(earliestMs!==Infinity) state.demoDate=new Date(earliestMs);
   }
-  state.feedItems.forEach(function(item){
-    if(item.playTime&&typeof item.playTime==='string') item.playTime=new Date(item.playTime);
-  });
   state.onThisDayCache.forEach(function(item){if(item.ts&&typeof item.ts==='string') item.ts=new Date(item.ts);});
   state.yesterdayCache.forEach(function(item){if(item.ts&&typeof item.ts==='string') item.ts=new Date(item.ts);});
-  var gamesWithPlays=new Set();
-  state.feedItems.forEach(function(item){if(item.gamePk) gamesWithPlays.add(item.gamePk);});
-  Object.keys(state.gameStates).forEach(function(pk){
-    if(state.demoMode){
-      if(gamesWithPlays.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
-    }else{
-      state.enabledGames.add(parseInt(pk));
-    }
+  // Recording-start cutoff. Plays before this are "backlog" — pre-loaded
+  // into the feed at demo open so the user feels like they're tuning into
+  // Pulse mid-game. Plays at or after this are "queue" — animated into
+  // the feed by demo timer, starting at the first new event from the
+  // recording session. demoCurrentTime starts at the first queue play
+  // so pitchTimeline/contentCacheTimeline/focusTrack lookups land cleanly
+  // (their entries were captured during the recording window).
+  var cutoff=(jsonData.metadata&&jsonData.metadata.startedAt)||0;
+  // Normalise feedItems' ts → Date and split by cutoff
+  var allItems=(jsonData.feedItems||[]).map(function(item){
+    var ts=item.ts||item.playTime;
+    if(typeof ts==='number') ts=new Date(ts);
+    else if(typeof ts==='string') ts=new Date(ts);
+    if(!(ts instanceof Date)) ts=new Date();
+    return {gamePk:item.gamePk,data:item.data,ts:ts};
   });
+  allItems.sort(function(a,b){ return a.ts.getTime()-b.ts.getTime(); });
+  var backlogItems=[],queueItems=[];
+  allItems.forEach(function(item){
+    if(item.ts.getTime()<cutoff) backlogItems.push(item);
+    else queueItems.push(item);
+  });
+  // Reset gameStates for games we'll touch (backlog walk + queue replay).
+  // Games with NO plays at all keep their captured state (Final games whose
+  // Game Final entry was pushed off the recorder cap, plus genuine Preview
+  // games that hadn't started yet) — otherwise they appear in Upcoming
+  // forever, since no play will flip their status.
+  var touched=new Set();
+  allItems.forEach(function(item){ if(item.gamePk) touched.add(+item.gamePk); });
+  Object.values(state.gameStates).forEach(function(g){
+    if(!touched.has(+g.gamePk)) return;
+    g.status='Preview'; g.detailedState='Scheduled';
+    g.inning=0; g.halfInning=null; g.outs=0;
+    g.awayScore=0; g.homeScore=0;
+    g.onFirst=false; g.onSecond=false; g.onThird=false;
+  });
+  // Enable touched games BEFORE the backlog walk so feed items aren't
+  // hidden by addFeedItem's feed-hidden class on un-enabled games.
+  Object.keys(state.gameStates).forEach(function(pk){
+    if(touched.has(parseInt(pk))) state.enabledGames.add(parseInt(pk));
+  });
+  // Walk backlog: advance each game's status/inning/score per play, and
+  // pre-render the item into the feed DOM via _addFeedItem (which also
+  // appends to state.feedItems). After this, ticker + side-rail show the
+  // mid-game snapshot the user would have seen if they'd opened Pulse at
+  // recording-start time.
+  state.feedItems=[];
+  backlogItems.forEach(function(item){
+    var g=state.gameStates[item.gamePk];
+    var d=item.data||{};
+    // _addFeedItem keys item.ts off data.playTime — ensure it's a Date
+    // (loadDailyEventsJSON normalises top-level item.ts but not nested
+    // data.playTime, so a string-typed playTime would propagate into a
+    // broken state.feedItems entry).
+    d.playTime=item.ts;
+    if(g){
+      if(d.type==='play'){
+        if(g.status!=='Final'){ g.status='Live'; g.detailedState='In Progress'; }
+        if(d.inning) g.inning=d.inning;
+        if(d.halfInning) g.halfInning=d.halfInning;
+        if(d.outs!=null) g.outs=d.outs;
+        if(d.awayScore!=null) g.awayScore=d.awayScore;
+        if(d.homeScore!=null) g.homeScore=d.homeScore;
+      }else if(d.type==='status'){
+        if(d.label==='Game underway!'){ g.status='Live'; g.detailedState='In Progress'; }
+        else if(d.label==='Game Final'){ g.status='Final'; }
+      }
+    }
+    _addFeedItem(item.gamePk,d);
+  });
+  // Queue is recording-period plays only — first replayed event is the
+  // first new play after the user clicked Record.
   state.demoPlayQueue=[];
-  state.feedItems.forEach(function(item){
-    var ts=item.playTime&&item.playTime.getTime?item.playTime.getTime():(new Date(item.ts)).getTime();
+  queueItems.forEach(function(item){
+    var ts=item.ts.getTime();
     var d=item.data||{};
     state.demoPlayQueue.push({
       gamePk:item.gamePk,ts:ts,
@@ -239,9 +269,12 @@ async function initDemo() {
   });
   state.demoPlayQueue.sort(function(a,b){return a.ts-b.ts;});
   state.demoPlayIdx=0;
-  state.demoCurrentTime=state.demoPlayQueue.length>0?state.demoPlayQueue[0].ts:0;
-  var feed=document.getElementById('feed');
-  if(feed) feed.innerHTML='';
+  // Start the demo clock at the first queue play (or recording-start
+  // cutoff if no queue plays). pitchTimeline / contentCacheTimeline /
+  // focusTrack entries were captured at ts >= cutoff so lookups against
+  // demoCurrentTime land in real data immediately.
+  state.demoCurrentTime=state.demoPlayQueue.length>0?state.demoPlayQueue[0].ts:cutoff;
+  // Feed already populated by backlog walk above — don't clear it.
   _renderTicker();
   _renderSideRailGames();
   await _buildStoryPool();
