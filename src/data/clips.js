@@ -109,11 +109,16 @@ export async function pollPendingVideoClips() {
       for (var ti = timeline.length - 1; ti >= 0; ti--) {
         if (timeline[ti].ts <= nowMs) { snap = timeline[ti]; break; }
       }
+      // Bootstrap fallback: contentCacheTimeline entries are captured
+      // during the recording window (ts >= metadata.startedAt), but
+      // demoCurrentTime starts at the earliest baselined play. Without
+      // this fallback no clips ever attach during the early demo window.
+      // Use the latest available snapshot so clips appear immediately;
+      // ts-based lookup takes over once demoCurrentTime catches up.
+      if (!snap && timeline.length) snap = timeline[timeline.length - 1];
       if (snap && snap.items && snap.items.length) {
         state.liveContentCache[gpk] = { items: snap.items, fetchedAt: nowMs };
       }
-      // If no timeline entry yet, fall through with whatever liveContentCache
-      // has (could be empty — no clips will match this poll, retry next play).
     } else {
       var cached = state.liveContentCache[gpk];
       if (!cached || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {

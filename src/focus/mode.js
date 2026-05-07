@@ -130,6 +130,14 @@ function hydrateFocusFromDemo() {
   var nowMs=state.demoCurrentTime||0;
   var envelope=null;
   for(var i=timeline.length-1;i>=0;i--) { if(timeline[i].ts<=nowMs) { envelope=timeline[i]; break; } }
+  // Bootstrap fallback: pitchTimeline entries are captured during the
+  // recording window (ts >= metadata.startedAt), but demoCurrentTime
+  // starts at the earliest baselined play — which is up to ~20 min
+  // before the recorder began. Without this fallback the early demo
+  // window shows score+outs only with no pitch sequence. Use the latest
+  // available envelope so real pitch data appears immediately; ts-based
+  // lookup naturally takes over once demoCurrentTime catches up.
+  if(!envelope&&timeline.length) envelope=timeline[timeline.length-1];
   var tension=getTensionInfo(calcFocusScore(g));
   if(!envelope) {
     // No pitch data yet for this game — render score+inning skeleton

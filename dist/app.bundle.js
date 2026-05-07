@@ -3466,6 +3466,7 @@
             break;
           }
         }
+        if (!snap && timeline.length) snap = timeline[timeline.length - 1];
         if (snap && snap.items && snap.items.length) {
           state.liveContentCache[gpk] = { items: snap.items, fetchedAt: nowMs };
         }
@@ -4345,6 +4346,7 @@
         break;
       }
     }
+    if (!envelope && timeline.length) envelope = timeline[timeline.length - 1];
     var tension = getTensionInfo(calcFocusScore(g));
     if (!envelope) {
       state.focusState = {
