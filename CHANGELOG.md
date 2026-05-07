@@ -5,7 +5,11 @@
 
 ---
 
-**Current version:** v3.47
+**Current version:** v3.48
+
+**v3.48** — **Fix: game status notifications placed at correct chronological position.** Status notifications (Game underway, Game Final, Game Delayed, Game Postponed) were missing `playTime` parameters, causing them to default to current time and appear at the top of the Pulse feed instead of at their proper chronological positions. Now all status items have proper timestamps: game start notifications use the game's actual start time; final/postponed use estimated game end time (start + duration); delayed notifications use game start time. Fixes the reported issue where users saw notification dumps on first Pulse load that gradually drifted down as new plays arrived.
+
+  Files: `src/pulse/poll.js`, `index.html`, `sw.js`. Version v3.47 → v3.48, CACHE v629 → v630.
 
 **v3.47** — **Radio button stays ON during archive feed loading.** UX fix: when loading an archive broadcast, the radio button now displays immediately in a "loading…" state instead of flickering off then back on. Once metadata loads and playback starts, the label updates to the final broadcast title. Improves the perceived smoothness of feed switching.
 

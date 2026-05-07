@@ -18,6 +18,4 @@ Project-management issues tracked here. For AI editing gotchas (bugs that could 
 
 7. **Card binder scroll on desktop** — `#collectionBook` uses `max-height:90vh` (not an explicit `height`), so `.cc-binder{height:100%}` resolves against content height and the flex chain has no definite reference; `.cc-page` overflows when `.cc-grid{min-height:600px}` + 44px padding exceeds available space. Proposed fix: change `#collectionBook` to `height:min(96vh,920px)` + widen `max-width:960px` → `1200px` + drop `min-height:600px` from `.cc-grid`. Needs visual QA — a previous attempt was reverted due to look/feel concerns.
 
-8. **"Game underway!" feed ordering** — status items for games transitioning to In Progress appear near the top of the newest-first feed instead of being anchored to the game's scheduled start time. Root cause likely `gameDateMs` null/stale or else-branch `playTime` missing. Deferred — data usage too high to investigate further.
-
-9. **Switch cron trigger** — GitHub Actions scheduled workflows are unreliable on free tier (fires ~once per hour in practice vs every 5 min as configured), making game-start alerts miss most windows. Vercel Cron (`vercel.json`) would be more reliable as it runs on the same infra as the notify function.
+8. **Switch cron trigger** — GitHub Actions scheduled workflows are unreliable on free tier (fires ~once per hour in practice vs every 5 min as configured), making game-start alerts miss most windows. Vercel Cron (`vercel.json`) would be more reliable as it runs on the same infra as the notify function.
