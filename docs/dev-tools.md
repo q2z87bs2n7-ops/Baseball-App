@@ -47,6 +47,9 @@ Keyboard listener is located in `app.js` near the bottom, after the `visibilityc
 - **💫 Card Variants** (`Shift+V`) — `window.PulseCard.demo()`: cycle through all 4 HR card templates (V1 Stylized, V2 Jumbotron, V3 Comic/Pop Art, V4 Broadcast)
 - **🎴 Test Card** (`Shift+G`) — `generateTestCard()`: injects one random card into collection with `force=true`. Pool = `rosterData.hitting` + hitting leaders from `leagueLeadersCache.hitting` + `dailyLeadersCache` (deduplicated)
 - **📽️ Test Clip** (`Shift+P`) — `devTestVideoClip()`: fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game content
+- **📺 Video Debug** — `openVideoDebugPanel()`: diagnostics for video clip matching and playback URLs
+- **🔔 Test Notification** — `testLocalNotification()`: fires a local browser notification via Service Worker to test push permissions
+- **🔍 Radio Check** — `openRadioCheck()`: sweeps all team flagship radio URLs to detect broken streams and configuration issues
 
 ### Tuning panels (require "Confirm Changes" button to apply)
 
@@ -113,6 +116,24 @@ Sorted chronologically by game time, making it easy to trace which games are tra
 ## Video Debug panel
 
 Available in Dev Tools → Video Debug section. Shows `liveContentCache` state, last matched clip (`lastVideoClip`), and per-game clip counts. Useful for diagnosing clip-matching failures.
+
+## 📽️ Demo Feeds QC (added v3.47.5)
+
+A new collapsible panel under Actions for testing archive.org historical broadcasts individually. Available only when demo data is loaded (enter Demo Mode first). Lists all 4 available broadcasts:
+
+- **1969 Mets vs Orioles WS Game 5** (Scully)
+- **1970 Padres vs Mets · Seaver 19Ks** (Bob Murphy)
+- **1957 Giants vs Dodgers · Vin Scully** (historic broadcast)
+- **1968 Yankees vs Red Sox · Mantle Final** (Messer, Coleman, Rizzuto)
+
+Each broadcast shows:
+- Full broadcast title
+- Truncated archive.org filename for verification
+- **▶ Play** button to test that specific URL at random offset (30-90 min)
+
+When Play is clicked, the radio button shows immediately with "(loading…)" state and updates to the final broadcast title once metadata loads and playback starts. This QC panel allows testers to confirm each historical feed loads correctly and plays at expected audio quality.
+
+**Functions:** `renderDemoFeedsTester()` and `testDemoFeedUrl(url)` in `src/dev/panels.js`. Uses `playArchiveUrl(url)` from `src/radio/classic.js` to play a specific archive URL at random offset, same as demo mode behavior.
 
 ## 🧪 Custom-URL Testers (added v3.38.9)
 

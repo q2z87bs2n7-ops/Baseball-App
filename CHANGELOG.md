@@ -5,7 +5,32 @@
 
 ---
 
-**Current version:** v3.47.1
+**Current version:** v3.47.6
+
+**v3.47.6** — **Radio button stays ON during archive feed loading.** UX fix: when loading an archive broadcast, the radio button now displays immediately in a "loading…" state instead of flickering off then back on. Once metadata loads and playback starts, the label updates to the final broadcast title. Improves the perceived smoothness of feed switching.
+
+  Files: `src/radio/classic.js`. Version v3.47.5 → v3.47.6, CACHE v628 → v629.
+
+**v3.47.5** — **Demo Feeds QC panel for archive broadcast testing.** Replaced random archive feed test button with a QC panel showing all 4 available archive.org broadcasts individually. Panel displays:
+  - Broadcast title (e.g., "1969 Mets vs Orioles WS Game 5")
+  - Truncated URL filename for clarity
+  - Individual ▶ Play button for each broadcast
+
+  New `playArchiveUrl(url)` export in `src/radio/classic.js` plays a specific archive broadcast at random offset (30-90 min). Dev Tools panel automatically renders on open, allowing QA to test each historical broadcast independently. Button now shows which archive is loading/playing.
+
+  Files: `src/radio/classic.js`, `src/dev/panels.js`, `src/dev/tuning.js`, `index.html`. Version v3.47.4 → v3.47.5, CACHE v627 → v628.
+
+**v3.47.4** — **Fix demo mode audio dropout on rapid focus-game changes.** When Demo Mode rapidly switches focus games (every play tick), the classic radio was calling `_playUrl()` with a random archive URL, causing unnecessary pause-load cycles and audible gaps. Added URL caching: if the same URL is already queued/playing, skip the pause-load sequence. Detects when audio is already playing the right URL and just updates the offset. Clears cache on stop/exit so fresh playback starts clean.
+
+  Files: `src/radio/classic.js`. Version v3.47.3 → v3.47.4, CACHE v626 → v627.
+
+**v3.47.3** — **Add Dev Tools test button for demo archive feeds.** New 🎬 Test Demo Feeds button in Dev Tools Actions that starts archive radio playback with random offset. Matches demo mode behavior (30-90 min random jump into broadcast).
+
+  Files: `src/radio/classic.js`, `src/dev/tuning.js`, `index.html`. Version v3.47.2 → v3.47.3, CACHE v625 → v626.
+
+**v3.47.2** — **Add Demo Tools test button for demo archive feeds.** Adds new test button in Dev Tools for triggering demo archive feed playback with random offset matching demo behavior.
+
+  Files: `src/radio/classic.js`, `src/dev/tuning.js`, `index.html`. Version v3.47.1 → v3.47.2, CACHE v624 → v625.
 
 **v3.47.1** — **Demo focus respects manual override.** Bug fix: in demo mode, every `advanceDemoPlay` tick was calling `selectFocusGame()`, which walked `focusTrack[]` and called `setFocusGame(entry.focusGamePk)` regardless of whether the demo viewer had manually picked a different game. Result: the recorder user's heavy ATH @ PHI focus track (11/12 entries in the current sample) yanked the demo viewer back within a play or two of any manual switch.
 
