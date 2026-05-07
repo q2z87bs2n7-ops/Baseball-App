@@ -1,5 +1,4 @@
 node_modules/
-package-lock.json
 LEAGUE-PULSE-HANDOVER.md
 *.docx
 # dist/ is committed for GitHub Pages — do NOT ignore
