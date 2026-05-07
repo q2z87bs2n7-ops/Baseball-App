@@ -7466,7 +7466,16 @@
     if (lbl) lbl.textContent = getYesterdayDisplayStr();
     var nextBtn = document.getElementById("ydNextDateBtn");
     if (nextBtn) nextBtn.disabled = true;
-    renderYesterdayRecap2();
+    if (state.demoMode && loadYdForDate) {
+      var card = document.getElementById("yesterdayCard");
+      if (card) card.innerHTML = '<div style="padding:48px;text-align:center;color:var(--muted);font-size:.88rem">Loading\u2026</div>';
+      loadYdForDate(getYesterdayDateStr()).then(function(data) {
+        state.ydDisplayCache = data || [];
+        renderYesterdayRecap2();
+      });
+    } else {
+      renderYesterdayRecap2();
+    }
     requestAnimationFrame(function() {
       window.scrollTo(0, 0);
     });
@@ -7487,7 +7496,7 @@
       heroRegion.dataset.mounted = "";
       heroRegion.innerHTML = "";
     }
-    if (state.ydDateOffset === -1) {
+    if (state.ydDateOffset === -1 && !state.demoMode) {
       state.ydDisplayCache = null;
     } else if (loadYdForDate) {
       state.ydDisplayCache = await loadYdForDate(getYesterdayDateStr());
