@@ -2101,7 +2101,7 @@
     }
   }
   function pulseGreeting() {
-    var h = (/* @__PURE__ */ new Date()).getHours();
+    var h = etHour();
     if (h < 6) return { kicker: "Late innings", headline: "West coast still in play.", tagline: "West coast still on the wire." };
     if (h < 11) return { kicker: "Good morning", headline: "Here's what you missed.", tagline: "Last night's wrap, today's slate." };
     if (h < 14) return { kicker: "Midday slate", headline: "First pitches roll in soon.", tagline: "Lineups going up. First pitch soon." };
@@ -8454,9 +8454,7 @@
         return g.status.abstractGameState === "Live";
       });
       if ((!games.length || isMidnightWindow && !hasLiveInFetch) && !hasLive) {
-        var yesterday = /* @__PURE__ */ new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        var yDateStr = _localDateStr(yesterday);
+        var yDateStr = etDatePlus(state.pollDateStr || etDateStr(), -1);
         var yr = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + yDateStr + "&hydrate=linescore,team,probablePitcher", { signal: sig });
         if (!yr.ok) throw new Error(yr.status);
         var yd = await yr.json();

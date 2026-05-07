@@ -2,7 +2,7 @@ import { state } from '../state.js';
 import { MLB_BASE, MLB_THEME } from '../config/constants.js';
 import { ordinal } from '../carousel/generators.js';
 import { devTrace } from '../diag/devLog.js';
-import { etDateStr, etDatePlus } from '../utils/format.js';
+import { etDateStr, etDatePlus, etHour } from '../utils/format.js';
 
 const DEBUG = false;
 
@@ -94,7 +94,9 @@ async function fetchTomorrowPreview() {
 }
 
 function pulseGreeting() {
-  var h=new Date().getHours();
+  // ET-anchored so the greeting reflects MLB context, not the user's local clock —
+  // a Sydney user at 11pm = 9am ET should see "Good morning" (slate hasn't started).
+  var h=etHour();
   if (h<6)  return {kicker:'Late innings', headline:'West coast still in play.',     tagline:'West coast still on the wire.'};
   if (h<11) return {kicker:'Good morning', headline:"Here's what you missed.",      tagline:"Last night's wrap, today's slate."};
   if (h<14) return {kicker:'Midday slate', headline:'First pitches roll in soon.',  tagline:'Lineups going up. First pitch soon.'};

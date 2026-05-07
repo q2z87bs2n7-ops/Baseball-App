@@ -9,7 +9,7 @@
 
 import { state } from '../state.js';
 import { MLB_BASE, MLB_BASE_V1_1 } from '../config/constants.js';
-import { tcLookup, etHour } from '../utils/format.js';
+import { tcLookup, etHour, etDateStr, etDatePlus } from '../utils/format.js';
 import { devTrace } from '../diag/devLog.js';
 import {
   addFeedItem, renderFeed, renderTicker, renderSideRailGames,
@@ -68,9 +68,7 @@ export async function pollLeaguePulse() {
 
     var hasLiveInFetch = games.some(function(g) { return g.status.abstractGameState === 'Live'; });
     if ((!games.length || (isMidnightWindow && !hasLiveInFetch)) && !hasLive) {
-      var yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      var yDateStr = _localDateStr(yesterday);
+      var yDateStr = etDatePlus(state.pollDateStr || etDateStr(), -1);
       var yr = await fetch(MLB_BASE + '/schedule?sportId=1&date=' + yDateStr + '&hydrate=linescore,team,probablePitcher', { signal: sig });
       if (!yr.ok) throw new Error(yr.status);
       var yd = await yr.json();
