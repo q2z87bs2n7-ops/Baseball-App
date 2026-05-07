@@ -4345,7 +4345,13 @@
         break;
       }
     }
-    if (!envelope && timeline.length) envelope = timeline[timeline.length - 1];
+    if (!envelope && timeline.length) {
+      var queueLen = state.demoPlayQueue && state.demoPlayQueue.length || 1;
+      var idx = state.demoPlayIdx || 0;
+      var fraction = Math.max(0, Math.min(1, idx / queueLen));
+      var progressIdx = Math.min(timeline.length - 1, Math.floor(fraction * timeline.length));
+      envelope = timeline[progressIdx];
+    }
     var tension = getTensionInfo(calcFocusScore(g));
     if (!envelope) {
       state.focusState = {

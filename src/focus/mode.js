@@ -132,14 +132,21 @@ function hydrateFocusFromDemo() {
   var nowMs=state.demoCurrentTime||0;
   var envelope=null;
   for(var i=timeline.length-1;i>=0;i--) { if(timeline[i].ts<=nowMs) { envelope=timeline[i]; break; } }
-  // Bootstrap fallback: pitchTimeline entries are captured during the
+  // Bootstrap progression: pitchTimeline entries are captured during the
   // recording window (ts >= metadata.startedAt), but demoCurrentTime
-  // starts at the earliest baselined play — which is up to ~20 min
-  // before the recorder began. Without this fallback the early demo
-  // window shows score+outs only with no pitch sequence. Use the latest
-  // available envelope so real pitch data appears immediately; ts-based
-  // lookup naturally takes over once demoCurrentTime catches up.
-  if(!envelope&&timeline.length) envelope=timeline[timeline.length-1];
+  // starts in the pre-recording baseline. Without a fallback the focus
+  // card is dark; with a "use latest envelope" fallback it gets stuck
+  // on a single at-bat forever. Instead, walk through envelopes by
+  // demoPlayIdx fraction — the focus card animates through the recorded
+  // at-bats as demo plays out. Normal ts-based lookup naturally takes
+  // over once demoCurrentTime catches up to the recording window.
+  if(!envelope&&timeline.length) {
+    var queueLen=(state.demoPlayQueue&&state.demoPlayQueue.length)||1;
+    var idx=state.demoPlayIdx||0;
+    var fraction=Math.max(0,Math.min(1,idx/queueLen));
+    var progressIdx=Math.min(timeline.length-1,Math.floor(fraction*timeline.length));
+    envelope=timeline[progressIdx];
+  }
   var tension=getTensionInfo(calcFocusScore(g));
   if(!envelope) {
     // No pitch data yet for this game — render score+inning skeleton
