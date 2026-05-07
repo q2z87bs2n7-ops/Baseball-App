@@ -47,18 +47,20 @@ export function selectFocusGame() {
       var nowMs=state.demoCurrentTime||0;
       var entry=null;
       for(var ti=ft.length-1;ti>=0;ti--) { if(ft[ti].ts<=nowMs) { entry=ft[ti]; break; } }
-      if(entry) {
-        if(entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
-          state.focusIsManual=!!entry.isManual;
-          setFocusGame(entry.focusGamePk);
-        }
-        return;
+      // Bootstrap: focusTrack[0].ts is metadata.startedAt (recording-begin),
+      // but demoCurrentTime starts at the earliest baselined play — well
+      // before that. Without this fallback, demo falls through to tension
+      // scoring and locks onto the first game that flips Live (often a
+      // Final game whose pitch data was never captured), so the focus card
+      // shows score+outs only. Routing to focusTrack[0] points us at the
+      // game the recording user was watching, which has the richest pitch
+      // data. Normal ts-based lookup resumes once demoCurrentTime catches up.
+      if(!entry) entry=ft[0];
+      if(entry&&entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
+        state.focusIsManual=!!entry.isManual;
+        setFocusGame(entry.focusGamePk);
       }
-      // Bootstrap: focusTrack starts at metadata.startedAt (recording-begin
-      // time), which is later than the earliest baselined feed items.
-      // Until demoCurrentTime crosses the first track entry, fall through
-      // to tension scoring so the focus card isn't dark for the opening
-      // stretch of demo replay.
+      return;
     }
   }
   var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});

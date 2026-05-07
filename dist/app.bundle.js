@@ -4255,13 +4255,12 @@
             break;
           }
         }
-        if (entry) {
-          if (entry.focusGamePk && state.focusGamePk !== entry.focusGamePk) {
-            state.focusIsManual = !!entry.isManual;
-            setFocusGame(entry.focusGamePk);
-          }
-          return;
+        if (!entry) entry = ft[0];
+        if (entry && entry.focusGamePk && state.focusGamePk !== entry.focusGamePk) {
+          state.focusIsManual = !!entry.isManual;
+          setFocusGame(entry.focusGamePk);
         }
+        return;
       }
     }
     var liveGames = Object.values(state.gameStates).filter(function(g) {
