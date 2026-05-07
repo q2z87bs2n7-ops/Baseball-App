@@ -177,5 +177,6 @@ export const state = {
   pitchTimeline: {},          // gamePk → [{atBatIndex, ts, pitches:[...], ...}]
   boxscoreSnapshots: {},      // gamePk → [{ts, data}]
   contentCacheTimeline: {},   // gamePk → [{ts, items:[trimmed clips]}]
-  focusTrack: []              // [{ts, focusGamePk, isManual, tensionLabel}]
+  focusTrack: [],             // [{ts, focusGamePk, isManual, tensionLabel}]
+  demoCardCount: 0            // session-only counter; rail chip increments as HR cards fire in demo (real localStorage untouched)
 };

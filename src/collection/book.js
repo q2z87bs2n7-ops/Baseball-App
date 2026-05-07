@@ -96,10 +96,14 @@ export function collectCard(data, force) {
   devTrace('collect', (playerName || '?') + ' · ' + eventType + ' · tier=' + tier + (rbi ? ' · rbi=' + rbi : '') + (force ? ' [forced]' : ''));
 
   if (state.demoMode && !force) {
+    // Simulate the collection outcome so the rail flash + toast still
+    // fire, but never persist to localStorage. Increment a session-only
+    // counter so the rail count chip ticks up visibly during demo.
     var demoCol = loadCollection();
     var demoEx = demoCol[key];
     if (!demoEx) {
       state.lastCollectionResult = { type: 'new', playerName: playerName, eventType: eventType, tier: tier };
+      state.demoCardCount = (state.demoCardCount || 0) + 1;
     } else {
       var dRank = tierRank(tier), dExRank = tierRank(demoEx.tier);
       state.lastCollectionResult = {
@@ -107,6 +111,7 @@ export function collectCard(data, force) {
         playerName: playerName, eventType: eventType, tier: tier
       };
     }
+    updateCollectionUI();
     return;
   }
 
@@ -177,6 +182,23 @@ export function openCollection() {
   if (!el) return;
   state.collectionPage = 0;
   el.style.display = 'flex';
+  if (state.demoMode) {
+    // Demo doesn't persist cards — show a sign-in nudge instead of an
+    // empty/fake binder. Real cards only collect when signed in + live.
+    var book = document.getElementById('collectionBook');
+    if (book) {
+      book.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;min-height:50vh;padding:40px 20px">' +
+          '<div style="max-width:340px;text-align:center;color:var(--text)">' +
+            '<div style="font-size:48px;margin-bottom:12px">🎴</div>' +
+            '<div style="font-size:1.05rem;font-weight:700;margin-bottom:6px">Demo cards aren’t saved</div>' +
+            '<div style="font-size:.85rem;line-height:1.5;color:var(--muted);margin-bottom:18px">Sign in to start your real collection. Every HR or key RBI you watch live becomes a card you can keep.</div>' +
+            '<button onclick="closeCollection()" style="background:var(--secondary);color:var(--accent-text);border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem">Back to Demo</button>' +
+          '</div>' +
+        '</div>';
+    }
+    return;
+  }
   renderCollectionBook();
 }
 
@@ -315,8 +337,11 @@ export function openCardFromKey(key) {
 }
 
 export function updateCollectionUI() {
-  var col = loadCollection();
-  var count = Object.keys(col).length;
+  // In demo, the count reflects session-only demo collections so the rail
+  // chip ticks up visibly. Real localStorage stays untouched.
+  var count = state.demoMode
+    ? (state.demoCardCount || 0)
+    : Object.keys(loadCollection()).length;
   var countEl = document.getElementById('collectionCountLabel');
   if (countEl) countEl.textContent = count;
   renderCollectionRailModule();
@@ -325,8 +350,9 @@ export function updateCollectionUI() {
 function renderCollectionRailModule() {
   var el = document.getElementById('collectionRailModule');
   if (!el || !window.CollectionCard) return;
-  var col = loadCollection();
-  var count = Object.keys(col).length;
+  var count = state.demoMode
+    ? (state.demoCardCount || 0)
+    : Object.keys(loadCollection()).length;
   el.innerHTML = window.CollectionCard.renderRailModule(count);
 }
 

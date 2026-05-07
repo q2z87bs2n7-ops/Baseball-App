@@ -23,6 +23,9 @@ let _playSound = null;
 let _showPlayerCard = null;
 let _rotateStory = null;
 let _localDateStr = null;
+let _selectFocusGame = null;
+let _pollFocusLinescore = null;
+let _pollPendingVideoClips = null;
 
 export function setDemoCallbacks(callbacks) {
   _addFeedItem = callbacks.addFeedItem;
@@ -35,6 +38,9 @@ export function setDemoCallbacks(callbacks) {
   _showPlayerCard = callbacks.showPlayerCard;
   _rotateStory = callbacks.rotateStory;
   _localDateStr = callbacks.localDateStr;
+  _selectFocusGame = callbacks.selectFocusGame;
+  _pollFocusLinescore = callbacks.pollFocusLinescore;
+  _pollPendingVideoClips = callbacks.pollPendingVideoClips;
 }
 
 async function loadDailyEventsJSON(){
@@ -123,6 +129,7 @@ async function initDemo() {
   state.storyShownId=null;
   state.demoPlayQueue=[];
   state.demoPlayIdx=0;
+  state.demoCardCount=0;
   state.dailyLeadersCache=null;
   state.onThisDayCache=null;
   state.yesterdayCache=null;
@@ -423,6 +430,15 @@ async function advanceDemoPlay(play) {
   _addFeedItem(play.gamePk,feedData);
   _renderTicker();
   _renderSideRailGames();
+  // Drive Focus Mode: walk focusTrack[] to pick the focused game per the
+  // recorded session, then re-hydrate focusState from pitchTimeline at the
+  // new demoCurrentTime. Independent of the 5s pollFocusLinescore interval
+  // so high speeds (10x/100x) stay in sync with the play stream.
+  if(_selectFocusGame) _selectFocusGame();
+  if(_pollFocusLinescore&&state.focusGamePk) _pollFocusLinescore();
+  // Match captured video clips to feed items as their arrival time crosses
+  // demoCurrentTime; existing match-by-batterId + DOM patch logic runs unchanged.
+  if(_pollPendingVideoClips) _pollPendingVideoClips();
   await _buildStoryPool();
 }
 
@@ -470,6 +486,7 @@ export function exitDemo() {
   state.boxscoreSnapshots={};
   state.contentCacheTimeline={};
   state.focusTrack=[];
+  state.demoCardCount=0;
 
   var feed=document.getElementById('feed');
   if(feed) feed.innerHTML='';

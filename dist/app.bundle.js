@@ -591,8 +591,10 @@
     // gamePk → [{ts, data}]
     contentCacheTimeline: {},
     // gamePk → [{ts, items:[trimmed clips]}]
-    focusTrack: []
+    focusTrack: [],
     // [{ts, focusGamePk, isManual, tensionLabel}]
+    demoCardCount: 0
+    // session-only counter; rail chip increments as HR cards fire in demo (real localStorage untouched)
   };
 
   // src/ui/theme.js
@@ -3386,6 +3388,7 @@
     return cuts.length ? cuts[0].src || cuts[0].url || null : null;
   }
   async function fetchGameContent(gamePk) {
+    if (state.demoMode) return state.yesterdayContentCache[gamePk] || null;
     if (state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
     try {
       var r = await fetch(MLB_BASE + "/game/" + gamePk + "/content");
@@ -3452,28 +3455,43 @@
         return hasAbs && hasChallenge;
       };
       var gpk = +pk;
-      var cached = state.liveContentCache[gpk];
-      if (!cached || Date.now() - cached.fetchedAt > 5 * 60 * 1e3) {
-        try {
-          var r = await fetch(MLB_BASE + "/game/" + gpk + "/content");
-          if (!r.ok) continue;
-          var d = await r.json();
-          var all = d.highlights && d.highlights.highlights && d.highlights.highlights.items || [];
-          state.liveContentCache[gpk] = {
-            items: all.filter(function(it) {
-              if (it.type !== "video" || !pickPlayback(it.playbacks)) return false;
-              return !(it.keywordsAll || []).some(function(kw) {
-                var v = (kw.value || kw.slug || "").toLowerCase();
-                return v === "data-visualization" || v === "data_visualization";
-              });
-            }),
-            fetchedAt: Date.now()
-          };
-          if (typeof window !== "undefined" && window.Recorder && window.Recorder.active) {
-            window.Recorder._captureContentDelta(gpk, state.liveContentCache[gpk].items);
+      if (state.demoMode) {
+        var timeline = state.contentCacheTimeline[gpk] || [];
+        var nowMs = state.demoCurrentTime || 0;
+        var snap = null;
+        for (var ti = timeline.length - 1; ti >= 0; ti--) {
+          if (timeline[ti].ts <= nowMs) {
+            snap = timeline[ti];
+            break;
           }
-        } catch (e) {
-          continue;
+        }
+        if (snap && snap.items && snap.items.length) {
+          state.liveContentCache[gpk] = { items: snap.items, fetchedAt: nowMs };
+        }
+      } else {
+        var cached = state.liveContentCache[gpk];
+        if (!cached || Date.now() - cached.fetchedAt > 5 * 60 * 1e3) {
+          try {
+            var r = await fetch(MLB_BASE + "/game/" + gpk + "/content");
+            if (!r.ok) continue;
+            var d = await r.json();
+            var all = d.highlights && d.highlights.highlights && d.highlights.highlights.items || [];
+            state.liveContentCache[gpk] = {
+              items: all.filter(function(it) {
+                if (it.type !== "video" || !pickPlayback(it.playbacks)) return false;
+                return !(it.keywordsAll || []).some(function(kw) {
+                  var v = (kw.value || kw.slug || "").toLowerCase();
+                  return v === "data-visualization" || v === "data_visualization";
+                });
+              }),
+              fetchedAt: Date.now()
+            };
+            if (typeof window !== "undefined" && window.Recorder && window.Recorder.active) {
+              window.Recorder._captureContentDelta(gpk, state.liveContentCache[gpk].items);
+            }
+          } catch (e) {
+            continue;
+          }
         }
       }
       var clips = state.liveContentCache[gpk] && state.liveContentCache[gpk].items || [];
@@ -4224,6 +4242,24 @@
     return { label: "NORMAL", color: "#9aa0a8" };
   }
   function selectFocusGame() {
+    if (state.demoMode) {
+      var ft = state.focusTrack || [];
+      if (ft.length) {
+        var nowMs = state.demoCurrentTime || 0;
+        var entry = null;
+        for (var ti = ft.length - 1; ti >= 0; ti--) {
+          if (ft[ti].ts <= nowMs) {
+            entry = ft[ti];
+            break;
+          }
+        }
+        if (entry && entry.focusGamePk && state.focusGamePk !== entry.focusGamePk) {
+          state.focusIsManual = !!entry.isManual;
+          setFocusGame(entry.focusGamePk);
+        }
+        return;
+      }
+    }
     var liveGames = Object.values(state.gameStates).filter(function(g) {
       return g.status === "Live" && g.detailedState === "In Progress";
     });
@@ -4293,11 +4329,95 @@
     });
     setFocusGame(scored[0].g.gamePk);
   }
+  function hydrateFocusFromDemo() {
+    var pk = state.focusGamePk;
+    if (!pk) return;
+    var g = state.gameStates[pk] || {};
+    var timeline = state.pitchTimeline[pk] || [];
+    var nowMs = state.demoCurrentTime || 0;
+    var envelope = null;
+    for (var i = timeline.length - 1; i >= 0; i--) {
+      if (timeline[i].ts <= nowMs) {
+        envelope = timeline[i];
+        break;
+      }
+    }
+    var tension = getTensionInfo(calcFocusScore(g));
+    if (!envelope) {
+      state.focusState = {
+        balls: 0,
+        strikes: 0,
+        outs: g.outs || 0,
+        inning: g.inning || 1,
+        halfInning: g.halfInning || "top",
+        currentBatterId: null,
+        currentBatterName: "",
+        currentPitcherId: null,
+        currentPitcherName: "",
+        onFirst: !!g.onFirst,
+        onSecond: !!g.onSecond,
+        onThird: !!g.onThird,
+        awayAbbr: g.awayAbbr || "",
+        homeAbbr: g.homeAbbr || "",
+        awayScore: g.awayScore || 0,
+        homeScore: g.homeScore || 0,
+        awayPrimary: g.awayPrimary || "#444",
+        homePrimary: g.homePrimary || "#444",
+        tensionLabel: tension.label,
+        tensionColor: tension.color,
+        lastPitch: null,
+        batterStats: null,
+        pitcherStats: null
+      };
+      state.focusPitchSequence = [];
+      state.focusCurrentAbIdx = null;
+      return;
+    }
+    state.focusCurrentAbIdx = envelope.atBatIndex;
+    state.focusPitchSequence = (envelope.pitches || []).map(function(p) {
+      return {
+        typeCode: p.typeCode,
+        typeName: p.typeName,
+        speed: p.speed,
+        resultCode: p.resultCode,
+        resultDesc: p.resultDesc,
+        sequenceIndex: p.sequenceIndex
+      };
+    });
+    var lastPitch = state.focusPitchSequence.length ? state.focusPitchSequence[state.focusPitchSequence.length - 1] : null;
+    state.focusState = {
+      balls: envelope.balls || 0,
+      strikes: envelope.strikes || 0,
+      outs: envelope.outs || 0,
+      inning: envelope.inning || g.inning || 1,
+      halfInning: envelope.halfInning || g.halfInning || "top",
+      currentBatterId: envelope.batterId || null,
+      currentBatterName: envelope.batterName || "",
+      currentPitcherId: envelope.pitcherId || null,
+      currentPitcherName: envelope.pitcherName || "",
+      onFirst: !!envelope.onFirst,
+      onSecond: !!envelope.onSecond,
+      onThird: !!envelope.onThird,
+      awayAbbr: g.awayAbbr || "",
+      homeAbbr: g.homeAbbr || "",
+      awayScore: envelope.awayScore != null ? envelope.awayScore : g.awayScore || 0,
+      homeScore: envelope.homeScore != null ? envelope.homeScore : g.homeScore || 0,
+      awayPrimary: g.awayPrimary || "#444",
+      homePrimary: g.homePrimary || "#444",
+      tensionLabel: tension.label,
+      tensionColor: tension.color,
+      lastPitch,
+      batterStats: state.focusStatsCache[envelope.batterId] || null,
+      pitcherStats: state.focusStatsCache[envelope.pitcherId] || null
+    };
+  }
   async function pollFocusLinescore() {
     if (!state.focusGamePk) return;
     if (state.demoMode) {
+      hydrateFocusFromDemo();
       renderFocusCard();
       renderFocusMiniBar();
+      if (state.focusOverlayOpen) renderFocusOverlay();
       return;
     }
     if (state.focusAbortCtrl) {
@@ -6929,6 +7049,7 @@
       var demoEx = demoCol[key];
       if (!demoEx) {
         state.lastCollectionResult = { type: "new", playerName, eventType, tier };
+        state.demoCardCount = (state.demoCardCount || 0) + 1;
       } else {
         var dRank = tierRank(tier), dExRank = tierRank(demoEx.tier);
         state.lastCollectionResult = {
@@ -6938,6 +7059,7 @@
           tier
         };
       }
+      updateCollectionUI();
       return;
     }
     var col = loadCollection();
@@ -7011,6 +7133,13 @@
     if (!el) return;
     state.collectionPage = 0;
     el.style.display = "flex";
+    if (state.demoMode) {
+      var book = document.getElementById("collectionBook");
+      if (book) {
+        book.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:50vh;padding:40px 20px"><div style="max-width:340px;text-align:center;color:var(--text)"><div style="font-size:48px;margin-bottom:12px">\u{1F3B4}</div><div style="font-size:1.05rem;font-weight:700;margin-bottom:6px">Demo cards aren\u2019t saved</div><div style="font-size:.85rem;line-height:1.5;color:var(--muted);margin-bottom:18px">Sign in to start your real collection. Every HR or key RBI you watch live becomes a card you can keep.</div><button onclick="closeCollection()" style="background:var(--secondary);color:var(--accent-text);border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem">Back to Demo</button></div></div>';
+      }
+      return;
+    }
     renderCollectionBook();
   }
   function closeCollection() {
@@ -7140,8 +7269,7 @@
     openCardFromCollection(idx);
   }
   function updateCollectionUI() {
-    var col = loadCollection();
-    var count = Object.keys(col).length;
+    var count = state.demoMode ? state.demoCardCount || 0 : Object.keys(loadCollection()).length;
     var countEl = document.getElementById("collectionCountLabel");
     if (countEl) countEl.textContent = count;
     renderCollectionRailModule();
@@ -7149,8 +7277,7 @@
   function renderCollectionRailModule() {
     var el = document.getElementById("collectionRailModule");
     if (!el || !window.CollectionCard) return;
-    var col = loadCollection();
-    var count = Object.keys(col).length;
+    var count = state.demoMode ? state.demoCardCount || 0 : Object.keys(loadCollection()).length;
     el.innerHTML = window.CollectionCard.renderRailModule(count);
   }
   function flashCollectionRailMessage() {
@@ -7906,7 +8033,7 @@
     }
     if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
     window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
-    if (!state.demoMode && _collectCard) {
+    if (_collectCard) {
       var gs = state.gameStates[gamePk] || {};
       _collectCard({
         playerId: d.batterId,
@@ -8019,7 +8146,7 @@
     }
     if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
     window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
-    if (!state.demoMode && _collectCard) {
+    if (_collectCard) {
       _collectCard({
         playerId: batterId,
         playerName: batterName,
@@ -8677,6 +8804,9 @@
   var _showPlayerCard2 = null;
   var _rotateStory = null;
   var _localDateStr2 = null;
+  var _selectFocusGame = null;
+  var _pollFocusLinescore = null;
+  var _pollPendingVideoClips = null;
   function setDemoCallbacks(callbacks) {
     _addFeedItem = callbacks.addFeedItem;
     _renderTicker = callbacks.renderTicker;
@@ -8688,6 +8818,9 @@
     _showPlayerCard2 = callbacks.showPlayerCard;
     _rotateStory = callbacks.rotateStory;
     _localDateStr2 = callbacks.localDateStr;
+    _selectFocusGame = callbacks.selectFocusGame;
+    _pollFocusLinescore = callbacks.pollFocusLinescore;
+    _pollPendingVideoClips = callbacks.pollPendingVideoClips;
   }
   async function loadDailyEventsJSON() {
     try {
@@ -8779,6 +8912,7 @@
     state.storyShownId = null;
     state.demoPlayQueue = [];
     state.demoPlayIdx = 0;
+    state.demoCardCount = 0;
     state.dailyLeadersCache = null;
     state.onThisDayCache = null;
     state.yesterdayCache = null;
@@ -9029,6 +9163,9 @@
     _addFeedItem(play.gamePk, feedData);
     _renderTicker();
     _renderSideRailGames();
+    if (_selectFocusGame) _selectFocusGame();
+    if (_pollFocusLinescore && state.focusGamePk) _pollFocusLinescore();
+    if (_pollPendingVideoClips) _pollPendingVideoClips();
     await _buildStoryPool2();
   }
   function renderDemoEndScreen() {
@@ -9078,6 +9215,7 @@
     state.boxscoreSnapshots = {};
     state.contentCacheTimeline = {};
     state.focusTrack = [];
+    state.demoCardCount = 0;
     var feed = document.getElementById("feed");
     if (feed) feed.innerHTML = "";
     var ticker = document.getElementById("gameTicker");
@@ -9613,6 +9751,14 @@
     livewp_refresh_ms: 9e4
   };
   async function fetchBoxscore(gamePk) {
+    if (state.demoMode) {
+      var snaps = state.boxscoreSnapshots[gamePk] || [];
+      var nowMs = state.demoCurrentTime || 0;
+      for (var i = snaps.length - 1; i >= 0; i--) {
+        if (snaps[i].ts <= nowMs) return snaps[i].data;
+      }
+      return null;
+    }
     if (!state.boxscoreCache[gamePk]) {
       try {
         var bsR = await fetch(MLB_BASE + "/game/" + gamePk + "/boxscore");
@@ -9995,7 +10141,10 @@
       playSound,
       showPlayerCard,
       rotateStory,
-      localDateStr
+      localDateStr,
+      selectFocusGame,
+      pollFocusLinescore,
+      pollPendingVideoClips
     });
     state.pulseInitialized = true;
     initLeaguePulse();

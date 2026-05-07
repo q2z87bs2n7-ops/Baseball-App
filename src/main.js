@@ -197,6 +197,19 @@ const NEWS_ROTATE_MS=30000;
 
 // tcLookup imported from ./utils/format.js
 async function fetchBoxscore(gamePk){
+  if (state.demoMode) {
+    // Demo replay reads boxscores from the hydrated boxscoreSnapshots
+    // timeline. Returns the newest snapshot whose ts <= demoCurrentTime,
+    // or null if no snapshot has landed yet for this game (HR/RBI cards
+    // already gracefully handle a null boxscore by leaving jersey/position
+    // blank — same as live behaviour for unknown players).
+    var snaps = state.boxscoreSnapshots[gamePk] || [];
+    var nowMs = state.demoCurrentTime || 0;
+    for (var i = snaps.length - 1; i >= 0; i--) {
+      if (snaps[i].ts <= nowMs) return snaps[i].data;
+    }
+    return null;
+  }
   if(!state.boxscoreCache[gamePk]){
     try{var bsR=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore');if(!bsR.ok)throw new Error(bsR.status);state.boxscoreCache[gamePk]=await bsR.json();
       if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
@@ -562,6 +575,9 @@ function renderNextGame(g,label){
     showPlayerCard: showPlayerCard,
     rotateStory: rotateStory,
     localDateStr: localDateStr,
+    selectFocusGame: selectFocusGame,
+    pollFocusLinescore: pollFocusLinescore,
+    pollPendingVideoClips: pollPendingVideoClips,
   });
   state.pulseInitialized=true;initLeaguePulse();
   // Pulse-first cold-open: mirror showSection('pulse') side-effects so theme + wake-lock match the active landing section

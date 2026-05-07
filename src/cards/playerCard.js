@@ -156,7 +156,7 @@ export async function showPlayerCard(batterId, batterName, awayTeamId, homeTeamI
   }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
   window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
-  if (!state.demoMode && _collectCard) {
+  if (_collectCard) {
     var gs = state.gameStates[gamePk] || {};
     _collectCard({
       playerId: d.batterId, playerName: d.batterName,
@@ -243,7 +243,7 @@ export async function showRBICard(batterId, batterName, awayTeamId, homeTeamId, 
   }
   if (window._playerCardTimer) clearTimeout(window._playerCardTimer);
   window._playerCardTimer = setTimeout(dismissPlayerCard, TIMING.CARD_DISMISS_MS);
-  if (!state.demoMode && _collectCard) {
+  if (_collectCard) {
     _collectCard({
       playerId: batterId, playerName: batterName,
       teamAbbr: teamAbbr, teamPrimary: teamData.primary, teamSecondary: teamData.secondary,

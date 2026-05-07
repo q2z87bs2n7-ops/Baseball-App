@@ -38,6 +38,24 @@ function getTensionInfo(score) {
 }
 
 export function selectFocusGame() {
+  // Demo replay: faithfully follow the original session's focus track
+  // (auto + manual switches recorded with their timestamps) instead of
+  // re-running tension scoring against synthetic game states.
+  if(state.demoMode) {
+    var ft=state.focusTrack||[];
+    if(ft.length) {
+      var nowMs=state.demoCurrentTime||0;
+      var entry=null;
+      for(var ti=ft.length-1;ti>=0;ti--) { if(ft[ti].ts<=nowMs) { entry=ft[ti]; break; } }
+      if(entry&&entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
+        state.focusIsManual=!!entry.isManual;
+        setFocusGame(entry.focusGamePk);
+      }
+      return;
+    }
+    // Fallback: no focusTrack hydrated → tension-score against demo gameStates
+    // (treats Live + In Progress filter the same as live mode would)
+  }
   var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
   if(!liveGames.length) return;
   var scored=liveGames.map(function(g){return {g:g,score:calcFocusScore(g)};});
@@ -94,9 +112,71 @@ export function resetFocusAuto() {
   setFocusGame(scored[0].g.gamePk);
 }
 
+// Demo replay: rebuild focusState from the hydrated pitchTimeline envelope
+// closest to (but not after) demoCurrentTime. The envelope already contains
+// B/S/O, runners, batter/pitcher names, and inning/score, so this is pure
+// data lookup with no API calls. Falls back to gameStates only when no
+// pitch envelope exists yet for the focused game (e.g. early in demo).
+function hydrateFocusFromDemo() {
+  var pk=state.focusGamePk;
+  if(!pk) return;
+  var g=state.gameStates[pk]||{};
+  var timeline=state.pitchTimeline[pk]||[];
+  var nowMs=state.demoCurrentTime||0;
+  var envelope=null;
+  for(var i=timeline.length-1;i>=0;i--) { if(timeline[i].ts<=nowMs) { envelope=timeline[i]; break; } }
+  var tension=getTensionInfo(calcFocusScore(g));
+  if(!envelope) {
+    // No pitch data yet for this game — render score+inning skeleton
+    state.focusState={
+      balls:0,strikes:0,outs:g.outs||0,
+      inning:g.inning||1,halfInning:g.halfInning||'top',
+      currentBatterId:null,currentBatterName:'',
+      currentPitcherId:null,currentPitcherName:'',
+      onFirst:!!g.onFirst,onSecond:!!g.onSecond,onThird:!!g.onThird,
+      awayAbbr:g.awayAbbr||'',homeAbbr:g.homeAbbr||'',
+      awayScore:g.awayScore||0,homeScore:g.homeScore||0,
+      awayPrimary:g.awayPrimary||'#444',homePrimary:g.homePrimary||'#444',
+      tensionLabel:tension.label,tensionColor:tension.color,
+      lastPitch:null,batterStats:null,pitcherStats:null
+    };
+    state.focusPitchSequence=[];
+    state.focusCurrentAbIdx=null;
+    return;
+  }
+  state.focusCurrentAbIdx=envelope.atBatIndex;
+  state.focusPitchSequence=(envelope.pitches||[]).map(function(p) {
+    return {
+      typeCode:p.typeCode,typeName:p.typeName,speed:p.speed,
+      resultCode:p.resultCode,resultDesc:p.resultDesc,sequenceIndex:p.sequenceIndex
+    };
+  });
+  var lastPitch=state.focusPitchSequence.length?state.focusPitchSequence[state.focusPitchSequence.length-1]:null;
+  state.focusState={
+    balls:envelope.balls||0,strikes:envelope.strikes||0,outs:envelope.outs||0,
+    inning:envelope.inning||g.inning||1,halfInning:envelope.halfInning||g.halfInning||'top',
+    currentBatterId:envelope.batterId||null,currentBatterName:envelope.batterName||'',
+    currentPitcherId:envelope.pitcherId||null,currentPitcherName:envelope.pitcherName||'',
+    onFirst:!!envelope.onFirst,onSecond:!!envelope.onSecond,onThird:!!envelope.onThird,
+    awayAbbr:g.awayAbbr||'',homeAbbr:g.homeAbbr||'',
+    awayScore:envelope.awayScore!=null?envelope.awayScore:(g.awayScore||0),
+    homeScore:envelope.homeScore!=null?envelope.homeScore:(g.homeScore||0),
+    awayPrimary:g.awayPrimary||'#444',homePrimary:g.homePrimary||'#444',
+    tensionLabel:tension.label,tensionColor:tension.color,
+    lastPitch:lastPitch,
+    batterStats:state.focusStatsCache[envelope.batterId]||null,
+    pitcherStats:state.focusStatsCache[envelope.pitcherId]||null
+  };
+}
+
 export async function pollFocusLinescore() {
   if(!state.focusGamePk) return;
-  if(state.demoMode) { renderFocusCard(); renderFocusMiniBar(); return; }
+  if(state.demoMode) {
+    hydrateFocusFromDemo();
+    renderFocusCard(); renderFocusMiniBar();
+    if(state.focusOverlayOpen) renderFocusOverlay();
+    return;
+  }
   if(state.focusAbortCtrl){state.focusAbortCtrl.abort();}
   state.focusAbortCtrl=new AbortController();
   var focusSig=state.focusAbortCtrl.signal;

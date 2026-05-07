@@ -39,6 +39,9 @@ export function pickHeroImage(item) {
 // Fetch /game/{pk}/content with one-shot caching in state.yesterdayContentCache.
 // Yes the cache name says "yesterday" — it's been overloaded for live games too.
 export async function fetchGameContent(gamePk) {
+  // Demo replay never makes network calls. Yesterday Recap is out of demo
+  // scope, so returning the existing cache (or null) is correct.
+  if (state.demoMode) return state.yesterdayContentCache[gamePk] || null;
   if (state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
   try {
     var r = await fetch(MLB_BASE + '/game/' + gamePk + '/content');
@@ -91,28 +94,46 @@ export async function pollPendingVideoClips() {
   pending.forEach(function(item) { (byGame[item.gamePk] = byGame[item.gamePk] || []).push(item); });
   for (var pk in byGame) {
     var gpk = +pk;
-    var cached = state.liveContentCache[gpk];
-    if (!cached || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {
-      try {
-        var r = await fetch(MLB_BASE + '/game/' + gpk + '/content');
-        if (!r.ok) continue;
-        var d = await r.json();
-        var all = (d.highlights && d.highlights.highlights && d.highlights.highlights.items) || [];
-        // Keep only playable video clips; exclude data-visualization (darkroom, bat-track, etc.)
-        state.liveContentCache[gpk] = {
-          items: all.filter(function(it) {
-            if (it.type !== 'video' || !pickPlayback(it.playbacks)) return false;
-            return !(it.keywordsAll || []).some(function(kw) {
-              var v = (kw.value || kw.slug || '').toLowerCase();
-              return v === 'data-visualization' || v === 'data_visualization';
-            });
-          }),
-          fetchedAt: Date.now()
-        };
-        if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
-          window.Recorder._captureContentDelta(gpk, state.liveContentCache[gpk].items);
-        }
-      } catch (e) { continue; }
+    if (state.demoMode) {
+      // Demo replay: walk hydrated contentCacheTimeline for the newest
+      // snapshot whose ts <= demoCurrentTime. Clips were already trimmed
+      // by the recorder, so the existing match/filter logic below works
+      // unchanged. No network call.
+      var timeline = state.contentCacheTimeline[gpk] || [];
+      var nowMs = state.demoCurrentTime || 0;
+      var snap = null;
+      for (var ti = timeline.length - 1; ti >= 0; ti--) {
+        if (timeline[ti].ts <= nowMs) { snap = timeline[ti]; break; }
+      }
+      if (snap && snap.items && snap.items.length) {
+        state.liveContentCache[gpk] = { items: snap.items, fetchedAt: nowMs };
+      }
+      // If no timeline entry yet, fall through with whatever liveContentCache
+      // has (could be empty — no clips will match this poll, retry next play).
+    } else {
+      var cached = state.liveContentCache[gpk];
+      if (!cached || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {
+        try {
+          var r = await fetch(MLB_BASE + '/game/' + gpk + '/content');
+          if (!r.ok) continue;
+          var d = await r.json();
+          var all = (d.highlights && d.highlights.highlights && d.highlights.highlights.items) || [];
+          // Keep only playable video clips; exclude data-visualization (darkroom, bat-track, etc.)
+          state.liveContentCache[gpk] = {
+            items: all.filter(function(it) {
+              if (it.type !== 'video' || !pickPlayback(it.playbacks)) return false;
+              return !(it.keywordsAll || []).some(function(kw) {
+                var v = (kw.value || kw.slug || '').toLowerCase();
+                return v === 'data-visualization' || v === 'data_visualization';
+              });
+            }),
+            fetchedAt: Date.now()
+          };
+          if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
+            window.Recorder._captureContentDelta(gpk, state.liveContentCache[gpk].items);
+          }
+        } catch (e) { continue; }
+      }
     }
     var clips = (state.liveContentCache[gpk] && state.liveContentCache[gpk].items) || [];
     if (!clips.length) continue;
