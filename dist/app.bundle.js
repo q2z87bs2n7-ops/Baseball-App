@@ -8909,7 +8909,7 @@
       if (badge) badge.textContent = "\u{1F4FD}\uFE0F Demo";
       document.getElementById("demoSpeed1x").style.display = "";
       document.getElementById("demoSpeed10x").style.display = "";
-      document.getElementById("demoSpeed100x").style.display = "";
+      document.getElementById("demoSpeed30x").style.display = "";
       document.getElementById("demoSpeed1x").classList.add("active");
       document.getElementById("demoNextHRBtn").style.display = "";
       document.getElementById("demoPauseBtn").style.display = "";
@@ -9104,7 +9104,7 @@
   function setDemoSpeed(ms, btn) {
     demoSpeedMs = ms;
     if (btn) {
-      document.querySelectorAll("#demoSpeed1x,#demoSpeed10x,#demoSpeed100x").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll("#demoSpeed1x,#demoSpeed10x,#demoSpeed30x").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
     }
     if (state.demoMode && !demoPaused && state.demoTimer) {
@@ -9283,8 +9283,8 @@
       if (demoSpeed1x) demoSpeed1x.style.display = "none";
       var demoSpeed10x = document.getElementById("demoSpeed10x");
       if (demoSpeed10x) demoSpeed10x.style.display = "none";
-      var demoSpeed100x = document.getElementById("demoSpeed100x");
-      if (demoSpeed100x) demoSpeed100x.style.display = "none";
+      var demoSpeed30x = document.getElementById("demoSpeed30x");
+      if (demoSpeed30x) demoSpeed30x.style.display = "none";
       var demoNextHRBtn = document.getElementById("demoNextHRBtn");
       if (demoNextHRBtn) demoNextHRBtn.style.display = "none";
       var demoPauseBtn = document.getElementById("demoPauseBtn");

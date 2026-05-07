@@ -1,6 +1,6 @@
 // ── Demo Mode System
 // Self-contained replay of April 27-28, 2026 from daily-events.json.
-// No external API calls; speeds configurable (1x/10x/100x).
+// No external API calls; speeds configurable (1x/10x/30x).
 // Encapsulated state: demoPaused, demoSpeedMs
 
 import { state } from '../state.js';
@@ -117,7 +117,7 @@ async function initDemo() {
     if(badge) badge.textContent='📽️ Demo';
     document.getElementById('demoSpeed1x').style.display='';
     document.getElementById('demoSpeed10x').style.display='';
-    document.getElementById('demoSpeed100x').style.display='';
+    document.getElementById('demoSpeed30x').style.display='';
     document.getElementById('demoSpeed1x').classList.add('active');
     document.getElementById('demoNextHRBtn').style.display='';
     document.getElementById('demoPauseBtn').style.display='';
@@ -366,7 +366,7 @@ async function pollDemoFeeds(){
 export function setDemoSpeed(ms,btn){
   demoSpeedMs=ms;
   if(btn){
-    document.querySelectorAll('#demoSpeed1x,#demoSpeed10x,#demoSpeed100x').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#demoSpeed1x,#demoSpeed10x,#demoSpeed30x').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   }
   if(state.demoMode&&!demoPaused&&state.demoTimer){
@@ -492,7 +492,7 @@ async function advanceDemoPlay(play) {
   // Drive Focus Mode: walk focusTrack[] to pick the focused game per the
   // recorded session, then re-hydrate focusState from pitchTimeline at the
   // new demoCurrentTime. Independent of the 5s pollFocusLinescore interval
-  // so high speeds (10x/100x) stay in sync with the play stream.
+  // so high speeds (10x/30x) stay in sync with the play stream.
   if(_selectFocusGame) _selectFocusGame();
   if(_pollFocusLinescore&&state.focusGamePk) _pollFocusLinescore();
   // Match captured video clips to feed items as their arrival time crosses
@@ -565,8 +565,8 @@ export function exitDemo() {
     if(demoSpeed1x) demoSpeed1x.style.display='none';
     var demoSpeed10x=document.getElementById('demoSpeed10x');
     if(demoSpeed10x) demoSpeed10x.style.display='none';
-    var demoSpeed100x=document.getElementById('demoSpeed100x');
-    if(demoSpeed100x) demoSpeed100x.style.display='none';
+    var demoSpeed30x=document.getElementById('demoSpeed30x');
+    if(demoSpeed30x) demoSpeed30x.style.display='none';
     var demoNextHRBtn=document.getElementById('demoNextHRBtn');
     if(demoNextHRBtn) demoNextHRBtn.style.display='none';
     var demoPauseBtn=document.getElementById('demoPauseBtn');
