@@ -9,7 +9,7 @@
 
 import { state } from '../state.js';
 import { MLB_BASE, MLB_BASE_V1_1 } from '../config/constants.js';
-import { tcLookup } from '../utils/format.js';
+import { tcLookup, etHour } from '../utils/format.js';
 import { devTrace } from '../diag/devLog.js';
 import {
   addFeedItem, renderFeed, renderTicker, renderSideRailGames,
@@ -42,7 +42,7 @@ export async function pollLeaguePulse() {
   var sig = state.pulseAbortCtrl.signal;
   var hasLive = Object.values(state.gameStates).some(function(g) { return g.status === 'Live'; });
   devTrace('poll', 'pollLeaguePulse start · hasLive=' + hasLive + ' · pollDate=' + state.pollDateStr + ' · games=' + Object.keys(state.gameStates).length + ' · enabled=' + state.enabledGames.size);
-  var isMidnightWindow = !state.demoMode && (new Date().getHours()) < 6;
+  var isMidnightWindow = !state.demoMode && etHour() < 6;
   if (!hasLive) {
     var hasGamesFromCurrentDate = state.pollDateStr && Object.values(state.gameStates).some(function(g) {
       return g.gameDateMs && _localDateStr(new Date(g.gameDateMs)) === state.pollDateStr;

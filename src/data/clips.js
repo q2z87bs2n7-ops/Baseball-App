@@ -6,6 +6,7 @@
 import { state } from '../state.js';
 import { MLB_BASE } from '../config/constants.js';
 import { openVideoOverlay } from '../ui/overlays.js';
+import { etDateStr, etDatePlus } from '../utils/format.js';
 
 function forceHttps(url) {
   return url ? url.replace(/^http:/, 'https:') : url;
@@ -227,8 +228,7 @@ export async function devTestVideoClip() {
     }
   }
   try {
-    var yd = new Date(); yd.setDate(yd.getDate() - 1);
-    var ds = yd.getFullYear() + '-' + String(yd.getMonth() + 1).padStart(2, '0') + '-' + String(yd.getDate()).padStart(2, '0');
+    var ds = etDatePlus(etDateStr(), -1);
     var r = await fetch(MLB_BASE + '/schedule?date=' + ds + '&sportId=1&hydrate=team');
     if (!r.ok) throw new Error(r.status);
     var d = await r.json();

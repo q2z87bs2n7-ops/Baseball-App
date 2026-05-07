@@ -43,6 +43,22 @@ export function fmtNewsDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+// MLB schedule's anchor zone is America/New_York. Building "today" / "yesterday"
+// from the user's local clock breaks for non-US users (e.g. Australia, where
+// local "today" is the MLB schedule's "tomorrow"). Use these helpers for any
+// date that gets sent to the MLB API or matched against game dates.
+const ET_DATE_FMT = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+const ET_HOUR_FMT = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false });
+
+export function etDateStr(d) { return ET_DATE_FMT.format(d || new Date()); }
+export function etHour(d) { return parseInt(ET_HOUR_FMT.format(d || new Date()), 10) % 24; }
+export function etDatePlus(dateStr, days) {
+  var p = dateStr.split('-').map(Number);
+  var u = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+  u.setUTCDate(u.getUTCDate() + days);
+  return u.getUTCFullYear() + '-' + String(u.getUTCMonth() + 1).padStart(2, '0') + '-' + String(u.getUTCDate()).padStart(2, '0');
+}
+
 // Opponent-color contrast picker. Falls back to opp primary if both opp colors
 // are within RGB Euclidean distance 60 of myPrimary (e.g. Yankees navy vs Mets
 // blue — distinct enough to read as "different team" only beyond that floor).
