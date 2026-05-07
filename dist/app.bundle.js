@@ -9078,7 +9078,13 @@
     _renderSideRailGames();
     await _buildStoryPool2();
     _updateFeedEmpty();
-    _showAlert({ icon: "\u25B6", event: "Demo Mode", desc: state.enabledGames.size + " games \xB7 " + state.feedItems.length + " plays", color: "#7dd89e", duration: 3e3 });
+    _showAlert({
+      icon: "\u25B6",
+      event: "Demo Mode \xB7 " + state.enabledGames.size + " games \xB7 " + state.feedItems.length + " plays loaded",
+      desc: "Heads up \u2014 this is a replay of a recorded session. Focus mode pitch data is limited to games that were captured live. Radio is simulated (in live mode it plays the real broadcast); audio support is coming next session.",
+      color: "#7dd89e",
+      duration: 12e3
+    });
     if (state.storyRotateTimer) clearInterval(state.storyRotateTimer);
     state.storyRotateTimer = setInterval(_rotateStory, state.devTuning.rotateMs);
     state.demoStartTime = Date.now();
