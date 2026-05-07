@@ -380,6 +380,16 @@ async function advanceDemoPlay(play) {
       g.status='Final';
     }
   }else{
+    // Infer Game underway! status when a play arrives for a still-Preview
+    // game. The recorder baseline only carries the most recent ~200 feed
+    // items, so for games that started before the recording window the
+    // explicit "Game underway!" status entry can be missing — without
+    // this, g.status stayed Preview forever and the ticker (which filters
+    // to Live) showed the game as absent.
+    if(g.status!=='Live'&&g.status!=='Final'){
+      g.status='Live';
+      g.detailedState='In Progress';
+    }
     g.inning=play.inning;
     g.halfInning=play.halfInning;
     g.outs=play.outs;

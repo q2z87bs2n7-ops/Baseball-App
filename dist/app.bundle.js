@@ -8992,6 +8992,10 @@
         g.status = "Final";
       }
     } else {
+      if (g.status !== "Live" && g.status !== "Final") {
+        g.status = "Live";
+        g.detailedState = "In Progress";
+      }
       g.inning = play.inning;
       g.halfInning = play.halfInning;
       g.outs = play.outs;
