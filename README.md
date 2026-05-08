@@ -10,11 +10,11 @@ A real-time pitch-by-pitch tracker that auto-focuses on the most exciting MLB ga
 
 ## Why this exists
 
-This project began as a learning experience — exploring what could actually be achieved using Claude Code — and stretched into a hobby project over a couple of weeks because it became genuinely fun to keep building. The MLB Stats API turned out to be a near-perfect testbed — public, no authentication required, rich real-time data covering every pitch, play, and player stat across the league. Baseball is fun to build around, and an API this good made it easy to keep going.
+For context, I have experience in Product Ownership of mobile applications but I can't code myself. What started as a work-related learning experience with Claude Code and Design via the web GUI, expanded into a 2 week after hours hobby project that turned a single HTML file into a basic modular ES6 app with esbuild bundling.
 
-What started as a single HTML file is now a modular ES6 app with a build pipeline, PWA support, cross-device sync, serverless push notifications, a card collection system, an in-app demo recorder, and a classic radio atmosphere layer. Each feature was a prompt away. The project is less about the MLB Tracker itself and more about what that kind of collaboration can produce.
+Features developed from basic content (News, Schedule, Results, Live games) to include a league-wide play-by-play feed (Pulse), a focus mode that auto-selects the most exciting game with pitch-by-pitch tracking and live radio, a rotating dynamic story carousel that updates throughout the day with 20+ generators surfacing narrative moments, and curated highlights and clips from games in progress and previous day's games. Additional features include a card collection system, a replayable pulse demo mode with vintage radio broadcasts replacing the live audio feeds, 30-team theming, developer tools and PWA support with push notifications.
 
-It's not a product. There's no business model, no sign-up gate, no analytics. Optional account sync exists only so card collections survive across devices. Everything else works fully unsigned-in.
+It's not intended for any commercial use. The MLB Stats API is public and real-time — excellent to work with and deserves more credit than Claude or I. Optional account sync exists only so collections survive across devices. Everything else works unsigned-in. Optimal experience is on an iPad in landscape, but breakpoints support mobile and desktop too.
 
 ---
 
