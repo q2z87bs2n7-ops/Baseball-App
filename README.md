@@ -215,22 +215,6 @@ For the full breakdown of architecture, every API endpoint, every CSS variable, 
 
 ---
 
-## Status & roadmap
-
-**Current version:** v3.47 (May 2026).
-
-Active development is incremental — feature branches under `claude/*`, version bumped on every commit, service worker `CACHE` constant bumped to force PWA refresh. v3.40.0 completed the modular refactor; source lives under `src/` as ES6 modules and ships through esbuild. v3.46 overhauled Demo Mode with a full in-app recorder and replay engine. v3.47 added classic radio atmosphere and UX polish to the demo experience.
-
-Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
-
-- Career stats expansion on player cards (last 10-game average, hot streak context)
-- Replacement radio URLs for Audacy-affected stations (rights gap)
-- Expanding Classic Radio pool to a per-team URL map
-- Dynamic season year (currently `SEASON = 2026` is hardcoded)
-- GitHub Actions cron reliability (free tier runs ~once/hour rather than every 5 min)
-
----
-
 ## Known constraints
 
 <details>
@@ -240,7 +224,6 @@ Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
 - **Audacy radio rights gap.** ~14 MLB market flagships hosted by Audacy stream alternate content during games. Excluded from auto-pairing via an `APPROVED_RADIO_TEAM_IDS` allowlist.
 - **GitHub Actions cron is approximate.** Configured for `*/5` but in practice runs closer to once per hour on the free tier — switching to Vercel Cron is on the backlog.
 - **Theming relies on contrast heuristics.** Teams with very dark secondary colours (Giants, Orioles) get a luminance floor applied to keep accents readable.
-- **Leaders index mapping is empirical.** The `/stats/leaders` endpoint doesn't guarantee response order matches the requested category order. Re-test if results look wrong after API changes.
 - **Classic Radio is a POC.** The archive.org broadcast pool is hardcoded (4 recordings). Easy to expand to a `teamId → URL[]` map — just hasn't been needed yet.
 
 </details>
@@ -251,6 +234,8 @@ Open backlog items live in [`docs/BACKLOG.md`](./docs/BACKLOG.md). Highlights:
 
 - **[MLB Stats API](https://statsapi.mlb.com/)** — every live data point in the app
 - **[ESPN](https://www.espn.com/)** — news headlines (unofficial endpoint)
+- **[MLB RSS Feeds](https://www.mlb.com/)** — team and league-wide news feeds (fallback source)
+- **[YouTube](https://www.youtube.com/)** — team channel feeds and highlight videos
 - **[Hls.js](https://github.com/video-dev/hls.js)** — HLS streaming for radio
 - **[Internet Archive](https://archive.org/)** — classic MLB broadcast recordings used in Demo Mode
 - **[Upstash](https://upstash.com/)** — Redis for push subscriptions and card sync
