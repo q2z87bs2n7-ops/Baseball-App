@@ -142,7 +142,7 @@ import {
   setCarouselCallbacks, loadOnThisDayCache, loadYesterdayCache, loadTransactionsCache, loadHighLowCache,
 } from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
-import { openMoreSheet, closeMoreSheet, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
+import { openMoreSheet, closeMoreSheet, toggleMoreSheet, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
@@ -708,7 +708,7 @@ if('serviceWorker' in navigator){
 Object.assign(window, {
   // Navigation + section dispatch
   showSection,
-  openMoreSheet, closeMoreSheet,
+  openMoreSheet, closeMoreSheet, toggleMoreSheet,
   // Settings + theme + team
   switchTeam, switchTheme, switchThemeScope, toggleSettings, toggleInvert,
   togglePush, toggleRadio, toggleDevTools, toggleMyTeamLens, toggleSoundPanel,
