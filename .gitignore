@@ -1,4 +1,4 @@
 node_modules/
 LEAGUE-PULSE-HANDOVER.md
 *.docx
-dist/
+# dist/ is committed for GitHub Pages — do NOT ignore
