@@ -1,6 +1,6 @@
 # MLB Tracker
 
-A real-time pitch-by-pitch tracker that auto-focuses on the most exciting MLB game in progress — no build step, no dependencies.
+A real-time pitch-by-pitch tracker that auto-focuses on the most exciting MLB game in progress — no runtime dependencies, no auth required.
 
 **[▶ Live demo](https://q2z87bs2n7-ops.github.io/Baseball-App/)** &nbsp;·&nbsp; **[Source](https://github.com/q2z87bs2n7-ops/Baseball-App)** &nbsp;·&nbsp; **[Project handoff doc](./CLAUDE.md)**
 
@@ -27,7 +27,7 @@ A top bar carries controls for Sound Alerts (🔊), Live Game Radio (📻), Yest
 
 The feed tracks the shape of the day: pre-game shows a countdown to first pitch, gaps between games show a countdown to the next one, and once the slate wraps a "Slate complete" screen counts down to tomorrow. Sound alerts — HR bat crack, run chime, RISP heartbeat — are synthesised in real time with the Web Audio API, no audio files needed. When a home run or key scoring play fires, a full-screen player card overlay pops up with the batter's headshot and situation detail; where an official MLB highlight clip is available, a ▶ tile appears in the feed and the video plays inline through the same overlay.
 
-### 📖 Story Carousel — 22 narrative generators
+### 📖 Story Carousel — 20 narrative generators
 A rotating digest layer that surfaces story-level moments alongside the play feed. Generators cover home runs, walk-off threats, no-hitter watches, perfect game tracking, big innings, bases-loaded situations, stolen bases, end-of-inning recaps, multi-hit days, daily MLB leaders, hitting streaks, roster moves, win probability swings, award winners, season highs, on-this-day, yesterday's highlights, probable pitchers, and pre-game editorial matchup cards. Stories rotate via a priority × decay scoring algorithm with per-story cooldowns:
 
 ```javascript
@@ -78,7 +78,7 @@ Key capabilities:
 - **In-app Recorder** (`src/dev/recorder.js`) — captures live Pulse state passively with zero added API calls. Exports a `daily-events.json` with pitch timelines, boxscore snapshots, content cache, focus track, and story carousel caches. `trimClip()` strips to demo essentials (~87% smaller). Hard cap at 10 MB with a 5 MB soft warning.
 - **Backlog + queue replay** — feed items before recording started play as a pre-load backlog (tune-into-Pulse-mid-game UX); plays captured during recording form the live queue.
 - **Faithful focus replay** — demo follows the `focusTrack[]` recorded during the session, including user-triggered manual switches. A manual switch during demo correctly overrides auto behaviour.
-- **Speed controls** — 1× (10s/play), 10× (1s/play), 30× (100ms/play). ⏹ Exit Demo button. 🔥 Next HR fast-forwards at 20× through plays until an HR fires, then auto-pauses.
+- **Speed controls** — 1× (10s/play), 10× (1s/play), 30× (~333ms/play). ⏹ Exit Demo button. 🔥 Next HR fast-forwards at 20× through plays until an HR fires, then auto-pauses.
 - **Video tiles in demo** — `pollPendingVideoClips` walks the `contentCacheTimeline` and patches feed items with ▶ video tiles at the right replay moment.
 - **Clean exit** — `exitDemo` clears every demo cache and calls `resumeLivePulse`, which re-fires loaders, restarts all polling timers, and runs `pollLeaguePulse → buildStoryPool → setFocusGame`. No blank Pulse after exit.
 - **Dev Tools QC panel** — shows all 4 archive.org broadcasts individually with ▶ Play buttons and broadcast titles for independent testing.
@@ -95,9 +95,9 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 
 | Layer | Technology |
 |---|---|
-| Frontend | Vanilla HTML + CSS + ES6 modules — `index.html` + `styles.css` + ~30 modules under `src/` bundled into `dist/app.bundle.js` via esbuild |
+| Frontend | Vanilla HTML + CSS + ES6 modules — `index.html` + `styles.css` + ~38 modules under `src/` bundled into `dist/app.bundle.js` via esbuild |
 | Sidecar JS | `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` (IIFE modules, all `defer` in `<head>` — exposed via `window.*`) |
-| Bundler | [esbuild](https://esbuild.github.io/) — single command (`npm run build`), IIFE output, ~464KB |
+| Bundler | [esbuild](https://esbuild.github.io/) — single command (`npm run build`), IIFE output, ~520KB |
 | Streaming | [Hls.js](https://github.com/video-dev/hls.js) (light build, CDN, ~50KB) for HLS radio streams |
 | Data | [MLB Stats API](https://statsapi.mlb.com/api/v1/) — public, no auth |
 | News | ESPN news endpoint + MLB RSS via Vercel proxy |
@@ -182,13 +182,13 @@ Open `http://localhost:8000`. That's the whole setup — no npm, no env vars req
 ```
 index.html                — HTML structure only (no CSS, no JS)
 styles.css                — all CSS
-src/                      — ES6 module source (~30 files): main.js + state.js
+src/                      — ES6 module source (~38 files): main.js + state.js
                             + config/ + diag/ + utils/ + data/ + ui/ + feed/
                             + pulse/ + carousel/ + focus/ + cards/ + collection/
                             + radio/ + push/ + auth/ + sections/ + demo/ + dev/
                             (full map: docs/module-graph.md)
 build.mjs                 — esbuild driver
-dist/app.bundle.js        — bundled IIFE build (~464KB), served by GitHub Pages
+dist/app.bundle.js        — bundled IIFE build (~520KB), served by GitHub Pages
 focusCard.js              — At-Bat Focus Mode visual templates
 pulse-card-templates.js   — HR/RBI player card variants (4 templates)
 collectionCard.js         — Card Collection binder visuals
