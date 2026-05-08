@@ -74,6 +74,11 @@ header {
   color: var(--accent)
 }
 
+.logo .header-crumb {
+  color: rgba(255,255,255,.55);
+  font-size: 11px
+}
+
 .logo img {
   filter: drop-shadow(0 0 3px rgba(255,255,255,.4))
 }
@@ -2221,13 +2226,16 @@ select {
     --header-h: 42px
   }
   html, body {
-    overflow-x: hidden
+    overflow-x: hidden;
+    overflow-x: clip
   }
   header {
     position: sticky;
     top: 0;
     height: 42px;
+    min-height: 0;
     padding: env(safe-area-inset-top) 12px 0;
+    flex-wrap: nowrap;
     justify-content: space-between
   }
   .team-chip {
