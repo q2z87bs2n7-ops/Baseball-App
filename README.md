@@ -121,10 +121,11 @@ Built-in debugging suite accessible via `Shift+D`: Log Capture (ring buffer), Ap
 ```bash
 git clone https://github.com/q2z87bs2n7-ops/Baseball-App.git
 cd Baseball-App
-python3 -m http.server 8000   # or any static server
+npm install && npm run build   # generates dist/app.bundle.js + dist/styles.min.css
+python3 -m http.server 8000    # or any static server
 ```
 
-Open `http://localhost:8000`. That's the whole setup — no npm, no env vars required for the app. Auth (GitHub OAuth, email magic-link) and push notifications require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#session-storage--cross-device-sync) — they will silently fail without Vercel. Everything else works against the public MLB Stats API.
+Open `http://localhost:8000`. Auth (GitHub OAuth, email magic-link) and push notifications require the Vercel functions and env vars listed in [CLAUDE.md](./CLAUDE.md#session-storage--cross-device-sync) — they will silently fail without Vercel. Everything else works against the public MLB Stats API.
 
 > Note: YouTube embeds in the Home tab YouTube widget return `Error 153` on `file://` URLs. Use a local server, not double-click.
 
@@ -136,7 +137,7 @@ Open `http://localhost:8000`. That's the whole setup — no npm, no env vars req
 index.html                — HTML structure only (no CSS, no JS)
 styles.css                — all CSS
 src/                      — ES6 module source (~38 files): main.js + state.js
-                            + config/ + diag/ + utils/ + data/ + ui/ + feed/
+                            + config/ + devtools-feed/ + utils/ + data/ + ui/ + feed/
                             + pulse/ + carousel/ + focus/ + cards/ + collection/
                             + radio/ + push/ + auth/ + sections/ + demo/ + dev/
                             (full map: docs/module-graph.md)
@@ -158,8 +159,7 @@ api/
   ├── auth/github.js      — GitHub OAuth callback
   ├── auth/email-*.js     — email magic-link request + verify
   └── collection-sync.js  — cross-device card sync
-.github/workflows/        — build (auto bundle on push to main)
-                            + notify cron + manual test push
+.github/workflows/        — notify cron + manual test push
 CLAUDE.md                 — full project handoff (~28KB)
 docs/                     — per-feature deep-dives + module graph + backlog
 ```
