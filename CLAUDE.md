@@ -3,26 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v4.1
-
-**Recent versions** (full history in `CHANGELOG.md`):
-- **v4.1** — **Repo hygiene: runtime deps → `assets/`, stop committing `dist/`, rename `src/diag/`.** Moved vendor files to `assets/vendor/` and `daily-events.json` to `assets/`. Added `dist/` to `.gitignore` (Vercel/preview workflow builds on deploy). Renamed `src/diag/` → `src/devtools-feed/`; updated 13 import paths.
-- **v3.49.4** — **CSS readability + build-time minification.** `styles.css` reformatted to readable 4,650-line source; `build.mjs` emits `dist/styles.min.css` via esbuild CSS minifier; `index.html` references the dist file. Minified output 65 KB (11% smaller than original semi-minified blob).
-- **v3.48** — **Fix: game status notifications at correct chronological position.** Status items (Game underway, Final, Postponed) were missing `playTime` and defaulting to current time, floating to feed top; now use actual game start/end timestamps.
-- **v3.47** — **Radio button stays ON during archive feed loading.** UX polish: shows "(loading…)" immediately on feed start instead of flickering off/on; label updates to final title once playback starts. Final main-branch release of the v3.47 series.
-- **v3.47.5** — **Demo Feeds QC panel.** Replaced random archive test button with panel showing all 4 archive.org broadcasts with individual ▶ Play buttons. New `playArchiveUrl(url)` export.
-- **v3.47.4** — **Fix demo mode audio dropout.** URL caching skips pause-load cycle when same archive URL is already playing.
-- **v3.47.3** — **Add 🎬 Test Demo Feeds button** in Dev Tools Actions for archive radio testing at random offset.
-- **v3.47.2** — **Archive feed test button** in Dev Tools for demo archive feed playback.
-- **v3.47.1** — **Demo focus respects manual override.** `selectFocusGame()` early-returns on `state.focusIsManual`; stops clobbering viewer's manual choice with recorder's captured `entry.isManual`.
-- **v3.47** — **Classic Radio in demo.** New `src/radio/classic.js` streams archive.org MLB broadcasts as demo atmosphere (4-broadcast pool, random 30–90 min offset, re-rolls on focus switch). `toggleRadio()` demo-aware; `exitDemo` calls `stopClassic`.
-- **v3.46** — **Demo Mode v2.** In-app Recorder (`src/dev/recorder.js`), recorder-v2 schema, `initDemo` backlog/queue split, Focus Mode + boxscore + video clips + RBI cards in demo, carousel win-prob guard, clean exit + auto-resume live, Yesterday Recap demo anchor.
-- **v3.43.3** — Settings menu polish + Giants radio confirmed (KNBR 104.5/680). Cards Collected emoji updated, Appearance block consolidated, Sync Collection compacted. Dev Tools: stripped explanatory text from 5 action buttons.
-- **v3.43** — News carousel + News-tab image fixes. Carousel rolled back from `/api/proxy-news` aggregator to MLB-RSS-then-ESPN fallback. `MLB_RSS_FEEDS.mlb` updated to `/feeds/news/rss.xml` (was deprecated `/feeds/rss.xml` returning 500). MLB.com self-closing `<image href="..."/>` tag now extracted by `parseRssItems`. Radio Check moved Settings → Dev Tools.
-- **v3.42.x** — News carousel restored to Pulse side rail; `fmtRate` import bug; Demo Mode `DEBUG` undefined fix; legacy `app.js` removed (bundle is sole source of truth).
-- **v3.40.0** — Modular refactor complete. `src/main.js` ~680 LOC orchestration; everything else extracted under `src/<subsystem>/`. Single `state.js` container. See `docs/module-graph.md`.
-- **v3.39.0** — Initial bundle scaffolding (esbuild + first module extraction).
-- **v3.38** — Dev Tools enhancement series: Log Capture, App State Inspector, Network Trace, localStorage + SW inspectors, Diagnostic Snapshot, Live Controls.
+**Current version:** v4.1 (full history in `CHANGELOG.md`)
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
