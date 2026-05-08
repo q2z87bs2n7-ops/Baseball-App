@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MLB Pulse v4.3</title>
+<title>MLB Pulse v4.3.1</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,8 +16,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.3"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.3">
+<script defer src="dist/app.bundle.js?v=4.3.1"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.3.1">
 </head>
 <body>
 <header>
@@ -31,7 +31,7 @@
     <button data-section="news" onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
     <button data-section="standings" onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
     <button data-section="stats" onclick="showSection('stats',this)">📊<span class="nav-label"> Stats</span></button>
-    <button data-section="more" class="nav-more" aria-label="More" aria-haspopup="dialog" onclick="openMoreSheet()">⋯<span class="nav-label"> More</span></button>
+    <button data-section="more" class="nav-more" aria-label="More" aria-haspopup="dialog" onclick="toggleMoreSheet()">⋯<span class="nav-label"> More</span></button>
   </nav>
   <div class="settings-wrap">
     <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
@@ -80,7 +80,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.3</div>
+        <div class="settings-version">v4.3.1</div>
       </div>
     </div>
   </div>

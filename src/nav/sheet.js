@@ -27,6 +27,13 @@ export function closeMoreSheet() {
   back.classList.remove('open');
 }
 
+export function toggleMoreSheet() {
+  const sheet = document.getElementById('moreSheet');
+  if (!sheet) return;
+  if (sheet.classList.contains('open')) closeMoreSheet();
+  else openMoreSheet();
+}
+
 export function updateHeaderCrumb(sectionId) {
   const el = document.getElementById('headerCrumb');
   if (!el) return;
