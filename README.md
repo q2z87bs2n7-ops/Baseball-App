@@ -42,10 +42,10 @@ Auto-pairs the focused game's flagship radio station (10 verified teams: LAA, CL
 Full-day replay from a recorded MLB slate — no API calls, works offline. In-app recorder captures live state passively, speed controls (1× / 10× / 30×), and a ⏹ Exit Demo button. Classic Radio in demo mode plays vintage broadcasts from the Internet Archive.
 
 ### 🔔 PWA + Push Notifications
-Installable as a native app on iOS and Android. Game-start alerts via Web Push, with subscriptions stored in Upstash Redis. A GitHub Actions cron pings the `/api/notify` Vercel function every 5 minutes, which checks the MLB schedule and fires VAPID-signed push messages to subscribers, deduplicating per-game with a 24h TTL key.
+Installable as a native app on iOS and Android. Game-start alerts via Web Push backed by Upstash Redis. GitHub Actions cron checks the MLB schedule every 5 minutes and fires push notifications to subscribers.
 
 ### 🎨 30-team theming
-Switching teams swaps nine CSS variables computed from the team's primary colour (page background, card surfaces, borders, accents, header text contrast). Pulse uses its own independent palette — dark navy by default, switchable to a light mode via the ☀️/🌙 toggle in the Pulse top bar — so the league-wide feed stays visually consistent regardless of which team is selected. Theme overrides and a colour-invert toggle live in Settings. Every team has verified ESPN IDs (for news) and YouTube channel IDs (for media).
+Switching teams dynamically re-colors the entire UI (page background, cards, borders, accents). Pulse has its own dark navy palette, toggleable to light mode via ☀️/🌙 button. Theme overrides and color invert available in Settings.
 
 ---
 
