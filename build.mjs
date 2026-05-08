@@ -2,7 +2,7 @@ import * as esbuild from 'esbuild';
 
 const watch = process.argv.includes('--watch');
 
-const config = {
+const jsConfig = {
   entryPoints: ['src/main.js'],
   bundle: true,
   format: 'iife',
@@ -12,11 +12,21 @@ const config = {
   logLevel: 'info',
 };
 
+const cssConfig = {
+  entryPoints: ['styles.css'],
+  bundle: false,
+  minify: true,
+  outfile: 'dist/styles.min.css',
+  loader: { '.css': 'css' },
+  logLevel: 'info',
+};
+
 if (watch) {
-  const ctx = await esbuild.context(config);
-  await ctx.watch();
-  console.log('esbuild: watching src/ for changes...');
+  const jsCtx = await esbuild.context(jsConfig);
+  const cssCtx = await esbuild.context(cssConfig);
+  await Promise.all([jsCtx.watch(), cssCtx.watch()]);
+  console.log('esbuild: watching src/ and styles.css for changes...');
 } else {
-  await esbuild.build(config);
-  console.log('esbuild: built dist/app.bundle.js');
+  await Promise.all([esbuild.build(jsConfig), esbuild.build(cssConfig)]);
+  console.log('esbuild: built dist/app.bundle.js + dist/styles.min.css');
 }
