@@ -57,7 +57,7 @@ export function setDemoCallbacks(callbacks) {
 
 async function loadDailyEventsJSON(){
   try{
-    var r=await fetch('./daily-events.json');
+    var r=await fetch('./assets/daily-events.json');
     if(!r.ok) return null;
     var data=await r.json();
     // feedItems[].ts may be number (recorder v2) or string (legacy) or

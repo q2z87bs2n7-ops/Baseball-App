@@ -1,5 +1,5 @@
-const CACHE = 'mlb-v400'; // bump this version on every deploy to force cache refresh
-const SHELL = ['./', './manifest.json', './dist/styles.min.css', './dist/app.bundle.js', './pulse-card-templates.js', './focusCard.js', './collectionCard.js', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'mlb-v401'; // bump this version on every deploy to force cache refresh
+const SHELL = ['./', './manifest.json', './dist/styles.min.css', './dist/app.bundle.js', './assets/vendor/pulse-card-templates.js', './assets/vendor/focusCard.js', './assets/vendor/collectionCard.js', './icons/icon-192.png', './icons/icon-512.png'];
 const ICON  = new URL('./icons/icon-192.png', self.location).href;
 const START = new URL('./', self.location).href;
 
