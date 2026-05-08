@@ -1,5 +1,5 @@
-const CACHE = 'mlb-v485'; // bump this version on every deploy to force cache refresh
-const SHELL = ['./', './manifest.json', './styles.css', './app.js', './pulse-card-templates.js', './focusCard.js', './collectionCard.js', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'mlb-v400'; // bump this version on every deploy to force cache refresh
+const SHELL = ['./', './manifest.json', './dist/styles.min.css', './dist/app.bundle.js', './pulse-card-templates.js', './focusCard.js', './collectionCard.js', './icons/icon-192.png', './icons/icon-512.png'];
 const ICON  = new URL('./icons/icon-192.png', self.location).href;
 const START = new URL('./', self.location).href;
 
@@ -20,7 +20,12 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
-  e.respondWith(caches.match(e.request).then(function(r) { return r || fetch(e.request); }));
+  e.respondWith(caches.match(e.request).then(function(r) {
+    return r || fetch(e.request).then(function(resp) {
+      if (!resp || !resp.ok) return resp;
+      return resp;
+    });
+  }));
 });
 
 self.addEventListener('push', function(e) {

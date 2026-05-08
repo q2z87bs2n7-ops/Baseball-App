@@ -41,6 +41,7 @@ export default async function handler(req, res) {
 
     let itemCount = 0;
     let firstTitle = '';
+    let firstItemSample = '';
     let kind = 'unknown';
     if (/json/i.test(contentType) || body.trim().startsWith('{')) {
       kind = 'json';
@@ -48,10 +49,16 @@ export default async function handler(req, res) {
         const j = JSON.parse(body);
         if (j && j.data && Array.isArray(j.data.children)) {
           itemCount = j.data.children.length;
-          if (itemCount > 0 && j.data.children[0].data) firstTitle = j.data.children[0].data.title || '';
+          if (itemCount > 0 && j.data.children[0].data) {
+            firstTitle = j.data.children[0].data.title || '';
+            firstItemSample = JSON.stringify(j.data.children[0].data, null, 2).slice(0, 1500);
+          }
         } else if (Array.isArray(j.articles)) {
           itemCount = j.articles.length;
-          if (itemCount > 0) firstTitle = j.articles[0].headline || j.articles[0].title || '';
+          if (itemCount > 0) {
+            firstTitle = j.articles[0].headline || j.articles[0].title || '';
+            firstItemSample = JSON.stringify(j.articles[0], null, 2).slice(0, 1500);
+          }
         }
       } catch (e) {}
     } else {
@@ -64,6 +71,10 @@ export default async function handler(req, res) {
       if (titleMatch) {
         firstTitle = titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim();
       }
+      // Capture the first complete <item> or <entry> block so we can see which image tags the feed uses.
+      const itemBlock = /<item\b[^>]*>([\s\S]*?)<\/item>/i.exec(body)
+        || /<entry\b[^>]*>([\s\S]*?)<\/entry>/i.exec(body);
+      if (itemBlock) firstItemSample = itemBlock[0].slice(0, 1500);
     }
 
     res.status(200).json({
@@ -77,7 +88,8 @@ export default async function handler(req, res) {
       elapsedMs: elapsed,
       itemCount,
       firstTitle,
-      sample
+      sample,
+      firstItemSample
     });
   } catch (err) {
     res.status(200).json({

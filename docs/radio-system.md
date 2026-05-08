@@ -1,0 +1,191 @@
+# MLB Tracker — Live Game Radio System
+
+Background terrestrial sports-radio audio added v3.9.b–f. Auto-pairs to the currently-focused live game. Plays the home team's flagship station (away team as fallback) when approved; falls through to Fox Sports Radio otherwise. No MLB.tv content — these are public OTA sports-radio simulcasts.
+
+## ⚙️ Approved teams — source of truth (READ FIRST)
+
+Controlled by one place in `src/radio/stations.js`:
+
+```javascript
+// src/radio/stations.js
+export const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,137,140,142,144,146,147]);
+```
+
+To enable a team: add its `teamId` to this Set, bump comment date, bump app version + `sw.js` CACHE, commit. To disable: remove `teamId`. The `MLB_TEAM_RADIO` URL map stays untouched.
+
+### ✅ Currently enabled (10 teams — last sweep 2026-05-06)
+
+| `teamId` | Team | Flagship station | Format |
+|---|---|---|---|
+| 108 | Los Angeles Angels | KLAA Angels Radio | direct |
+| 114 | Cleveland Guardians | WTAM 1100 AM | hls |
+| 116 | Detroit Tigers | WXYT 97.1 The Ticket | hls |
+| 117 | Houston Astros | SportsTalk 790 AM | direct |
+| 137 | San Francisco Giants | KNBR 104.5 / 680 | direct |
+| 140 | Texas Rangers | 105.3 The Fan KRLD | hls |
+| 142 | Minnesota Twins | WCCO News Talk 830 | hls |
+| 144 | Atlanta Braves | 680 The Fan / 93.7 FM | direct |
+| 146 | Miami Marlins | WQAM 560 AM | hls |
+| 147 | New York Yankees | WFAN 66 / 101.9 | hls |
+
+### ❌ Currently disabled (21 teams)
+
+URL is in `MLB_TEAM_RADIO` (Radio Check can still test it), but excluded from `APPROVED_RADIO_TEAM_IDS`.
+
+| `teamId` | Team | Flagship station | Status |
+|---|---|---|---|
+| 109 | Arizona Diamondbacks | KTAR 620 AM | ⏳ URL updated v3.34.1 — untested |
+| 110 | Baltimore Orioles | WBAL 1090 AM | ⏳ Station replaced v3.34.1 — untested |
+| 111 | Boston Red Sox | WEEI 850 AM | ❌ Broken (Audacy rights) |
+| 112 | Chicago Cubs | WSCR 670 The Score | ⏳ Untested |
+| 113 | Cincinnati Reds | 700 WLW | ⏳ URL updated v3.34.1 — untested |
+| 115 | Colorado Rockies | KOA 850 / 94.1 | ⏳ URL updated v3.34.1 — untested |
+| 118 | Kansas City Royals | 96.5 The Fan KFNZ | ⏳ Station rebrand v3.34.1 — untested |
+| 119 | Los Angeles Dodgers | KLAC AM 570 LA Sports | ⏳ URL updated v3.34.1 — untested |
+| 120 | Washington Nationals | WJFK The Fan 106.7 | ❌ Broken (Audacy rights) |
+| 121 | New York Mets | WCBS 880 AM | ⏳ Station replaced v3.34.1 — untested |
+| 133 | Oakland Athletics | KSTE 650 AM Sacramento | ⏳ Station replaced v3.34.1 — untested |
+| 134 | Pittsburgh Pirates | KDKA-FM 93.7 The Fan | ❌ Broken (Audacy rights) |
+| 135 | San Diego Padres | KWFN 97.3 The Fan | ❌ Broken (Audacy rights) |
+| 136 | Seattle Mariners | Seattle Sports 710 AM | ❌ Broken (Bonneville rebrand of KIRO) |
+| 137 | San Francisco Giants | KNBR 104.5 / 680 | ✅ Confirmed 2026-05-06 — moved to enabled |
+| 138 | St. Louis Cardinals | KMOX NewsRadio 1120 | ❌ Broken (Audacy rights) |
+| 139 | Tampa Bay Rays | WDAE 95.3 FM / 620 AM | ⏳ Station replaced v3.34.1 — untested |
+| 141 | Toronto Blue Jays | CJCL Sportsnet 590 | ❌ Broken (likely Canada geo-locked) |
+| 143 | Philadelphia Phillies | 94 WIP Sportsradio | ❌ Broken (Audacy rights) |
+| 145 | Chicago White Sox | WMVP ESPN 1000 AM | ⏳ URL updated v3.34.1 — untested |
+| 158 | Milwaukee Brewers | WTMJ Newsradio 620 | ⏳ URL updated v3.34.1 — untested |
+
+### 🌧️ Audacy rights gap
+
+Many MLB market flagships are Audacy-owned (URLs `live.amperwave.net/manifest/audacy-*`). Audacy holds OTA simulcast rights but NOT MLB streaming rights. During live games their digital streams play alternate content (talk shows, ads, silence). There is no URL-side fix — replacement URLs must come from non-Audacy sources (iHeartRadio `stream.revma.ihrhls.com/...`, StreamTheWorld `playerservices.streamtheworld.com/.../*.aac`, Bonneville `bonneville.cdnstream1.com/...`).
+
+## Architecture
+
+```
+[ Settings panel ]
+   └─ 📻 Live Game Radio toggle (id="radioToggle")
+         └─ toggleRadio() → startRadio()/stopRadio()
+               └─ pickRadioForFocus()  ← APPROVED_RADIO_TEAM_IDS gate
+                     └─ MLB_TEAM_RADIO[homeId] || MLB_TEAM_RADIO[awayId] || FALLBACK_RADIO
+               └─ loadRadioStream(pick)
+                     ├─ Hls.js (window.Hls)         if format==='hls' && Hls.isSupported()
+                     ├─ Safari native HLS           if format==='hls' && audio.canPlayType('application/vnd.apple.mpegurl')
+                     └─ <audio> direct AAC/MP3      otherwise
+
+[ Dev Tools panel ]                                  (moved from Settings in v3.43)
+   └─ 🔍 Radio Check button → openRadioCheck()
+         └─ #radioCheckOverlay (z-index 550)
+
+[ Focus Mode ]
+   └─ setFocusGame(pk) → updateRadioForFocus()
+         └─ if currently playing AND new pick.teamId !== radioCurrentTeamId → loadRadioStream(pick)
+```
+
+Focus selection is unchanged. The radio follows focus; it never influences which game gets focused.
+
+## Globals
+
+```javascript
+const MLB_TEAM_RADIO = { 108:{name,url,format}, ..., 158:{name,url,format} };  // 30 entries
+const APPROVED_RADIO_TEAM_IDS = new Set([108,114,116,117,140,142,144,146,147]);
+const FALLBACK_RADIO = { name:'Fox Sports Radio', url:'https://ais-sa1.streamon.fm/7852_128k.aac', format:'direct' };
+var radioAudio = null;        // <audio> element, lazily created on first play
+var radioHls   = null;        // Hls.js instance (null when direct stream / stopped)
+var radioCurrentTeamId = null; // teamId whose feed is loaded; null = fallback
+```
+
+## Hls.js dependency
+
+```html
+<!-- index.html:15 -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.light.min.js" async></script>
+```
+
+Light build (~50KB). Not stored in repo, not in `sw.js` SHELL cache. If CDN goes down, all `format:'hls'` streams break in non-Safari browsers; Safari users keep working via native HLS.
+
+## Stream format routing in `loadRadioStream(pick)`
+
+| Condition | Path |
+|---|---|
+| `pick.format === 'hls'` AND `window.Hls && Hls.isSupported()` | Hls.js via `loadSource` + `attachMedia` |
+| `pick.format === 'hls'` AND `radioAudio.canPlayType('application/vnd.apple.mpegurl')` truthy | Safari native — `audio.src = pick.url` |
+| else (`format === 'direct'`, AAC/MP3) | Plain `<audio>` — `audio.src = pick.url` |
+
+`radioHls` is destroyed before any source swap to prevent fd leaks on rapid focus changes.
+
+## 🔍 Radio Check tool
+
+Self-test panel for sweeping every station in `MLB_TEAM_RADIO` + Fox Sports fallback. Open via: Dev Tools → 🔍 Radio Check button → `openRadioCheck()` (moved from Settings panel in v3.43). Modal `#radioCheckOverlay` (z-index 550, top-level DOM).
+
+**Per-station row:**
+- ▶ Play — `radioCheckPlay(key)` → `loadRadioStream(...)` directly. **Bypasses** `APPROVED_RADIO_TEAM_IDS` gate (testing path).
+- ✅ Works — tap to mark; tap again to clear (no accidental lock-in)
+- ❌ Broken — tap to mark; tap again to clear
+- Notes textarea — saves on every keystroke via `radioCheckSetNote(key, val)` (no re-render)
+
+**Persistence:**
+
+| Key | Shape | Purpose |
+|---|---|---|
+| `localStorage.mlb_radio_check` | `{ teamId\|'fallback': 'yes'\|'no' }` | Status (absent = untested) |
+| `localStorage.mlb_radio_check_notes` | `{ teamId\|'fallback': 'string' }` | Per-station free-text notes |
+
+**📋 Copy Results** — `radioCheckCopy()` builds categorised markdown (✅ Works / ❌ Broken / ⏳ Untested with notes) and writes to clipboard.
+
+**Default notes seed (v3.34.1):** `RADIO_CHECK_DEFAULT_NOTES` constant maps `teamId` → string. `loadRadioCheckResults()` performs a one-time merge gated by `localStorage.mlb_radio_check_notes_seeded_v2`. Bump seed flag (`_v2` → `_v3`) when you want a re-seed pass.
+
+## Workflow — updating the approved pool
+
+1. Open Dev Tools → 🔍 Radio Check
+2. ▶ test each station, mark ✅/❌, add notes
+3. 📋 Copy Results → paste into Claude session
+4. **Edit `APPROVED_RADIO_TEAM_IDS` only** (`src/radio/stations.js`) — add ✅ `teamId`s, remove ❌ ones
+5. Update the comment "last updated YYYY-MM-DD"
+6. Bump `<title>` + settings panel version + `sw.js` CACHE
+7. Commit + push
+
+`MLB_TEAM_RADIO` URL map only needs editing when a station's stream URL itself changes.
+
+## 🎙️ Classic Radio (`src/radio/classic.js`) — demo mode only
+
+Added v3.47. Streams full-length classic MLB broadcasts from archive.org as background atmosphere when the user toggles radio while demo mode is active. No timestamp sync — just vintage commentary + crowd noise as ambient texture.
+
+**Activation:**
+- `toggleRadio()` (`src/radio/engine.js`) checks `state.demoMode`. In demo, delegates to `devTestClassicRadio()` instead of starting a live stream. So the same 📻 button (focus card + Settings) the user already knows starts classic radio in demo.
+- Dev Tools → 🎙️ Classic Radio (POC) is a parallel entry point sharing the same `_active` state.
+
+**Behaviour:**
+
+| | |
+|---|---|
+| Pool | Hardcoded `POC_POOL` of 4 archive.org MP3 URLs (1957 Vin Scully, 1968 Mantle final, 1969 WS Game 5, 1970 Seaver 19K) |
+| URL pick | `pickRandomUrl()` — uniform random from the pool on each play / re-roll |
+| Offset | `pickOffset(dur)` returns random in [30 × 60, 90 × 60] of the file (skips pre-game / post-game). Caps `max` to `dur - 60s` if a file is shorter than 91 min. |
+| Volume | 0.4 default; `setClassicVolume(v)` exposed |
+| Focus-switch re-roll | `rollClassicOnSwitch()` called from `setFocusGame` on every focus change. No-op when `_active=false`; otherwise `stopRadio()` defensively + new pool pick + new offset. |
+| Live-radio interlock | While `isClassicActive()`, `setFocusGame` skips `updateRadioForFocus()` so live streams can't load on focus changes |
+| UI | `playClassicRandom` / `_playUrl` call exported `setRadioUI(true, {abbr:'CLASSIC', name: <broadcast title>})` so the existing green "Playing" dot + status text reflect classic state — identical to live |
+| Exit | `exitDemo` calls `stopClassic` — pauses, clears `<audio>` src, flips UI off |
+
+**Coexistence with live radio:**
+- `playClassicRandom` calls `stopRadio()` before starting so any live audio is silenced first.
+- `setFocusGame`'s `if (!isClassicActive()) updateRadioForFocus()` gate prevents `radioAudio` from re-loading team flagships on focus change while classic is active. Without this gate the user reported "live mapping ruleset firing on focus switches" during testing (fixed pre-v3.47).
+
+**Diagnostics:**
+- `console.log('[classic radio] play:', <title>)` on initial play
+- `console.log('[classic radio] roll on focus switch:', <title>)` on each switch
+- `MediaError` / `AbortError` warnings on desktop during rapid switches are expected race-warnings between `audio.pause()` and a pending `play()` promise — don't block playback. Less verbose on iOS (Safari historically returns `undefined` from `play()`).
+
+**CORS:** plain `<audio>` streaming from archive.org works in no-cors media mode. We don't set `crossOrigin` (would only matter for Web Audio API sample access).
+
+**Hosting:** archive.org direct-MP3 URLs only — we never copy or re-host. Repo cost zero, our bandwidth zero. If archive.org changes a path or removes a file, that one entry silently fails until a subsequent roll picks a different URL.
+
+## Known issues / backlog
+
+- **Audacy rights gap** — ~14 stations; needs URL replacements from iHeart / StreamTheWorld / Bonneville
+- **Oakland flagship** — KSTE Sacramento may not be the current flagship after A's move; needs research
+- **Toronto** — CJCL Sportsnet 590 may be Canada-geo-locked
+- **Per-team override UI** — user can't choose away team when both teams approved (always picks home)
+- **Live radio in demo** (resolved v3.47) — `toggleRadio()` now delegates to Classic Radio in demo. Live `pickRadioForFocus()` is bypassed.
+- **Classic Radio pool size** — hardcoded 4-URL array in `src/radio/classic.js POC_POOL`. Easy to expand (just add URLs). Future: optional `teamId → URL[]` map so the pool can prefer broadcasts featuring the focused team.
