@@ -103,6 +103,69 @@ nav button:hover {
   color: var(--header-text)
 }
 
+nav button[data-section="more"] {
+  display: none
+}
+
+.header-crumb {
+  display: none
+}
+
+.more-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  transform: translateY(120%);
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+  z-index: 90;
+  box-shadow: 0 -8px 32px rgba(0,0,0,.4);
+  pointer-events: none
+}
+.more-sheet.open {
+  transform: translateY(0);
+  pointer-events: auto
+}
+.more-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px
+}
+.more-sheet-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer
+}
+.more-sheet-item .icon {
+  font-size: 1.4rem
+}
+.more-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms cubic-bezier(0.32, 0.72, 0, 1);
+  z-index: 89
+}
+.more-sheet-backdrop.open {
+  opacity: 1;
+  pointer-events: auto
+}
+
 nav button.active {
   background: color-mix(in srgb,var(--accent) 14%,transparent);
   color: var(--accent);
@@ -2154,15 +2217,33 @@ select {
 }
 
 @media(max-width:480px) {
+  :root {
+    --header-h: 42px
+  }
   html, body {
     overflow-x: hidden
   }
   header {
-    position: static;
+    position: sticky;
+    top: 0;
+    height: 42px;
+    padding: env(safe-area-inset-top) 12px 0;
     justify-content: space-between
   }
   .team-chip {
     display: none
+  }
+  .header-crumb {
+    display: inline-block;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255,255,255,.18);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    color: rgba(255,255,255,.55);
+    text-transform: uppercase;
+    white-space: nowrap
   }
   nav {
     position: fixed;
@@ -2182,17 +2263,17 @@ select {
   nav button {
     flex: 1;
     min-width: 0;
-    padding: 8px 2px;
-    min-height: 56px;
+    padding: 8px 2px 6px;
+    min-height: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     background: transparent !important;
     border-radius: 0 !important;
     color: color-mix(in srgb,var(--header-text) 65%,transparent);
-    font-size: 1.15rem
+    font-size: 1.4rem
   }
   nav button.active {
     background: transparent !important;
@@ -2201,10 +2282,18 @@ select {
   }
   nav button .nav-label {
     display: inline !important;
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: .01em;
     white-space: nowrap
+  }
+  nav button[data-section="news"],
+  nav button[data-section="standings"],
+  nav button[data-section="stats"] {
+    display: none
+  }
+  nav button[data-section="more"] {
+    display: flex
   }
   .main {
     padding-bottom: calc(72px + env(safe-area-inset-bottom))

@@ -142,6 +142,7 @@ import {
   setCarouselCallbacks, loadOnThisDayCache, loadYesterdayCache, loadTransactionsCache, loadHighLowCache,
 } from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
+import { openMoreSheet, closeMoreSheet, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
@@ -447,7 +448,17 @@ function showSection(id,btn){
   if(id!=='home')clearHomeTimer();
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
-  document.getElementById(id).classList.add('active');btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  // When called from the More sheet (no btn), light up the corresponding nav button
+  // (which is hidden on mobile but still the canonical "active" tab) and the More
+  // button so the user has a visible mobile-bar anchor.
+  if(!btn){
+    btn=document.querySelector('nav button[data-section="'+id+'"]');
+    var moreBtn=document.querySelector('nav button[data-section="more"]');
+    if(moreBtn&&(id==='news'||id==='standings'||id==='stats'))moreBtn.classList.add('active');
+  }
+  if(btn)btn.classList.add('active');
+  updateHeaderCrumb(id);
   if(id==='pulse'){
     state.savedThemeForPulse=state.themeOverride;
     applyPulseMLBTheme();
@@ -645,6 +656,8 @@ document.addEventListener('visibilitychange',function(){
   }
 });
 
+installMoreSheetEscClose();
+
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&state.focusOverlayOpen) { closeFocusOverlay(); return; }
   // Mnemonics: M=deMo, H=Home run, B=rBi, V=Variants, D=Dev tools, F=Focus,
@@ -695,6 +708,7 @@ if('serviceWorker' in navigator){
 Object.assign(window, {
   // Navigation + section dispatch
   showSection,
+  openMoreSheet, closeMoreSheet,
   // Settings + theme + team
   switchTeam, switchTheme, switchThemeScope, toggleSettings, toggleInvert,
   togglePush, toggleRadio, toggleDevTools, toggleMyTeamLens, toggleSoundPanel,
