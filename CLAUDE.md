@@ -42,7 +42,7 @@ An MLB sports tracker, defaulting to the New York Mets. All data is pulled live 
 4. **Break changes into small steps** — confirm each works before proceeding
 5. **Git branching** — all changes go to a `claude/` branch first; only merge to `main` when explicitly asked
 6. **Debug code** — wrap temporary logging in `// DEBUG START` / `// DEBUG END` for easy removal
-7. **Version every change** — bump `<title>` tag + settings panel version string on every commit. Use `v2.x.y` format — increment `y` per branch commit; drop patch on merge to main. **Also bump `CACHE` in `sw.js`** on every commit that changes app content.
+7. **Version every change** — bump `<title>` tag + settings panel version string on every commit. Use `vX.Y.Z` format. On a `claude/` branch, increment the patch `Z` per commit (e.g. `v3.49.3` → `v3.49.4`). On merge to main, bump the minor `Y` and drop the patch in a separate commit (e.g. branch ships `v3.49.4` → main becomes `v3.50`); the next branch then starts adding patches against `v3.50`. **Also bump `CACHE` in `sw.js`** on every commit that changes app content (CSS / JS / HTML body); version-string-only release commits do not need a CACHE bump.
 8. **No rewrites** — never rewrite large sections. Targeted edits only.
 
 ---
