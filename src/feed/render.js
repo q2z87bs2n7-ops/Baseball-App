@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { MLB_BASE, MLB_THEME } from '../config/constants.js';
 import { ordinal } from '../carousel/generators.js';
 import { devTrace } from '../diag/devLog.js';
+import { etDateStr, etDatePlus, etHour } from '../utils/format.js';
 
 const DEBUG = false;
 
@@ -70,11 +71,7 @@ async function fetchTomorrowPreview() {
   if (Date.now()-state.tomorrowPreview.fetchedAt < 10*60*1000) return;
   state.tomorrowPreview.inFlight=true;
   try {
-    var seed=state.pollDateStr?state.pollDateStr.split('-').map(Number):null;
-    var nextDate=seed?new Date(seed[0],seed[1]-1,seed[2]):new Date();
-    nextDate.setDate(nextDate.getDate()+1);
-    var localDateStr=feedCallbacks.localDateStr;
-    var ts=localDateStr?localDateStr(nextDate):nextDate.toISOString().split('T')[0];
+    var ts=etDatePlus(state.pollDateStr||etDateStr(),1);
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+ts+'&hydrate=team');
     if(!r.ok) throw new Error(r.status);
     var d=await r.json();
@@ -97,7 +94,9 @@ async function fetchTomorrowPreview() {
 }
 
 function pulseGreeting() {
-  var h=new Date().getHours();
+  // ET-anchored so the greeting reflects MLB context, not the user's local clock —
+  // a Sydney user at 11pm = 9am ET should see "Good morning" (slate hasn't started).
+  var h=etHour();
   if (h<6)  return {kicker:'Late innings', headline:'West coast still in play.',     tagline:'West coast still on the wire.'};
   if (h<11) return {kicker:'Good morning', headline:"Here's what you missed.",      tagline:"Last night's wrap, today's slate."};
   if (h<14) return {kicker:'Midday slate', headline:'First pitches roll in soon.',  tagline:'Lineups going up. First pitch soon.'};

@@ -5,6 +5,7 @@ import {
 } from '../config/constants.js';
 import {
   tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
+  etDateStr, etDatePlus,
 } from '../utils/format.js';
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from '../utils/news.js';
 
@@ -43,7 +44,7 @@ const LEAGUE_PIT_STATS=[{label:'SO',cats:'strikeouts',decimals:0},{label:'WHIP',
 // ── HOME SECTION ────────────────────────────────────────────────────────────
 export async function loadTodayGame(){
   if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
-  var now=new Date(),today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var today=etDateStr();
   document.getElementById('todayGame').innerHTML='<div class="loading">Loading next game...</div>';
   try{
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+today+'&teamId='+state.activeTeam.id+'&hydrate=linescore,team,seriesStatus,gameInfo');
@@ -51,11 +52,10 @@ export async function loadTodayGame(){
     var liveGame=todayGames.find(function(g){return g.status.abstractGameState==='Live'&&g.status.detailedState!=='Warmup'&&g.status.detailedState!=='Pre-Game';});
     var upcomingToday=todayGames.find(function(g){return g.status.abstractGameState==='Preview'||g.status.abstractGameState==='Scheduled'||(g.status.abstractGameState==='Live'&&(g.status.detailedState==='Warmup'||g.status.detailedState==='Pre-Game'));});
     var gameToRender=liveGame||upcomingToday;
-    if(gameToRender&&!state.scheduleData.length){try{var gd=new Date(gameToRender.gameDate),s7=new Date(gd);s7.setDate(gd.getDate()-7);var e7=new Date(gd);e7.setDate(gd.getDate()+7);var fmtD=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};var sr=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+fmtD(s7)+'&endDate='+fmtD(e7)+'&teamId='+state.activeTeam.id+'&hydrate=team,linescore');var srd=await sr.json();(srd.dates||[]).forEach(function(dt){dt.games.forEach(function(g){state.scheduleData.push(g);});});}catch(e){}}
+    if(gameToRender&&!state.scheduleData.length){try{var gdEt=etDateStr(new Date(gameToRender.gameDate));var sr=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+etDatePlus(gdEt,-7)+'&endDate='+etDatePlus(gdEt,7)+'&teamId='+state.activeTeam.id+'&hydrate=team,linescore');var srd=await sr.json();(srd.dates||[]).forEach(function(dt){dt.games.forEach(function(g){state.scheduleData.push(g);});});}catch(e){}}
     if(liveGame){document.getElementById('todayGame').innerHTML=sectionCallbacks.renderNextGame(liveGame,'TODAY');homeLiveTimer=setInterval(loadTodayGame,TIMING.HOME_LIVE_MS);return;}
     if(upcomingToday){document.getElementById('todayGame').innerHTML=sectionCallbacks.renderNextGame(upcomingToday,'TODAY');return;}
-    var end=new Date();end.setDate(end.getDate()+14);
-    var endStr=end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
+    var endStr=etDatePlus(today,14);
     var r2=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+today+'&endDate='+endStr+'&teamId='+state.activeTeam.id+'&hydrate=linescore,team,seriesStatus,gameInfo');
     var d2=await r2.json(),nextGame=null;
     for(var i=0;i<(d2.dates||[]).length;i++){var u=(d2.dates[i].games||[]).find(function(g){return g.status.abstractGameState==='Preview'||g.status.abstractGameState==='Scheduled';});if(u){nextGame=u;break;}}
@@ -68,9 +68,8 @@ export async function loadTodayGame(){
 export async function loadNextGame(){
   document.getElementById('nextGame').innerHTML='<div class="loading">Loading next series...</div>';
   try{
-    var now=new Date(),today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-    var end=new Date();end.setDate(end.getDate()+28);
-    var endStr=end.getFullYear()+'-'+String(end.getMonth()+1).padStart(2,'0')+'-'+String(end.getDate()).padStart(2,'0');
+    var today=etDateStr();
+    var endStr=etDatePlus(today,28);
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&startDate='+today+'&endDate='+endStr+'&teamId='+state.activeTeam.id+'&hydrate=team,linescore,venue,probablePitcher');
     var d=await r.json(),allGames=[];
     (d.dates||[]).forEach(function(dt){dt.games.forEach(function(g){allGames.push(g);});});
@@ -224,8 +223,10 @@ export async function selectCalGame(gamePk,evt){
   var cellRect=evt?evt.currentTarget.getBoundingClientRect():null;
   selectedGamePk=gamePk;renderCalendar();
   var g=state.scheduleData.find(function(x){return x.gamePk===gamePk;});if(!g)return;
-  var ds=sectionCallbacks.localDateStr(new Date(g.gameDate));
-  var dayGames=state.scheduleData.filter(function(x){return sectionCallbacks.localDateStr(new Date(x.gameDate))===ds;}).sort(function(a,b){return a.gamePk-b.gamePk;});
+  // Local-time bucket — must match renderCalendar's inline keying so doubleheader detection lines up on the same calendar cell.
+  var localFmt=function(_d){return _d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')+'-'+String(_d.getDate()).padStart(2,'0');};
+  var ds=localFmt(new Date(g.gameDate));
+  var dayGames=state.scheduleData.filter(function(x){return localFmt(new Date(x.gameDate))===ds;}).sort(function(a,b){return a.gamePk-b.gamePk;});
   var isDH=dayGames.length>1;
   if(cellRect&&window.innerWidth<=480){
     var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===state.activeTeam.id;
@@ -606,8 +607,7 @@ export async function loadLeagueMatchups(){
   var el=document.getElementById('leagueMatchups');
   var dayLabels=["Yesterday's","Today's","Tomorrow's"],dayLabel=dayLabels[leagueMatchupOffset+1];
   el.style.transition='opacity 0.18s ease';el.style.opacity='0.3';
-  var now=new Date();now.setDate(now.getDate()+leagueMatchupOffset);
-  var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var dateStr=etDatePlus(etDateStr(),leagueMatchupOffset);
   try{
     var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team');var d=await r.json(),games=[];
     (d.dates||[]).forEach(function(dt){games=games.concat(dt.games||[]);});

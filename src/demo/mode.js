@@ -8,6 +8,7 @@ import { devTrace } from '../diag/devLog.js';
 import { MLB_BASE } from '../config/constants.js';
 import { calcRBICardScore } from '../cards/playerCard.js';
 import { stopClassic } from '../radio/classic.js';
+import { etDateStr, etDatePlus } from '../utils/format.js';
 
 // Encapsulated demo-only state
 let demoPaused = false;
@@ -305,9 +306,9 @@ async function initDemo() {
 
 async function loadDemoGames() {
   try{
+    var todayEt=etDateStr();
     for(var dayOffset=1;dayOffset<=7;dayOffset++){
-      var d=new Date();d.setDate(d.getDate()-dayOffset);
-      var dateStr=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
+      var dateStr=etDatePlus(todayEt,-dayOffset);
       var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1');
       if(!r.ok) continue;
       var data=await r.json();

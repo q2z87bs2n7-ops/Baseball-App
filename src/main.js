@@ -12,6 +12,7 @@ import {
 } from './config/constants.js';
 import {
   tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
+  etDateStr, etHour, etDatePlus,
 } from './utils/format.js';
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from './utils/news.js';
 import { requestScreenWakeLock, releaseScreenWakeLock } from './ui/wakelock.js';
@@ -260,8 +261,8 @@ function initReal() {
   });
   var mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
-  // Midnight window: at 0–5am local, seed state.pollDateStr to yesterday so West Coast games are found
-  if(!state.demoMode&&(new Date().getHours())<6){var _d=new Date();_d.setDate(_d.getDate()-1);state.pollDateStr=localDateStr(_d);}
+  // Midnight window: at 0–5am ET, seed state.pollDateStr to yesterday so West Coast games are found
+  if(!state.demoMode&&etHour()<6){state.pollDateStr=etDatePlus(etDateStr(),-1);}
   else{state.pollDateStr=localDateStr(getEffectiveDate());}
   loadRoster();
   loadOnThisDayCache(); loadYesterdayCache();
@@ -393,7 +394,10 @@ function refreshDebugPanel(){
 
 // DEBUG: Replay an HR card from live feed (call replayHRCard() from console, or press Shift+H)
 
-function localDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// Returns YYYY-MM-DD in America/New_York. Despite the name, this is the MLB
+// schedule day — not the user's local clock — so non-US users align with the
+// MLB API instead of their own calendar (see src/utils/format.js).
+function localDateStr(d){return etDateStr(d);}
 
 function scrollToGame(gamePk){var el=document.querySelector('[data-gamepk="'+gamePk+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}
 

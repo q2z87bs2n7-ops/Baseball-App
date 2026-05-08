@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { SEASON, MLB_BASE } from '../config/constants.js';
-import { fmtRate } from '../utils/format.js';
+import { fmtRate, etDateStr, etDatePlus } from '../utils/format.js';
 
 const DEBUG = false;
 
@@ -450,10 +450,8 @@ function genInningRecapStories(){
 
 async function loadTransactionsCache(){
   try{
-    var today=new Date(),start=new Date(today);
-    start.setDate(start.getDate()-2);
-    var fmt=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
-    var r=await fetch(MLB_BASE+'/transactions?sportId=1&startDate='+fmt(start)+'&endDate='+fmt(today));
+    var today=etDateStr(),start=etDatePlus(today,-2);
+    var r=await fetch(MLB_BASE+'/transactions?sportId=1&startDate='+start+'&endDate='+today);
     if(!r.ok) throw new Error(r.status);
     var d=await r.json();
     var notable=['Injured List','Designated for Assignment','Selected','Called Up','Trade','Activated From'];
@@ -607,9 +605,9 @@ async function loadDailyLeaders(){
 
 async function loadOnThisDayCache(){
   state.onThisDayCache=[];
-  var today=new Date();
-  var mm=String(today.getMonth()+1).padStart(2,'0');
-  var dd=String(today.getDate()).padStart(2,'0');
+  var todayParts=etDateStr().split('-');
+  var mm=todayParts[1];
+  var dd=todayParts[2];
   for(var i=1;i<=3;i++){
     var yr=SEASON-i;
     try{
@@ -773,8 +771,7 @@ async function loadYdForDate(dateStr){
 
 async function loadYesterdayCache(){
   state.yesterdayCache=[];
-  var yd=new Date(); yd.setDate(yd.getDate()-1);
-  var dateStr=yd.getFullYear()+'-'+String(yd.getMonth()+1).padStart(2,'0')+'-'+String(yd.getDate()).padStart(2,'0');
+  var dateStr=etDatePlus(etDateStr(),-1);
   state.yesterdayCache=await loadYdForDate(dateStr);
   state.yesterdayCache.forEach(function(item){item.headline='Yesterday: '+item.headline;});
   if(carouselCallbacks.updateFeedEmpty) carouselCallbacks.updateFeedEmpty();

@@ -186,6 +186,20 @@
     if (isNaN(d.getTime())) return "";
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   }
+  var ET_DATE_FMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+  var ET_HOUR_FMT = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false });
+  function etDateStr(d) {
+    return ET_DATE_FMT.format(d || /* @__PURE__ */ new Date());
+  }
+  function etHour(d) {
+    return parseInt(ET_HOUR_FMT.format(d || /* @__PURE__ */ new Date()), 10) % 24;
+  }
+  function etDatePlus(dateStr, days) {
+    var p = dateStr.split("-").map(Number);
+    var u = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+    u.setUTCDate(u.getUTCDate() + days);
+    return u.getUTCFullYear() + "-" + String(u.getUTCMonth() + 1).padStart(2, "0") + "-" + String(u.getUTCDate()).padStart(2, "0");
+  }
   function pickOppColor(oppPrimary, oppSecondary, myPrimary) {
     function rgbDist(a, b) {
       a = (a || "").replace("#", "");
@@ -1468,12 +1482,8 @@
   }
   async function loadTransactionsCache() {
     try {
-      var today = /* @__PURE__ */ new Date(), start = new Date(today);
-      start.setDate(start.getDate() - 2);
-      var fmt2 = function(d2) {
-        return d2.getFullYear() + "-" + String(d2.getMonth() + 1).padStart(2, "0") + "-" + String(d2.getDate()).padStart(2, "0");
-      };
-      var r = await fetch(MLB_BASE + "/transactions?sportId=1&startDate=" + fmt2(start) + "&endDate=" + fmt2(today));
+      var today = etDateStr(), start = etDatePlus(today, -2);
+      var r = await fetch(MLB_BASE + "/transactions?sportId=1&startDate=" + start + "&endDate=" + today);
       if (!r.ok) throw new Error(r.status);
       var d = await r.json();
       var notable = ["Injured List", "Designated for Assignment", "Selected", "Called Up", "Trade", "Activated From"];
@@ -1652,9 +1662,9 @@
   }
   async function loadOnThisDayCache() {
     state.onThisDayCache = [];
-    var today = /* @__PURE__ */ new Date();
-    var mm = String(today.getMonth() + 1).padStart(2, "0");
-    var dd = String(today.getDate()).padStart(2, "0");
+    var todayParts = etDateStr().split("-");
+    var mm = todayParts[1];
+    var dd = todayParts[2];
     for (var i = 1; i <= 3; i++) {
       var yr = SEASON - i;
       try {
@@ -1892,9 +1902,7 @@
   }
   async function loadYesterdayCache() {
     state.yesterdayCache = [];
-    var yd = /* @__PURE__ */ new Date();
-    yd.setDate(yd.getDate() - 1);
-    var dateStr = yd.getFullYear() + "-" + String(yd.getMonth() + 1).padStart(2, "0") + "-" + String(yd.getDate()).padStart(2, "0");
+    var dateStr = etDatePlus(etDateStr(), -1);
     state.yesterdayCache = await loadYdForDate(dateStr);
     state.yesterdayCache.forEach(function(item) {
       item.headline = "Yesterday: " + item.headline;
@@ -2064,11 +2072,7 @@
     if (Date.now() - state.tomorrowPreview.fetchedAt < 10 * 60 * 1e3) return;
     state.tomorrowPreview.inFlight = true;
     try {
-      var seed = state.pollDateStr ? state.pollDateStr.split("-").map(Number) : null;
-      var nextDate = seed ? new Date(seed[0], seed[1] - 1, seed[2]) : /* @__PURE__ */ new Date();
-      nextDate.setDate(nextDate.getDate() + 1);
-      var localDateStr2 = feedCallbacks.localDateStr;
-      var ts = localDateStr2 ? localDateStr2(nextDate) : nextDate.toISOString().split("T")[0];
+      var ts = etDatePlus(state.pollDateStr || etDateStr(), 1);
       var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + ts + "&hydrate=team");
       if (!r.ok) throw new Error(r.status);
       var d = await r.json();
@@ -2097,7 +2101,7 @@
     }
   }
   function pulseGreeting() {
-    var h = (/* @__PURE__ */ new Date()).getHours();
+    var h = etHour();
     if (h < 6) return { kicker: "Late innings", headline: "West coast still in play.", tagline: "West coast still on the wire." };
     if (h < 11) return { kicker: "Good morning", headline: "Here's what you missed.", tagline: "Last night's wrap, today's slate." };
     if (h < 14) return { kicker: "Midday slate", headline: "First pitches roll in soon.", tagline: "Lineups going up. First pitch soon." };
@@ -3704,9 +3708,7 @@
       }
     }
     try {
-      var yd = /* @__PURE__ */ new Date();
-      yd.setDate(yd.getDate() - 1);
-      var ds = yd.getFullYear() + "-" + String(yd.getMonth() + 1).padStart(2, "0") + "-" + String(yd.getDate()).padStart(2, "0");
+      var ds = etDatePlus(etDateStr(), -1);
       var r = await fetch(MLB_BASE + "/schedule?date=" + ds + "&sportId=1&hydrate=team");
       if (!r.ok) throw new Error(r.status);
       var d = await r.json();
@@ -5792,7 +5794,7 @@
       clearInterval(homeLiveTimer);
       homeLiveTimer = null;
     }
-    var now = /* @__PURE__ */ new Date(), today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    var today = etDateStr();
     document.getElementById("todayGame").innerHTML = '<div class="loading">Loading next game...</div>';
     try {
       var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + today + "&teamId=" + state.activeTeam.id + "&hydrate=linescore,team,seriesStatus,gameInfo");
@@ -5806,14 +5808,8 @@
       var gameToRender = liveGame || upcomingToday;
       if (gameToRender && !state.scheduleData.length) {
         try {
-          var gd = new Date(gameToRender.gameDate), s7 = new Date(gd);
-          s7.setDate(gd.getDate() - 7);
-          var e7 = new Date(gd);
-          e7.setDate(gd.getDate() + 7);
-          var fmtD = function(d3) {
-            return d3.getFullYear() + "-" + String(d3.getMonth() + 1).padStart(2, "0") + "-" + String(d3.getDate()).padStart(2, "0");
-          };
-          var sr = await fetch(MLB_BASE + "/schedule?sportId=1&startDate=" + fmtD(s7) + "&endDate=" + fmtD(e7) + "&teamId=" + state.activeTeam.id + "&hydrate=team,linescore");
+          var gdEt = etDateStr(new Date(gameToRender.gameDate));
+          var sr = await fetch(MLB_BASE + "/schedule?sportId=1&startDate=" + etDatePlus(gdEt, -7) + "&endDate=" + etDatePlus(gdEt, 7) + "&teamId=" + state.activeTeam.id + "&hydrate=team,linescore");
           var srd = await sr.json();
           (srd.dates || []).forEach(function(dt) {
             dt.games.forEach(function(g) {
@@ -5832,9 +5828,7 @@
         document.getElementById("todayGame").innerHTML = sectionCallbacks.renderNextGame(upcomingToday, "TODAY");
         return;
       }
-      var end = /* @__PURE__ */ new Date();
-      end.setDate(end.getDate() + 14);
-      var endStr = end.getFullYear() + "-" + String(end.getMonth() + 1).padStart(2, "0") + "-" + String(end.getDate()).padStart(2, "0");
+      var endStr = etDatePlus(today, 14);
       var r2 = await fetch(MLB_BASE + "/schedule?sportId=1&startDate=" + today + "&endDate=" + endStr + "&teamId=" + state.activeTeam.id + "&hydrate=linescore,team,seriesStatus,gameInfo");
       var d2 = await r2.json(), nextGame = null;
       for (var i = 0; i < (d2.dates || []).length; i++) {
@@ -5859,10 +5853,8 @@
   async function loadNextGame() {
     document.getElementById("nextGame").innerHTML = '<div class="loading">Loading next series...</div>';
     try {
-      var now = /* @__PURE__ */ new Date(), today = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-      var end = /* @__PURE__ */ new Date();
-      end.setDate(end.getDate() + 28);
-      var endStr = end.getFullYear() + "-" + String(end.getMonth() + 1).padStart(2, "0") + "-" + String(end.getDate()).padStart(2, "0");
+      var today = etDateStr();
+      var endStr = etDatePlus(today, 28);
       var r = await fetch(MLB_BASE + "/schedule?sportId=1&startDate=" + today + "&endDate=" + endStr + "&teamId=" + state.activeTeam.id + "&hydrate=team,linescore,venue,probablePitcher");
       var d = await r.json(), allGames = [];
       (d.dates || []).forEach(function(dt) {
@@ -6097,9 +6089,12 @@
       return x.gamePk === gamePk;
     });
     if (!g) return;
-    var ds = sectionCallbacks.localDateStr(new Date(g.gameDate));
+    var localFmt = function(_d) {
+      return _d.getFullYear() + "-" + String(_d.getMonth() + 1).padStart(2, "0") + "-" + String(_d.getDate()).padStart(2, "0");
+    };
+    var ds = localFmt(new Date(g.gameDate));
     var dayGames = state.scheduleData.filter(function(x) {
-      return sectionCallbacks.localDateStr(new Date(x.gameDate)) === ds;
+      return localFmt(new Date(x.gameDate)) === ds;
     }).sort(function(a, b) {
       return a.gamePk - b.gamePk;
     });
@@ -6746,9 +6741,7 @@
     var dayLabels = ["Yesterday's", "Today's", "Tomorrow's"], dayLabel = dayLabels[leagueMatchupOffset + 1];
     el.style.transition = "opacity 0.18s ease";
     el.style.opacity = "0.3";
-    var now = /* @__PURE__ */ new Date();
-    now.setDate(now.getDate() + leagueMatchupOffset);
-    var dateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    var dateStr = etDatePlus(etDateStr(), leagueMatchupOffset);
     try {
       var r = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + dateStr + "&hydrate=linescore,team");
       var d = await r.json(), games = [];
@@ -7690,19 +7683,15 @@
     });
   }
   function _ydAnchorDate() {
-    if (state.demoMode && state.demoDate) return new Date(state.demoDate);
-    return /* @__PURE__ */ new Date();
+    return state.demoMode && state.demoDate ? new Date(state.demoDate) : /* @__PURE__ */ new Date();
   }
   function getYesterdayDateStr() {
-    var d = _ydAnchorDate();
-    d.setDate(d.getDate() + state.ydDateOffset);
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    return etDatePlus(etDateStr(_ydAnchorDate()), state.ydDateOffset);
   }
   function getYesterdayDisplayStr() {
-    var d = _ydAnchorDate();
-    d.setDate(d.getDate() + state.ydDateOffset);
+    var s = getYesterdayDateStr().split("-");
     var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return months[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+    return months[+s[1] - 1] + " " + +s[2] + ", " + s[0];
   }
   function getYesterdayCollectedCards() {
     var ydStr = getYesterdayDateStr();
@@ -8437,7 +8426,7 @@
       return g.status === "Live";
     });
     devTrace("poll", "pollLeaguePulse start \xB7 hasLive=" + hasLive + " \xB7 pollDate=" + state.pollDateStr + " \xB7 games=" + Object.keys(state.gameStates).length + " \xB7 enabled=" + state.enabledGames.size);
-    var isMidnightWindow = !state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6;
+    var isMidnightWindow = !state.demoMode && etHour() < 6;
     if (!hasLive) {
       var hasGamesFromCurrentDate = state.pollDateStr && Object.values(state.gameStates).some(function(g) {
         return g.gameDateMs && _localDateStr(new Date(g.gameDateMs)) === state.pollDateStr;
@@ -8465,9 +8454,7 @@
         return g.status.abstractGameState === "Live";
       });
       if ((!games.length || isMidnightWindow && !hasLiveInFetch) && !hasLive) {
-        var yesterday = /* @__PURE__ */ new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        var yDateStr = _localDateStr(yesterday);
+        var yDateStr = etDatePlus(state.pollDateStr || etDateStr(), -1);
         var yr = await fetch(MLB_BASE + "/schedule?sportId=1&date=" + yDateStr + "&hydrate=linescore,team,probablePitcher", { signal: sig });
         if (!yr.ok) throw new Error(yr.status);
         var yd = await yr.json();
@@ -10111,10 +10098,8 @@
       mockBar.style.display = "none";
       mockBar.style.setProperty("display", "none", "important");
     }
-    if (!state.demoMode && (/* @__PURE__ */ new Date()).getHours() < 6) {
-      var _d = /* @__PURE__ */ new Date();
-      _d.setDate(_d.getDate() - 1);
-      state.pollDateStr = localDateStr(_d);
+    if (!state.demoMode && etHour() < 6) {
+      state.pollDateStr = etDatePlus(etDateStr(), -1);
     } else {
       state.pollDateStr = localDateStr(getEffectiveDate());
     }
@@ -10221,7 +10206,7 @@
     panel.innerHTML = html;
   }
   function localDateStr(d) {
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    return etDateStr(d);
   }
   function pruneStaleGames(beforeDateStr) {
     Object.keys(state.gameStates).forEach(function(pk) {

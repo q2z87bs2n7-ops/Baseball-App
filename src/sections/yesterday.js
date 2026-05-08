@@ -12,6 +12,7 @@ import { showLiveGame } from '../sections/loaders.js';
 import { pickPlayback, pickHeroImage, fetchGameContent } from '../data/clips.js';
 import { loadYdForDate } from '../carousel/generators.js';
 import { loadCollection, tierRank, fetchCareerStats } from '../collection/book.js';
+import { etDateStr, etDatePlus } from '../utils/format.js';
 
 let ydPrevSection = null;
 
@@ -95,21 +96,20 @@ export function closeYesterdayRecap() {
 
 // In demo mode, anchor "today" to state.demoDate (set by initDemo from the
 // earliest captured gameDateMs) so "yesterday" maps to the day before the
-// recording instead of today's real-clock date.
+// recording instead of today's real-clock date. ET-anchored so non-US users
+// see the same MLB schedule day as everyone else.
 function _ydAnchorDate() {
-  if (state.demoMode && state.demoDate) return new Date(state.demoDate);
-  return new Date();
+  return state.demoMode && state.demoDate ? new Date(state.demoDate) : new Date();
 }
 
 function getYesterdayDateStr() {
-  var d=_ydAnchorDate(); d.setDate(d.getDate()+state.ydDateOffset);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return etDatePlus(etDateStr(_ydAnchorDate()), state.ydDateOffset);
 }
 
 function getYesterdayDisplayStr() {
-  var d=_ydAnchorDate(); d.setDate(d.getDate()+state.ydDateOffset);
+  var s=getYesterdayDateStr().split('-');
   var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return months[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
+  return months[+s[1]-1]+' '+(+s[2])+', '+s[0];
 }
 
 function getYesterdayCollectedCards() {
