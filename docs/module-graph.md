@@ -32,7 +32,7 @@ src/
                                      MLB_THEME, NEWS_SOURCE_LABELS/ICONS,
                                      TIMING.
 
-  diag/
+  devtools-feed/
     devLog.js                       — console wrap + ring buffer + devTrace
                                      + window error/rejection listeners.
                                      SIDE EFFECTS ON IMPORT — must import first.
@@ -203,7 +203,7 @@ Layer 5:  bridge in main.js       (Object.assign(window, {...}) at the bottom)
 Layer 4:  sections/, dev/, demo/  (UI section loaders + dev tools)
 Layer 3:  carousel/, focus/, feed/, collection/, cards/, radio/, push/
 Layer 2:  pulse/, ui/, data/      (polling, theme, helpers)
-Layer 1:  state.js, config/, diag/, utils/, auth/  (foundation)
+Layer 1:  state.js, config/, devtools-feed/, utils/, auth/  (foundation)
 ```
 
 Cross-cutting events (e.g. "polling triggers a carousel update") use direct
@@ -295,9 +295,9 @@ Service worker cache: bump `CACHE` in `sw.js` whenever `dist/app.bundle.js`
 ships behavior change. Index.html cache-bust querystring (`?v=3.X.Y`) and the
 settings panel version both bumped on each commit.
 
-GitHub Actions (`.github/workflows/build.yml`) auto-rebuilds the bundle on
-push to `main` if `src/**` or `build.mjs` changes — guarded with
-`[skip ci]` + bot-user check to prevent loops.
+Vercel rebuilds the bundle on every prod push. The preview workflow rebuilds
+before publishing `claude/*` branches to GitHub Pages. `build.yml` was
+removed in v4.1 — dist/ is no longer committed to the repo.
 
 ---
 
