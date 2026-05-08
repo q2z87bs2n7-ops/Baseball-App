@@ -47,6 +47,12 @@ Installable as a native app on iOS and Android. Game-start alerts via Web Push b
 ### 🎨 30-team theming
 Switching teams dynamically re-colors the entire UI (page background, cards, borders, accents). Pulse has its own dark navy palette, toggleable to light mode via ☀️/🌙 button. Theme overrides and color invert available in Settings.
 
+### 📊 Complete MLB companion
+Beyond Pulse, full section coverage: **Schedule** (calendar view with doubleheader support, click-to-expand boxscores/linescore), **Standings** (division standings, Wild Card race, full MLB), **Stats** (daily leaders, 40-man roster, individual player stats), **Around the League** (all MLB matchups with day toggle), **News** (aggregated from ESPN, MLB RSS, and YouTube team channels), and **Live Game View** (detailed linescore, inning-by-inning play log, box score tabs with batting/pitching stats).
+
+### 🛠️ Developer Tools
+Built-in debugging suite accessible via `Shift+D`: Log Capture (ring buffer), App State Inspector, Network Trace, storage inspectors (localStorage, service worker cache), diagnostic snapshot export, and live control panel. Additionally, Pulse optimization tuning panel with real-time sliders for feed rotation speed, RBI scoring thresholds, and cooldown timers — test carousel behavior instantly without rebuilding.
+
 ---
 
 ## Tech stack
