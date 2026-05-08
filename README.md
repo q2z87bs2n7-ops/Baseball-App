@@ -21,67 +21,25 @@ It's not intended for any commercial use. The MLB Stats API is public and real-t
 ## Feature highlights
 
 ### ⚡ Pulse — league-wide live feed
-The app's landing section. Every scoring play, home run, and runner-in-scoring-position moment across all simultaneous games flows into one chronological stream. The desktop layout splits into a ~700px main column — ticker, Story Carousel, and feed — with a 320px right rail holding upcoming/completed games, a news carousel, and the At-Bat Focus card.
-
-A top bar carries controls for Sound Alerts (🔊), Live Game Radio (📻), Yesterday's Recap, and a light/dark theme toggle (☀️/🌙). A **MY TEAM** lens pill narrows the feed and ticker to just the active team's game. The sticky ticker runs across the top of the feed showing every game as a chip — team scores, inning, base diamond, and out indicators at a glance.
-
-The feed tracks the shape of the day: pre-game shows a countdown to first pitch, gaps between games show a countdown to the next one, and once the slate wraps a "Slate complete" screen counts down to tomorrow. Sound alerts — HR bat crack, run chime, RISP heartbeat — are synthesised in real time with the Web Audio API, no audio files needed. When a home run or key scoring play fires, a full-screen player card overlay pops up with the batter's headshot and situation detail; where an official MLB highlight clip is available, a ▶ tile appears in the feed and the video plays inline through the same overlay.
+Real-time scoring plays, home runs, and RISP moments from all simultaneous games in a single chronological stream. Desktop layout: main feed + ticker + Story Carousel on the left, upcoming games + news carousel + At-Bat Focus on the right. Sticky ticker across the top with team scores, inning, and base diamond. Sound alerts (HR crack, run chime, RISP heartbeat) synthesized in real time; highlight clips embedded inline when available.
 
 ### 📖 Story Carousel — 20 narrative generators
-A rotating digest layer that surfaces story-level moments alongside the play feed. Generators cover home runs, walk-off threats, no-hitter watches, perfect game tracking, big innings, bases-loaded situations, stolen bases, end-of-inning recaps, multi-hit days, daily MLB leaders, hitting streaks, roster moves, win probability swings, award winners, season highs, on-this-day, yesterday's highlights, probable pitchers, and pre-game editorial matchup cards. Stories rotate via a priority × decay scoring algorithm with per-story cooldowns:
-
-```javascript
-// Each tick, eligible stories are scored by priority weighted with time decay
-score = priority * (1 - decayRate) ^ (ageMinutes / 30)
-```
-
-Pre-game pools naturally lean on probable pitchers and yesterday recaps; mid-game pools surge with HR/walk-off/no-hitter cards. No mode flag needed — the maths handles it.
+Rotating digest that surfaces story moments alongside the play feed. Covers HRs, walk-offs, no-hitters, perfect games, big innings, bases-loaded situations, hitting streaks, probable pitchers, and more. Rotates via priority + time decay scoring — pre-game pools favor probable pitchers, mid-game pools surge with HR/walk-off cards.
 
 ### 🎯 At-Bat Focus Mode
-A live pitch-by-pitch tracker that auto-selects the most exciting game in progress using a tension formula combining closeness, runners on, count, and inning multiplier:
-
-```javascript
-// Simplified — closeness + situation bonuses, scaled by inning
-score = (closeness + situation + countBonus) * inningMultiplier
-// 9th-inning, bases loaded, full count, tied = ~2× extras-multiplier territory
-```
-
-Polls linescore (~5KB) every 5s for B/S/O and runners; pitches come from the GUMBO v1.1 feed using `diffPatch` deltas (~5KB instead of ~500KB) once seeded. A compact card sits in the side rail on desktop, a slim mini-bar appears on phone/iPad portrait, and a full overlay with pitch sequence, count pips, base diamond, and matchup stats is one tap away. Manual game switcher chips with a sky-blue `↩ AUTO` pill let you override the auto-pick. In Demo Mode, Focus follows the recorded focus track faithfully — including any manual overrides captured during the recording session.
+Live pitch-by-pitch tracker that auto-selects the most exciting game in progress based on closeness, runners on, count, and inning. Compact card on desktop, mini-bar on mobile, full overlay with pitch sequence and base diamond one tap away. Manual game switcher with sky-blue `↩ AUTO` pill to override the pick.
 
 ### 📼 Yesterday's Recap
-A dedicated full-screen section (accessible from the ⚡ top bar when yesterday's data is ready) that replays the previous day's slate as a media-rich digest. Features a shared video player with a scrollable playlist of official MLB highlight clips per game, a heroes strip (top batter and W/L pitcher per game), and per-game recap tiles with linescore and headline. Video content is sourced from the MLB `/game/{pk}/content` endpoint. The section shares the Pulse navy theme and uses the same top bar for visual consistency.
+Full-screen replay of the previous day's slate with official MLB highlight clips per game, heroes strip (top batter/pitcher), and recap tiles with linescore.
 
 ### 📚 Card Collection
-Every HR or key RBI event auto-collects a player card. Four rarity tiers derived from situation:
-
-| Tier | Trigger |
-|---|---|
-| Legendary | Walk-off grand slam |
-| Epic | Grand slam, walk-off home run, walk-off RBI |
-| Rare | Go-ahead, game-tying |
-| Common | Everything else |
-
-Higher-tier events upgrade existing slots; same-tier duplicates are appended to a 10-event history per slot. The binder UI is a 3×3 pocket grid with rarity glow borders, team-tinted pages (when sorted by team), career stats fetched from the MLB API, and a watermark logo. Tapping a card replays the original Pulse player card overlay.
-
-Optional cross-device sync via GitHub OAuth or email magic-link, backed by Upstash Redis. Sign-in is fully optional — localStorage works alone.
+Auto-collects player cards on HRs and key RBIs in four rarity tiers: Legendary (walk-off grand slam), Epic (grand slam/walk-off), Rare (go-ahead/tie), Common (everything else). Optional cross-device sync via GitHub OAuth or email.
 
 ### 📻 Live Game Radio
-Auto-pairs the focused game's flagship terrestrial radio station to a `<audio>` element, with Hls.js for HLS streams and native audio for direct AAC/MP3. Currently 10 verified teams: LAA, CLE, DET, HOU, TEX, MIN, ATL, MIA, NYY, SF. The remaining 20 stations are in the codebase but excluded from auto-pairing — most are Audacy-owned flagships that hold OTA simulcast rights but not MLB streaming rights, so their digital streams play alternate content (talk shows, ads) during games. A built-in **Radio Check** sweep tool (under Dev Tools) lets you test, mark ✅/❌, take notes per station, and copy categorised markdown to update the approved list.
-
-### 🎙️ Classic Radio — Demo Mode atmosphere
-When Demo Mode is active, the 📻 radio button streams full-length classic MLB broadcasts from the Internet Archive rather than live radio. A curated pool of four legendary calls — Vin Scully on the 1957 Giants/Dodgers, the 1968 Mantle farewell Yankees/Red Sox game, the 1969 Mets/Orioles World Series Game 5, and Tom Seaver's 19-strikeout game in 1970 — plays from a random offset between the 30-minute and 90-minute mark, skipping pre-game and post-game dead air. On every auto-focus switch in demo, a fresh broadcast + offset is rolled. The 📻 nav button and the status indicator work identically to live radio — the green "Playing" badge and broadcast title update the same way. Accessible independently via Dev Tools → 🎙️ Classic Radio.
+Auto-pairs the focused game's flagship radio station (10 verified teams: LAA, CLE, DET, HOU, TEX, MIN, ATL, MIA, NYY, SF). Built-in Radio Check sweep tool for testing and updating approved stations.
 
 ### 🎬 Demo Mode
-Full-day replay of a recorded MLB slate with no API calls — works fully offline.
-
-Key capabilities:
-- **In-app Recorder** (`src/dev/recorder.js`) — captures live Pulse state passively with zero added API calls. Exports a `daily-events.json` with pitch timelines, boxscore snapshots, content cache, focus track, and story carousel caches. `trimClip()` strips to demo essentials (~87% smaller). Hard cap at 10 MB with a 5 MB soft warning.
-- **Backlog + queue replay** — feed items before recording started play as a pre-load backlog (tune-into-Pulse-mid-game UX); plays captured during recording form the live queue.
-- **Faithful focus replay** — demo follows the `focusTrack[]` recorded during the session, including user-triggered manual switches. A manual switch during demo correctly overrides auto behaviour.
-- **Speed controls** — 1× (10s/play), 10× (1s/play), 30× (~333ms/play). ⏹ Exit Demo button. 🔥 Next HR fast-forwards at 20× through plays until an HR fires, then auto-pauses.
-- **Video tiles in demo** — `pollPendingVideoClips` walks the `contentCacheTimeline` and patches feed items with ▶ video tiles at the right replay moment.
-- **Clean exit** — `exitDemo` clears every demo cache and calls `resumeLivePulse`, which re-fires loaders, restarts all polling timers, and runs `pollLeaguePulse → buildStoryPool → setFocusGame`. No blank Pulse after exit.
-- **Dev Tools QC panel** — shows all 4 archive.org broadcasts individually with ▶ Play buttons and broadcast titles for independent testing.
+Full-day replay from a recorded MLB slate — no API calls, works offline. In-app recorder captures live state passively, speed controls (1× / 10× / 30×), and a ⏹ Exit Demo button. Classic Radio in demo mode plays vintage broadcasts from the Internet Archive.
 
 ### 🔔 PWA + Push Notifications
 Installable as a native app on iOS and Android. Game-start alerts via Web Push, with subscriptions stored in Upstash Redis. A GitHub Actions cron pings the `/api/notify` Vercel function every 5 minutes, which checks the MLB schedule and fires VAPID-signed push messages to subscribers, deduplicating per-game with a 24h TTL key.
@@ -141,17 +99,6 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
                        GitHub Actions cron
                        (every 5 min → /api/notify)
 ```
-
-**Data refresh cadences:**
-
-- Pulse poll: 15s (schedule, linescore, play-by-play, timestamps stale check)
-- Story pool rebuild: 30s (decoupled from Pulse poll)
-- Story rotation: 4.5s (configurable via Dev Tools)
-- Focus Mode linescore + GUMBO: 5s
-- Live game view: 30s
-- Home card / Around the League: 60s while active
-- Card collection background sync: 30s (when signed in)
-- Push notify cron: every 5 min
 
 **Performance touches:**
 
