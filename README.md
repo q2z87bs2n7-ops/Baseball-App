@@ -158,7 +158,7 @@ Switching teams swaps nine CSS variables computed from the team's primary colour
 - `feedItems` capped at 600 entries (oldest trimmed)
 - GUMBO `diffPatch` after initial seed — first call ~500KB, subsequent ~1–5KB
 - Boxscore cache shared across story generators
-- Service worker caches app shell (`index.html`, `styles.css`, `dist/app.bundle.js`, sidecar JS) for offline boot
+- Service worker caches app shell (`index.html`, `dist/styles.min.css`, `dist/app.bundle.js`, sidecar JS) for offline boot
 - Theme variables persisted to localStorage and applied via inline `<script>` in `<head>` to prevent flash-of-wrong-theme on reload
 
 ---

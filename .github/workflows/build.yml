@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'styles.css'
       - 'build.mjs'
       - 'package.json'
       - 'package-lock.json'
@@ -29,7 +30,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dist/app.bundle.js dist/app.bundle.js.map
+          git add dist/app.bundle.js dist/app.bundle.js.map dist/styles.min.css
           if git diff --staged --quiet; then
             echo "No bundle changes."
           else
