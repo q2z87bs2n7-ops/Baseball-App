@@ -5,7 +5,11 @@
 
 ---
 
-**Current version:** v3.49.4
+**Current version:** v4.1
+
+**v4.1** — **Repo hygiene: relocate root files, untrack `dist/`, rename `src/diag/`.** Three reviewer-driven cleanups bundled. (1) Moved the four runtime-dep files out of repo root: `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` → `assets/vendor/`; `daily-events.json` → `assets/`. Updated `index.html` script tags, `sw.js` SHELL cache, and the demo-mode fetch path. Window-global pattern preserved (no consumer-side refactor). (2) Stopped committing `dist/`. Vercel rebuilds the bundle on every prod push and the preview workflow rebuilds before publishing to Pages, so the committed copy was vestigial. Added `dist/` to `.gitignore`, deleted `.github/workflows/build.yml` (its only job was auto-committing the bundle). Net delta ~10,700 lines deleted; future diffs no longer carry bundle churn. (3) Renamed `src/diag/` → `src/devtools-feed/` to reflect that it holds runtime instrumentation feeding the Dev Tools panel (console wrap, fetch wrap), not dev-only scripts. Updated 13 import paths across 11 files. CLAUDE.md repo map updated.
+
+  Files: `index.html`, `sw.js`, `src/demo/mode.js`, `.gitignore`, `.github/workflows/build.yml` (deleted), `src/devtools-feed/*` (renamed), 11 import-site files, `CLAUDE.md`, `CHANGELOG.md`. Branch shipped v4.0.1 → v4.0.2 → v4.0.3 → v4.0.4; main bumped to v4.1. CACHE mlb-v400 → mlb-v403.
 
 **v3.49.4** — **CSS readability + build-time minification.** `styles.css` was a single semi-minified blob (~73 KB, lines up to 861 chars) that was effectively unreviewable. Reformatted it into 4,650 properly-indented lines (82 KB source) and extended `build.mjs` to emit `dist/styles.min.css` via esbuild's CSS minifier. `index.html` now references the dist file (cache-busted with `?v=3.49.4`); the source is for development only. Minified output is 65 KB — 21% smaller than the readable source and 11% smaller than the original semi-minified file. Verified that minifying the new readable source produces output identical to minifying the original committed CSS, so runtime CSS variables (`--primary`, `var(--accent)`, etc.) set by `applyTeamTheme()` are unaffected.
 

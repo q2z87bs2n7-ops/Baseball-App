@@ -6,7 +6,7 @@
 
 import { state } from '../state.js';
 import { SEASON, TIMING, MLB_BASE, MLB_BASE_V1_1 } from '../config/constants.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import { updateRadioForFocus } from '../radio/engine.js';
 import { rollClassicOnSwitch, isClassicActive } from '../radio/classic.js';
 

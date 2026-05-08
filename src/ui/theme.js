@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { TEAMS, MLB_THEME } from '../config/constants.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 
 let themeCallbacks = { loadTodayGame: null, loadNextGame: null, loadNews: null, loadStandings: null, loadRoster: null, loadHomeYoutubeWidget: null, applyMyTeamLens: null, clearHomeLiveTimer: null };
 function setThemeCallbacks(callbacks) {
