@@ -5,7 +5,11 @@
 
 ---
 
-**Current version:** v3.48
+**Current version:** v3.49.4
+
+**v3.49.4** — **CSS readability + build-time minification.** `styles.css` was a single semi-minified blob (~73 KB, lines up to 861 chars) that was effectively unreviewable. Reformatted it into 4,650 properly-indented lines (82 KB source) and extended `build.mjs` to emit `dist/styles.min.css` via esbuild's CSS minifier. `index.html` now references the dist file (cache-busted with `?v=3.49.4`); the source is for development only. Minified output is 65 KB — 21% smaller than the readable source and 11% smaller than the original semi-minified file. Verified that minifying the new readable source produces output identical to minifying the original committed CSS, so runtime CSS variables (`--primary`, `var(--accent)`, etc.) set by `applyTeamTheme()` are unaffected.
+
+  Files: `styles.css`, `build.mjs`, `index.html`, `sw.js`, `dist/styles.min.css`. Version v3.49.3 → v3.49.4, CACHE v634 → v635.
 
 **v3.48** — **Fix: game status notifications placed at correct chronological position.** Status notifications (Game underway, Game Final, Game Delayed, Game Postponed) were missing `playTime` parameters, causing them to default to current time and appear at the top of the Pulse feed instead of at their proper chronological positions. Now all status items have proper timestamps: game start notifications use the game's actual start time; final/postponed use estimated game end time (start + duration); delayed notifications use game start time. Fixes the reported issue where users saw notification dumps on first Pulse load that gradually drifted down as new plays arrived.
 
