@@ -4,7 +4,7 @@
 // Encapsulated state: demoPaused, demoSpeedMs
 
 import { state } from '../state.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import { MLB_BASE } from '../config/constants.js';
 import { calcRBICardScore } from '../cards/playerCard.js';
 import { stopClassic } from '../radio/classic.js';

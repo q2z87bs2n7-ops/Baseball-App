@@ -10,8 +10,8 @@
 //  - Diagnostic Snapshot (one-tap full-app markdown bundle)
 
 import { state } from '../state.js';
-import { devLog, pushDevLog } from '../diag/devLog.js';
-import { devNetLog, DEV_NET_CAP } from '../diag/devNet.js';
+import { devLog, pushDevLog } from '../devtools-feed/devLog.js';
+import { devNetLog, DEV_NET_CAP } from '../devtools-feed/devNet.js';
 import { pulseGreeting } from '../feed/render.js';
 import { getCurrentTeamId } from '../radio/engine.js';
 import { setFocusGameManual } from '../focus/mode.js';

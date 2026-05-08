@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { MLB_BASE, MLB_THEME } from '../config/constants.js';
 import { ordinal } from '../carousel/generators.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import { etDateStr, etDatePlus, etHour } from '../utils/format.js';
 
 const DEBUG = false;

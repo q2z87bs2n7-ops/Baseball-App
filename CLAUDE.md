@@ -57,7 +57,7 @@ dist/styles.min.css     — committed minified CSS (~64KB) that GitHub Pages ser
 src/main.js             — boot IIFE + initReal callback wiring + top-level event listeners + window-global bridge. ~680 LOC of orchestration; everything substantive lives under src/<subsystem>/.
 src/state.js            — single mutable hot-state container; all importers receive a live binding.
 src/config/constants.js — SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1, API_BASE, TEAMS, MLB_THEME, NEWS_SOURCE_LABELS/ICONS, TIMING.
-src/diag/               — devLog.js (console wrap + ring buffer) + devNet.js (fetch wrap). SIDE EFFECTS ON IMPORT.
+src/devtools-feed/      — devLog.js (console wrap + ring buffer) + devNet.js (fetch wrap). Runtime instrumentation feeding the Dev Tools panel inspectors. SIDE EFFECTS ON IMPORT.
 src/utils/              — format.js (fmt/fmtRate/tcLookup/pickOppColor) + news.js (NEWS_IMAGE_HOSTS allowlist).
 src/data/               — boxscore.js + clips.js (pickPlayback/pickHeroImage/pollPendingVideoClips/devTestVideoClip).
 src/ui/                 — overlays.js (video + player-card overlays), theme.js (applyTeamTheme/applyPulseMLBTheme), sound.js, wakelock.js, lens.js (My Team filter).

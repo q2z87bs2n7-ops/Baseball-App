@@ -7,7 +7,7 @@
 //     Ported from claude/debug-youtube-api-SYBtV branch (Anthropic, May 2026).
 
 import { state } from '../state.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import { API_BASE, TEAMS } from '../config/constants.js';
 
 let ytDebugResults = {};

@@ -10,7 +10,7 @@
 import { state } from '../state.js';
 import { MLB_BASE, MLB_BASE_V1_1 } from '../config/constants.js';
 import { tcLookup, etHour, etDateStr, etDatePlus } from '../utils/format.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import {
   addFeedItem, renderFeed, renderTicker, renderSideRailGames,
   updateFeedEmpty, isPostSlate, showAlert,

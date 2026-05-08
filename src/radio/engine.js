@@ -7,7 +7,7 @@
 // (src/radio/classic.js) instead of live streams.
 
 import { state } from '../state.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import { MLB_TEAM_RADIO, FALLBACK_RADIO, APPROVED_RADIO_TEAM_IDS } from './stations.js';
 import { devTestClassicRadio } from './classic.js';
 

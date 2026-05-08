@@ -13,7 +13,7 @@
 import { state } from '../state.js';
 import { TEAMS, MLB_BASE } from '../config/constants.js';
 import { fmt, fmtRate } from '../utils/format.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import { syncCollection } from './sync.js';
 
 // Callback injection — these stay in main.js (or come from cards/playerCard.js)

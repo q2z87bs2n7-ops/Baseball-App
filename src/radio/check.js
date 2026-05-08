@@ -2,7 +2,7 @@
 // Self-contained dev/QA overlay. No deps on Pulse poll loop or core state mutations.
 import { state } from '../state.js';
 import { TEAMS } from '../config/constants.js';
-import { devTrace } from '../diag/devLog.js';
+import { devTrace } from '../devtools-feed/devLog.js';
 import {
   MLB_TEAM_RADIO, FALLBACK_RADIO, RADIO_CHECK_DEFAULT_NOTES,
 } from './stations.js';

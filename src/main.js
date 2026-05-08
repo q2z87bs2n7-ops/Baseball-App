@@ -2,8 +2,8 @@
 // Diag (devLog + devNet) is imported FIRST — the modules wrap console.log
 // and window.fetch as side-effects of import, so any code below that logs
 // or fetches is captured.
-import { DEV_LOG_CAP, devLog, pushDevLog, devTrace } from './diag/devLog.js';
-import { DEV_NET_CAP, devNetLog } from './diag/devNet.js';
+import { DEV_LOG_CAP, devLog, pushDevLog, devTrace } from './devtools-feed/devLog.js';
+import { DEV_NET_CAP, devNetLog } from './devtools-feed/devNet.js';
 import {
   SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1, API_BASE,
   TEAMS, MLB_THEME,
