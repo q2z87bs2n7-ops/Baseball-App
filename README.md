@@ -60,7 +60,7 @@ Built-in debugging suite accessible via `Shift+D`: Log Capture (ring buffer), Ap
 | Layer | Technology |
 |---|---|
 | Frontend | Vanilla HTML + CSS + ES6 modules — `index.html` + `styles.css` + ~38 modules under `src/` bundled into `dist/app.bundle.js` via esbuild |
-| Sidecar JS | `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` (IIFE modules, all `defer` in `<head>` — exposed via `window.*`) |
+| Sidecar JS | `assets/vendor/focusCard.js`, `assets/vendor/pulse-card-templates.js`, `assets/vendor/collectionCard.js` (IIFE modules, all `defer` in `<head>` — exposed via `window.*`) |
 | Bundler | [esbuild](https://esbuild.github.io/) — single command (`npm run build`), IIFE output, ~520KB |
 | Streaming | [Hls.js](https://github.com/video-dev/hls.js) (light build, CDN, ~50KB) for HLS radio streams |
 | Data | [MLB Stats API](https://statsapi.mlb.com/api/v1/) — public, no auth |
@@ -141,11 +141,11 @@ src/                      — ES6 module source (~38 files): main.js + state.js
                             + radio/ + push/ + auth/ + sections/ + demo/ + dev/
                             (full map: docs/module-graph.md)
 build.mjs                 — esbuild driver
-dist/app.bundle.js        — bundled IIFE build (~520KB), served by GitHub Pages
-focusCard.js              — At-Bat Focus Mode visual templates
-pulse-card-templates.js   — HR/RBI player card variants (4 templates)
-collectionCard.js         — Card Collection binder visuals
-daily-events.json         — Demo Mode static snapshot (2.2MB)
+dist/app.bundle.js        — bundled IIFE build (~520KB), built by Vercel on prod deploy (not committed)
+assets/vendor/focusCard.js              — At-Bat Focus Mode visual templates
+assets/vendor/pulse-card-templates.js   — HR/RBI player card variants (4 templates)
+assets/vendor/collectionCard.js         — Card Collection binder visuals
+assets/daily-events.json                — Demo Mode static snapshot (2.2MB)
 sw.js                     — service worker (PWA cache + push handler)
 manifest.json             — PWA install metadata
 icons/                    — diamond-themed PWA icon set
