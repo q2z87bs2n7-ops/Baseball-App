@@ -3,25 +3,19 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v3.47
+**Current version:** v3.49.4
 
 **Recent versions** (full history in `CHANGELOG.md`):
-- **v3.47** — **Radio button stays ON during archive feed loading.** UX polish: when loading an archive broadcast, the radio button now displays immediately in a "(loading…)" state instead of flickering off then back on. Once metadata loads and playback starts, the label updates to the final broadcast title. Improves perceived smoothness of feed switching in Dev Tools QC panel.
-- **v3.47.5** — **Demo Feeds QC panel.** Replaced random archive test button with a Dev Tools panel showing all 4 available archive.org broadcasts individually. Each broadcast has a ▶ Play button for independent testing. Panel displays broadcast title (e.g., "1969 Mets vs Orioles WS Game 5"), truncated URL filename, and plays at random offset (30-90 min) when triggered. New `playArchiveUrl(url)` export allows QA to test each historical broadcast separately and know exactly which one is playing.
-- **v3.47.4** — **Fix demo mode audio dropout.** When Demo Mode rapidly switches focus games (every play tick), the classic radio was calling `_playUrl()` with a random archive URL, causing unnecessary pause-load cycles. Added URL caching: if the same URL is already queued/playing, skip the pause-load sequence and just update the offset. Eliminates audio fluttering during demo replay.
-- **v3.47.3** — **Add demo archive test button.** New 🎬 Test Demo Feeds button in Dev Tools Actions for testing archive radio playback with random offset matching demo behavior.
-- **v3.47.2** — **Archive feed test button.** Adds test button in Dev Tools for triggering demo archive feed playback.
-- **v3.47.1** — **Demo focus respects manual override.** `selectFocusGame()`'s demo branch now early-returns when `state.focusIsManual` is true (same gate as live mode) and stops assigning `state.focusIsManual` from the captured `entry.isManual` flag. Without these fixes, the recorder user's heavy ATH @ PHI focus track (11/12 entries in the current sample) was yanking the demo viewer back to that game within a play or two of any manual switch via the focus switcher chips.
-- **v3.47** — **Classic Radio in demo.** New `src/radio/classic.js` module streams full-length classic MLB broadcasts from archive.org as background atmosphere in Demo Mode. No timestamp sync — picks a random URL from a hardcoded pool of 4 files (1957 Giants/Dodgers Vin Scully, 1968 Yankees/Red Sox Mantle final, 1969 Mets/Orioles WS Game 5, 1970 Padres/Mets Seaver 19K) and a random offset between the 30-min and 90-min mark (skips pre-game and post-game). On every focus-game switch in demo, re-rolls a fresh URL + offset. The existing `toggleRadio()` (📻 nav button + settings toggle) is demo-aware: in demo it delegates to `devTestClassicRadio` instead of live streams, with shared `setRadioUI` so the green "Playing" indicator + status label work identically. Also accessible via Dev Tools → 🎙️ Classic Radio (POC). Defensive `stopRadio()` on every roll silences any leaked live-radio audio. Console logs `[classic radio] play` / `[classic radio] roll on focus switch` with decoded broadcast titles for diagnostics. `exitDemo` calls `stopClassic` so audio doesn't bleed into live mode. Hardcoded pool means this is technically a POC — easy to expand to a `teamId → URL[]` map later if desired.
-- **v3.46** — **Demo Mode v2.** Major overhaul of the static demo experience.
-  - **In-app Recorder** (`src/dev/recorder.js`) captures live Pulse state into a fresh `daily-events.json`. Hooks `pollLeaguePulse`, `pollGamePlays`, `pollFocusRich`, `fetchGameContent`, `fetchBoxscore`, `addFeedItem`, `fetchFocusPlayerStats`, `setFocusGame` as passive observers — zero added API calls. UI lives under Dev Tools → 📼 Recorder. On Start: deep-clones `state.*` baseline, then layers observer captures + 30s cache snapshots. On export: stamps `metadata.exportedAt`/`durationMs`/`midRun` so mid-run downloads are valid; recording continues uninterrupted. `trimClip()` strips clips to demo essentials (~87% smaller). Hard caps + soft warn at 5 MB / auto-stop at 10 MB.
-  - **Recorder v2 schema** in `daily-events.json` adds `metadata`, `pitchTimeline`, `boxscoreSnapshots`, `contentCacheTimeline`, `focusStatsCache`, `focusTrack`, `lastVideoClip`. Story-carousel caches now nested under `caches.*` (loader still falls back to legacy top-level shape).
-  - **Demo replay rewrite.** `initDemo` splits `feedItems` by `metadata.startedAt` into backlog + queue. Backlog plays pre-load into the feed at demo open (tune-into-Pulse-mid-game UX) and walk through `gameStates` so ticker + side-rail show the correct mid-day distribution. Queue is recording-period plays only — first replayed event is the first new play after Record was clicked. `demoCurrentTime` starts at the first queue play, so `pitchTimeline`/`contentCacheTimeline`/`focusTrack` lookups land cleanly.
-  - **Consumer expansion.** Focus Mode in demo rebuilds `focusState` + pitch sequence from `pitchTimeline` envelopes (with bootstrap progression that walks through envelopes by `demoPlayIdx` fraction). `selectFocusGame` follows `focusTrack[]` for faithful auto/manual switching, falls back to `focusTrack[0]` until demo time crosses the recording window. `fetchBoxscore` reads `boxscoreSnapshots` in demo. `pollPendingVideoClips` walks `contentCacheTimeline` and patches feed items with ▶ tiles. HR + RBI cards collect into a session-only `state.demoCardCount` (real localStorage stays untouched). Open Collection in demo shows a sign-in CTA. RBI cards now fire in demo (rbi inferred from score delta, calcRBICardScore + threshold).
-  - **Carousel demo guards.** `genWinProbabilityStories` now early-returns in demo (was hitting `/contextMetrics` API and surfacing nonsense "100% favorites" cards). `genLiveWinProbStories` reads from hydrated `liveWPCache`.
-  - **Demo control panel updates.** Speed buttons now 1x / 10x / 30x (was 1x/10x/100x — 100x was unwatchable). New ⏹ Exit Demo button. 🔥 Next HR now fast-forwards at 20x through plays (animated) until an HR fires, then auto-pauses on the HR card. Disclaimer toast at demo start now wraps multi-line and stays for 12 s, calling out demo limitations (focus pitch data limited, radio simulated).
-  - **Clean exit + auto-resume live polling.** `exitDemo` clears every cache `initDemo` populated and calls a new `resumeLivePulse` callback that mirrors `initReal`'s live section: refires loaders, runs `pollLeaguePulse → buildStoryPool → setFocusGame`, restarts pulse/storyPool/videoClip timers. No more blank Pulse after exit.
-  - **Yesterday Recap demo support.** Anchored to `state.demoDate` so "yesterday" maps to the day before the demo (May 5 in the current sample). Always fetches fresh via `loadYdForDate` in demo (`fetchGameContent` no longer guards on demoMode), so videos load.
+- **v3.49.4** — **CSS readability + build-time minification.** `styles.css` reformatted to readable 4,650-line source; `build.mjs` emits `dist/styles.min.css` via esbuild CSS minifier; `index.html` references the dist file. Minified output 65 KB (11% smaller than original semi-minified blob).
+- **v3.48** — **Fix: game status notifications at correct chronological position.** Status items (Game underway, Final, Postponed) were missing `playTime` and defaulting to current time, floating to feed top; now use actual game start/end timestamps.
+- **v3.47** — **Radio button stays ON during archive feed loading.** UX polish: shows "(loading…)" immediately on feed start instead of flickering off/on; label updates to final title once playback starts. Final main-branch release of the v3.47 series.
+- **v3.47.5** — **Demo Feeds QC panel.** Replaced random archive test button with panel showing all 4 archive.org broadcasts with individual ▶ Play buttons. New `playArchiveUrl(url)` export.
+- **v3.47.4** — **Fix demo mode audio dropout.** URL caching skips pause-load cycle when same archive URL is already playing.
+- **v3.47.3** — **Add 🎬 Test Demo Feeds button** in Dev Tools Actions for archive radio testing at random offset.
+- **v3.47.2** — **Archive feed test button** in Dev Tools for demo archive feed playback.
+- **v3.47.1** — **Demo focus respects manual override.** `selectFocusGame()` early-returns on `state.focusIsManual`; stops clobbering viewer's manual choice with recorder's captured `entry.isManual`.
+- **v3.47** — **Classic Radio in demo.** New `src/radio/classic.js` streams archive.org MLB broadcasts as demo atmosphere (4-broadcast pool, random 30–90 min offset, re-rolls on focus switch). `toggleRadio()` demo-aware; `exitDemo` calls `stopClassic`.
+- **v3.46** — **Demo Mode v2.** In-app Recorder (`src/dev/recorder.js`), recorder-v2 schema, `initDemo` backlog/queue split, Focus Mode + boxscore + video clips + RBI cards in demo, carousel win-prob guard, clean exit + auto-resume live, Yesterday Recap demo anchor.
 - **v3.43.3** — Settings menu polish + Giants radio confirmed (KNBR 104.5/680). Cards Collected emoji updated, Appearance block consolidated, Sync Collection compacted. Dev Tools: stripped explanatory text from 5 action buttons.
 - **v3.43** — News carousel + News-tab image fixes. Carousel rolled back from `/api/proxy-news` aggregator to MLB-RSS-then-ESPN fallback. `MLB_RSS_FEEDS.mlb` updated to `/feeds/news/rss.xml` (was deprecated `/feeds/rss.xml` returning 500). MLB.com self-closing `<image href="..."/>` tag now extracted by `parseRssItems`. Radio Check moved Settings → Dev Tools.
 - **v3.42.x** — News carousel restored to Pulse side rail; `fmtRate` import bug; Demo Mode `DEBUG` undefined fix; legacy `app.js` removed (bundle is sole source of truth).
@@ -228,65 +222,11 @@ Fixed neutrals: `--text: #e8eaf0`, `--muted: #9aa0a8`.
 
 ## App Pages & Sections
 
-### 🏠 Home
-**Left card — "Next Game"** (`#todayGame`, `loadTodayGame()`) — priority: (1) live game with score + Watch Live, (2) upcoming today, (3) next upcoming. Series info via `getSeriesInfo(g)`. Layout: 5-column row [opp cap] [opp name/score] [—] [my name/score] [my cap]. Background: opp primary → #111827 50% → active-team colour (built in `renderNextGame`, NOT via `gameGradient()` — see below).
+Full per-section architecture, API sources, and layout details: `docs/sections.md`.
 
-**Right card — "Next Series"** (`#nextGame`, `loadNextGame()`) — fetches 28 days, groups into series, finds the **second** series with any non-Final game (skips current series). 3-stop gradient.
-
-`gameGradient(g)` uses away→home order and is only used by `renderGameBig` (schedule/history cards). `renderNextGame` builds its own gradient so opponent is always left and active team always right — would be wrong for away games if using `gameGradient`.
-
-**Division Snapshot** — compact standings for active team's division.
-**Latest News** — top 5 ESPN headlines.
-**YouTube Widget** (`#homeYoutubeWidget`) — team YouTube channel, 25%/75% two-panel layout. Loaded by `loadHomeYoutubeWidget()` → `loadMediaFeed(uc)`. **Requires deployed URL** — YouTube embeds return Error 153 on `file://`.
-
-### 📅 Schedule
-Monthly calendar grid (Sun–Sat). `scheduleLoaded` flag prevents double-fetch when `scheduleData` is pre-populated by cold-load ±7 day fetch. Doubleheaders: `renderCalendar` uses `gamesByDate` (array per date) — DH cells show `G1:`/`G2:` rows, each independently clickable. Mobile (≤480px): colour-coded dots only; tapping shows `.cal-tooltip` from `scheduleData` (no API call).
-
-Clicking completed game (desktop): boxscore tabs (Batting + Pitching, AB>0/IP>0 only) + linescore (R/H/E, `!=null` guards) + game summary (bs.info pairs). PPD: info card only, no linescore fetch. Upcoming: location + probable pitchers.
-
-Source: `/schedule?season=2026&teamId={id}&hydrate=team,linescore,game`
-
-### 🏆 Standings
-Division standings (active team highlighted) + Wild Card Race (top 9 non-division-leaders, orange cutoff after 3) + WC Other Divisions (excludes active team's division) + Full MLB Standings.
-
-Source: `/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,division,league`
-
-### 📊 Stats
-Three-column layout: Leaders | Roster (40-man, hitting/pitching/fielding tabs, first player auto-selected) | Player Stats (headshot + 12-stat grid, hitting/pitching 4-col, fielding 3-col, first stat `.hero`).
-
-Source: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats`
-
-### 🌐 Around the League
-Matchups: all MLB games, 3-per-row, day toggle (Yesterday/Today/Tomorrow), opacity fade on switch. Live games show inning. Clickable → live game view. ⚠️ **Leaders index mapping is fragile** — API doesn't guarantee response order matches `leaderCategories` order; re-test empirically after API changes.
-
-Sources: `/schedule?sportId=1&date={date}&hydrate=linescore,team` + `/stats/leaders` with `statGroup` param
-
-### ⚡ Pulse
-Global live MLB play-by-play feed — scoring plays, home runs, RISP across all simultaneous games. Lazy-loaded on first nav. **Desktop/iPad Landscape (≥1025px):** CSS Grid 700px + 320px side rail with games module + news carousel. **≤767px:** side rail hidden, single column.
-
-Ticker: live-only chips sorted by inning progress. Expanded chip (base diamond SVG) fires when `g.onFirst || g.onSecond || g.onThird`. Feed: newest-first, inserted at correct chronological position via `data-ts` attributes.
-
-**`#playerCardOverlay` must stay top-level DOM** (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`) — never nested inside `#pulse`. Sections create stacking contexts that trap z-index. Current z-index: 600.
-
-Full HTML structure, feed item types, HR/RBI badge logic, scoring formulas, sound system, live polling strategy, video clip matching: `docs/pulse-feed.md`.
-Story carousel (15 generators, rotation engine, all story types): `docs/story-carousel.md`.
-
-### 📰 News
-ESPN headlines, MLB / Team toggle (pill buttons). Defaults to MLB-wide (no team filter). Team pill shows `activeTeam.short`. Home card always shows team news regardless of toggle.
-
-### ⚾ Live Game View
-Triggered from Home card or matchup grid. Score header + count/runners + current matchup + linescore + play log (newest first, grouped by inning half) + box score (tabbed away/home) + game info. FINAL header and auto-refresh stop when `abstractGameState === 'Final'`. Auto-refresh every 5 minutes.
-
-Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}/playByPlay` (v1 path — do NOT use `feed/live` v1, it 404s)
-
-### ⚙️ Settings
-- **Select Team** — dropdown of all 30 teams; switching reloads all data, reapplies theme, resets caches
-- **Color Theme** — overrides colours independently of active team; persists across team switches
-- **Invert Colours** — swaps primary and secondary; works with theme override
-- **🔔 Game Start Alerts** — push toggle; hidden on desktop via CSS `@media(min-width:1025px){ #pushRow { display:none !important } }`
-- **📻 Live Game Radio** (`#radioRow`, `#radioToggle`) — calls `toggleRadio()`; auto-pairs to focused game's flagship station if in `APPROVED_RADIO_TEAM_IDS`, else Fox Sports. Also toggled from `#ptbRadioBtn`; both synced by `setRadioUI()`.
-- **🛠️ Dev Tools** — `toggleDevTools()` opens `#devToolsPanel`. Includes 🔍 Radio Check sweep tool (moved from Settings in v3.43). See `docs/dev-tools.md` and `docs/radio-system.md`.
-- Panel closes on click outside. All settings persist via `localStorage`.
+**Critical traps:**
+- `gameGradient(g)` is away→home order — only used by `renderGameBig` (schedule/history cards). `renderNextGame` builds its own gradient so opponent is always left; using `gameGradient` there would be wrong for away games.
+- `#playerCardOverlay` must stay top-level DOM (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`) — never nested inside `#pulse`. Sections create stacking contexts that trap z-index. Current z-index: 600.
 
 ---
 
