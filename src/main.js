@@ -723,6 +723,7 @@ Object.assign(window, {
   radioCheckPlay, radioCheckSet, radioCheckSetNote,
   copyVideoDebug, refreshVideoDebugPanel, closeVideoDebugPanel,
   copyDiagnosticSnapshot,
+  _copyToClipboard,
   toggleColorLock, updateColorOverride, updateTuning,
   replayHRCard, replayRBICard, generateTestCard, devTestVideoClip,
   renderLogCapture, renderAppState,

@@ -10651,6 +10651,7 @@
     refreshVideoDebugPanel,
     closeVideoDebugPanel,
     copyDiagnosticSnapshot,
+    _copyToClipboard,
     toggleColorLock,
     updateColorOverride,
     updateTuning,
