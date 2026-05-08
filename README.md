@@ -187,7 +187,10 @@ For the full breakdown of architecture, every API endpoint, every CSS variable, 
 
 - **[MLB Stats API](https://statsapi.mlb.com/)** — every live data point in the app
 - **[ESPN](https://www.espn.com/)** — news headlines (unofficial endpoint)
-- **[MLB RSS Feeds](https://www.mlb.com/)** — team and league-wide news feeds (fallback source)
+- **[MLB.com RSS](https://www.mlb.com/)** — team and league-wide news feeds
+- **[MLB Trade Rumors](https://www.mlbtraderumors.com/)** — trade and roster news
+- **[FanGraphs](https://www.fangraphs.com/)** — advanced baseball analysis
+- **[CBS Sports](https://www.cbssports.com/)** — sports news and coverage
 - **[YouTube](https://www.youtube.com/)** — team channel feeds and highlight videos
 - **[Hls.js](https://github.com/video-dev/hls.js)** — HLS streaming for radio
 - **[Internet Archive](https://archive.org/)** — classic MLB broadcast recordings used in Demo Mode
