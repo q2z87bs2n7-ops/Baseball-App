@@ -16,16 +16,19 @@ Outfield Horizon design — stadium sunset scene with heartbeat/pulse line. File
 - `icon-mono.svg` — monochrome (iOS 16.4+)
 - `favicon.svg` — browser tab
 
-`manifest.json`: `background_color: #0a1929` (Daybreak splash navy — matches splash gradient bottom and Android cold-boot splash bg), `theme_color: #0E3E1A`, `short_name: "Pulse"`, `orientation: "any"` (for iPad landscape).
+`manifest.json`: `background_color: #0a0f1e` (matches body bg `var(--dark)` exactly so the iOS pre-paint / Android splash bg doesn't jump when the app shell mounts), `theme_color: #0E3E1A`, `short_name: "Pulse"`, `orientation: "any"` (for iPad landscape).
 
-### Splash screens (iOS)
+### Splash screen (in-app HTML, Daybreak)
 
-- Source design: `handoff/daybreak/splash-template.html` (peach→navy vertical gradient, Pulse waveform mark + PULSE wordmark)
-- Generated PNGs: `icons/splash/splash-{W}x{H}.png` — curated **12-PNG cut** (6 device rows × 2 orientations)
-- Device list: `handoff/daybreak/sizes.json` — covers iPhone 12, iPhone 13/14/15/16 + Plus/Pro Max sizes, iPad Air 11" (M2/M3), iPad Pro 12.9". Older devices (iPhone 8/SE/11/XR/X-era, older iPads) fall through to manifest `background_color`
-- 12 `<link rel="apple-touch-startup-image">` tags hand-curated in `index.html` `<head>` after the apple-touch-icon link
-- **Not pre-cached by `sw.js`** — iOS loads `apple-touch-startup-image` from the OS shell, not via fetch; pre-caching adds install bloat for no functional benefit
-- Regen / add devices: edit `handoff/daybreak/sizes.json`, run `bash handoff/daybreak/build.sh` (uses globally-installed Playwright + the chromium at `/opt/pw-browsers/`), hand-add the matching `<link>` tag, bump versions per CLAUDE.md rule 7
+We do not ship `apple-touch-startup-image` PNGs. iOS shows the manifest `background_color` (solid `#0a0f1e`) for the ~250ms before HTML parses, then the in-app `#appSplash` overlay (defined inline in `index.html` `<head>` + top of `<body>`) takes over. This avoids the 12-PNG device matrix + the `apple-touch-startup-image` exact-pixel-match rules + the iOS-controlled dismiss timing.
+
+Lifecycle (CSS animation + JS):
+1. **Entry (0–300ms after parse):** gradient + glow + stars + mark/wordmark fade IN from the matching dark bg via `@keyframes appSplashIn`. Eases out of the manifest pre-paint.
+2. **Hold:** until `window.dismissAppSplash()` is called by `src/main.js` after the first `pollLeaguePulse().then(...)` resolves. Min-show floor 600ms; max-hold safety timeout 4000ms.
+3. **Dismiss phase 1 (0–400ms):** gradient + content fade out. Container stays opaque on `var(--dark, #0a0f1e)` so screen converges to uniform dark.
+4. **Dismiss phase 2 (400–750ms):** container fades — visually invisible since body underneath is the same color.
+
+Source design lives in `handoff/daybreak/` (renderable HTML template, README spec). To tweak the design: edit `handoff/daybreak/splash-template.html`, port the changes to the inline `<style>` block in `index.html`, bump versions per CLAUDE.md rule 7. The `handoff/daybreak/build.sh` + `generate.mjs` + `sizes.json` files exist for re-introducing PNGs if we ever change our mind.
 
 ## Push Notifications
 
