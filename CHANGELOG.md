@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.4.15
+**Current version:** v4.4.16
+
+**v4.4.16** — **HR carousel speed + game-detail panel resilience.** Cherry-picked from `claude/investigate-homerun-speed-awCtj` (commit `d0e560d`). (1) `src/pulse/poll.js` now extracts `play.hitData.launchSpeed` alongside `totalDistance` for HR plays and passes both through `addFeedItem`; same backfill logic in the update loop. (2) `src/carousel/generators.js` `genHRStories()` adds `' at NN mph'` to the headline when speed is present — story now reads "hit a 420ft homer at 108 mph off …". (3) `src/sections/loaders.js` `buildGameDetailPanel()` adds `response.ok` guards on linescore/boxscore fetches (throw early instead of opaque "Could not load game details") and treats `/content` failures as non-fatal — boxscore renders even when highlight content is unavailable. CACHE mlb-v4414 → mlb-v4416. The cherry-pick had only version-string conflicts in `index.html` and `sw.js`; the three substantive files merged cleanly with no logic conflicts against the v4.4 mobile-nav work.
 
 **v4.4.15** — **Documentation sync after v4.4 mobile-nav refactor.** Backfilled CHANGELOG entries for v4.2 → v4.4.14, updated `CLAUDE.md` Current Version line + Repo Structure (`src/nav/`) + Navigation section (full mobile nav architecture: sticky header, More sheet, hide-on-scroll, hashchange routing, scroll memory, live-state nav dots, long-press, settings bottom sheet). Added `src/nav/` to `docs/module-graph.md` (Layer 4) and bumped its module count + `main.js` LOC. Annotated `--header-h` mobile override (42px + safe-area-inset-top) in `docs/css-variables.md` and updated the ≤480px breakpoint row to reflect v4.4 changes (sticky header, 5-tab nav + More sheet, 11px label floor, horizontal-scroll tabs, settings bottom sheet). Added Yesterday Recap section + `.section-bar` notes to `docs/sections.md`. No app-content changes — version-string-only release commit, no CACHE bump.
 
