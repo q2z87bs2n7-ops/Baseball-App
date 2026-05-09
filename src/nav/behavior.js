@@ -47,7 +47,9 @@ export function captureScroll(sectionId) {
 
 export function restoreScroll(sectionId) {
   const y = scrollMemory.get(sectionId) || 0;
-  // rAF so layout has settled after the section toggle
+  const nav = document.querySelector('nav');
+  if (nav) nav.classList.remove('nav-hidden');
+  lastScrollY = y; // pre-sync so scroll listener sees delta=0 and won't re-hide
   requestAnimationFrame(() => window.scrollTo(0, y));
 }
 
