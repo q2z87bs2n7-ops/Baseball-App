@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>MLB Pulse v4.6.3</title>
+<title>MLB Pulse — Live Scores &amp; Stats</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <script>(function(){try{var ua=navigator.userAgent||'';var isIPad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);if(isIPad){var m=document.querySelector('meta[name=viewport]');if(m)m.setAttribute('content','width=device-width, initial-scale=1.0');}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
@@ -17,13 +17,14 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.6.3"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.6.3">
+<script defer src="dist/app.bundle.js?v=4.6.4"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.6.4">
 </head>
 <body>
 <header>
   <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span><span class="header-crumb" id="headerCrumb">PULSE</span></div>
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
+  <script>(function(){try{var id=parseInt(localStorage.getItem('mlb_team')||'0');if(!id||id===121)return;var T={108:['Angels','Los Angeles Angels'],109:['D-backs','Arizona Diamondbacks'],110:['Orioles','Baltimore Orioles'],111:['Red Sox','Boston Red Sox'],112:['Cubs','Chicago Cubs'],113:['Reds','Cincinnati Reds'],114:['Guardians','Cleveland Guardians'],115:['Rockies','Colorado Rockies'],116:['Tigers','Detroit Tigers'],117:['Astros','Houston Astros'],118:['Royals','Kansas City Royals'],119:['Dodgers','Los Angeles Dodgers'],120:['Nationals','Washington Nationals'],133:['Athletics','Oakland Athletics'],134:['Pirates','Pittsburgh Pirates'],135:['Padres','San Diego Padres'],136:['Mariners','Seattle Mariners'],137:['Giants','San Francisco Giants'],138:['Cardinals','St. Louis Cardinals'],139:['Rays','Tampa Bay Rays'],140:['Rangers','Texas Rangers'],141:['Blue Jays','Toronto Blue Jays'],142:['Twins','Minnesota Twins'],143:['Phillies','Philadelphia Phillies'],144:['Braves','Atlanta Braves'],145:['White Sox','Chicago White Sox'],146:['Marlins','Miami Marlins'],147:['Yankees','New York Yankees'],158:['Brewers','Milwaukee Brewers']};var t=T[id];if(!t)return;var logo=document.querySelector('.logo');if(logo)logo.innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+id+'.svg" style="height:32px;width:32px"> <span>'+t[0].toUpperCase()+'</span><span class="header-crumb" id="headerCrumb">PULSE</span>';var chip=document.getElementById('teamChip');if(chip)chip.textContent=t[1].toUpperCase();}catch(e){}})();</script>
   <nav>
     <button class="active" data-section="pulse" onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
     <button data-section="home" onclick="showSection('home',this)">🏠<span class="nav-label"> My Team</span></button>
@@ -54,23 +55,23 @@
               <option value="nav">Nav Only</option>
             </select>
             <span style="font-size:.72rem;color:var(--muted);white-space:nowrap">Invert</span>
-            <div onclick="toggleInvert()" id="invertToggle" class="settings-toggle" role="checkbox" aria-label="Toggle invert colors">
+            <button onclick="toggleInvert()" id="invertToggle" class="settings-toggle" role="switch" aria-checked="false" aria-label="Toggle invert colors">
               <div id="invertToggleKnob" class="settings-toggle-knob"></div>
-            </div>
+            </button>
           </div>
         </div>
         <div id="pushRow" class="settings-row">
           <div class="settings-row__label">🔔 Game Start Alerts</div>
-          <div onclick="togglePush()" id="pushToggle" class="settings-toggle" role="checkbox" aria-label="Toggle game start alerts">
+          <button onclick="togglePush()" id="pushToggle" class="settings-toggle" role="switch" aria-checked="false" aria-label="Toggle game start alerts">
             <div id="pushToggleKnob" class="settings-toggle-knob"></div>
-          </div>
+          </button>
           <div style="display:none" id="pushStatusText">Off</div>
         </div>
         <div id="radioRow" class="settings-row">
           <div class="settings-row__label">📻 Live Game Radio</div>
-          <div onclick="toggleRadio()" id="radioToggle" class="settings-toggle" role="checkbox" aria-label="Toggle live game radio">
+          <button onclick="toggleRadio()" id="radioToggle" class="settings-toggle" role="switch" aria-checked="false" aria-label="Toggle live game radio">
             <div id="radioToggleKnob" class="settings-toggle-knob"></div>
-          </div>
+          </button>
           <div style="display:none" id="radioStatusText">Off · Auto-pairs to focus game</div>
         </div>
         <div class="settings-row">
@@ -81,7 +82,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.6.3</div>
+        <div class="settings-version">v4.6.4</div>
       </div>
     </div>
   </div>
@@ -164,28 +165,6 @@
           <button type="button" class="stat-tab leader-pill" data-stat="saves" onclick="selectLeaderPill('pitching','saves',this)">SV</button>
           <button type="button" class="stat-tab leader-pill" data-stat="inningsPitched" onclick="selectLeaderPill('pitching','inningsPitched',this)">IP</button>
         </div>
-        <select id="hitLeaderStat" onchange="loadLeaders()" style="width:100%">
-          <option value="avg">Batting Average (AVG)</option>
-          <option value="homeRuns">Home Runs (HR)</option>
-          <option value="rbi">RBI</option>
-          <option value="ops">OPS</option>
-          <option value="hits">Hits (H)</option>
-          <option value="stolenBases">Stolen Bases (SB)</option>
-          <option value="runs">Runs (R)</option>
-          <option value="doubles">Doubles (2B)</option>
-          <option value="strikeOuts">Strikeouts (K)</option>
-          <option value="baseOnBalls">Walks (BB)</option>
-        </select>
-        <select id="pitLeaderStat" onchange="loadLeaders()" style="width:100%;display:none">
-          <option value="era">ERA</option>
-          <option value="whip">WHIP</option>
-          <option value="strikeOuts">Strikeouts (K)</option>
-          <option value="wins">Wins</option>
-          <option value="inningsPitched">Innings Pitched (IP)</option>
-          <option value="saves">Saves</option>
-          <option value="holds">Holds</option>
-          <option value="strikeoutWalkRatio">K/BB Ratio</option>
-        </select>
       </div>
       <div id="leaderList"><div class="loading">Loading leaders...</div></div>
     </div>
@@ -235,16 +214,16 @@
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <span>📰 News Feed</span>
       <div style="display:flex;align-items:center;gap:8px">
-        <div class="stat-tabs" style="margin-bottom:0">
-          <button class="stat-tab active" id="newsMlbBtn" onclick="switchNewsFeed('mlb',this)">MLB</button>
-          <button class="stat-tab" id="newsTeamBtn" onclick="switchNewsFeed('team',this)">Mets</button>
-        </div>
+        <button id="newsTeamBtn" class="ptb-lens ptb-toggle" onclick="toggleNewsTeamLens()" title="Filter to my team's news">
+          <span class="ptb-lens-label">MY TEAM</span>
+          <span class="ptb-lens-track"><span class="ptb-lens-knob" id="newsTeamLensKnob"></span></span>
+        </button>
         <button class="refresh-btn" onclick="loadNews()">↻ Refresh</button>
       </div>
     </div>
     <div id="newsSourcePills" class="stat-tabs" style="margin:0 0 12px;display:flex;flex-wrap:wrap;gap:6px">
       <button class="stat-tab active" data-source="all" onclick="selectNewsSource('all',this)">All</button>
-      <button class="stat-tab" data-source="mlb" onclick="selectNewsSource('mlb',this)">MLB</button>
+      <button class="stat-tab" data-source="mlb" onclick="selectNewsSource('mlb',this)">MLB.com</button>
       <button class="stat-tab" data-source="espn" onclick="selectNewsSource('espn',this)">ESPN</button>
       <button class="stat-tab" data-source="mlbtr" onclick="selectNewsSource('mlbtr',this)">Rumors</button>
       <button class="stat-tab" data-source="fangraphs" onclick="selectNewsSource('fangraphs',this)">Analysis</button>
@@ -293,15 +272,18 @@
   </div>
   <div id="mockBar" style="display:none">
     <span class="mock-badge" id="mockBarBadge">📽️ Demo</span>
-    <span class="mock-bar-label">Speed:</span>
-    <button class="mock-btn" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)">1x</button>
-    <button class="mock-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)">10x</button>
-    <button class="mock-btn" id="demoSpeed30x" onclick="setDemoSpeed(333,this)">30x</button>
-    <button class="mock-btn" id="demoNextHRBtn" onclick="demoNextHR()" style="margin-left:8px">🔥 Next HR</button>
-    <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()">⏸ Pause</button>
-    <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()">Forward ▶</button>
-    <button class="mock-btn" id="demoExitBtn" onclick="exitDemo()" style="margin-left:8px">⏹ Exit Demo</button>
+    <span class="mock-speed-seg">
+      <button class="mock-btn" id="demoSpeed1x" onclick="setDemoSpeed(10000,this)">1x</button>
+      <button class="mock-btn" id="demoSpeed10x" onclick="setDemoSpeed(1000,this)">10x</button>
+      <button class="mock-btn" id="demoSpeed30x" onclick="setDemoSpeed(333,this)">30x</button>
+    </span>
+    <span class="mock-action-group">
+      <button class="mock-btn" id="demoNextHRBtn" onclick="demoNextHR()">🔥</button>
+      <button class="mock-btn" id="demoPauseBtn" onclick="toggleDemoPause()">⏸ Pause</button>
+      <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()">▶</button>
+    </span>
     <span class="mock-progress" id="mockProgress"></span>
+    <button class="mock-btn" id="demoExitBtn" onclick="exitDemo()" style="margin-left:auto;border-color:rgba(255,100,100,.5);color:var(--muted)">⏹ Exit</button>
   </div>
   <div id="feedWrap">
     <div id="feedEmpty">
@@ -372,7 +354,6 @@
 <div id="pulseOverflowSheet" class="more-sheet" role="dialog" aria-label="Pulse controls">
   <div class="more-sheet-grid">
     <button class="more-sheet-item" onclick="openYesterdayRecap();closePulseOverflow()"><span class="icon">◷</span><span>Yesterday</span></button>
-    <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseOverflow()"><span class="icon">🔊</span><span>Sound</span></button>
     <button class="more-sheet-item" onclick="togglePulseColorScheme();closePulseOverflow()"><span class="icon">☀️</span><span>Theme</span></button>
   </div>
 </div>
@@ -381,7 +362,6 @@
   <div class="more-sheet-grid">
     <button class="more-sheet-item" onclick="toggleDemoMode();closePulseShortcuts()"><span class="icon">▶</span><span>Demo Mode</span></button>
     <button class="more-sheet-item" onclick="openCollection();closePulseShortcuts()"><span class="icon">🃏</span><span>Cards</span></button>
-    <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseShortcuts()"><span class="icon">🔊</span><span>Sound</span></button>
   </div>
 </div>
 <div id="videoOverlay" onclick="if(event.target===this)closeVideoOverlay()" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.94);flex-direction:column;align-items:center;justify-content:center;padding:20px">
@@ -396,8 +376,9 @@
 
 <div id="signInCTA" style="display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);z-index:950;max-width:320px;width:calc(100% - 32px);background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none">
   <div style="display:flex;align-items:center;gap:10px">
-    <div style="flex:1;font-size:.81rem;color:var(--muted);line-height:1.4">☁️ Sync your collection — sign in to save cards across devices</div>
-    <button onclick="signInWithGitHub();closeSignInCTA()" style="flex-shrink:0;background:var(--primary);color:var(--header-text);font-size:.75rem;font-weight:600;padding:6px 12px;border:none;border-radius:20px;cursor:pointer;white-space:nowrap">Sign In</button>
+    <div style="flex:1;font-size:.81rem;color:var(--muted);line-height:1.4">☁️ Sync your collection across devices</div>
+    <button onclick="signInWithGitHub();closeSignInCTA()" style="flex-shrink:0;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.72rem;font-weight:600;padding:6px 10px;border-radius:20px;cursor:pointer;white-space:nowrap">🐙 GitHub</button>
+    <button onclick="signInWithEmail();closeSignInCTA()" style="flex-shrink:0;background:var(--primary);color:var(--header-text);font-size:.72rem;font-weight:600;padding:6px 10px;border:none;border-radius:20px;cursor:pointer;white-space:nowrap">✉️ Email</button>
     <button onclick="closeSignInCTA()" style="flex-shrink:0;background:none;border:none;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:2px 4px" aria-label="Dismiss">✕</button>
   </div>
   <div id="signInCTAProgress" style="margin-top:8px;height:2px;background:var(--border);border-radius:1px;overflow:hidden"><div id="signInCTABar" style="height:100%;width:100%;background:var(--primary);transform-origin:left;transform:scaleX(1);transition:transform 8s linear"></div></div>
@@ -440,7 +421,6 @@
     <button class="dev-btn" data-dt-action="resetCollection" style="border-color:var(--hr-border)">
       <div class="dev-btn-label">🗑️ Reset Collection</div>
     </button>
-    <!-- TEMP — News source diagnostic. Remove after News tab QA. -->
     <button class="dev-btn" data-dt-action="newsTest">
       <div class="dev-btn-label">🔬 News Source Test</div>
       <div class="dev-btn-shortcut">Shift+N</div>
@@ -745,7 +725,6 @@
   </div>
 </div>
 
-<!-- TEMP — News source diagnostic. Remove after News tab QA. -->
 <div id="newsSourceTestOverlay" onclick="if(event.target===this)closeNewsSourceTest()" style="display:none;position:fixed;inset:0;z-index:560;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
   <div style="width:100%;max-width:760px;max-height:90vh;background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0">

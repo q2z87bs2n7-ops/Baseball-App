@@ -33,7 +33,7 @@ export async function subscribeToPush() {
     localStorage.setItem('mlb_push', '1');
     document.getElementById('pushStatusText').textContent = 'On';
   } catch (err) {
-    document.getElementById('pushToggle').style.background = 'var(--border)';
+    var pt=document.getElementById('pushToggle');pt.style.background = 'var(--border)';pt.setAttribute('aria-checked','false');
     document.getElementById('pushToggleKnob').style.left = '3px';
     document.getElementById('pushStatusText').textContent = 'Permission Denied';
   }
@@ -72,10 +72,12 @@ export function togglePush() {
     }
     tog.style.background = 'var(--secondary)';
     knob.style.left = '21px';
+    tog.setAttribute('aria-checked', 'true');
     subscribeToPush();
   } else {
     tog.style.background = 'var(--border)';
     knob.style.left = '3px';
+    tog.setAttribute('aria-checked', 'false');
     unsubscribeFromPush();
   }
 }

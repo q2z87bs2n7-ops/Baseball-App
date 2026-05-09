@@ -131,7 +131,7 @@ import {
   loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
   loadStandings,
   selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer,
-  selectNewsSource, loadNews, switchNewsFeed,
+  selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
   showLiveGame, closeLiveView, fetchLiveGame,
 } from './sections/loaders.js';
@@ -580,8 +580,8 @@ function renderNextGame(g,label){
   buildTeamSelect();buildThemeSelect();updatePulseToggle();
   document.getElementById('themeSelect').value=storedTheme||'-1';
   if(sv('mlb_theme_scope'))document.getElementById('themeScopeSelect').value=sv('mlb_theme_scope');
-  if(state.themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';}
-  if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';}document.getElementById('pushStatusText').textContent='On';}
+  if(state.themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';it.setAttribute('aria-checked','true');}
+  if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';pt.setAttribute('aria-checked','true');}document.getElementById('pushStatusText').textContent='On';}
   applyTeamTheme(state.activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
   updateCollectionUI();
   updateSyncUI();
@@ -733,7 +733,7 @@ Object.assign(window, {
   openYesterdayRecap, closeYesterdayRecap,
   // Section loaders (refresh buttons, day toggles)
   loadSchedule, loadNews, loadLeaders, loadLeagueMatchups, changeMonth,
-  switchLeaderTab, selectLeaderPill, switchRosterTab, switchNewsFeed,
+  switchLeaderTab, selectLeaderPill, switchRosterTab, switchNewsFeed, toggleNewsTeamLens,
   switchLeagueLeaderTab, switchMatchupDay, selectNewsSource,
   // Live game view + matchup grid
   showLiveGame, closeLiveView, fetchLiveGame, switchBoxTab, selectCalGame,

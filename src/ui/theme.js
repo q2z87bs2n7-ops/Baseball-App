@@ -190,6 +190,7 @@ function toggleInvert(){
   var t=document.getElementById('invertToggle'),k=document.getElementById('invertToggleKnob');
   t.style.background=state.themeInvert?'var(--primary)':'var(--border)';
   k.style.left=state.themeInvert?'21px':'3px';
+  t.setAttribute('aria-checked',state.themeInvert?'true':'false');
   applyTeamTheme(state.activeTeam);
   if(themeCallbacks.loadTodayGame) themeCallbacks.loadTodayGame();
   if(themeCallbacks.loadNextGame) themeCallbacks.loadNextGame();

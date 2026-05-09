@@ -326,6 +326,8 @@ nav button.active {
   height: 24px;
   border-radius: var(--radius-pill);
   background: var(--border);
+  border: none;
+  padding: 0;
   cursor: pointer;
   position: relative;
   transition: background .2s;
@@ -4106,9 +4108,28 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 .mock-progress {
-  margin-left: auto;
   font-size: .69rem;
   color: var(--muted);
+  flex-shrink: 0;
+}
+
+.mock-speed-seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.mock-speed-seg .mock-btn {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid var(--border);
+}
+.mock-speed-seg .mock-btn:last-child { border-right: none; }
+
+.mock-action-group {
+  display: inline-flex;
+  gap: 4px;
   flex-shrink: 0;
 }
 
