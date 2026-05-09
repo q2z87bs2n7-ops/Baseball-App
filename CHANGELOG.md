@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.4.16
+**Current version:** v4.5
+
+**v4.5** — **Release rollup.** Drops the patch on merge of `claude/mobile-nav-updates-XVaaU` (PR #14) into main. No content changes — bumps `<title>`, settings panel version, and CHANGELOG. Mobile-nav refactor (Direction A from `Mobile Nav.zip` handoff), `src/nav/` module, and HR speed/distance work all shipped under v4.4.3 → v4.4.16; see those entries for detail.
 
 **v4.4.16** — **HR carousel speed + game-detail panel resilience.** Cherry-picked from `claude/investigate-homerun-speed-awCtj` (commit `d0e560d`). (1) `src/pulse/poll.js` now extracts `play.hitData.launchSpeed` alongside `totalDistance` for HR plays and passes both through `addFeedItem`; same backfill logic in the update loop. (2) `src/carousel/generators.js` `genHRStories()` adds `' at NN mph'` to the headline when speed is present — story now reads "hit a 420ft homer at 108 mph off …". (3) `src/sections/loaders.js` `buildGameDetailPanel()` adds `response.ok` guards on linescore/boxscore fetches (throw early instead of opaque "Could not load game details") and treats `/content` failures as non-fatal — boxscore renders even when highlight content is unavailable. CACHE mlb-v4414 → mlb-v4416. The cherry-pick had only version-string conflicts in `index.html` and `sw.js`; the three substantive files merged cleanly with no logic conflicts against the v4.4 mobile-nav work.
 
