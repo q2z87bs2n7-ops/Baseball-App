@@ -3576,14 +3576,14 @@ select {
   .settings-panel {
     display: block;
     position: fixed;
-    top: 0;
+    top: calc(42px + env(safe-area-inset-top));
     left: 0;
     right: 0;
     bottom: auto;
     width: auto;
-    border-radius: 0 0 16px 16px;
-    padding: calc(42px + env(safe-area-inset-top)) 16px 16px;
-    transform: translateY(calc(-100% - env(safe-area-inset-top)));
+    border-radius: 16px 16px 0 0;
+    padding: 16px 16px calc(72px + env(safe-area-inset-bottom));
+    transform: translateY(calc(-100% - 16px));
     transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
     z-index: 200;
     pointer-events: none
