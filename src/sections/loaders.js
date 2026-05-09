@@ -336,7 +336,8 @@ async function buildGameDetailPanel(g,gameNum){
     try{if(responses[2].ok)content=await responses[2].json();}catch(e){/* DEBUG START */console.error('[GameDetail] ct json',e);/* DEBUG END */}
   }catch(e){/* DEBUG START */console.error('[GameDetail] fetch error pk='+g.gamePk,e);/* DEBUG END */}
   var highlight=content.highlights&&content.highlights.highlights&&content.highlights.highlights.items&&content.highlights.highlights.items[0]?content.highlights.highlights.items[0]:null;
-  var highlightUrl=highlight?pickPlayback(highlight.playbacks):null;
+  var highlightPb=highlight?pickPlayback(highlight.playbacks):null;
+  var highlightUrl=highlightPb?highlightPb.url:null;
   var thumbCuts=highlight&&highlight.image&&highlight.image.cuts?highlight.image.cuts:[];
   var thumbCut=thumbCuts.find(function(c){return c.width>=640&&c.width<=960;})||thumbCuts[thumbCuts.length-1]||null;
   var thumbUrl=thumbCut?thumbCut.src:null;
