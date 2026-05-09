@@ -130,7 +130,7 @@ import {
   loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
   loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
   loadStandings,
-  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, loadTodaysLeaders, switchTodaysLeadersTab, toggleTodaysLeadersExpanded, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
+  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, loadTodaysLeaders, switchTodaysLeadersTab, toggleTodaysLeadersExpanded, installStatsQuickNav, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
   selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
   showLiveGame, closeLiveView, fetchLiveGame,
@@ -473,7 +473,7 @@ function showSection(id,btn){
   }
   if(id==='schedule'&&!state.scheduleLoaded)loadSchedule();
   if(id==='standings')loadStandings();
-  if(id==='stats'){loadTeamStats();loadTodaysLeaders();if(!state.rosterData.hitting.length){loadRoster();loadLeaders();}else loadLeaders();}
+  if(id==='stats'){loadTeamStats();loadTodaysLeaders();installStatsQuickNav();if(!state.rosterData.hitting.length){loadRoster();loadLeaders();}else loadLeaders();}
   if(id==='league')loadLeagueView();
   if(id==='news')loadNews();
   // Restore scroll position for incoming section + sync URL hash for deep linking

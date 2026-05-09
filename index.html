@@ -17,8 +17,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.8.2"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.8.2">
+<script defer src="dist/app.bundle.js?v=4.8.3"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.8.3">
 <style>
 /* In-app Daybreak splash — full lifecycle is ours. iOS shows manifest background_color (#0a0f1e, matches body) until HTML parses to #appSplash, then this overlay takes over.
    Entry (0-300ms): gradient + content fade IN from the matching dark bg → no snap-in jump from manifest bg.
@@ -118,7 +118,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.8.2</div>
+        <div class="settings-version">v4.8.3</div>
       </div>
     </div>
   </div>
@@ -176,13 +176,20 @@
 </div>
 
 <div id="stats" class="section">
+  <nav class="stats-quicknav" id="statsQuickNav" aria-label="Stats sections">
+    <button type="button" data-target="teamStatsCard">Team</button>
+    <button type="button" data-target="leadersCard">Leaders</button>
+    <button type="button" data-target="rosterCard">Roster</button>
+    <button type="button" data-target="playerStatsCard">Player</button>
+    <button type="button" data-target="todaysLeadersCard">Today's</button>
+  </nav>
   <div class="card team-stats-card" id="teamStatsCard">
     <div class="card-title" id="teamStatsTitle">Team Stats</div>
     <div class="team-stats-strip" id="teamStatsStrip"><div class="loading">Loading team stats...</div></div>
     <div class="team-form-line" id="teamFormLine"></div>
   </div>
   <div class="grid3">
-    <div class="card">
+    <div class="card" id="leadersCard">
       <div class="leaders-card-head">
         <div class="card-title">Leaders</div>
         <button type="button" id="qualifiedToggle" class="qualified-toggle on" role="switch" aria-checked="true" onclick="toggleQualifiedOnly()" title="Hide players below qualified threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers)">
@@ -235,7 +242,7 @@
       </div>
       <div id="leaderList"><div class="loading">Loading leaders...</div></div>
     </div>
-    <div class="card">
+    <div class="card" id="rosterCard">
       <div class="card-title" id="rosterTitle">2026 Roster</div>
       <div class="stat-tabs">
         <button class="stat-tab active" onclick="switchRosterTab('hitting',this)">⚾ Hitting</button>
@@ -244,7 +251,7 @@
       </div>
       <div class="player-list" id="playerList"><div class="loading">Loading roster...</div></div>
     </div>
-    <div class="card">
+    <div class="card" id="playerStatsCard">
       <div class="card-title player-stats-title-row">
         <span id="playerStatsTitle">Player Stats</span>
         <button type="button" class="compare-trigger" onclick="openCompareOverlay()" title="Compare with another player">⇄ Compare</button>

@@ -2579,6 +2579,47 @@ nav button.active {
 .tl-expand-toggle:active { background: color-mix(in srgb, var(--accent) 8%, var(--card2)) }
 @media (max-width: 480px) { .tl-expand-toggle { display: block } }
 
+/* ── Stats mobile quick-nav (≤480px only — hidden on tablet/desktop) ── */
+.stats-quicknav { display: none }
+@media (max-width: 480px) {
+  .stats-quicknav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: calc(42px + env(safe-area-inset-top));
+    z-index: 50;
+    padding: 8px 4px;
+    margin: -8px -4px 8px;
+    background: var(--dark);
+    border-bottom: 1px solid var(--border);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%)
+  }
+  .stats-quicknav::-webkit-scrollbar { display: none }
+  .stats-quicknav button {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: color .15s ease, border-color .15s ease, background .15s ease
+  }
+  .stats-quicknav button.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--card2))
+  }
+}
+
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {
   border-style: dashed !important;

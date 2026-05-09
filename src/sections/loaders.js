@@ -2107,6 +2107,45 @@ export async function loadTodaysLeaders(){
   renderTodaysLeaders();
 }
 
+// Mobile-only sticky chip-row at the top of the Stats section. Tap a chip to
+// scroll the matching card into view; an IntersectionObserver highlights the
+// active chip as the user scrolls. Idempotent — safe to call on every Stats
+// section entry.
+let _statsQuickNavInstalled = false;
+export function installStatsQuickNav(){
+  if(_statsQuickNavInstalled) return;
+  var nav = document.getElementById('statsQuickNav');
+  if(!nav) return;
+  _statsQuickNavInstalled = true;
+  // Click delegation: scroll the matching card into view, accounting for the
+  // sticky page header (≈42px) + the quicknav itself (≈44px).
+  nav.addEventListener('click', function(e){
+    var btn = e.target && e.target.closest && e.target.closest('button[data-target]');
+    if(!btn) return;
+    var tgt = document.getElementById(btn.dataset.target);
+    if(!tgt) return;
+    var headerH = nav.getBoundingClientRect().bottom; // bottom of quicknav = top of content
+    var top = tgt.getBoundingClientRect().top + window.pageYOffset - headerH - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  });
+  // Active-chip highlighting via IntersectionObserver. Fires when a card
+  // crosses the viewport center, marking its chip .active.
+  if(typeof IntersectionObserver === 'undefined') return;
+  var ids = Array.prototype.map.call(nav.querySelectorAll('button[data-target]'), function(b){ return b.dataset.target; });
+  var targets = ids.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+  if(!targets.length) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(!en.isIntersecting) return;
+      var id = en.target.id;
+      Array.prototype.forEach.call(nav.querySelectorAll('button[data-target]'), function(b){
+        b.classList.toggle('active', b.dataset.target === id);
+      });
+    });
+  }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+  targets.forEach(function(t){ io.observe(t); });
+}
+
 // 24h TTL on the gameLog cache — game log only changes once per game-day per
 // player, so cheap to re-use across tab toggles.
 const GAMELOG_TTL_MS = 24 * 60 * 60 * 1000;
