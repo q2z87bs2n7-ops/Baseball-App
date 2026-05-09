@@ -38,10 +38,15 @@ Global live MLB play-by-play feed — scoring plays, home runs, RISP across all 
 
 Ticker: live-only chips sorted by inning progress. Expanded chip (base diamond SVG) fires when `g.onFirst || g.onSecond || g.onThird`. Feed: newest-first, inserted at correct chronological position via `data-ts` attributes.
 
+**`#pulseTopBar`** uses the shared `.section-bar` component (v4.4): eyebrow `⚡ MLB PULSE` + Lens/Radio toggles inline + a `⋯` overflow that opens a sheet with Sound, Yesterday-jump, and Theme. On mobile the launcher pills (`.ptb-launcher`) hide inline and surface only from the overflow sheet. Lens + Radio (`.ptb-toggle`) stay inline so their on/off state is always visible.
+
 **`#playerCardOverlay` must stay top-level DOM** (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`) — never nested inside `#pulse`. Sections create stacking contexts that trap z-index. Current z-index: 600.
 
 Full HTML structure, feed item types, HR/RBI badge logic, scoring formulas, sound system, live polling strategy, video clip matching: `docs/pulse-feed.md`.
 Story carousel (15 generators, rotation engine, all story types): `docs/story-carousel.md`.
+
+## ◷ Yesterday Recap (overlay)
+Triggered from the Pulse story carousel or the ticker. Implemented as an overlay (`src/sections/yesterday.js`), not a `<section>`. **`#ydSectionBar`** uses the shared `.section-bar` component (v4.4.8): eyebrow `◷ HIGHLIGHTS` (renamed from "YESTERDAY" in v4.4.10) + a date scrubber (`‹ DATE ›`) as the primary control + a back button. Body shows hero player carousel, heroes strip, per-game tile grid, and collected-cards strip.
 
 ## 📰 News
 ESPN headlines, MLB / Team toggle (pill buttons). Defaults to MLB-wide (no team filter). Team pill shows `activeTeam.short`. Home card always shows team news regardless of toggle.
