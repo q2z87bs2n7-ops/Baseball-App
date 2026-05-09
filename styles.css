@@ -2303,6 +2303,12 @@ select {
   nav button[data-section="more"] {
     display: flex
   }
+  .ptb-launcher {
+    display: none !important
+  }
+  .ptb-overflow {
+    display: inline-flex
+  }
   .main {
     padding-bottom: calc(72px + env(safe-area-inset-bottom))
   }
@@ -2603,6 +2609,27 @@ select {
   color: var(--accent);
   font-size: .8rem;
   flex-shrink: 0;
+}
+
+.ptb-overflow {
+  display: none;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.ptb-overflow:hover {
+  background: rgba(255,255,255,.08);
 }
 
 .ptb-brand {
