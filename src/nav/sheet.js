@@ -57,6 +57,22 @@ export function togglePulseOverflow() {
   else openPulseOverflow();
 }
 
+export function openPulseShortcuts() {
+  const sheet = document.getElementById('pulseShortcuts');
+  const back = document.getElementById('pulseShortcutsBackdrop');
+  if (!sheet || !back) return;
+  sheet.classList.add('open');
+  back.classList.add('open');
+}
+
+export function closePulseShortcuts() {
+  const sheet = document.getElementById('pulseShortcuts');
+  const back = document.getElementById('pulseShortcutsBackdrop');
+  if (!sheet || !back) return;
+  sheet.classList.remove('open');
+  back.classList.remove('open');
+}
+
 export function updateHeaderCrumb(sectionId) {
   const el = document.getElementById('headerCrumb');
   if (!el) return;
@@ -68,5 +84,6 @@ export function installMoreSheetEscClose() {
     if (e.key !== 'Escape') return;
     closeMoreSheet();
     closePulseOverflow();
+    closePulseShortcuts();
   });
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>MLB Pulse v4.4.12</title>
+<title>MLB Pulse v4.4.13</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,8 +16,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.4.12"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.4.12">
+<script defer src="dist/app.bundle.js?v=4.4.13"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.4.13">
 </head>
 <body>
 <header>
@@ -80,7 +80,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.4.12</div>
+        <div class="settings-version">v4.4.13</div>
       </div>
     </div>
   </div>
@@ -373,6 +373,14 @@
     <button class="more-sheet-item" onclick="openYesterdayRecap();closePulseOverflow()"><span class="icon">◷</span><span>Yesterday</span></button>
     <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseOverflow()"><span class="icon">🔊</span><span>Sound</span></button>
     <button class="more-sheet-item" onclick="togglePulseColorScheme();closePulseOverflow()"><span class="icon">☀️</span><span>Theme</span></button>
+  </div>
+</div>
+<div id="pulseShortcutsBackdrop" class="more-sheet-backdrop" onclick="closePulseShortcuts()"></div>
+<div id="pulseShortcuts" class="more-sheet" role="dialog" aria-label="Pulse shortcuts">
+  <div class="more-sheet-grid">
+    <button class="more-sheet-item" onclick="toggleDemoMode();closePulseShortcuts()"><span class="icon">▶</span><span>Demo Mode</span></button>
+    <button class="more-sheet-item" onclick="openCollection();closePulseShortcuts()"><span class="icon">🃏</span><span>Cards</span></button>
+    <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseShortcuts()"><span class="icon">🔊</span><span>Sound</span></button>
   </div>
 </div>
 <div id="videoOverlay" onclick="if(event.target===this)closeVideoOverlay()" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.94);flex-direction:column;align-items:center;justify-content:center;padding:20px">
