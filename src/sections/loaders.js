@@ -1039,6 +1039,7 @@ function renderPlayerStats(s,group){
     '<div class="player-tab-panel" data-tab="splits"'+(activeTab!=='splits'?' hidden':'')+'>'+renderSplitsPlaceholder()+'</div>'+
     '<div class="player-tab-panel" data-tab="gamelog"'+(activeTab!=='gamelog'?' hidden':'')+'>'+renderGameLogPlaceholder()+'</div>'+
     '<div class="player-tab-panel" data-tab="advanced"'+(activeTab!=='advanced'?' hidden':'')+'>'+renderAdvancedPlaceholder(group)+'</div>'+
+    '<div class="player-tab-panel" data-tab="career"'+(activeTab!=='career'?' hidden':'')+'>'+renderCareerPlaceholder()+'</div>'+
     '</div>';
   document.getElementById('playerStats').innerHTML=html;
   // If the active tab is a lazy-loaded one, kick off its fetch immediately so
@@ -1067,6 +1068,8 @@ function renderPlayerStats(s,group){
         else fetchAdvancedHitting(pid).then(function(){
           if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderAdvancedHittingTab(pid);
         });
+      } else if(activeTab==='career'){
+        ensureCareerLoaded(pid, group);
       }
     }
   }
@@ -1077,7 +1080,7 @@ function renderPlayerStats(s,group){
 // lazy renderers (Game Log / Splits / Arsenal) fire the first time their tab
 // is shown.
 export function switchPlayerStatsTab(tab,btn){
-  if(['overview','splits','gamelog','advanced'].indexOf(tab)<0)return;
+  if(['overview','splits','gamelog','advanced','career'].indexOf(tab)<0)return;
   state.activeStatsTab=tab;
   if(typeof localStorage!=='undefined')localStorage.setItem('mlb_stats_tab',tab);
   document.querySelectorAll('#playerTabs .player-tab').forEach(function(b){b.classList.toggle('active', b.dataset.tab===tab);});
@@ -1130,6 +1133,8 @@ export function switchPlayerStatsTab(tab,btn){
         renderAdvancedHittingTab(pid);
       }
     }
+  } else if(tab==='career'){
+    ensureCareerLoaded(pid, group);
   }
 }
 
@@ -1452,6 +1457,187 @@ function renderAdvancedHittingTab(playerId){
 
 function renderGameLogPlaceholder(){
   return '<div class="tab-empty-state"><div class="tab-empty-icon">📅</div><h4>Last-10 game log</h4><p>Loading game log...</p></div>';
+}
+
+// ── Sprint 3 / Step 3 + 4: Career history + Awards (consolidated tab) ────
+const CAREER_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Quick-look icon hints for award categories. Catches the common award names
+// returned by /people/{id}/awards; everything else falls through to 🏅.
+const AWARD_ICONS = [
+  { test:/MVP|Most Valuable/i,           icon:'🏆' },
+  { test:/Cy Young/i,                    icon:'⚙️' },
+  { test:/Rookie of the Year|ROY/i,      icon:'🌱' },
+  { test:/All[- ]?Star/i,                icon:'⭐' },
+  { test:/Gold Glove/i,                  icon:'🧤' },
+  { test:/Silver Slugger/i,              icon:'🪵' },
+  { test:/Manager of the Year/i,         icon:'🧠' },
+  { test:/World Series MVP/i,            icon:'🏆' },
+  { test:/Comeback/i,                    icon:'🔄' },
+  { test:/Hank Aaron/i,                  icon:'🦾' },
+  { test:/Roberto Clemente/i,            icon:'🤝' },
+  { test:/Reliever of the Year|Trevor Hoffman|Mariano Rivera/i, icon:'🔥' },
+  { test:/Player of the (Month|Week)/i,  icon:'📅' },
+  { test:/Pitcher of the (Month|Week)/i, icon:'🎯' }
+];
+function awardIcon(name){
+  for(var i=0;i<AWARD_ICONS.length;i++){ if(AWARD_ICONS[i].test.test(name||'')) return AWARD_ICONS[i].icon; }
+  return '🏅';
+}
+
+// Pulls career year-by-year stats (both groups) + awards, in parallel. Cached
+// on state.careerCache + state.awardsCache. The awards endpoint may 404 for
+// minor leaguers / players with no awards — treat as empty list.
+async function ensureCareerLoaded(playerId, group){
+  if(!playerId) return;
+  var cached = state.careerCache[playerId];
+  if(cached && Date.now()-cached.ts < CAREER_TTL_MS){
+    renderCareerTab(playerId, group);
+    return;
+  }
+  var careerUrl = MLB_BASE+'/people/'+playerId+'/stats?stats=yearByYear&group=hitting,pitching';
+  var awardsUrl = MLB_BASE+'/people/'+playerId+'/awards';
+  try{
+    var [cR, aR] = await Promise.all([
+      fetch(careerUrl).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch(awardsUrl).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+    ]);
+    var hitting = [], pitching = [];
+    if(cR && cR.stats){
+      cR.stats.forEach(function(block){
+        var g = block.group && block.group.displayName;
+        (block.splits || []).forEach(function(sp){
+          var row = {
+            season: sp.season,
+            teamId: sp.team && sp.team.id,
+            teamAbbr: sp.team && (sp.team.abbreviation || sp.team.name),
+            stat: sp.stat || {}
+          };
+          if(g === 'hitting') hitting.push(row);
+          else if(g === 'pitching') pitching.push(row);
+        });
+      });
+    }
+    state.careerCache[playerId] = { hitting: hitting, pitching: pitching, ts: Date.now() };
+    var awards = (aR && aR.awards) ? aR.awards : [];
+    state.awardsCache[playerId] = { awards: awards, ts: Date.now() };
+  }catch(e){
+    state.careerCache[playerId] = { hitting: [], pitching: [], ts: Date.now() };
+    state.awardsCache[playerId] = { awards: [], ts: Date.now() };
+  }
+  // Re-render only if the user is still on this player + tab
+  if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id === playerId && state.activeStatsTab === 'career'){
+    renderCareerTab(playerId, group);
+  }
+}
+
+function renderCareerPlaceholder(){
+  return '<div class="tab-empty-state"><div class="tab-empty-icon">🗂️</div><h4>Career history</h4><p>Loading year-by-year stats…</p></div>';
+}
+
+function renderCareerTab(playerId, group){
+  var panelEl = document.querySelector('.player-tab-panel[data-tab="career"]');
+  if(!panelEl) return;
+  var career = state.careerCache[playerId];
+  var awards = state.awardsCache[playerId];
+  if(!career){
+    panelEl.innerHTML = renderCareerPlaceholder();
+    return;
+  }
+  var hittingRows = (career.hitting || []).slice();
+  var pitchingRows = (career.pitching || []).slice();
+  // Year-asc display: oldest at top, most-recent at bottom (matches Baseball
+  // Reference convention).
+  hittingRows.sort(function(a,b){ return parseInt(a.season,10)-parseInt(b.season,10); });
+  pitchingRows.sort(function(a,b){ return parseInt(a.season,10)-parseInt(b.season,10); });
+  if(!hittingRows.length && !pitchingRows.length && !(awards && awards.awards.length)){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">🗂️</div><h4>No career data</h4><p>This player has no recorded MLB seasons yet.</p></div>';
+    return;
+  }
+  function fmtR(v){ if(v==null||v==='') return '—'; var n=parseFloat(v); if(isNaN(n)) return String(v); var s=n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; }
+  function fmtN(v, d){ if(v==null||v==='') return '—'; var n=parseFloat(v); if(isNaN(n)) return String(v); return n.toFixed(d==null?0:d); }
+  function fmtIp(v){ if(v==null||v==='') return '—'; return String(v); }
+  function intOr(v){ if(v==null||v==='') return '—'; var n=parseInt(v,10); return isNaN(n)?String(v):String(n); }
+
+  // Awards strip
+  var awardsHtml = '';
+  if(awards && awards.awards && awards.awards.length){
+    var collapsed = {}; // award name → most recent season
+    awards.awards.forEach(function(a){
+      var name = a.name || a.id || 'Award';
+      if(!collapsed[name] || parseInt(a.season,10) > parseInt(collapsed[name],10)) collapsed[name] = a.season;
+    });
+    // Show distinct award types as chips with the most-recent season
+    var chips = Object.keys(collapsed).map(function(name){
+      var season = collapsed[name];
+      // Count occurrences across awards.awards for this name
+      var count = awards.awards.filter(function(a){ return (a.name||a.id) === name; }).length;
+      var countSuffix = count > 1 ? ' ×'+count : '';
+      return '<span class="award-chip" title="'+name+(season?' · '+season:'')+'">'+
+        awardIcon(name)+' '+name+(season?' '+season:'')+countSuffix+
+      '</span>';
+    });
+    awardsHtml = '<div class="awards-strip">'+chips.join('')+'</div>';
+  } else if(awards){
+    awardsHtml = '<div class="awards-strip awards-empty">No major awards recorded.</div>';
+  }
+
+  // Year-by-year tables
+  function tableFor(rows, kind){
+    if(!rows.length) return '';
+    var cols, headerHtml;
+    if(kind === 'hitting'){
+      cols = [
+        ['season','Year', function(r){ return r.season; }],
+        ['team','Team',  function(r){ return r.teamAbbr || ''; }],
+        ['g',  'G',  function(r){ return intOr(r.stat.gamesPlayed); }],
+        ['pa', 'PA', function(r){ return intOr(r.stat.plateAppearances); }],
+        ['avg','AVG',function(r){ return fmtR(r.stat.avg); }],
+        ['hr', 'HR', function(r){ return intOr(r.stat.homeRuns); }],
+        ['rbi','RBI',function(r){ return intOr(r.stat.rbi); }],
+        ['sb', 'SB', function(r){ return intOr(r.stat.stolenBases); }],
+        ['obp','OBP',function(r){ return fmtR(r.stat.obp); }],
+        ['slg','SLG',function(r){ return fmtR(r.stat.slg); }],
+        ['ops','OPS',function(r){ return fmtR(r.stat.ops); }]
+      ];
+    } else {
+      cols = [
+        ['season','Year', function(r){ return r.season; }],
+        ['team','Team', function(r){ return r.teamAbbr || ''; }],
+        ['g',  'G',   function(r){ return intOr(r.stat.gamesPlayed); }],
+        ['ip', 'IP',  function(r){ return fmtIp(r.stat.inningsPitched); }],
+        ['w',  'W',   function(r){ return intOr(r.stat.wins); }],
+        ['l',  'L',   function(r){ return intOr(r.stat.losses); }],
+        ['era','ERA', function(r){ return fmtN(r.stat.era,2); }],
+        ['whip','WHIP',function(r){ return fmtN(r.stat.whip,2); }],
+        ['k',  'K',   function(r){ return intOr(r.stat.strikeOuts); }],
+        ['bb', 'BB',  function(r){ return intOr(r.stat.baseOnBalls); }],
+        ['sv', 'SV',  function(r){ return intOr(r.stat.saves); }]
+      ];
+    }
+    headerHtml = '<tr>'+cols.map(function(c){return '<th>'+c[1]+'</th>';}).join('')+'</tr>';
+    var bodyHtml = rows.map(function(r){
+      return '<tr>'+cols.map(function(c){return '<td class="career-col-'+c[0]+'">'+c[2](r)+'</td>';}).join('')+'</tr>';
+    }).join('');
+    var titleEm = kind === 'hitting' ? '⚾ Hitting' : '🥎 Pitching';
+    return '<div class="career-section">'+
+      '<div class="career-section-head">'+titleEm+' · '+rows.length+' season'+(rows.length===1?'':'s')+'</div>'+
+      '<div class="career-table-wrap"><table class="career-table">'+
+        '<thead>'+headerHtml+'</thead><tbody>'+bodyHtml+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+  }
+  // Order: lead with the player's primary group based on the active roster tab
+  // when both groups have data (two-way players).
+  var primary = group === 'pitching' ? 'pitching' : 'hitting';
+  var secondary = primary === 'hitching' ? 'pitching' : (primary === 'pitching' ? 'hitting' : 'pitching');
+  var tablesHtml = '';
+  if(primary === 'pitching'){
+    tablesHtml = tableFor(pitchingRows,'pitching') + tableFor(hittingRows,'hitting');
+  } else {
+    tablesHtml = tableFor(hittingRows,'hitting') + tableFor(pitchingRows,'pitching');
+  }
+  panelEl.innerHTML = awardsHtml + tablesHtml;
 }
 
 // ── Sprint 3 / Step 2: Today's Leaders (MLB-wide) ────────────────────────

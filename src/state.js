@@ -52,6 +52,10 @@ export const state = {
   advancedHittingCache: {},
   // Today's Leaders module visibility / tab: 'hitting' | 'pitching'
   todaysLeadersTab: 'hitting',
+  // Career year-by-year cache: playerId → { hitting:[...], pitching:[...], ts }
+  careerCache: {},
+  // Awards cache: playerId → { awards:[...], ts }
+  awardsCache: {},
 
   // ── News State ───────────────────────────────────────────────────────────
   newsFeedMode: 'mlb',

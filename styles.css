@@ -2119,6 +2119,83 @@ nav button.active {
 }
 .tl-cat-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 16px 0 }
 
+/* ── Stats v3 / Sprint 3: Career tab (Awards strip + year-by-year tables) ─ */
+.awards-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px
+}
+.awards-empty {
+  color: var(--muted);
+  font-size: .72rem;
+  letter-spacing: .04em;
+  font-style: italic
+}
+.award-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 16%, transparent), transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .02em
+}
+.career-section { margin-top: 16px }
+.career-section-head {
+  font-size: .65rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px
+}
+.career-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card2)
+}
+.career-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: .76rem;
+  min-width: 560px
+}
+.career-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  color: var(--muted);
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 8px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap
+}
+.career-table thead th:first-child,
+.career-table thead th:nth-child(2) { text-align: left }
+.career-table tbody td {
+  padding: 7px 8px;
+  text-align: right;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  white-space: nowrap;
+  color: var(--text)
+}
+.career-table tbody td:first-child { text-align: left; font-weight: 700; color: var(--accent) }
+.career-table tbody td:nth-child(2) { text-align: left; color: var(--muted); font-size: .7rem; letter-spacing: .04em }
+.career-table tbody tr:last-child td { border-bottom: 0 }
+.career-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent) }
+.career-col-avg, .career-col-obp, .career-col-slg, .career-col-ops, .career-col-era, .career-col-whip { color: var(--accent); font-weight: 700 }
+
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {
   border-style: dashed !important;
