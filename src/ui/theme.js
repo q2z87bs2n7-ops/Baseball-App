@@ -149,6 +149,10 @@ function updatePulseToggle(){
   if(icon) icon.textContent=isLight?'☀️':'🌙';
 }
 
+function togglePulseColorScheme(){
+  setPulseColorScheme(pulseColorScheme==='dark'?'light':'dark');
+}
+
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
 
 function setupSettingsClickOutside(){
@@ -215,4 +219,4 @@ function switchTeam(teamId){
   if(state.myTeamLens&&themeCallbacks.applyMyTeamLens) themeCallbacks.applyMyTeamLens(true);
 }
 
-export { setThemeCallbacks, applyTeamTheme, applyPulseMLBTheme, setPulseColorScheme, updatePulseToggle, toggleSettings, setupSettingsClickOutside, toggleInvert, buildThemeSelect, buildTeamSelect, switchTheme, switchThemeScope, switchTeam };
+export { setThemeCallbacks, applyTeamTheme, applyPulseMLBTheme, setPulseColorScheme, togglePulseColorScheme, updatePulseToggle, toggleSettings, setupSettingsClickOutside, toggleInvert, buildThemeSelect, buildTeamSelect, switchTheme, switchThemeScope, switchTeam };

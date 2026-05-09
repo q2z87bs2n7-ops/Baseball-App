@@ -171,6 +171,13 @@ nav button[data-section="more"] {
   pointer-events: auto
 }
 
+@media(min-width:481px) {
+  .more-sheet,
+  .more-sheet-backdrop {
+    display: none !important
+  }
+}
+
 nav button.active {
   background: color-mix(in srgb,var(--accent) 14%,transparent);
   color: var(--accent);

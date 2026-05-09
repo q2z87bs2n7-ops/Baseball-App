@@ -21,7 +21,7 @@ import {
   toggleSoundPanel, onSoundPanelClickOutside,
 } from './ui/sound.js';
 import {
-  setThemeCallbacks, applyTeamTheme, applyPulseMLBTheme, setPulseColorScheme, updatePulseToggle,
+  setThemeCallbacks, applyTeamTheme, applyPulseMLBTheme, setPulseColorScheme, togglePulseColorScheme, updatePulseToggle,
   toggleSettings, setupSettingsClickOutside, toggleInvert, buildThemeSelect, buildTeamSelect,
   switchTheme, switchThemeScope, switchTeam,
 } from './ui/theme.js';
@@ -713,7 +713,7 @@ Object.assign(window, {
   // Settings + theme + team
   switchTeam, switchTheme, switchThemeScope, toggleSettings, toggleInvert,
   togglePush, toggleRadio, toggleDevTools, toggleMyTeamLens, toggleSoundPanel,
-  setPulseColorScheme, setSoundPref,
+  setPulseColorScheme, togglePulseColorScheme, setSoundPref,
   // Collection + Yesterday Recap + Radio Check overlays
   openCollection, closeCollection, openRadioCheck, closeRadioCheck,
   openYesterdayRecap, closeYesterdayRecap,
