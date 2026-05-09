@@ -16,7 +16,16 @@ Outfield Horizon design — stadium sunset scene with heartbeat/pulse line. File
 - `icon-mono.svg` — monochrome (iOS 16.4+)
 - `favicon.svg` — browser tab
 
-`manifest.json`: `background_color: #7C2D5C`, `theme_color: #0E3E1A`, `short_name: "Pulse"`, `orientation: "any"` (for iPad landscape).
+`manifest.json`: `background_color: #0a1929` (Daybreak splash navy — matches splash gradient bottom and Android cold-boot splash bg), `theme_color: #0E3E1A`, `short_name: "Pulse"`, `orientation: "any"` (for iPad landscape).
+
+### Splash screens (iOS)
+
+- Source design: `handoff/daybreak/splash-template.html` (peach→navy vertical gradient, Pulse waveform mark + PULSE wordmark)
+- Generated PNGs: `icons/splash/splash-{W}x{H}.png` — curated **12-PNG cut** (6 device rows × 2 orientations)
+- Device list: `handoff/daybreak/sizes.json` — covers iPhone 12, iPhone 13/14/15/16 + Plus/Pro Max sizes, iPad Air 11" (M2/M3), iPad Pro 12.9". Older devices (iPhone 8/SE/11/XR/X-era, older iPads) fall through to manifest `background_color`
+- 12 `<link rel="apple-touch-startup-image">` tags hand-curated in `index.html` `<head>` after the apple-touch-icon link
+- **Not pre-cached by `sw.js`** — iOS loads `apple-touch-startup-image` from the OS shell, not via fetch; pre-caching adds install bloat for no functional benefit
+- Regen / add devices: edit `handoff/daybreak/sizes.json`, run `bash handoff/daybreak/build.sh` (uses globally-installed Playwright + the chromium at `/opt/pw-browsers/`), hand-add the matching `<link>` tag, bump versions per CLAUDE.md rule 7
 
 ## Push Notifications
 

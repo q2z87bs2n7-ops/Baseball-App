@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Pulse Splash · Daybreak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /*
+    Renderable Daybreak splash template.
+    Designed to be cropped at any aspect ratio (portrait or landscape) — the
+    background gradient fills the canvas and the centered content stack stays
+    visually anchored. Use with pwa-asset-generator or a puppeteer pipeline.
+  */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; }
+  body {
+    background: linear-gradient(180deg,
+      #F5B49A 0%,
+      #E88A6F 18%,
+      #C45A85 32%,
+      #6F4368 48%,
+      #2C3754 65%,
+      #14233D 80%,
+      #0a1929 100%);
+    color: #FAFAF6;
+    font-family: "Archivo", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Top cream glow */
+  .glow {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 130vw;
+    aspect-ratio: 1.6;
+    background: radial-gradient(ellipse at 50% 0%,
+      rgba(255,220,200,0.45) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Star field — lower 35% only */
+  .stars {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 35vh;
+    background-image:
+      radial-gradient(rgba(255,255,255,0.5) 0.5px, transparent 0.7px),
+      radial-gradient(rgba(245,200,74,0.3) 0.5px, transparent 0.7px);
+    background-size: 14px 11px, 23px 19px;
+    background-position: 0 0, 7px 5px;
+    mask-image: linear-gradient(180deg, transparent 0%, black 60%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 60%);
+    z-index: 1;
+  }
+
+  /* Centered content stack */
+  .stack {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .mark {
+    width: 42vmin;
+    aspect-ratio: 512 / 360;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mark svg { width: 100%; height: 100%; }
+
+  .wm {
+    font-family: "Archivo", sans-serif;
+    font-weight: 900;
+    font-size: 6.5vmin;
+    letter-spacing: 0.32em;
+    text-indent: 0.32em;
+    color: #FAFAF6;
+    line-height: 1;
+  }
+
+  .tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.6vmin;
+    color: rgba(250, 250, 246, 0.6);
+    letter-spacing: 0.32em;
+    text-indent: 0.32em;
+    margin-top: -10px;
+  }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="stars"></div>
+  <div class="stack">
+    <div class="mark">
+      <!-- Pulse waveform mark — same path as icons/favicon.svg -->
+      <svg viewBox="0 0 512 360" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 24 220 L 130 220 L 158 220 L 184 160 L 218 304 L 246 96 L 274 304 L 302 160 L 332 220 L 488 220"
+          fill="none" stroke="#FAFAF6" stroke-width="14"
+          stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="0" y="290" width="512" height="36" fill="#FAFAF6"/>
+        <rect x="0" y="334" width="512" height="4" fill="#FAFAF6" opacity="0.6"/>
+        <rect x="0" y="346" width="512" height="4" fill="#FAFAF6" opacity="0.4"/>
+        <circle cx="246" cy="96" r="20" fill="#FAFAF6"/>
+      </svg>
+    </div>
+    <div class="wm">PULSE</div>
+    <div class="tag">LIVE · BASEBALL</div>
+  </div>
+</body>
+</html>
