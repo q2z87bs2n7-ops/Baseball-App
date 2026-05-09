@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.8.10
+**Current version:** v4.8.11
+
+**v4.8.11** — **Hide rank row entirely when outside top 100 (replaces verbose "Outside MLB top 100" message).** UAT call: the `Outside MLB top 100` caption rendering in every below-pool stat box was visual noise — half a player's grid filled with the same red message just made the whole panel feel broken. Replaced with simple omission: when `pInfo.outsideTop` is true, both the hero panel and grid box now skip the rank caption + percentile bar entirely. The tier shading on the panel/box (`stat-box--bad` / `hero-panel--bad` driven by percentile=0) carries the "below average" signal on its own without verbose text. Dropped the `.rank-caption--outside` and `.hero-panel-rank--outside` CSS classes (now unused). Simplified `rankCaption(rank, total)` back to its pre-v4.8.9 two-arg signature — the caller (`renderOverviewTab`) decides whether to call it. CACHE `mlb-v4810` → `mlb-v4811`.
 
 **v4.8.10** — **Fixed "Outside MLB top 100" phrasing instead of variable cache size.** v4.8.9 surfaced the actual cache size in the outside-top message — but `/stats/leaders` returns a different pool depth per category (134 for HR, 138 for 2B, 113 for RBI, 101 for OPS, etc.), so a UAT screenshot of Bregman's grid showed `OUTSIDE TOP 134 / 113 / 138 / 108 / 113`. Variable thresholds aren't meaningful — 134 isn't recognizable, 100 is. Hardcoded both renderers (hero panel + grid box via `rankCaption`) to render the fixed phrase `Outside MLB top 100` (or `Outside top 100` in the grid). Same `outsideTop` detection logic; only the surfaced denominator changed. CACHE `mlb-v489` → `mlb-v4810`.
 

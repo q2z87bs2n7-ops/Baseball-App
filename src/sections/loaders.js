@@ -2389,16 +2389,14 @@ function renderOverviewTab(s,group){
     if(!heroSparkHtml){
       heroSparkHtml = '<div class="hero-panel-trend"><span class="hero-trend-pending">trend loading…</span></div>';
     }
-    // When the player is outside the leader pool, swap "#100 of 100" for the
-    // honest "Outside MLB top N" message and skip the percentile bar (which
-    // would render at 0% width and look broken).
+    // When the player is outside the leader pool, skip the rank caption +
+    // percentile bar entirely — the tier shading on the panel is enough signal,
+    // and the verbose "Outside MLB top 100" message in every box was noise.
     var hRankHtml='';
     var hBarHtml='';
-    if(hPInfo){
-      hRankHtml=hPInfo.outsideTop
-        ? '<div class="hero-panel-rank hero-panel-rank--outside">Outside MLB top 100</div>'
-        : '<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>';
-      if(!hPInfo.outsideTop) hBarHtml='<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>';
+    if(hPInfo && !hPInfo.outsideTop){
+      hRankHtml='<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>';
+      hBarHtml='<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>';
     }
     html+='<div class="hero-panel'+(hTier?' hero-panel--'+hTier:'')+'">'+
       '<div class="hero-panel-stat">'+
@@ -2433,12 +2431,11 @@ function renderOverviewTab(s,group){
       var basisVal=basis==='mlb'?leagueAverage(group,b.k):teamAverage(group,b.k);
       chip=avgChip(b.raw,basisVal,dec,entry&&entry.lowerIsBetter);
     }
-    // Outside-top players get the "Outside top N" caption (via rankCaption's
-    // outsideTop arg) and skip the bar to avoid a 0%-width sliver.
+    // Outside-top players: skip the rank caption + bar entirely. Tier
+    // shading carries the "below average" signal on its own.
     var boxRankHtml='';
-    if(pInfo){
-      var boxBar=pInfo.outsideTop?'':pctBar(pInfo.percentile);
-      boxRankHtml=boxBar+rankCaption(pInfo.rank,pInfo.total,pInfo.outsideTop);
+    if(pInfo && !pInfo.outsideTop){
+      boxRankHtml=pctBar(pInfo.percentile)+rankCaption(pInfo.rank,pInfo.total);
     }
     html+='<div class="stat-box'+tierCls+'">'+
           '<div class="stat-val">'+(b.v!=null?b.v:'—')+'</div>'+

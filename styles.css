@@ -1539,7 +1539,6 @@ nav button.active {
   gap: 8px
 }
 .rank-caption b { color: #fff; font-weight: 700; letter-spacing: .04em }
-.rank-caption--outside b { color: var(--muted); font-style: italic; font-weight: 600 }
 /* Tier overlays. Elite uses team primary (per kickoff Q1 — active team primary,
    not a hardcoded orange). color-mix lets us tint with the runtime --primary. */
 .stat-box--elite {
@@ -1692,12 +1691,6 @@ nav button.active {
   color: var(--accent);
   font-weight: 700;
   letter-spacing: .04em
-}
-.hero-panel-rank--outside {
-  color: var(--muted);
-  font-style: italic;
-  font-weight: 600;
-  letter-spacing: .02em
 }
 .hero-panel-bar .pct-bar { height: 6px; background: rgba(255,255,255,.1) }
 /* Shown in place of rank/percentile when an unqualified player is selected on
