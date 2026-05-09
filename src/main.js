@@ -143,6 +143,7 @@ import {
 } from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import { openMoreSheet, closeMoreSheet, toggleMoreSheet, openPulseOverflow, closePulseOverflow, togglePulseOverflow, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
+import { installHideOnScroll } from './nav/behavior.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
@@ -657,6 +658,7 @@ document.addEventListener('visibilitychange',function(){
 });
 
 installMoreSheetEscClose();
+installHideOnScroll();
 
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&state.focusOverlayOpen) { closeFocusOverlay(); return; }

@@ -2310,6 +2310,12 @@ select {
   nav button[data-section="more"] {
     display: flex
   }
+  nav {
+    transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1)
+  }
+  nav.nav-hidden {
+    transform: translateY(110%)
+  }
   .ptb-launcher {
     display: none !important
   }
