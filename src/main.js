@@ -272,7 +272,7 @@ function initReal() {
   loadPulseNews();
   document.removeEventListener('visibilitychange',onStoryVisibilityChange);
   document.addEventListener('visibilitychange',onStoryVisibilityChange);
-  pollLeaguePulse().then(function(){buildStoryPool();setFocusGame(state.focusGamePk);});
+  pollLeaguePulse().then(function(){buildStoryPool();setFocusGame(state.focusGamePk);if(typeof window!=='undefined'&&typeof window.dismissAppSplash==='function')window.dismissAppSplash();});
   state.pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
   if(state.storyPoolTimer){clearInterval(state.storyPoolTimer);state.storyPoolTimer=null;}
   state.storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
