@@ -607,21 +607,29 @@ export async function loadTeamStats(){
   if(formEl)formEl.innerHTML='';
   state.teamStatsInflight=(async function(){
     try{
+      // Last-25-day window for the L10-run-diff calc (v4.6.23 — the standings
+      // endpoint only returns season-aggregate runDifferential, which was being
+      // rendered next to "Last 10:" and read as a last-10 figure).
+      var todayStr=etDateStr();
+      var fromStr=etDatePlus(todayStr,-25);
+      var schedReq=fetch(MLB_BASE+'/schedule?teamId='+teamId+'&startDate='+fromStr+'&endDate='+todayStr+'&hydrate=linescore&sportId=1');
       var seasonReq=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching,fielding&stats=season&season='+SEASON);
       var l10Req=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching&stats=lastXGames&limitGames=10&season='+SEASON);
       var standingsReq=fetch(MLB_BASE+'/standings?leagueId=103,104&season='+SEASON);
       var rankReq=fetchTeamRanks();
-      var [seasonRes,l10Res,standingsRes]=await Promise.all([seasonReq,l10Req,standingsReq]);
+      var [seasonRes,l10Res,standingsRes,schedRes]=await Promise.all([seasonReq,l10Req,standingsReq,schedReq]);
       await rankReq;
       var seasonData=seasonRes&&seasonRes.ok?await seasonRes.json():null;
       var l10Data=l10Res&&l10Res.ok?await l10Res.json():null;
       var standingsData=standingsRes&&standingsRes.ok?await standingsRes.json():null;
+      var schedData=schedRes&&schedRes.ok?await schedRes.json():null;
       state.teamStats.hitting=extractTeamStat(seasonData,'hitting');
       state.teamStats.pitching=extractTeamStat(seasonData,'pitching');
       state.teamStats.fielding=extractTeamStat(seasonData,'fielding');
       state.teamStats.l10Hitting=extractTeamStat(l10Data,'hitting');
       state.teamStats.l10Pitching=extractTeamStat(l10Data,'pitching');
       state.teamStats.standingsRecord=extractTeamRecord(standingsData,teamId);
+      state.teamStats.last10RunDiff=computeLast10RunDiff(schedData,teamId);
       state.teamStats.teamId=teamId;
       state.teamStatsFetchedAt=Date.now();
       renderTeamStats();
@@ -639,6 +647,35 @@ function extractTeamStat(payload,group){
   var blk=payload.stats.find(function(s){return s.group&&s.group.displayName&&s.group.displayName.toLowerCase()===group;});
   if(!blk||!blk.splits||!blk.splits.length)return null;
   return blk.splits[0].stat;
+}
+
+// Aggregates run differential from the last 10 Final games for the active
+// team. Pulled from the schedule+linescore window fetched in loadTeamStats.
+// Returns null when there aren't enough completed games (e.g. early season,
+// April rainouts) — the form-line renderer omits the chip in that case rather
+// than misleading with a partial sum.
+function computeLast10RunDiff(schedPayload,teamId){
+  if(!schedPayload||!schedPayload.dates)return null;
+  var games=[];
+  schedPayload.dates.forEach(function(d){(d.games||[]).forEach(function(g){games.push(g);});});
+  // Final only, newest first
+  var finals=games.filter(function(g){
+    return g.status&&g.status.abstractGameState==='Final'
+      &&g.linescore&&g.linescore.teams
+      &&g.linescore.teams.home&&g.linescore.teams.away;
+  }).sort(function(a,b){return new Date(b.gameDate)-new Date(a.gameDate);});
+  if(!finals.length)return null;
+  var slice=finals.slice(0,10);
+  var diff=0,counted=0;
+  slice.forEach(function(g){
+    var home=g.teams&&g.teams.home,away=g.teams&&g.teams.away;
+    var ls=g.linescore.teams;
+    var homeR=parseInt(ls.home.runs,10),awayR=parseInt(ls.away.runs,10);
+    if(isNaN(homeR)||isNaN(awayR))return;
+    if(home&&home.team&&home.team.id===teamId){diff+=(homeR-awayR);counted++;}
+    else if(away&&away.team&&away.team.id===teamId){diff+=(awayR-homeR);counted++;}
+  });
+  return counted>0?diff:null;
 }
 
 function extractTeamRecord(standingsData,teamId){
@@ -734,9 +771,19 @@ function renderTeamStats(){
   var rec=ts.standingsRecord;
   if(rec&&rec.lastTen){
     var streakUp=rec.streak&&rec.streak.charAt(0)==='W';
-    var rd=rec.runDiff;
+    // Use last-10 run diff (computed from schedule+linescore) — the standings
+    // endpoint's runDifferential is season-aggregate and was misread next to
+    // "Last 10:". Fall back to omitting the chip when L10 diff isn't computable
+    // rather than mixing scopes.
+    var rd=ts.last10RunDiff;
     var rdStr=rd==null?'':' · run diff '+(rd>=0?'+':'')+rd;
-    formEl.className='team-form-line'+(streakUp?'':' cold');
+    // v4.6.24: color the form line by L10 wins, not the current streak. A 9-1
+    // team that lost last night should still read green; a 1-9 team that won
+    // last night shouldn't suddenly look hot. Threshold: >5 warm, =5 neutral,
+    // <5 cold.
+    var l10w=rec.lastTenWins||0;
+    var formClass=l10w>5?'':(l10w===5?' neutral':' cold');
+    formEl.className='team-form-line'+formClass;
     formEl.innerHTML='<div><b style="color:#fff;">Last 10:</b> '+rec.lastTen+(rec.streak?' · '+(streakUp?'▲ ':'▼ ')+rec.streak:'')+rdStr+'</div><div class="form-meta">Form</div>';
   }else{
     formEl.className='team-form-line empty';
@@ -774,7 +821,14 @@ export async function fetchLeagueLeaders(group){
         var leaders=(blk.leaders||[]).map(function(l){
           var v=parseFloat(l.value);
           if(isNaN(v))return null;
-          return{playerId:l.person&&l.person.id,value:v,rank:parseInt(l.rank,10)||null};
+          return{
+            playerId:l.person&&l.person.id,
+            playerName:l.person&&l.person.fullName,
+            teamId:l.team&&l.team.id,
+            teamAbbr:l.team&&(l.team.abbreviation||l.team.name),
+            value:v,
+            rank:parseInt(l.rank,10)||null
+          };
         }).filter(function(x){return x!==null;});
         leaders.sort(function(a,b){return entry.lowerIsBetter?a.value-b.value:b.value-a.value;});
         state.leagueLeaders[group+':'+blk.leaderCategory]=leaders;
@@ -853,7 +907,12 @@ export async function loadRoster(){
   try{
     var r=await fetch(MLB_BASE+'/teams/'+state.activeTeam.id+'/roster?rosterType=40Man&season='+SEASON+'&hydrate=person');
     var d=await r.json(),roster=d.roster||[];
-    state.rosterData.hitting=roster.filter(function(p){return p.position&&['P','TWP'].indexOf(p.position.abbreviation)===-1;});
+    // Two-way players (TWP) like Ohtani belong in BOTH lists — they qualify
+    // as both hitters and pitchers, so they should appear in both Leaders
+    // boards + Roster groups + Today's Leaders. Pure pitchers ('P') are
+    // hitting-excluded only; pure position players ('1B','OF',etc.) are
+    // pitching-excluded.
+    state.rosterData.hitting=roster.filter(function(p){return p.position&&p.position.abbreviation!=='P';});
     state.rosterData.pitching=roster.filter(function(p){return p.position&&(p.position.abbreviation==='P'||p.position.abbreviation==='TWP');});
     state.rosterData.fielding=state.rosterData.hitting.slice();renderPlayerList();fetchAllPlayerStats();
     if(state.rosterData.hitting.length)selectPlayer(state.rosterData.hitting[0].person.id,'hitting');
@@ -1032,6 +1091,7 @@ function renderPlayerStats(s,group){
     '<div class="player-tab-panel" data-tab="splits"'+(activeTab!=='splits'?' hidden':'')+'>'+renderSplitsPlaceholder()+'</div>'+
     '<div class="player-tab-panel" data-tab="gamelog"'+(activeTab!=='gamelog'?' hidden':'')+'>'+renderGameLogPlaceholder()+'</div>'+
     '<div class="player-tab-panel" data-tab="advanced"'+(activeTab!=='advanced'?' hidden':'')+'>'+renderAdvancedPlaceholder(group)+'</div>'+
+    '<div class="player-tab-panel" data-tab="career"'+(activeTab!=='career'?' hidden':'')+'>'+renderCareerPlaceholder()+'</div>'+
     '</div>';
   document.getElementById('playerStats').innerHTML=html;
   // If the active tab is a lazy-loaded one, kick off its fetch immediately so
@@ -1055,6 +1115,11 @@ function renderPlayerStats(s,group){
         else fetchPitchArsenal(pid).then(function(){
           if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderArsenalTab(pid);
         });
+      } else if(activeTab==='advanced' && group==='hitting'){
+        if(state.advancedHittingCache[pid] && state.hotColdCache[pid]) renderAdvancedHittingTab(pid);
+        else loadAdvancedHittingForTab(pid);
+      } else if(activeTab==='career'){
+        ensureCareerLoaded(pid, group);
       }
     }
   }
@@ -1065,7 +1130,7 @@ function renderPlayerStats(s,group){
 // lazy renderers (Game Log / Splits / Arsenal) fire the first time their tab
 // is shown.
 export function switchPlayerStatsTab(tab,btn){
-  if(['overview','splits','gamelog','advanced'].indexOf(tab)<0)return;
+  if(['overview','splits','gamelog','advanced','career'].indexOf(tab)<0)return;
   state.activeStatsTab=tab;
   if(typeof localStorage!=='undefined')localStorage.setItem('mlb_stats_tab',tab);
   document.querySelectorAll('#playerTabs .player-tab').forEach(function(b){b.classList.toggle('active', b.dataset.tab===tab);});
@@ -1107,7 +1172,15 @@ export function switchPlayerStatsTab(tab,btn){
       } else {
         renderArsenalTab(pid);
       }
+    } else if(group==='hitting'){
+      if(!state.advancedHittingCache[pid] || !state.hotColdCache[pid]){
+        loadAdvancedHittingForTab(pid);
+      } else {
+        renderAdvancedHittingTab(pid);
+      }
     }
+  } else if(tab==='career'){
+    ensureCareerLoaded(pid, group);
   }
 }
 
@@ -1317,8 +1390,670 @@ function renderArsenalTab(playerId){
   }).join('')+'</div>';
   panelEl.innerHTML = '<div class="arsenal-grid">'+donut+list+'</div>';
 }
+
+// ── Sprint 3 / Step 1: Statcast Advanced for hitters ─────────────────────
+const ADV_HITTING_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Fetches sabermetrics + seasonAdvanced in parallel and merges them into a
+// single stat blob keyed in state.advancedHittingCache. Both endpoints are
+// part of the public MLB Stats API and reliably populated for qualified
+// hitters. (Earlier v4.6.18 attempt also pulled `expectedStatistics`, but
+// that endpoint is inconsistently exposed and Statcast-flavored xBA / xSLG /
+// xwOBA / exit velo / barrel rate are sourced from Baseball Savant — a
+// separate Statcast service we don't proxy. The advanced view focuses on
+// what MLB Stats API actually returns.)
+//
+// sabermetrics  → woba, wRaa, wRc, wRcPlus, babip (hitting)
+// seasonAdvanced → babip, iso, groundOutsToAirouts, walks/strikeouts per PA,
+//                  pitches per PA, etc.
+async function fetchAdvancedHitting(playerId){
+  if(!playerId) return null;
+  var cached = state.advancedHittingCache[playerId];
+  if(cached && Date.now()-cached.ts < ADV_HITTING_TTL_MS) return cached.stat;
+  try{
+    var urls = [
+      MLB_BASE+'/people/'+playerId+'/stats?stats=sabermetrics&season='+SEASON+'&group=hitting',
+      MLB_BASE+'/people/'+playerId+'/stats?stats=seasonAdvanced&season='+SEASON+'&group=hitting'
+    ];
+    var responses = await Promise.all(urls.map(function(u){
+      return fetch(u).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    }));
+    var merged = {};
+    responses.forEach(function(d){
+      if(!d || !d.stats) return;
+      d.stats.forEach(function(block){
+        var split = block.splits && block.splits[0];
+        if(split && split.stat) Object.assign(merged, split.stat);
+      });
+    });
+    state.advancedHittingCache[playerId] = { stat: merged, ts: Date.now() };
+    return merged;
+  }catch(e){
+    return null;
+  }
+}
+
+// Driver for the Advanced (hitter) tab — fires the metrics fetch and the
+// hot-zone fetch in parallel so the section paints when each lands. Lazy:
+// only triggered from the switchPlayerStatsTab dispatch.
+async function loadAdvancedHittingForTab(playerId){
+  await Promise.all([
+    fetchAdvancedHitting(playerId),
+    fetchHotColdZones(playerId)
+  ]);
+  if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id === playerId && state.activeStatsTab === 'advanced'){
+    renderAdvancedHittingTab(playerId);
+  }
+}
+
+// Renders the advanced hitting view into the Advanced panel. Reads each
+// metric across the case-variants the MLB API actually uses (sabermetrics
+// returns mixed-case keys like wRaa / wRc / wRcPlus; seasonAdvanced lowercases
+// most). Every field is independently optional so the row count adapts.
+function renderAdvancedHittingTab(playerId){
+  var cached = state.advancedHittingCache[playerId];
+  var panelEl = document.querySelector('.player-tab-panel[data-tab="advanced"]');
+  if(!panelEl) return;
+  if(!cached){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Advanced Metrics</h4><p>Loading advanced metrics…</p></div>';
+    return;
+  }
+  var s = cached.stat || {};
+  function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
+  function pick(){ for(var i=0;i<arguments.length;i++){ var v = num(arguments[i]); if(v != null) return v; } return null; }
+  function fmtR(n){ var v = n.toFixed(3); return v.charAt(0)==='0' ? v.slice(1) : v; }
+  function fmtPct(n){ return (n>1.5 ? n.toFixed(1) : (n*100).toFixed(1))+'%'; }
+
+  // Real MLB Stats API field names (sabermetrics + seasonAdvanced for hitters):
+  var woba    = pick(s.woba, s.wOba);
+  var babip   = pick(s.babip);
+  var iso     = pick(s.iso);
+  var wRcPlus = pick(s.wRcPlus, s.wrcPlus);
+  var wRaa    = pick(s.wRaa, s.wraa);
+  var wRc     = pick(s.wRc, s.wrc);
+  var go_ao   = pick(s.groundOutsToAirouts, s.groundOutsToAirOuts);
+  var walksPerPa = pick(s.walksPerPlateAppearance);
+  var ksPerPa    = pick(s.strikeoutsPerPlateAppearance);
+  var pitchesPerPa = pick(s.pitchesPerPlateAppearance);
+  var atBatsPerHr  = pick(s.atBatsPerHomeRun);
+  var totalBases   = pick(s.totalBases);
+  var extraBaseHits= pick(s.extraBaseHits);
+
+  // Hero trio — wOBA · BABIP · wRC+ if available, else ISO.
+  var heroParts = [];
+  if(woba != null)    heroParts.push({ v:fmtR(woba), l:'wOBA' });
+  if(babip != null)   heroParts.push({ v:fmtR(babip), l:'BABIP' });
+  if(wRcPlus != null) heroParts.push({ v:Math.round(wRcPlus), l:'wRC+' });
+  else if(iso != null)heroParts.push({ v:fmtR(iso), l:'ISO' });
+  var hero = heroParts.length
+    ? '<div class="adv-hero-row">'+heroParts.map(function(p){return '<div class="stat-box"><div class="stat-val">'+p.v+'</div><div class="stat-lbl">'+p.l+'</div></div>';}).join('')+'</div>'
+    : '';
+
+  // Supporting grid
+  var rows = [];
+  if(wRcPlus != null && iso != null) rows.push({l:'ISO', v: fmtR(iso)});
+  if(wRaa != null) rows.push({l:'wRAA', v: wRaa.toFixed(1)});
+  if(wRc != null)  rows.push({l:'wRC',  v: wRc.toFixed(1)});
+  if(walksPerPa != null) rows.push({l:'BB rate', v: fmtPct(walksPerPa)});
+  if(ksPerPa != null)    rows.push({l:'K rate',  v: fmtPct(ksPerPa)});
+  if(pitchesPerPa != null) rows.push({l:'P / PA', v: pitchesPerPa.toFixed(2)});
+  if(atBatsPerHr != null && atBatsPerHr > 0) rows.push({l:'AB / HR', v: atBatsPerHr.toFixed(1)});
+  if(go_ao != null) rows.push({l:'GO / AO', v: go_ao.toFixed(2)});
+  if(extraBaseHits != null) rows.push({l:'XBH', v: Math.round(extraBaseHits)});
+  if(totalBases != null) rows.push({l:'Total Bases', v: Math.round(totalBases)});
+
+  var grid = rows.length
+    ? '<div class="adv-stat-grid">'+rows.map(function(r){return '<div class="stat-box"><div class="stat-val">'+r.v+'</div><div class="stat-lbl">'+r.l+'</div></div>';}).join('')+'</div>'
+    : '';
+
+  if(!hero && !grid){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>No advanced metrics</h4><p>This player has no '+SEASON+' advanced data yet.</p></div>';
+    return;
+  }
+  var note = '<div class="adv-source-note">Advanced metrics from MLB Stats API · sabermetrics + seasonAdvanced. Statcast (xBA / xwOBA / exit velo / barrel rate) lives on Baseball Savant and is not proxied here.</div>';
+  var heatmap = renderHotZoneSection(playerId);
+  // Source note sits with the metrics it describes — it disclaims the
+  // sabermetrics + seasonAdvanced data, not the hot/cold heat map below.
+  panelEl.innerHTML = hero + grid + note + heatmap;
+}
+
 function renderGameLogPlaceholder(){
   return '<div class="tab-empty-state"><div class="tab-empty-icon">📅</div><h4>Last-10 game log</h4><p>Loading game log...</p></div>';
+}
+
+// ── Sprint 3 / Step 5: Strike-zone heat map (hitters) ───────────────────
+// Pulls the 13-zone hot/cold matrix from /people/{id}/stats?stats=hotColdZones
+// and renders it as a 3x3 SVG strike zone (zones 1-9, "in zone") under the
+// Statcast Advanced metrics. Pure batter-AVG flavor for v1; the API also
+// returns slugging / exit-velo zone matrices we could surface later. Statcast
+// hit coordinates (the field-map dot spray chart) live on Baseball Savant
+// and aren't proxied here.
+const HOTCOLD_TTL_MS = 24 * 60 * 60 * 1000;
+
+async function fetchHotColdZones(playerId){
+  if(!playerId) return null;
+  var cached = state.hotColdCache[playerId];
+  if(cached && Date.now()-cached.ts < HOTCOLD_TTL_MS) return cached.data;
+  try{
+    var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=hotColdZones&season='+SEASON+'&group=hitting');
+    if(!r.ok){ state.hotColdCache[playerId] = { data: [], ts: Date.now() }; return []; }
+    var d = await r.json();
+    var splits = (d.stats && d.stats[0] && d.stats[0].splits) || [];
+    state.hotColdCache[playerId] = { data: splits, ts: Date.now() };
+    return splits;
+  }catch(e){
+    state.hotColdCache[playerId] = { data: [], ts: Date.now() };
+    return [];
+  }
+}
+
+// Picks the "Batting Avg" (or closest match) zone matrix from the hotColdZones
+// payload. Each split.stat carries a `name` ("Batting Avg" / "Slugging Pct" /
+// "Exit Velocity") and a `zones` array. Zones 1-9 = inside the strike zone in
+// row-major order (top→bottom, left→right from catcher's view).
+function pickAvgZoneMatrix(splits){
+  if(!splits || !splits.length) return null;
+  var preferred = null;
+  for(var i=0;i<splits.length;i++){
+    var s = splits[i].stat;
+    if(!s || !s.zones) continue;
+    var name = (s.name||'').toLowerCase();
+    if(name.indexOf('batting') >= 0 || name.indexOf('avg') >= 0){
+      preferred = s;
+      break;
+    }
+    if(!preferred) preferred = s; // fallback to first available
+  }
+  return preferred;
+}
+
+// Returns CSS background-color for a zone cell based on its AVG. Hand-rolled
+// 3-stop heat scale: deep red ≤.180, yellow ~.250, deep green ≥.330. Falls
+// back to the API-provided color when present.
+function avgHeatColor(value){
+  var n = parseFloat(value);
+  if(isNaN(n)) return 'rgba(255,255,255,.05)';
+  // Normalize to 0-1 across .150 → .380
+  var t = Math.max(0, Math.min(1, (n - 0.150) / (0.380 - 0.150)));
+  // Two-segment lerp: red→yellow (0→0.5), yellow→green (0.5→1)
+  var r,g,b;
+  if(t < 0.5){
+    var u = t / 0.5;
+    r = Math.round(224 + (240-224)*u);
+    g = Math.round( 72 + (208- 72)*u);
+    b = Math.round( 72 + ( 60- 72)*u);
+  } else {
+    var u2 = (t - 0.5) / 0.5;
+    r = Math.round(240 + ( 60-240)*u2);
+    g = Math.round(208 + (190-208)*u2);
+    b = Math.round( 60 + (100- 60)*u2);
+  }
+  return 'rgba('+r+','+g+','+b+',.55)';
+}
+
+// Builds the 3x3 strike-zone heat map HTML. Returns '' when the data is
+// missing — caller decides whether to render a section header.
+function renderHotZoneSection(playerId){
+  var cached = state.hotColdCache[playerId];
+  if(!cached || !cached.data || !cached.data.length) return '';
+  var matrix = pickAvgZoneMatrix(cached.data);
+  if(!matrix || !matrix.zones) return '';
+  // Map zones by id for predictable order.
+  var byZone = {};
+  matrix.zones.forEach(function(z){ if(z && z.zone) byZone[String(z.zone).replace(/^0/,'')] = z; });
+  function fmtR(v){ var n = parseFloat(v); if(isNaN(n)) return '—'; var s = n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; }
+  // Build the 3x3 inner zone grid (zones 1-9).
+  var cells = '';
+  for(var i=1;i<=9;i++){
+    var z = byZone[String(i)];
+    var v = z && (z.value != null ? z.value : null);
+    var bg = z ? avgHeatColor(v) : 'rgba(255,255,255,.04)';
+    cells += '<div class="hotzone-cell" style="background:'+bg+'">'+
+      '<div class="hotzone-val">'+(z ? fmtR(v) : '—')+'</div>'+
+    '</div>';
+  }
+  var label = matrix.name || 'Batting Avg';
+  return '<div class="hotzone-section">'+
+    '<div class="hotzone-section-head">🎯 Strike Zone Heat Map · '+label+'</div>'+
+    '<div class="hotzone-frame">'+
+      '<div class="hotzone-axis-top">High</div>'+
+      '<div class="hotzone-axis-left">Inside</div>'+
+      '<div class="hotzone-grid">'+cells+'</div>'+
+      '<div class="hotzone-axis-right">Outside</div>'+
+      '<div class="hotzone-axis-bot">Low</div>'+
+    '</div>'+
+    '<div class="hotzone-legend">'+
+      '<span class="hotzone-legend-bar"></span>'+
+      '<span class="hotzone-legend-label">cold .150</span>'+
+      '<span class="hotzone-legend-spacer"></span>'+
+      '<span class="hotzone-legend-label">.380 hot</span>'+
+    '</div>'+
+    '<div class="hotzone-foot">View from catcher · inside / outside relative to RHB. Statcast spray-chart coordinates require Baseball Savant and aren’t proxied here.</div>'+
+  '</div>';
+}
+
+// ── Sprint 3 / Step 6: Compare overlay (head-to-head player view) ────────
+// Same-team comparison v1: pick another player from the active team's roster
+// in the same group (hitting/pitching). Re-uses state.statsCache season stats
+// — no extra fetches when both players are already in cache (the common case
+// since fetchAllPlayerStats warms the entire roster on Stats first-load).
+//
+// Stat catalog: same boxes as renderOverviewTab so users see consistent
+// comparison rows. Polarity-aware winner detection respects ERA/WHIP/etc.
+// being lower-better.
+
+function compareBoxesFor(group){
+  // Subset of the Player Stats grid stats — winner-shown rows.
+  if(group==='hitting') return [
+    {l:'AVG', k:'avg',          fmt:'rate'},
+    {l:'OBP', k:'obp',          fmt:'rate'},
+    {l:'SLG', k:'slg',          fmt:'rate'},
+    {l:'OPS', k:'ops',          fmt:'rate'},
+    {l:'HR',  k:'homeRuns',     fmt:'int'},
+    {l:'RBI', k:'rbi',          fmt:'int'},
+    {l:'H',   k:'hits',         fmt:'int'},
+    {l:'2B',  k:'doubles',      fmt:'int'},
+    {l:'3B',  k:'triples',      fmt:'int'},
+    {l:'R',   k:'runs',         fmt:'int'},
+    {l:'BB',  k:'baseOnBalls',  fmt:'int'},
+    {l:'K',   k:'strikeOuts',   fmt:'int',  lowerBetter:true},
+    {l:'SB',  k:'stolenBases',  fmt:'int'},
+    {l:'PA',  k:'plateAppearances', fmt:'int', neutral:true}
+  ];
+  return [
+    {l:'ERA',  k:'era',                fmt:'two', lowerBetter:true},
+    {l:'WHIP', k:'whip',               fmt:'two', lowerBetter:true},
+    {l:'K',    k:'strikeOuts',         fmt:'int'},
+    {l:'W',    k:'wins',               fmt:'int'},
+    {l:'L',    k:'losses',             fmt:'int', lowerBetter:true},
+    {l:'SV',   k:'saves',              fmt:'int'},
+    {l:'IP',   k:'inningsPitched',     fmt:'ip',  neutral:true},
+    {l:'K/9',  k:'strikeoutsPer9Inn',  fmt:'two'},
+    {l:'BB/9', k:'walksPer9Inn',       fmt:'two', lowerBetter:true},
+    {l:'K/BB', k:'strikeoutWalkRatio', fmt:'two'},
+    {l:'H',    k:'hits',               fmt:'int', lowerBetter:true},
+    {l:'BB',   k:'baseOnBalls',        fmt:'int', lowerBetter:true},
+    {l:'HR',   k:'homeRuns',           fmt:'int', lowerBetter:true}
+  ];
+}
+
+function compareFmt(box, val){
+  if(val==null||val==='')return '—';
+  if(box.fmt==='rate'){
+    var n=parseFloat(val); if(isNaN(n))return String(val); var s=n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s;
+  }
+  if(box.fmt==='two'){
+    var n=parseFloat(val); if(isNaN(n))return String(val); return n.toFixed(2);
+  }
+  if(box.fmt==='ip'){ return String(val); }
+  var n=parseInt(val,10); return isNaN(n)?String(val):String(n);
+}
+
+// Pulls a player's season stat from state.statsCache (same-team only — v1
+// scope). Returns null when the active team's cache hasn't filled yet or the
+// player isn't on this team.
+function compareStatFor(playerId, group){
+  var pool=state.statsCache[group]||[];
+  var entry=pool.find(function(p){return p.player&&p.player.id===playerId;});
+  return entry&&entry.stat?entry.stat:null;
+}
+
+export function openCompareOverlay(){
+  if(!state.selectedPlayer)return;
+  // Determine group from active roster tab (hitting / pitching). Fielding
+  // collapses to hitting for compare since the stat catalog is the same.
+  var group=state.currentRosterTab==='pitching'?'pitching':'hitting';
+  state.compareGroup=group;
+  state.compareA=state.selectedPlayer;
+  // Default slot B = next player in the same group's roster (skip A)
+  var pool=state.rosterData[group]||[];
+  var aId=state.selectedPlayer.person&&state.selectedPlayer.person.id;
+  var b=pool.find(function(p){return p.person&&p.person.id!==aId;});
+  state.compareB=b||null;
+  state.compareOpen=true;
+  var ov=document.getElementById('compareOverlay');
+  if(ov)ov.removeAttribute('hidden');
+  document.body.style.overflow='hidden';
+  renderCompare();
+}
+
+export function closeCompareOverlay(){
+  state.compareOpen=false;
+  var ov=document.getElementById('compareOverlay');
+  if(ov)ov.setAttribute('hidden','');
+  document.body.style.overflow='';
+}
+
+export function setCompareSlot(slot, playerId){
+  var pool=state.rosterData[state.compareGroup]||[];
+  var pid=parseInt(playerId,10);
+  var p=pool.find(function(pl){return pl.person&&pl.person.id===pid;});
+  if(!p)return;
+  if(slot==='a')state.compareA=p;
+  else state.compareB=p;
+  renderCompare();
+}
+
+export function setCompareGroup(group){
+  if(group!=='hitting'&&group!=='pitching')return;
+  if(state.compareGroup===group)return;
+  state.compareGroup=group;
+  // Re-pick defaults from the new group when current slots are not in the new pool
+  var pool=state.rosterData[group]||[];
+  function inPool(pl){ return pl && pl.person && pool.some(function(p){return p.person&&p.person.id===pl.person.id;}); }
+  if(!inPool(state.compareA)) state.compareA = pool[0] || null;
+  if(!inPool(state.compareB)){
+    var aId=state.compareA&&state.compareA.person&&state.compareA.person.id;
+    state.compareB = pool.find(function(p){return p.person&&p.person.id!==aId;}) || null;
+  }
+  renderCompare();
+}
+
+function renderCompare(){
+  var bodyEl=document.getElementById('compareBody');
+  if(!bodyEl)return;
+  var group=state.compareGroup;
+  var a=state.compareA, b=state.compareB;
+  // Group toggle (only available when the other group has roster entries)
+  var hasHitters=(state.rosterData.hitting||[]).length>0;
+  var hasPitchers=(state.rosterData.pitching||[]).length>0;
+  var groupBar=(hasHitters&&hasPitchers)?
+    '<div class="compare-group-bar">'+
+      ['hitting','pitching'].map(function(g){
+        return '<button type="button" class="compare-group-btn'+(group===g?' active':'')+'" onclick="setCompareGroup(\''+g+'\')">'+(g==='hitting'?'⚾ Hitting':'🥎 Pitching')+'</button>';
+      }).join('')+
+    '</div>' : '';
+
+  // Player picker option list — exclude the "other" slot's player to avoid
+  // selecting the same player on both sides.
+  function pickerOptions(otherId, selectedId){
+    var pool=state.rosterData[group]||[];
+    return pool.filter(function(p){return p.person&&p.person.id!==otherId;}).map(function(p){
+      var sel = p.person.id === selectedId ? ' selected' : '';
+      return '<option value="'+p.person.id+'"'+sel+'>'+(p.person.fullName||'#'+p.person.id)+'</option>';
+    }).join('');
+  }
+  function slotHeader(slot, player, otherPlayer){
+    var pid=player&&player.person&&player.person.id;
+    var pname=player&&player.person&&player.person.fullName||'—';
+    var pos=player&&player.position&&player.position.abbreviation||'';
+    var jersey=player&&player.jerseyNumber?'#'+player.jerseyNumber:'';
+    var headshot=pid?'<img class="compare-headshot" src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current" alt="">' : '<div class="compare-headshot compare-headshot-empty">?</div>';
+    var otherId=otherPlayer&&otherPlayer.person&&otherPlayer.person.id;
+    return '<div class="compare-slot">'+
+      headshot+
+      '<div class="compare-slot-name">'+pname+'</div>'+
+      '<div class="compare-slot-meta">'+(jersey?jersey+' · ':'')+pos+'</div>'+
+      '<select class="compare-picker" onchange="setCompareSlot(\''+slot+'\', this.value)">'+
+        pickerOptions(otherId, pid)+
+      '</select>'+
+    '</div>';
+  }
+
+  var aStat=a?compareStatFor(a.person.id, group):null;
+  var bStat=b?compareStatFor(b.person.id, group):null;
+
+  var head =
+    '<div class="compare-pickers">'+
+      slotHeader('a', a, b)+
+      '<div class="compare-vs">vs</div>'+
+      slotHeader('b', b, a)+
+    '</div>';
+
+  if(!a || !b){
+    bodyEl.innerHTML = groupBar + head + '<div class="compare-empty">Pick a second player to compare.</div>';
+    return;
+  }
+  if(!aStat || !bStat){
+    bodyEl.innerHTML = groupBar + head + '<div class="compare-empty">'+
+      (!aStat ? (a.person.fullName||'Player A') : '')+
+      (!aStat && !bStat ? ' and ' : '')+
+      (!bStat ? (b.person.fullName||'Player B') : '')+
+      ' have no '+SEASON+' '+group+' stats yet.</div>';
+    return;
+  }
+
+  var boxes=compareBoxesFor(group);
+  var rows=boxes.map(function(box){
+    var av=aStat[box.k], bv=bStat[box.k];
+    var aDisp=compareFmt(box, av);
+    var bDisp=compareFmt(box, bv);
+    var aN=parseFloat(av), bN=parseFloat(bv);
+    var aClass='', bClass='';
+    if(!box.neutral && !isNaN(aN) && !isNaN(bN) && aN !== bN){
+      var aWins = box.lowerBetter ? aN < bN : aN > bN;
+      aClass = aWins ? ' compare-win' : ' compare-lose';
+      bClass = aWins ? ' compare-lose' : ' compare-win';
+    }
+    return '<div class="compare-row">'+
+      '<div class="compare-cell'+aClass+'">'+aDisp+'</div>'+
+      '<div class="compare-label">'+box.l+'</div>'+
+      '<div class="compare-cell'+bClass+'">'+bDisp+'</div>'+
+    '</div>';
+  }).join('');
+
+  bodyEl.innerHTML = groupBar + head +
+    '<div class="compare-grid">'+rows+'</div>'+
+    '<div class="compare-foot">Same-team comparison · season totals · winner highlighted per row (lower is better for ERA / WHIP / BB-9 / counting losses).</div>';
+}
+
+// ── Sprint 3 / Step 3: Career history (year-by-year) ─────────────────────
+// Awards are out of scope for the prod release; the dedicated Awards module
+// (/people/{id}/awards integration, AWARD_ICONS catalog, chip strip) was
+// dropped in v4.6.21. state.awardsCache stays unset.
+const CAREER_TTL_MS = 24 * 60 * 60 * 1000;
+
+async function ensureCareerLoaded(playerId, group){
+  if(!playerId) return;
+  var cached = state.careerCache[playerId];
+  if(cached && Date.now()-cached.ts < CAREER_TTL_MS){
+    renderCareerTab(playerId, group);
+    return;
+  }
+  var careerUrl = MLB_BASE+'/people/'+playerId+'/stats?stats=yearByYear&group=hitting,pitching';
+  try{
+    var cR = await fetch(careerUrl).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    var hitting = [], pitching = [];
+    if(cR && cR.stats){
+      cR.stats.forEach(function(block){
+        var g = block.group && block.group.displayName;
+        (block.splits || []).forEach(function(sp){
+          var row = {
+            season: sp.season,
+            teamId: sp.team && sp.team.id,
+            teamAbbr: sp.team && (sp.team.abbreviation || sp.team.name),
+            stat: sp.stat || {}
+          };
+          if(g === 'hitting') hitting.push(row);
+          else if(g === 'pitching') pitching.push(row);
+        });
+      });
+    }
+    state.careerCache[playerId] = { hitting: hitting, pitching: pitching, ts: Date.now() };
+  }catch(e){
+    state.careerCache[playerId] = { hitting: [], pitching: [], ts: Date.now() };
+  }
+  // Re-render only if the user is still on this player + tab
+  if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id === playerId && state.activeStatsTab === 'career'){
+    renderCareerTab(playerId, group);
+  }
+}
+
+function renderCareerPlaceholder(){
+  return '<div class="tab-empty-state"><div class="tab-empty-icon">🗂️</div><h4>Career history</h4><p>Loading year-by-year stats…</p></div>';
+}
+
+function renderCareerTab(playerId, group){
+  var panelEl = document.querySelector('.player-tab-panel[data-tab="career"]');
+  if(!panelEl) return;
+  var career = state.careerCache[playerId];
+  if(!career){
+    panelEl.innerHTML = renderCareerPlaceholder();
+    return;
+  }
+  var hittingRows = (career.hitting || []).slice();
+  var pitchingRows = (career.pitching || []).slice();
+  // Year-asc display: oldest at top, most-recent at bottom (matches Baseball
+  // Reference convention).
+  hittingRows.sort(function(a,b){ return parseInt(a.season,10)-parseInt(b.season,10); });
+  pitchingRows.sort(function(a,b){ return parseInt(a.season,10)-parseInt(b.season,10); });
+  if(!hittingRows.length && !pitchingRows.length){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">🗂️</div><h4>No career data</h4><p>This player has no recorded MLB seasons yet.</p></div>';
+    return;
+  }
+  function fmtR(v){ if(v==null||v==='') return '—'; var n=parseFloat(v); if(isNaN(n)) return String(v); var s=n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; }
+  function fmtN(v, d){ if(v==null||v==='') return '—'; var n=parseFloat(v); if(isNaN(n)) return String(v); return n.toFixed(d==null?0:d); }
+  function fmtIp(v){ if(v==null||v==='') return '—'; return String(v); }
+  function intOr(v){ if(v==null||v==='') return '—'; var n=parseInt(v,10); return isNaN(n)?String(v):String(n); }
+
+  // Year-by-year tables
+  function tableFor(rows, kind){
+    if(!rows.length) return '';
+    var cols, headerHtml;
+    if(kind === 'hitting'){
+      cols = [
+        ['season','Year', function(r){ return r.season; }],
+        ['team','Team',  function(r){ return r.teamAbbr || ''; }],
+        ['g',  'G',  function(r){ return intOr(r.stat.gamesPlayed); }],
+        ['pa', 'PA', function(r){ return intOr(r.stat.plateAppearances); }],
+        ['avg','AVG',function(r){ return fmtR(r.stat.avg); }],
+        ['hr', 'HR', function(r){ return intOr(r.stat.homeRuns); }],
+        ['rbi','RBI',function(r){ return intOr(r.stat.rbi); }],
+        ['sb', 'SB', function(r){ return intOr(r.stat.stolenBases); }],
+        ['obp','OBP',function(r){ return fmtR(r.stat.obp); }],
+        ['slg','SLG',function(r){ return fmtR(r.stat.slg); }],
+        ['ops','OPS',function(r){ return fmtR(r.stat.ops); }]
+      ];
+    } else {
+      cols = [
+        ['season','Year', function(r){ return r.season; }],
+        ['team','Team', function(r){ return r.teamAbbr || ''; }],
+        ['g',  'G',   function(r){ return intOr(r.stat.gamesPlayed); }],
+        ['ip', 'IP',  function(r){ return fmtIp(r.stat.inningsPitched); }],
+        ['w',  'W',   function(r){ return intOr(r.stat.wins); }],
+        ['l',  'L',   function(r){ return intOr(r.stat.losses); }],
+        ['era','ERA', function(r){ return fmtN(r.stat.era,2); }],
+        ['whip','WHIP',function(r){ return fmtN(r.stat.whip,2); }],
+        ['k',  'K',   function(r){ return intOr(r.stat.strikeOuts); }],
+        ['bb', 'BB',  function(r){ return intOr(r.stat.baseOnBalls); }],
+        ['sv', 'SV',  function(r){ return intOr(r.stat.saves); }]
+      ];
+    }
+    headerHtml = '<tr>'+cols.map(function(c){return '<th>'+c[1]+'</th>';}).join('')+'</tr>';
+    var bodyHtml = rows.map(function(r){
+      return '<tr>'+cols.map(function(c){return '<td class="career-col-'+c[0]+'">'+c[2](r)+'</td>';}).join('')+'</tr>';
+    }).join('');
+    var titleEm = kind === 'hitting' ? '⚾ Hitting' : '🥎 Pitching';
+    return '<div class="career-section">'+
+      '<div class="career-section-head">'+titleEm+' · '+rows.length+' season'+(rows.length===1?'':'s')+'</div>'+
+      '<div class="career-table-wrap"><table class="career-table">'+
+        '<thead>'+headerHtml+'</thead><tbody>'+bodyHtml+'</tbody>'+
+      '</table></div>'+
+    '</div>';
+  }
+  // Order: lead with the player's primary group based on the active roster tab
+  // when both groups have data (two-way players).
+  var primary = group === 'pitching' ? 'pitching' : 'hitting';
+  var secondary = primary === 'hitching' ? 'pitching' : (primary === 'pitching' ? 'hitting' : 'pitching');
+  var tablesHtml = '';
+  if(primary === 'pitching'){
+    tablesHtml = tableFor(pitchingRows,'pitching') + tableFor(hittingRows,'hitting');
+  } else {
+    tablesHtml = tableFor(hittingRows,'hitting') + tableFor(pitchingRows,'pitching');
+  }
+  panelEl.innerHTML = tablesHtml;
+}
+
+// ── Sprint 3 / Step 2: Today's Leaders (MLB-wide) ────────────────────────
+// Categories surfaced per group. leaderCategory strings MUST match the canonical
+// names accepted by /stats/leaders (and used in LEADER_CATS_FOR_PERCENTILE) —
+// "runsBattedIn" not "rbi", "onBasePlusSlugging" not "ops" (v4.6.19 fix).
+const TODAYS_LEADERS_CATS = {
+  hitting:  [
+    { stat:'homeRuns',         leaderCategory:'homeRuns',                 label:'HR',  decimals:0 },
+    { stat:'avg',              leaderCategory:'battingAverage',           label:'AVG', decimals:3 },
+    { stat:'rbi',              leaderCategory:'runsBattedIn',             label:'RBI', decimals:0 },
+    { stat:'ops',              leaderCategory:'onBasePlusSlugging',       label:'OPS', decimals:3 },
+    { stat:'obp',              leaderCategory:'onBasePercentage',         label:'OBP', decimals:3 },
+    { stat:'stolenBases',      leaderCategory:'stolenBases',              label:'SB',  decimals:0 }
+  ],
+  pitching: [
+    { stat:'era',              leaderCategory:'earnedRunAverage',         label:'ERA',  decimals:2 },
+    { stat:'strikeOuts',       leaderCategory:'strikeouts',               label:'K',    decimals:0 },
+    { stat:'wins',             leaderCategory:'wins',                     label:'W',    decimals:0 },
+    { stat:'saves',            leaderCategory:'saves',                    label:'SV',   decimals:0 },
+    { stat:'whip',             leaderCategory:'walksAndHitsPerInningPitched', label:'WHIP', decimals:2 },
+    { stat:'inningsPitched',   leaderCategory:'inningsPitched',           label:'IP',   decimals:1 }
+  ]
+};
+
+// Switch active tab on the Today's Leaders card. Persisted via state.
+export function switchTodaysLeadersTab(tab, btn){
+  if(tab !== 'hitting' && tab !== 'pitching') return;
+  state.todaysLeadersTab = tab;
+  document.querySelectorAll('#todaysLeadersTabs .stat-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
+  renderTodaysLeaders();
+}
+
+// Renders the four-category leader-board block from cached state.leagueLeaders.
+// Triggers fetchLeagueLeaders for the active group when the cache is empty —
+// the percentile system already calls this on selectPlayer, so the cache is
+// usually warm by the time the user looks. First-paint warming is handled by
+// loadTodaysLeaders().
+export function renderTodaysLeaders(){
+  var el = document.getElementById('todaysLeadersContent');
+  if(!el) return;
+  var group = state.todaysLeadersTab || 'hitting';
+  var cats = TODAYS_LEADERS_CATS[group] || [];
+  function fmtVal(v, decimals){
+    if(decimals >= 3){
+      var s = v.toFixed(3);
+      return s.charAt(0)==='0' ? s.slice(1) : s;
+    }
+    if(decimals === 1) return v.toFixed(1);
+    if(decimals === 2) return v.toFixed(2);
+    return Math.round(v).toString();
+  }
+  function lastName(full){
+    if(!full) return '';
+    var parts = full.split(' ');
+    return parts.length > 1 ? parts.slice(1).join(' ') : full;
+  }
+  var html = '<div class="todays-leaders-grid">';
+  cats.forEach(function(c){
+    var arr = state.leagueLeaders[group+':'+c.leaderCategory];
+    var top5 = arr ? arr.slice(0,5) : [];
+    html += '<div class="tl-cat">'+
+      '<div class="tl-cat-head"><span class="tl-cat-label">'+c.label+'</span></div>';
+    if(top5.length){
+      html += '<ol class="tl-cat-list">'+ top5.map(function(p, i){
+        var name = p.playerName ? lastName(p.playerName) : '#'+p.playerId;
+        var teamAbbr = p.teamAbbr || '';
+        return '<li>'+
+          '<span class="tl-rank">'+(i+1)+'</span>'+
+          '<span class="tl-name" title="'+(p.playerName||'')+(teamAbbr?' · '+teamAbbr:'')+'">'+name+'</span>'+
+          (teamAbbr ? '<span class="tl-team">'+teamAbbr+'</span>' : '')+
+          '<span class="tl-val">'+fmtVal(p.value, c.decimals)+'</span>'+
+        '</li>';
+      }).join('') +'</ol>';
+    } else {
+      html += '<div class="tl-cat-empty">—</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// Warms the league-leaders cache for both groups (idempotent — fetchLeagueLeaders
+// is TTL-cached at 5min) then renders. Called from loadRoster's section-init
+// path so the card is populated when the user first opens the Stats tab.
+export async function loadTodaysLeaders(){
+  await Promise.all([
+    fetchLeagueLeaders('hitting'),
+    fetchLeagueLeaders('pitching')
+  ]);
+  renderTodaysLeaders();
 }
 
 // 24h TTL on the gameLog cache — game log only changes once per game-day per
@@ -1565,7 +2300,7 @@ function onGameLogResolved(playerId, group){
 }
 function renderAdvancedPlaceholder(group){
   if(group==='hitting'){
-    return '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Statcast / Advanced</h4><p>xwOBA, exit velo, barrel %, hard-hit %, sprint speed. Coming in Sprint 3.</p></div>';
+    return '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Statcast / Advanced</h4><p>Loading advanced metrics…</p></div>';
   }
   if(group==='pitching'){
     return '<div class="tab-empty-state"><div class="tab-empty-icon">🎯</div><h4>Pitch arsenal</h4><p>Loading pitch arsenal...</p></div>';
@@ -1580,6 +2315,14 @@ function renderOverviewTab(s,group){
   var pid=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id;
   var jerseyOverlay=(state.selectedPlayer&&state.selectedPlayer.jerseyNumber)?'<div class="headshot-jersey-pill">#'+state.selectedPlayer.jerseyNumber+'</div>':'';
   var html=pid?'<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current">'+jerseyOverlay+'</div>':'';
+  // v4.6.23: gate rank/percentile UI on qualification for rate stats. Counting
+  // stats (HR/RBI/K/SB) always show rank — Aaron Judge with 30 HR is genuinely
+  // #1 regardless of PA. Rate stats (AVG/OBP/SLG/OPS/ERA/WHIP) get the gate
+  // because the leaders cache pulls qualified-only entries from MLB API; an
+  // unqualified player with 1-for-2 .500 AVG would otherwise spuriously
+  // outrank everyone.
+  var playerQualified = group==='fielding' ? true : isQualified(group, s);
+  function shouldShowRank(entry){ return !entry || entry.decimals < 2 || playerQualified; }
   var boxes=[];
   if(group==='hitting')boxes=[
     {v:fmtRate(s.avg),         l:'AVG', k:'avg',          raw:s.avg},
@@ -1633,9 +2376,10 @@ function renderOverviewTab(s,group){
   // gameLog-fed trend line. Fielding skips the panel; the 3-col grid is enough.
   if(group!=='fielding' && boxes.length){
     var hb=boxes[0];
-    var hPInfo=hb.k?computePercentile(group,hb.k,hb.raw):null;
-    var hTier=hPInfo?tierFromPercentile(hPInfo.percentile):null;
     var hEntry=hb.k?leaderEntry(group,hb.k):null;
+    var hShowRank=shouldShowRank(hEntry);
+    var hPInfo=(hb.k && hShowRank)?computePercentile(group,hb.k,hb.raw):null;
+    var hTier=hPInfo?tierFromPercentile(hPInfo.percentile):null;
     var hDir=hEntry&&hEntry.lowerIsBetter?'lower-better':'higher-better';
     var hDec=hEntry?hEntry.decimals:0;
     var hBasisVal=hb.k?(basis==='mlb'?leagueAverage(group,hb.k):teamAverage(group,hb.k)):null;
@@ -1677,6 +2421,7 @@ function renderOverviewTab(s,group){
       '<div class="hero-panel-context">'+
         (hPInfo?'<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>':'')+
         (hPInfo?'<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>':'')+
+        (!hPInfo && hEntry && !hShowRank ? '<div class="hero-panel-unq" title="Below MLB qualification threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers). Rank suppressed for rate stats.">Below qualification · rank not shown</div>' : '')+
         heroSparkHtml+
       '</div>'+
     '</div>';
@@ -1685,7 +2430,9 @@ function renderOverviewTab(s,group){
 
   html+='<div class="stat-grid stat-grid--cols-'+cols+'">';
   boxes.forEach(function(b){
-    var pInfo=(b.k&&group!=='fielding')?computePercentile(group,b.k,b.raw):null;
+    var bEntry=b.k?leaderEntry(group,b.k):null;
+    var bShowRank=shouldShowRank(bEntry);
+    var pInfo=(b.k&&group!=='fielding'&&bShowRank)?computePercentile(group,b.k,b.raw):null;
     var tier=pInfo?tierFromPercentile(pInfo.percentile):null;
     // Hero panel above is the dominant stat now; supporting boxes are uniform
     // and only get a tier background at the extremes.

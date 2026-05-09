@@ -22,7 +22,25 @@ Extracted from `CLAUDE.md` — tracks completed and pending features. Active blo
 - [x] Stats v2 — 7-day rolling sparkline in the hero panel (AVG/OPS for hitters, ERA for pitchers; pitching y-inverted) (Sprint 2 / Step 3, v4.6.13)
 - [x] Stats v2 — Splits panel (vs Handedness / Home-Away / RISP / Bases Empty / Runners On / Late & Close) with mini-bars (Sprint 2 / Step 4, v4.6.14)
 - [x] Stats v2 — Pitch arsenal donut on Advanced tab for pitchers with deterministic pitch-type colors + ranked list (Sprint 2 / Step 5, v4.6.14)
-- [ ] Stats v3 — Sprint 3 destination features: Compare overlay (#11), Today's Leaders (#12), Statcast advanced for hitters (#13: xwOBA, exit velo, barrel %, hard-hit %, sprint speed), Spray-chart / heatmap (#14), Career history (#15), Awards / leaderboards (#16)
+### 📊 Stats Tab Revamp — Sprint 3 (v4.7)
+
+- [x] Stats v3 — Statcast / Advanced for hitters (#13). Sabermetrics + seasonAdvanced metric grid (wOBA · BABIP · wRC+ hero, ISO / wRAA / wRC / BB rate / K rate / P/PA / AB/HR / GO/AO / XBH / TB grid). Note that Baseball Savant Statcast (xBA / xwOBA / exit velo / barrel rate / sprint speed) is NOT proxied — would require a separate Savant proxy effort. (Sprint 3 Batch A, v4.6.18 + v4.6.19 fix)
+- [x] Stats v3 — Today's Leaders (#12). MLB-wide top-5 leaderboards card with hitting/pitching tab toggle; reuses `state.leagueLeaders` cache. (Sprint 3 Batch A, v4.6.18 + v4.6.19 fix)
+- [x] Stats v3 — Career history (#15). Year-by-year tables (hitting + pitching) inside a new "Career" tab on the Player Stats card. Two-way players get both. (Sprint 3 Batch B, v4.6.20 + v4.6.21)
+- [x] Stats v3 — Strike-zone heat map (#14). 3x3 inner-zone batting AVG grid from `?stats=hotColdZones` rendered inside the Advanced tab. Statcast spray-chart coords require Baseball Savant — out of scope. (Sprint 3 Batch C, v4.6.22)
+- [x] Stats v3 — Compare overlay (#11). Same-team head-to-head with player picker + side-by-side stat grid (winner highlighted, polarity-aware). Cross-team compare deferred. (Sprint 3 Batch D, v4.6.24)
+- [x] Stats v3 — Two-way player (TWP) fix: Ohtani-class players now appear in BOTH hitting and pitching Leaders / Roster / Today's Leaders. (v4.6.21)
+- [x] Stats v3 — Last-10 run diff fix: form line was showing season-aggregate runDifferential; now computed client-side from the last 10 finals. (v4.6.23)
+- [x] Stats v3 — Qualification gate on rank/percentile: rate stats (AVG/OBP/SLG/OPS/ERA/WHIP) suppress rank caption + percentile bar for unqualified players. (v4.6.23)
+- [x] Stats v3 — L10 form-line color: drives off `lastTenWins` (>5 warm / =5 neutral / <5 cold) instead of streak direction. (v4.6.24)
+- [x] Stats v3 — Typography normalization across the Stats section + Compare overlay (canonical scale: card-title eyebrow .68rem/.1em, section-head .65rem/.12em, tabs/pills .72rem, body row label .82rem, footers .62rem italic). (v4.6.25)
+- [ ] Stats v3 — **Awards (#16)** intentionally dropped pre-prod in v4.6.21. Re-enable in a follow-up sprint if desired (`/people/{id}/awards` endpoint, AWARD_ICONS catalog, chip strip on Career tab).
+- [ ] Stats v4 — **Statcast spray data via Baseball Savant proxy** (deferred). Would unlock xBA / xwOBA / exit velo / max EV / barrel rate / hard-hit % / sprint speed (advanced hitter metrics) + dot-on-field spray chart. Requires a separate proxy because Savant doesn't have permissive CORS.
+- [ ] Stats v4 — **Cross-team Compare** (deferred). Current overlay is same-team only; cross-team compare would need a name-search picker + per-player season-stat fetches (currently we only warm `state.statsCache` for the active team).
+
+### 🛠️ Tech debt
+
+- [ ] **Inline styles in `index.html`** — 253 `style="…"` attributes pre-existing across the markup (calendar, news, schedule, settings sections). Some I added in Sprint 3 are already cleaned up (Today's Leaders card head, v4.6.26). A broader cleanup sprint could move all layout-only inline styles to CSS classes for maintainability + smaller HTML payload.
 
 ---
 

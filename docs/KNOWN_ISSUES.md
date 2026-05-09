@@ -1,6 +1,6 @@
 # Known Issues
 
-Project-management issues tracked here. For AI editing gotchas (bugs that could be silently re-introduced), see the "⚠️ Critical Gotchas" section in `CLAUDE.md`.
+Project-management issues tracked here. **Critical Gotchas** (subtle bugs that could be silently re-introduced — referenced from CLAUDE.md) are listed at the bottom of this file.
 
 ---
 
@@ -19,3 +19,21 @@ Project-management issues tracked here. For AI editing gotchas (bugs that could 
 7. **Card binder scroll on desktop** — `#collectionBook` uses `max-height:90vh` (not an explicit `height`), so `.cc-binder{height:100%}` resolves against content height and the flex chain has no definite reference; `.cc-page` overflows when `.cc-grid{min-height:600px}` + 44px padding exceeds available space. Proposed fix: change `#collectionBook` to `height:min(96vh,920px)` + widen `max-width:960px` → `1200px` + drop `min-height:600px` from `.cc-grid`. Needs visual QA — a previous attempt was reverted due to look/feel concerns.
 
 8. **Switch cron trigger** — GitHub Actions scheduled workflows are unreliable on free tier (fires ~once per hour in practice vs every 5 min as configured), making game-start alerts miss most windows. Vercel Cron (`vercel.json`) would be more reliable as it runs on the same infra as the notify function.
+
+---
+
+## ⚠️ Critical Gotchas (referenced from CLAUDE.md)
+
+These are bugs the AI editor could silently re-introduce. CLAUDE.md keeps a 1-line summary; full descriptions live here.
+
+### 1. Date strings use local time
+All `startDate` / `endDate` query params are built from `getFullYear` / `getMonth` / `getDate` (local). Avoid `toISOString().split('T')[0]` for date params — it returns UTC and will be one day ahead after ~8 PM ET, causing games to be skipped (fixed v1.45.5). `api/notify.js` intentionally uses UTC since it runs on Vercel servers.
+
+The Calendar `gameByDate` key also uses local timezone (fixed v1.61) — previously used `gameDate.split('T')[0]` (UTC), placing evening US games on the wrong calendar cell.
+
+Use the helpers in `src/utils/format.js`: `etDateStr(d?)` returns the ET-local YYYY-MM-DD; `etDatePlus(dateStr, days)` shifts by N days. Used by Stats v3's last-10 run-diff fetch (v4.6.23) and many other places.
+
+### 2. Audacy radio rights gap
+~14 MLB market flagships hosted by Audacy (`live.amperwave.net/manifest/audacy-*`) play alternate content during games (talk shows / ads), not OTA simulcast. Adding an Audacy-hosted team to `APPROVED_RADIO_TEAM_IDS` will silently stream ads.
+
+Fix requires sourcing replacement URLs from iHeart / StreamTheWorld / Bonneville. See `docs/radio-system.md` → Audacy rights gap.

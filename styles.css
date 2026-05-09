@@ -1326,12 +1326,12 @@ nav button.active {
 
 .player-name {
   font-weight: 600;
-  font-size: .9rem
+  font-size: .82rem
 }
 
 .player-pos {
   color: var(--muted);
-  font-size: .78rem
+  font-size: .68rem
 }
 
 /* ── Team Stats card (Stats tab v2) ─────────────────────────────────────── */
@@ -1395,6 +1395,11 @@ nav button.active {
   background: rgba(255,89,16,.06);
   border-color: rgba(255,89,16,.25);
   color: #FF9A5C
+}
+.team-form-line.neutral {
+  background: rgba(255,255,255,.04);
+  border-color: var(--border);
+  color: var(--text)
 }
 .team-form-line.empty {
   background: transparent;
@@ -1514,7 +1519,7 @@ nav button.active {
   font-weight: 600
 }
 .vs-basis-pill {
-  font-size: .7rem;
+  font-size: .72rem;
   font-weight: 600;
   padding: 4px 10px;
   border: 1px solid var(--border);
@@ -1636,6 +1641,19 @@ nav button.active {
   letter-spacing: .04em
 }
 .hero-panel-bar .pct-bar { height: 6px; background: rgba(255,255,255,.1) }
+/* Shown in place of rank/percentile when an unqualified player is selected on
+   a rate stat. Carries the explanation in a tooltip for users who want detail. */
+.hero-panel-unq {
+  font-size: .68rem;
+  letter-spacing: .04em;
+  color: var(--muted);
+  font-style: italic;
+  padding: 6px 10px;
+  background: rgba(255,255,255,.04);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  cursor: help
+}
 .hero-panel-trend {
   min-height: 44px;
   display: flex;
@@ -1697,10 +1715,10 @@ nav button.active {
 .qualified-toggle.on .qualified-toggle-knob { left: 16px }
 .qualified-toggle-label {
   font-size: .68rem;
-  letter-spacing: .14em;
+  letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--muted);
-  font-weight: 600
+  font-weight: 700
 }
 .qualified-toggle.on .qualified-toggle-label { color: var(--text) }
 .leader-qual-footer {
@@ -1709,9 +1727,10 @@ nav button.active {
   background: rgba(255,200,60,.08);
   border: 1px solid rgba(255,200,60,.25);
   border-radius: 6px;
-  font-size: .68rem;
+  font-size: .62rem;
   color: #FFC83C;
-  letter-spacing: .04em
+  letter-spacing: .04em;
+  font-style: italic
 }
 
 /* ── Stats v2: Roster section headers + inline stat + mini-bar ─────────── */
@@ -1720,7 +1739,7 @@ nav button.active {
   top: 0;
   z-index: 1;
   font-size: .65rem;
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
   background: var(--card);
@@ -1784,7 +1803,7 @@ nav button.active {
   padding: 8px 12px;
   margin-bottom: -1px;
   color: var(--muted);
-  font-size: .8rem;
+  font-size: .72rem;
   font-weight: 600;
   letter-spacing: .04em;
   cursor: pointer;
@@ -1885,21 +1904,23 @@ nav button.active {
 .splits-section { margin-bottom: 14px }
 .splits-section:last-child { margin-bottom: 0 }
 .splits-section-head {
-  font-size: .62rem;
-  letter-spacing: .14em;
+  font-size: .65rem;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
   margin-bottom: 8px
 }
 .splits-hint {
-  font-size: .72rem;
+  font-size: .62rem;
   color: var(--muted);
   background: rgba(255,255,255,.04);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px 12px;
-  margin-top: 14px
+  margin-top: 14px;
+  letter-spacing: .04em;
+  font-style: italic
 }
 .splits-hint strong { color: var(--text); font-weight: 700 }
 .split-row {
@@ -1917,8 +1938,8 @@ nav button.active {
   margin-bottom: 5px
 }
 .split-row-label {
-  font-size: .8rem;
-  font-weight: 700;
+  font-size: .82rem;
+  font-weight: 600;
   color: var(--text)
 }
 .split-row-line {
@@ -2015,6 +2036,480 @@ nav button.active {
 .arsenal-row-label { color: var(--text); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .arsenal-row-pct { color: var(--accent); font-weight: 700; text-align: right }
 .arsenal-row-velo { color: var(--muted); text-align: right; font-size: .7rem }
+
+/* ── Stats v3 / Sprint 3: Statcast Advanced (hitters) ───────────────────── */
+.adv-hero-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 8px;
+  margin-top: 14px
+}
+.adv-hero-row .stat-box .stat-val {
+  font-size: 1.6rem;
+  color: var(--accent)
+}
+.adv-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+  margin-top: 10px
+}
+@media (max-width: 767px) { .adv-stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)) } }
+.adv-source-note {
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+  font-style: italic
+}
+
+/* ── Stats v3 / Sprint 3: Strike-zone heat map ──────────────────────────── */
+.hotzone-section {
+  margin-top: 18px;
+  padding: 14px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px
+}
+.hotzone-section-head {
+  font-size: .65rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 12px
+}
+.hotzone-frame {
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
+  grid-template-rows: 18px auto 18px;
+  grid-template-areas:
+    ".    top    ."
+    "left grid   right"
+    ".    bot    .";
+  align-items: center;
+  justify-items: center;
+  gap: 4px;
+  max-width: 360px;
+  margin: 0 auto
+}
+.hotzone-axis-top   { grid-area: top;   font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700 }
+.hotzone-axis-bot   { grid-area: bot;   font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700 }
+.hotzone-axis-left  { grid-area: left;  font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; writing-mode: vertical-rl; transform: rotate(180deg) }
+.hotzone-axis-right { grid-area: right; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; writing-mode: vertical-rl }
+.hotzone-grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6px;
+  width: 220px;
+  height: 220px;
+  padding: 6px;
+  background: rgba(255,255,255,.04);
+  border: 2px dashed var(--border);
+  border-radius: 6px
+}
+.hotzone-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(0,0,0,.35);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08)
+}
+.hotzone-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,.6);
+  letter-spacing: -.01em
+}
+.hotzone-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase
+}
+.hotzone-legend-bar {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right,
+    rgba(224,72,72,.55),
+    rgba(240,208,60,.55),
+    rgba(60,190,100,.55))
+}
+.hotzone-legend-spacer { flex: 1 }
+.hotzone-foot {
+  margin-top: 10px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+  font-style: italic;
+  text-align: center
+}
+
+/* ── Stats v3 / Sprint 3: Compare overlay ───────────────────────────────── */
+.player-stats-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px
+}
+.compare-trigger {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease
+}
+.compare-trigger:hover { background: var(--accent); color: var(--accent-text) }
+.compare-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(0,0,0,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 20px
+}
+.compare-overlay[hidden] { display: none }
+.compare-shell {
+  width: 100%;
+  max-width: 760px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px
+}
+.compare-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px
+}
+.compare-title {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .1em;
+  text-transform: uppercase
+}
+.compare-close {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px
+}
+.compare-close:hover { background: rgba(255,255,255,.06); color: var(--text) }
+.compare-group-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px
+}
+.compare-group-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease
+}
+.compare-group-btn:hover { color: var(--text); border-color: var(--accent) }
+.compare-group-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent) }
+.compare-pickers {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px
+}
+.compare-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 10px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px
+}
+.compare-headshot {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  object-fit: cover
+}
+.compare-headshot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 2rem;
+  font-weight: 700
+}
+.compare-slot-name {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.15
+}
+.compare-slot-meta {
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600
+}
+.compare-picker {
+  width: 100%;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: .76rem
+}
+.compare-vs {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--muted);
+  letter-spacing: .08em
+}
+.compare-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px
+}
+.compare-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px
+}
+.compare-cell {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums
+}
+.compare-cell.compare-win  { color: #6FDC8E }
+.compare-cell.compare-lose { color: var(--muted) }
+.compare-label {
+  text-align: center;
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700
+}
+.compare-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: .85rem;
+  font-style: italic;
+  background: var(--card2);
+  border: 1px dashed var(--border);
+  border-radius: 8px
+}
+.compare-foot {
+  margin-top: 6px;
+  font-size: .62rem;
+  letter-spacing: .04em;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center
+}
+@media (max-width: 600px) {
+  .compare-pickers { grid-template-columns: 1fr; gap: 8px }
+  .compare-vs { display: none }
+  .compare-headshot { width: 72px; height: 72px }
+  .compare-row { grid-template-columns: 1fr 60px 1fr; padding: 6px 8px }
+  .compare-cell { font-size: .9rem }
+}
+
+/* ── Stats v3 / Sprint 3: Today's Leaders (MLB-wide module) ─────────────── */
+.todays-leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 12px;
+  margin-top: 8px
+}
+@media (max-width: 1024px) { .todays-leaders-grid { grid-template-columns: repeat(2, minmax(0,1fr)) } }
+@media (max-width: 480px)  { .todays-leaders-grid { grid-template-columns: 1fr } }
+.tl-cat {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px
+}
+.tl-cat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border)
+}
+.tl-cat-label {
+  font-size: .78rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: .08em
+}
+.tl-cat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px
+}
+.tl-cat-list li {
+  display: grid;
+  grid-template-columns: 18px minmax(0,1fr) auto auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums
+}
+.tl-rank {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: .68rem;
+  text-align: center
+}
+.tl-name {
+  color: var(--text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0
+}
+.tl-team {
+  color: var(--muted);
+  font-size: .62rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  font-weight: 700
+}
+.tl-val {
+  color: var(--accent);
+  font-weight: 800;
+  text-align: right
+}
+.tl-cat-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 16px 0 }
+/* Today's Leaders card head + subtitle. Replaced four inline style="…"
+   attributes from v4.6.18 in v4.6.26. */
+.todays-leaders-card { margin-top: 16px }
+.todays-leaders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px
+}
+.todays-leaders-sub {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: .72rem;
+  letter-spacing: .04em
+}
+.todays-leaders-tabs { margin: 0 }
+
+/* ── Stats v3 / Sprint 3: Career tab (year-by-year tables) ─────────────── */
+.career-section { margin-top: 16px }
+.career-section:first-child { margin-top: 14px }
+.career-section-head {
+  font-size: .65rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px
+}
+.career-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card2)
+}
+.career-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: .76rem;
+  min-width: 560px
+}
+.career-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  color: var(--muted);
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 8px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap
+}
+.career-table thead th:first-child,
+.career-table thead th:nth-child(2) { text-align: left }
+.career-table tbody td {
+  padding: 7px 8px;
+  text-align: right;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  white-space: nowrap;
+  color: var(--text)
+}
+.career-table tbody td:first-child { text-align: left; font-weight: 700; color: var(--accent) }
+.career-table tbody td:nth-child(2) { text-align: left; color: var(--muted); font-size: .7rem; letter-spacing: .04em }
+.career-table tbody tr:last-child td { border-bottom: 0 }
+.career-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent) }
+.career-col-avg, .career-col-obp, .career-col-slg, .career-col-ops, .career-col-era, .career-col-whip { color: var(--accent); font-weight: 700 }
 
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {

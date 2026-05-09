@@ -47,6 +47,22 @@ export const state = {
   pitchArsenalCache: {},
   // Splits cache: playerId → { splits: {...}, ts }
   statSplitsCache: {},
+  // Sprint-3 caches
+  // Statcast / advanced hitting metrics: playerId → { stat: {...}, ts }
+  advancedHittingCache: {},
+  // Today's Leaders module visibility / tab: 'hitting' | 'pitching'
+  todaysLeadersTab: 'hitting',
+  // Career year-by-year cache: playerId → { hitting:[...], pitching:[...], ts }
+  careerCache: {},
+  // Strike-zone heat map cache: playerId → { zones:[...], ts } — populated
+  // from /people/{id}/stats?stats=hotColdZones (Sprint 3, hitters only).
+  hotColdCache: {},
+  // Compare overlay state (Sprint 3 Batch D)
+  compareOpen: false,
+  compareA: null,        // full player object {person, position, jerseyNumber}
+  compareB: null,
+  compareGroup: 'hitting' // 'hitting' | 'pitching'
+,
 
   // ── News State ───────────────────────────────────────────────────────────
   newsFeedMode: 'mlb',
