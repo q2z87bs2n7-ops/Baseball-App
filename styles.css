@@ -2314,7 +2314,7 @@ select {
     display: none !important
   }
   .ptb-overflow {
-    display: inline-flex
+    display: inline-flex !important
   }
   .main {
     padding-bottom: calc(72px + env(safe-area-inset-bottom))
