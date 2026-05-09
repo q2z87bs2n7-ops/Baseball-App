@@ -1,0 +1,1611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Stats Tab Improvements — MLB Pulse</title>
+<script src="deck-stage.js"></script>
+<style>
+  :root{
+    --primary:#002D72;
+    --accent:#FF5910;
+    --dark:#0F1B2E;
+    --card:#172B4D;
+    --card2:#1E3A5F;
+    --text:#e8eaf0;
+    --muted:#9aa0a8;
+    --border:#2C4A7F;
+    --good:#3CBE64;
+    --bad:#E04848;
+    --warm:#FFC83C;
+    --cool:#4FA3FF;
+    --hr:#A064FF;
+  }
+  html,body{margin:0;padding:0;background:#000;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text);}
+  deck-stage{--slide-bg:var(--dark);}
+  section{
+    position:relative;
+    box-sizing:border-box;
+    padding:64px 80px;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(255,89,16,.06), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(0,45,114,.55), transparent 55%),
+      var(--dark);
+    color:var(--text);
+    overflow:hidden;
+  }
+  /* ── slide chrome ─────────────────────────────────────── */
+  .chrome{
+    position:absolute; inset:32px 80px auto 80px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:14px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+  }
+  .chrome .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--text);}
+  .chrome .bolt{color:var(--accent);}
+  .chrome .pageno{font-variant-numeric:tabular-nums;color:var(--muted);}
+  .footer{
+    position:absolute; left:80px; right:80px; bottom:32px;
+    display:flex; align-items:center; justify-content:space-between;
+    color:var(--muted); font-size:13px; letter-spacing:.08em; text-transform:uppercase;
+  }
+  .footer .endpoint{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    text-transform:none; letter-spacing:0;
+    color:#cfd3dc; background:rgba(0,0,0,.35);
+    border:1px solid var(--border); border-radius:6px;
+    padding:6px 10px; font-size:12px;
+  }
+  /* ── headers ─────────────────────────────────────── */
+  .tier-tag{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:5px 11px; border:1px solid var(--border); border-radius:999px;
+    font-size:13px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    background:rgba(255,255,255,.03); color:var(--accent);
+  }
+  .tier-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
+  .tier-tag.t2{color:#FFC83C;} .tier-tag.t2 .dot{background:#FFC83C;}
+  .tier-tag.t3{color:#A064FF;} .tier-tag.t3 .dot{background:#A064FF;}
+  .tier-tag.t4{color:#4FA3FF;} .tier-tag.t4 .dot{background:#4FA3FF;}
+  h1.slide-title{
+    font-size:64px; line-height:1.05; font-weight:800; letter-spacing:-.02em;
+    margin:18px 0 0; color:#fff;
+  }
+  h1.slide-title .num{color:var(--muted); font-weight:600; margin-right:14px; font-variant-numeric:tabular-nums;}
+  .lede{font-size:22px; line-height:1.45; color:var(--muted); margin-top:14px; max-width:680px;}
+  .lede strong{color:#fff; font-weight:600;}
+  /* ── two-column layout ─────────────────────────────────────── */
+  .grid2{
+    display:grid; grid-template-columns:560px 1fr; gap:64px;
+    margin-top:48px;
+  }
+  .why h3{font-size:13px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin:0 0 10px;}
+  .why ul{list-style:none; margin:0; padding:0;}
+  .why li{
+    position:relative; padding-left:18px; margin:10px 0;
+    font-size:18px; line-height:1.5; color:#cfd3dc;
+  }
+  .why li::before{
+    content:""; position:absolute; left:0; top:11px; width:6px; height:6px; border-radius:50%;
+    background:var(--accent);
+  }
+  .why .meta{
+    margin-top:24px; padding-top:16px; border-top:1px solid var(--border);
+    display:flex; gap:24px; color:var(--muted); font-size:14px;
+  }
+  .why .meta b{color:#fff; font-weight:600; display:block; font-size:13px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px;}
+  /* ── mock card frame ─────────────────────────────────────── */
+  .mock{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:24px;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+    overflow:hidden;
+    min-height:520px;
+  }
+  .mock .mock-label{
+    position:absolute; top:14px; right:14px;
+    font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted);
+    border:1px solid var(--border); border-radius:4px; padding:3px 7px;
+    background:rgba(0,0,0,.25);
+  }
+  .card-title{
+    font-size:18px; font-weight:700; color:#fff;
+    padding-bottom:12px; margin-bottom:16px;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-title .sub{font-size:12px; color:var(--muted); font-weight:500; letter-spacing:.08em; text-transform:uppercase;}
+  /* ── Player Stats mock pieces ─────────────────────────────────────── */
+  .stat-grid{display:grid; gap:10px;}
+  .stat-grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .stat-grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .stat-box{
+    background:var(--card2); border:1px solid var(--border); border-radius:8px;
+    padding:14px 12px; text-align:center;
+  }
+  .stat-box .stat-val{font-size:26px; font-weight:800; color:#fff; line-height:1;}
+  .stat-box .stat-lbl{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:6px;}
+  .stat-box.hero{grid-column:span 2; background:linear-gradient(135deg, rgba(255,89,16,.16), rgba(255,89,16,.04)); border-color:rgba(255,89,16,.4);}
+  .stat-box.hero .stat-val{font-size:42px; color:var(--accent);}
+  /* percentile bar */
+  .pct-bar{height:4px; background:var(--border); border-radius:2px; margin-top:10px; position:relative; overflow:hidden;}
+  .pct-bar i{position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,var(--good),#9be36a); border-radius:2px; display:block;}
+  .pct-bar.mid i{background:linear-gradient(90deg,var(--warm),#ffb13c);}
+  .pct-bar.low i{background:linear-gradient(90deg,var(--bad),#ff7575);}
+  .stat-box .rank{font-size:10px; letter-spacing:.06em; color:var(--muted); margin-top:6px; display:flex; justify-content:space-between;}
+  .stat-box .rank b{color:var(--good); font-weight:700;}
+  .stat-box.mid .rank b{color:var(--warm);}
+  .stat-box.low .rank b{color:var(--bad);}
+  /* ── leader / roster row ─────────────────────────────────────── */
+  .player-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 12px; border-bottom:1px solid var(--border);
+    gap:12px;
+  }
+  .player-row:last-child{border-bottom:none;}
+  .player-row .left{display:flex; align-items:center; gap:12px;}
+  .player-row .rank{color:var(--accent); font-weight:800; width:18px; font-size:14px; font-variant-numeric:tabular-nums;}
+  .player-row .name{font-size:14px; font-weight:600; color:#fff;}
+  .player-row .pos{font-size:11px; color:var(--muted); margin-top:2px;}
+  .player-row .stat{font-size:18px; font-weight:800; color:var(--accent); font-variant-numeric:tabular-nums;}
+  .badge{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:10px; font-weight:700; letter-spacing:.06em;
+    padding:2px 7px; border-radius:999px; text-transform:uppercase;
+    margin-left:6px;
+  }
+  .badge.hot{background:rgba(255,89,16,.18); color:#ffb38a; border:1px solid rgba(255,89,16,.45);}
+  .badge.cold{background:rgba(79,163,255,.14); color:#9cc6ff; border:1px solid rgba(79,163,255,.4);}
+  .badge.qual{background:rgba(60,190,100,.14); color:#9be36a; border:1px solid rgba(60,190,100,.4);}
+  /* ── pills ─────────────────────────────────────── */
+  .pills{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .pill{
+    font-size:12px; font-weight:700; letter-spacing:.08em;
+    padding:5px 10px; border:1px solid var(--border); border-radius:999px;
+    background:rgba(0,0,0,.25); color:var(--muted);
+  }
+  .pill.active{color:#fff; background:var(--primary); border-color:var(--accent);}
+  /* ── tabs ─────────────────────────────────────── */
+  .tabs{display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:18px;}
+  .tab{
+    font-size:13px; font-weight:700; letter-spacing:.08em;
+    padding:10px 14px; color:var(--muted); border-bottom:2px solid transparent;
+    margin-bottom:-1px;
+  }
+  .tab.active{color:#fff; border-bottom-color:var(--accent);}
+  /* ── headshot ─────────────────────────────────────── */
+  .headshot{
+    width:120px; height:120px; border-radius:50%;
+    background:linear-gradient(135deg, var(--card2), var(--card));
+    border:3px solid var(--accent); display:flex; align-items:center; justify-content:center;
+    color:var(--muted); font-size:36px; margin:0 auto 12px;
+    position:relative;
+  }
+  .headshot .jersey{position:absolute; bottom:-4px; right:-4px; background:var(--primary); color:#fff; font-size:11px; font-weight:800; border:2px solid var(--card); border-radius:999px; padding:2px 7px;}
+  /* ── chart bits ─────────────────────────────────────── */
+  .sparkline{margin-top:8px;}
+  /* ── title slide ─────────────────────────────────────── */
+  .title-slide{
+    display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
+    background:
+      radial-gradient(1200px 800px at 90% 10%, rgba(255,89,16,.18), transparent 50%),
+      radial-gradient(800px 600px at 0% 100%, rgba(0,45,114,.85), transparent 60%),
+      #0a0f1e;
+  }
+  .title-slide .eyebrow{
+    font-size:18px; letter-spacing:.32em; text-transform:uppercase; color:var(--accent); font-weight:700;
+    display:flex; align-items:center; gap:14px;
+  }
+  .title-slide .eyebrow .bolt{font-size:24px;}
+  .title-slide h1{
+    font-size:140px; line-height:.95; font-weight:900; letter-spacing:-.03em;
+    margin:24px 0 0; color:#fff; max-width:1500px;
+  }
+  .title-slide h1 em{color:var(--accent); font-style:normal;}
+  .title-slide .sub{font-size:28px; color:var(--muted); margin-top:24px; max-width:1100px; line-height:1.4;}
+  .title-slide .meta{position:absolute; bottom:60px; left:80px; right:80px; display:flex; justify-content:space-between; color:var(--muted); font-size:14px; letter-spacing:.16em; text-transform:uppercase;}
+  /* ── divider slide ─────────────────────────────────────── */
+  .divider{
+    display:flex; flex-direction:column; justify-content:center; align-items:flex-start;
+    background:
+      radial-gradient(1400px 800px at 50% 50%, rgba(0,45,114,.6), transparent 60%),
+      #0a0f1e;
+  }
+  .divider .tier-num{
+    font-size:280px; line-height:.85; font-weight:900; letter-spacing:-.04em;
+    color:transparent; -webkit-text-stroke:2px var(--border);
+  }
+  .divider h2{font-size:96px; line-height:1; font-weight:900; letter-spacing:-.025em; color:#fff; margin:8px 0 0;}
+  .divider .desc{font-size:24px; color:var(--muted); margin-top:24px; max-width:900px;}
+  .divider.t1 .tier-num{color:transparent; -webkit-text-stroke:2px var(--accent); opacity:.4;}
+  .divider.t2 .tier-num{color:transparent; -webkit-text-stroke:2px #FFC83C; opacity:.4;}
+  .divider.t3 .tier-num{color:transparent; -webkit-text-stroke:2px var(--hr); opacity:.5;}
+  .divider.t4 .tier-num{color:transparent; -webkit-text-stroke:2px var(--cool); opacity:.5;}
+
+  /* ── current-state slide ─────────────────────────────────────── */
+  .three-col{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;}
+  .col-card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px;}
+  .col-card .ct{font-size:14px; font-weight:700; color:#fff; padding-bottom:10px; border-bottom:1px solid var(--border); margin-bottom:12px;}
+
+  /* ── delta chip ─────────────────────────────────────── */
+  .delta-chip{
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.04em;
+    padding:2px 7px; border-radius:6px; margin-top:6px;
+  }
+  .delta-chip.pos{background:rgba(60,190,100,.16); color:#9be36a;}
+  .delta-chip.neg{background:rgba(224,72,72,.16); color:#ff8d8d;}
+
+  /* ── splits grid ─────────────────────────────────────── */
+  .splits{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .split-row{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--card2); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px;
+  }
+  .split-row .lbl{font-size:11px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase;}
+  .split-row .v{font-size:18px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums;}
+
+  /* ── game log row ─────────────────────────────────────── */
+  .gamelog{display:flex; gap:6px; flex-wrap:wrap;}
+  .glog-item{
+    flex:1; min-width:80px;
+    background:var(--card2); border:1px solid var(--border); border-radius:8px;
+    padding:10px 8px; text-align:center;
+  }
+  .glog-item .d{font-size:10px; color:var(--muted);}
+  .glog-item .o{font-size:11px; color:#fff; margin-top:2px;}
+  .glog-item .s{font-size:13px; font-weight:800; color:var(--accent); margin-top:6px;}
+  .glog-item.win{border-color:rgba(60,190,100,.4);}
+  .glog-item.loss{border-color:rgba(224,72,72,.3);}
+  .glog-item.hr{border-color:var(--hr-border, rgba(160,100,255,.5)); background:rgba(160,100,255,.08);}
+
+  /* ── strike zone heatmap ─────────────────────────────────────── */
+  .zone{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:4px;
+    width:240px; aspect-ratio:1; margin:0 auto;
+    border:2px solid #fff; border-radius:6px; padding:6px;
+    background:var(--card2);
+  }
+  .zone i{display:block; border-radius:4px;}
+
+  /* ── pitch arsenal donut (svg replacement) ─────────────────────────────────────── */
+  .arsenal{display:flex; align-items:center; gap:24px;}
+  .arsenal-list{flex:1;}
+  .arsenal-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); gap:14px;}
+  .arsenal-row:last-child{border-bottom:none;}
+  .arsenal-row .swatch{width:10px; height:10px; border-radius:2px; flex-shrink:0;}
+  .arsenal-row .pname{flex:1; font-size:14px; color:#fff; font-weight:600;}
+  .arsenal-row .pmeta{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .arsenal-row .ppct{font-size:16px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums; min-width:48px; text-align:right;}
+
+  /* ── compare ─────────────────────────────────────── */
+  .compare{display:grid; grid-template-columns:1fr 50px 1fr; gap:12px; align-items:center;}
+  .compare .vs{font-size:14px; font-weight:800; color:var(--muted); text-align:center; letter-spacing:.16em;}
+  .cmp-name{font-size:16px; font-weight:700; color:#fff; text-align:center; padding-bottom:8px; border-bottom:1px solid var(--border); margin-bottom:8px;}
+  .cmp-row{display:grid; grid-template-columns:1fr 60px 1fr; align-items:center; padding:8px 0; border-bottom:1px solid rgba(44,74,127,.5);}
+  .cmp-row:last-child{border-bottom:none;}
+  .cmp-v{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; text-align:center;}
+  .cmp-v.win{color:var(--good);}
+  .cmp-v.lose{color:var(--muted);}
+  .cmp-l{font-size:11px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; text-align:center;}
+
+  /* ── awards strip ─────────────────────────────────────── */
+  .awards{display:flex; flex-wrap:wrap; gap:8px;}
+  .award{
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(255,200,60,.08); border:1px solid rgba(255,200,60,.35);
+    padding:8px 12px; border-radius:8px; font-size:13px; color:#fff; font-weight:600;
+  }
+  .award .star{color:#FFC83C;}
+  /* recap top-5 */
+  .top5{display:grid; grid-template-columns:repeat(5,1fr); gap:18px; margin-top:48px;}
+  .top5 .card-top{
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--border); border-radius:12px; padding:24px 18px;
+    position:relative;
+    min-height:280px;
+  }
+  .top5 .num{
+    position:absolute; top:14px; right:18px;
+    font-size:64px; line-height:1; font-weight:900; color:rgba(255,89,16,.18);
+  }
+  .top5 h4{margin:0 0 12px; color:#fff; font-size:20px; font-weight:800; line-height:1.2;}
+  .top5 p{margin:0; color:var(--muted); font-size:13px; line-height:1.5;}
+
+  /* current state mock screenshot-y */
+  .now-mock{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  .annotation{position:absolute; padding:6px 10px; background:#000; border:1px solid var(--accent); border-radius:6px; color:var(--accent); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;}
+  /* spark svg styling */
+  .spark{display:block;}
+</style>
+</head>
+<body>
+<deck-stage width="1920" height="1080">
+
+<!-- ===== 01 TITLE ===== -->
+<section data-screen-label="01 Title" class="title-slide">
+  <div class="eyebrow"><span class="bolt">⚡</span><span>MLB Pulse · v4.6.3</span></div>
+  <h1>Stats tab,<br/>finished the <em>other third.</em></h1>
+  <div class="sub">A walkthrough of 21 ideas to take the Stats page from "phonebook of numbers" to a genuine destination — each with a mock and the MLB API endpoint that powers it.</div>
+  <div class="meta"><span>Review deck · 21 ideas · 4 tiers</span><span>Use ← → to navigate</span></div>
+</section>
+
+<!-- ===== 02 STATE OF THE TAB ===== -->
+<section data-screen-label="02 Current State">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">02 · State of the Stats Tab</div></div>
+  <div style="margin-top:80px;">
+    <div class="tier-tag"><span class="dot"></span>Today</div>
+    <h1 class="slide-title">Three lists, side-by-side.</h1>
+    <div class="lede">Functional, but inert. No ranks, no trends, no team line, no splits, no Statcast — and no narrative connecting the three columns.</div>
+  </div>
+  <div class="now-mock" style="margin-top:48px;">
+    <div class="mock" style="min-height:380px;">
+      <div class="mock-label">Now</div>
+      <div class="card-title">Leaders</div>
+      <div class="pills"><span class="pill active">AVG</span><span class="pill">HR</span><span class="pill">RBI</span><span class="pill">OPS</span></div>
+      <div class="player-row"><div class="left"><span class="rank">1</span><div><div class="name">J. Soto</div><div class="pos">RF</div></div></div><div class="stat">.312</div></div>
+      <div class="player-row"><div class="left"><span class="rank">2</span><div><div class="name">F. Lindor</div><div class="pos">SS</div></div></div><div class="stat">.291</div></div>
+      <div class="player-row"><div class="left"><span class="rank">3</span><div><div class="name">P. Alonso</div><div class="pos">1B</div></div></div><div class="stat">.275</div></div>
+      <div class="player-row"><div class="left"><span class="rank">4</span><div><div class="name">B. Nimmo</div><div class="pos">LF</div></div></div><div class="stat">.268</div></div>
+    </div>
+    <div class="mock" style="min-height:380px;">
+      <div class="mock-label">Now</div>
+      <div class="card-title">2026 Roster</div>
+      <div class="tabs"><span class="tab active">⚾ Hitting</span><span class="tab">🥎 Pitching</span><span class="tab">🧤 Fielding</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">J. Soto</div><div class="pos">#22 · Right Field</div></div></div><span style="color:var(--muted)">›</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">F. Lindor</div><div class="pos">#12 · Shortstop</div></div></div><span style="color:var(--muted)">›</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">P. Alonso</div><div class="pos">#20 · First Base</div></div></div><span style="color:var(--muted)">›</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">B. Nimmo</div><div class="pos">#9 · Left Field</div></div></div><span style="color:var(--muted)">›</span></div>
+    </div>
+    <div class="mock" style="min-height:380px;">
+      <div class="mock-label">Now</div>
+      <div class="card-title">Juan Soto</div>
+      <div class="headshot">JS<div class="jersey">#22</div></div>
+      <div class="stat-grid cols-4">
+        <div class="stat-box hero"><div class="stat-val">.312</div><div class="stat-lbl">AVG</div></div>
+        <div class="stat-box"><div class="stat-val">28</div><div class="stat-lbl">HR</div></div>
+        <div class="stat-box"><div class="stat-val">71</div><div class="stat-lbl">RBI</div></div>
+        <div class="stat-box"><div class="stat-val">.962</div><div class="stat-lbl">OPS</div></div>
+        <div class="stat-box"><div class="stat-val">112</div><div class="stat-lbl">H</div></div>
+        <div class="stat-box"><div class="stat-val">22</div><div class="stat-lbl">2B</div></div>
+        <div class="stat-box"><div class="stat-val">2</div><div class="stat-lbl">3B</div></div>
+        <div class="stat-box"><div class="stat-val">68</div><div class="stat-lbl">K</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>The boxes are nice. They're just doing the bare minimum.</span><span class="endpoint">/people/{id}/stats?stats=season</span></div>
+</section>
+
+<!-- ===== 03 DIVIDER TIER 1 ===== -->
+<section data-screen-label="03 Tier 1" class="divider t1">
+  <div class="tier-num">01</div>
+  <div class="tier-tag"><span class="dot"></span>Tier 1 · Make the existing layout pull its weight</div>
+  <h2>Add context<br/>to every number.</h2>
+  <div class="desc">Five small additions that rewire what's already on screen — no new sections, no new endpoints beyond `/stats/leaders`. Highest leverage, lowest cost.</div>
+</section>
+
+<!-- ===== 04 IDEA 1 — League rank + percentile ===== -->
+<section data-screen-label="04 Idea 1 Percentile">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 01 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag"><span class="dot"></span>Tier 1</div>
+    <h1 class="slide-title"><span class="num">01</span>League rank + percentile, on every box.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>A 4.32 ERA looks identical to a 2.10 ERA today — same box, same color.</li>
+        <li>One thin colored bar + a "#38 of 142" caption tells you instantly whether a number is good.</li>
+        <li>Stops users from having to mentally compare against a league average they don't have memorized.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/stats/leaders?leaderCategories=…&season=2026</div>
+        <div><b>Cost</b>+1 fetch / page load</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto<span class="sub">Hitting · 2026</span></div>
+      <div class="stat-grid cols-3">
+        <div class="stat-box hero">
+          <div class="stat-val">.312</div><div class="stat-lbl">Batting Avg</div>
+          <div class="pct-bar"><i style="width:94%"></i></div>
+          <div class="rank"><span>vs MLB</span><b>#9 · Top 6%</b></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">28</div><div class="stat-lbl">HR</div>
+          <div class="pct-bar"><i style="width:88%"></i></div>
+          <div class="rank"><span>MLB</span><b>#14</b></div>
+        </div>
+        <div class="stat-box mid">
+          <div class="stat-val">71</div><div class="stat-lbl">RBI</div>
+          <div class="pct-bar mid"><i style="width:62%"></i></div>
+          <div class="rank"><span>MLB</span><b>#41</b></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">.962</div><div class="stat-lbl">OPS</div>
+          <div class="pct-bar"><i style="width:91%"></i></div>
+          <div class="rank"><span>MLB</span><b>#11</b></div>
+        </div>
+        <div class="stat-box mid">
+          <div class="stat-val">22</div><div class="stat-lbl">2B</div>
+          <div class="pct-bar mid"><i style="width:54%"></i></div>
+          <div class="rank"><span>MLB</span><b>#58</b></div>
+        </div>
+        <div class="stat-box low">
+          <div class="stat-val">68</div><div class="stat-lbl">K</div>
+          <div class="pct-bar low"><i style="width:24%"></i></div>
+          <div class="rank"><span>MLB</span><b>#112</b></div>
+        </div>
+      </div>
+      <div style="margin-top:14px; font-size:11px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase;">Bar color = quality tier · green top, amber mid, red bottom</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 05 IDEA 2 — vs-league deltas ===== -->
+<section data-screen-label="05 Idea 2 Deltas">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 02 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag"><span class="dot"></span>Tier 1</div>
+    <h1 class="slide-title"><span class="num">02</span>vs-team and vs-league deltas.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>A delta chip — "+.024 vs lg AVG" — collapses ranking + magnitude into one glance.</li>
+        <li>Toggle target: vs MLB avg, vs team avg, vs position avg.</li>
+        <li>Matches the visual vocabulary of Pulse "RBI" and "comeback" chips already in the app.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/teams/stats?group=hitting,pitching · league split</div>
+        <div><b>Pairs with</b>Idea 01</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto<span class="sub">Compare · vs MLB avg</span></div>
+      <div class="stat-grid cols-3">
+        <div class="stat-box">
+          <div class="stat-val">.312</div><div class="stat-lbl">AVG</div>
+          <div class="delta-chip pos">+0.064 vs lg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">.962</div><div class="stat-lbl">OPS</div>
+          <div class="delta-chip pos">+0.234 vs lg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">28</div><div class="stat-lbl">HR</div>
+          <div class="delta-chip pos">+13 vs lg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">.418</div><div class="stat-lbl">OBP</div>
+          <div class="delta-chip pos">+0.097 vs lg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">68</div><div class="stat-lbl">K</div>
+          <div class="delta-chip neg">+11 vs lg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">7</div><div class="stat-lbl">SB</div>
+          <div class="delta-chip neg">−4 vs lg</div>
+        </div>
+      </div>
+      <div style="margin-top:18px; display:flex; gap:6px;">
+        <span class="pill active">vs MLB</span>
+        <span class="pill">vs team</span>
+        <span class="pill">vs position</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 06 IDEA 3 — Hot/Cold badges ===== -->
+<section data-screen-label="06 Idea 3 Hot Cold">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 03 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag"><span class="dot"></span>Tier 1</div>
+    <h1 class="slide-title"><span class="num">03</span>Hot / Cold badges in lists.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Badges in leader & roster rows show who is actually trending right now — not just season-to-date.</li>
+        <li>Threshold: last-15 OPS more than .080 above season → 🔥 HOT, .080 below → ❄ COLD.</li>
+        <li>Makes the Stats tab feel "live" without changing the data model.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/people/{id}/stats?stats=lastXGames&gameNumber=15</div>
+        <div><b>Caching</b>nightly ok</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Leaders <span class="sub">Hitting · OPS</span></div>
+      <div class="pills"><span class="pill">AVG</span><span class="pill">HR</span><span class="pill">RBI</span><span class="pill active">OPS</span><span class="pill">SB</span></div>
+      <div class="player-row"><div class="left"><span class="rank">1</span><div><div class="name">J. Soto <span class="badge hot">🔥 HOT</span></div><div class="pos">RF · last 15: 1.184</div></div></div><div class="stat">.962</div></div>
+      <div class="player-row"><div class="left"><span class="rank">2</span><div><div class="name">F. Lindor <span class="badge hot">🔥 HOT</span></div><div class="pos">SS · last 15: .991</div></div></div><div class="stat">.844</div></div>
+      <div class="player-row"><div class="left"><span class="rank">3</span><div><div class="name">P. Alonso</div><div class="pos">1B · last 15: .812</div></div></div><div class="stat">.821</div></div>
+      <div class="player-row"><div class="left"><span class="rank">4</span><div><div class="name">M. Vientos <span class="badge cold">❄ COLD</span></div><div class="pos">3B · last 15: .604</div></div></div><div class="stat">.789</div></div>
+      <div class="player-row"><div class="left"><span class="rank">5</span><div><div class="name">B. Nimmo</div><div class="pos">LF · last 15: .742</div></div></div><div class="stat">.768</div></div>
+      <div class="player-row"><div class="left"><span class="rank">6</span><div><div class="name">S. Marte <span class="badge cold">❄ COLD</span></div><div class="pos">RF · last 15: .551</div></div></div><div class="stat">.722</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 07 IDEA 4 — Tabbed Player Stats ===== -->
+<section data-screen-label="07 Idea 4 Tabs">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 04 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag"><span class="dot"></span>Tier 1</div>
+    <h1 class="slide-title"><span class="num">04</span>Tabbed Player Stats card.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>One card today. With four tabs the same real estate carries 4× the data.</li>
+        <li>Overview = today's grid. Splits, Game Log, Advanced are all one fetch each.</li>
+        <li>Makes Player Stats the actual destination of the tab, not a sidekick.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoints</b>statSplits · gameLog · sabermetrics</div>
+        <div><b>State</b>persist last tab in localStorage</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto<span class="sub">RF · #22</span></div>
+      <div class="tabs"><span class="tab active">Overview</span><span class="tab">Splits</span><span class="tab">Game Log</span><span class="tab">Advanced</span></div>
+      <div class="splits">
+        <div class="split-row"><span class="lbl">vs LHP</span><span class="v">.341</span></div>
+        <div class="split-row"><span class="lbl">vs RHP</span><span class="v">.298</span></div>
+        <div class="split-row"><span class="lbl">Home</span><span class="v">.328</span></div>
+        <div class="split-row"><span class="lbl">Away</span><span class="v">.296</span></div>
+        <div class="split-row"><span class="lbl">RISP</span><span class="v">.354</span></div>
+        <div class="split-row"><span class="lbl">w/ 2 outs</span><span class="v">.281</span></div>
+        <div class="split-row"><span class="lbl">Day</span><span class="v">.305</span></div>
+        <div class="split-row"><span class="lbl">Night</span><span class="v">.317</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 08 IDEA 5 — Qualified toggle ===== -->
+<section data-screen-label="08 Idea 5 Qualified">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 05 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag"><span class="dot"></span>Tier 1</div>
+    <h1 class="slide-title"><span class="num">05</span>Qualified toggle on leaders.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Today, a guy with 8 PA and 4 hits leads the team in AVG. Useless.</li>
+        <li>Qualified = PA ≥ 3.1 × team games (hitters), IP ≥ 1 × team games (pitchers).</li>
+        <li>Default ON. Toggle off when you want to see hot prospects with small samples.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Cost</b>Client-side filter</div>
+        <div><b>Pairs with</b>any leader change</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Leaders <span class="sub">Hitting · AVG</span></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div class="pills" style="margin:0;"><span class="pill active">AVG</span><span class="pill">HR</span><span class="pill">RBI</span></div>
+        <div style="display:flex; gap:6px; align-items:center;"><span class="badge qual">Qualified</span><div style="width:36px; height:18px; background:var(--accent); border-radius:999px; position:relative;"><div style="position:absolute; right:2px; top:2px; width:14px; height:14px; background:#fff; border-radius:50%;"></div></div></div>
+      </div>
+      <div class="player-row"><div class="left"><span class="rank">1</span><div><div class="name">J. Soto</div><div class="pos">RF · 482 PA</div></div></div><div class="stat">.312</div></div>
+      <div class="player-row"><div class="left"><span class="rank">2</span><div><div class="name">F. Lindor</div><div class="pos">SS · 511 PA</div></div></div><div class="stat">.291</div></div>
+      <div class="player-row"><div class="left"><span class="rank">3</span><div><div class="name">P. Alonso</div><div class="pos">1B · 498 PA</div></div></div><div class="stat">.275</div></div>
+      <div style="margin-top:14px; padding:10px 12px; background:rgba(255,200,60,.08); border:1px solid rgba(255,200,60,.3); border-radius:8px; font-size:12px; color:#FFC83C;">⚠ 4 players hidden · 8 PA, 12 PA, 24 PA, 31 PA · toggle off to show</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 09 DIVIDER TIER 2 ===== -->
+<section data-screen-label="09 Tier 2" class="divider t2">
+  <div class="tier-num">02</div>
+  <div class="tier-tag t2"><span class="dot"></span>Tier 2 · Add what's structurally missing</div>
+  <h2>Sections that<br/>simply don't exist yet.</h2>
+  <div class="desc">A Stats page without team totals, a game log, splits, a trend, or pitch mix is not really a Stats page. Five new modules.</div>
+</section>
+
+<!-- ===== 10 IDEA 6 — Team Stats card ===== -->
+<section data-screen-label="10 Idea 6 Team Stats">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 06 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t2"><span class="dot"></span>Tier 2</div>
+    <h1 class="slide-title"><span class="num">06</span>Team Stats card. <span style="color:var(--muted); font-weight:600; font-size:32px;">The biggest gap.</span></h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>A baseball app's Stats tab without a team line is a phonebook without a header.</li>
+        <li>One full-bleed strip across the top: hitting, pitching, fielding, each with league rank.</li>
+        <li>Sets context for everything below — "we're a #4 offense and a #22 bullpen" reframes every player number.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/teams/{id}/stats?group=hitting,pitching,fielding</div>
+        <div><b>+</b>league rank from /stats/leaders</div>
+      </div>
+    </div>
+    <div class="mock" style="min-height:520px;">
+      <div class="mock-label">New module</div>
+      <div class="card-title">2026 New York Mets <span class="sub">Team Stats · MLB rank</span></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:8px;">
+        <div style="background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:14px;">
+          <div style="font-size:12px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:10px;">⚾ Hitting · #4 MLB</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">.272</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">AVG · #3</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">187</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">HR · #6</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">.812</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">OPS · #4</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">624</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">R · #5</div></div>
+          </div>
+        </div>
+        <div style="background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:14px;">
+          <div style="font-size:12px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:10px;">🥎 Pitching · #11 MLB</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">3.81</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">ERA · #11</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">1.21</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">WHIP · #9</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">1284</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">K · #7</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:var(--bad);">42</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">SV · #22</div></div>
+          </div>
+        </div>
+        <div style="background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:14px;">
+          <div style="font-size:12px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:10px;">🧤 Fielding · #14 MLB</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">.987</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">FPCT · #11</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">61</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">E · #14</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">114</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">DP · #8</div></div>
+            <div><div style="font-size:22px; font-weight:800; color:#fff;">+8</div><div style="font-size:10px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">DRS · #12</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px; padding:12px 14px; background:rgba(60,190,100,.08); border:1px solid rgba(60,190,100,.3); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:13px; color:#9be36a;"><b style="color:#fff;">Last 10:</b> 7-3 · ▲ W4 · run diff +18</div>
+        <div style="font-size:11px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase;">Form</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 11 IDEA 7 — Game Log ===== -->
+<section data-screen-label="11 Idea 7 Game Log">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 07 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t2"><span class="dot"></span>Tier 2</div>
+    <h1 class="slide-title"><span class="num">07</span>Last-10 game log strip.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Season totals are an average. Game log is a story.</li>
+        <li>10 horizontal mini-cards: date, opp, line. Color border = W/L. Purple border = HR.</li>
+        <li>Click a card → opens that game's Pulse boxscore.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/people/{id}/stats?stats=gameLog&season=2026</div>
+        <div><b>Click target</b>/game/{gamePk}</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto · Last 10<span class="sub">Tap to open game</span></div>
+      <div class="gamelog">
+        <div class="glog-item win hr"><div class="d">May 8</div><div class="o">@ PHI</div><div class="s">3/4 · HR</div></div>
+        <div class="glog-item win"><div class="d">May 7</div><div class="o">@ PHI</div><div class="s">2/4</div></div>
+        <div class="glog-item loss"><div class="d">May 6</div><div class="o">@ PHI</div><div class="s">0/3</div></div>
+        <div class="glog-item win hr"><div class="d">May 4</div><div class="o">vs WSH</div><div class="s">2/4 · HR</div></div>
+        <div class="glog-item win"><div class="d">May 3</div><div class="o">vs WSH</div><div class="s">1/4</div></div>
+        <div class="glog-item loss"><div class="d">May 2</div><div class="o">vs WSH</div><div class="s">1/4</div></div>
+        <div class="glog-item win"><div class="d">May 1</div><div class="o">@ ATL</div><div class="s">2/3</div></div>
+        <div class="glog-item win hr"><div class="d">Apr 30</div><div class="o">@ ATL</div><div class="s">3/5 · 2HR</div></div>
+        <div class="glog-item loss"><div class="d">Apr 29</div><div class="o">@ ATL</div><div class="s">0/4</div></div>
+        <div class="glog-item win"><div class="d">Apr 28</div><div class="o">vs MIA</div><div class="s">2/4</div></div>
+      </div>
+      <div style="margin-top:24px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+        <div class="stat-box"><div class="stat-val">.380</div><div class="stat-lbl">L10 AVG</div></div>
+        <div class="stat-box"><div class="stat-val">4</div><div class="stat-lbl">L10 HR</div></div>
+        <div class="stat-box"><div class="stat-val">11</div><div class="stat-lbl">L10 RBI</div></div>
+        <div class="stat-box"><div class="stat-val">1.184</div><div class="stat-lbl">L10 OPS</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 12 IDEA 8 — Splits panel ===== -->
+<section data-screen-label="12 Idea 8 Splits">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 08 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t2"><span class="dot"></span>Tier 2</div>
+    <h1 class="slide-title"><span class="num">08</span>Splits panel.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Where a player's stat actually came from is the conversation, not the stat itself.</li>
+        <li>Home/Away · vsL/vsR · RISP · w/ 2 outs · 1st half / 2nd half · day/night.</li>
+        <li>Powered by `statSplits` + `sitCodes` — single fetch returns all of it.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/people/{id}/stats?stats=statSplits&sitCodes=…</div>
+        <div><b>Lives in</b>Player Stats → Splits tab</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Splits<span class="sub">Juan Soto · 2026</span></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <div>
+          <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">Handedness</div>
+          <div style="display:flex; gap:8px; margin-bottom:18px;">
+            <div style="flex:1; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:12px;">
+              <div style="font-size:11px; color:var(--muted);">vs LHP</div>
+              <div style="font-size:24px; font-weight:800; color:#fff;">.341</div>
+              <div style="height:3px; background:var(--border); margin-top:6px; border-radius:2px;"><div style="width:88%; height:100%; background:var(--good); border-radius:2px;"></div></div>
+            </div>
+            <div style="flex:1; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:12px;">
+              <div style="font-size:11px; color:var(--muted);">vs RHP</div>
+              <div style="font-size:24px; font-weight:800; color:#fff;">.298</div>
+              <div style="height:3px; background:var(--border); margin-top:6px; border-radius:2px;"><div style="width:74%; height:100%; background:var(--good); border-radius:2px;"></div></div>
+            </div>
+          </div>
+          <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">Venue</div>
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:12px;">
+              <div style="font-size:11px; color:var(--muted);">Home</div>
+              <div style="font-size:24px; font-weight:800; color:#fff;">.328</div>
+            </div>
+            <div style="flex:1; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:12px;">
+              <div style="font-size:11px; color:var(--muted);">Away</div>
+              <div style="font-size:24px; font-weight:800; color:#fff;">.296</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">Situation</div>
+          <div class="splits">
+            <div class="split-row"><span class="lbl">RISP</span><span class="v" style="color:var(--good);">.354</span></div>
+            <div class="split-row"><span class="lbl">w/ 2 outs</span><span class="v">.281</span></div>
+            <div class="split-row"><span class="lbl">Bases empty</span><span class="v">.288</span></div>
+            <div class="split-row"><span class="lbl">Runners on</span><span class="v">.346</span></div>
+            <div class="split-row"><span class="lbl">Late & close</span><span class="v">.301</span></div>
+            <div class="split-row"><span class="lbl">High lev.</span><span class="v" style="color:var(--good);">.367</span></div>
+            <div class="split-row"><span class="lbl">Day</span><span class="v">.305</span></div>
+            <div class="split-row"><span class="lbl">Night</span><span class="v">.317</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 13 IDEA 9 — Trend sparkline ===== -->
+<section data-screen-label="13 Idea 9 Sparkline">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 09 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t2"><span class="dot"></span>Tier 2</div>
+    <h1 class="slide-title"><span class="num">09</span>Trend sparkline in the hero box.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>One small line beneath the hero number tells you direction at a glance.</li>
+        <li>Rolling 7-day AVG (or ERA, OPS, etc) for the last ~30 days. ~120×30 SVG.</li>
+        <li>Mark today with a dot, mark season high/low with thin tick marks.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>gameLog · roll client-side</div>
+        <div><b>Re-uses</b>data from Idea 07</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Hero box · Soto AVG<span class="sub">7-day rolling</span></div>
+      <div style="display:flex; gap:14px;">
+        <div class="stat-box hero" style="flex:1; padding:24px; min-height:180px;">
+          <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase;">Batting Avg · 2026</div>
+          <div class="stat-val" style="font-size:64px;">.312</div>
+          <svg class="spark" viewBox="0 0 320 60" width="100%" height="60">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF5910" stop-opacity=".5"/><stop offset="100%" stop-color="#FF5910" stop-opacity="0"/></linearGradient>
+            </defs>
+            <path d="M0,42 L20,38 L40,40 L60,32 L80,28 L100,30 L120,22 L140,26 L160,20 L180,15 L200,18 L220,12 L240,16 L260,10 L280,14 L300,8 L320,6 L320,60 L0,60 Z" fill="url(#g1)"/>
+            <path d="M0,42 L20,38 L40,40 L60,32 L80,28 L100,30 L120,22 L140,26 L160,20 L180,15 L200,18 L220,12 L240,16 L260,10 L280,14 L300,8 L320,6" stroke="#FF5910" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="320" cy="6" r="4" fill="#fff" stroke="#FF5910" stroke-width="2"/>
+          </svg>
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px; letter-spacing:.06em; text-transform:uppercase;">
+            <span>30 days ago</span><span style="color:var(--good);">▲ +.043</span><span>Today</span>
+          </div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+          <div class="stat-box" style="text-align:left; padding:16px;">
+            <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase;">OPS · 7d</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div class="stat-val" style="font-size:28px;">.962</div>
+              <svg viewBox="0 0 100 30" width="80" height="24"><polyline points="0,22 12,18 24,15 36,18 48,12 60,9 72,11 84,5 100,3" stroke="var(--good)" stroke-width="2" fill="none"/></svg>
+            </div>
+          </div>
+          <div class="stat-box" style="text-align:left; padding:16px;">
+            <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase;">HR · 7d</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div class="stat-val" style="font-size:28px;">28</div>
+              <svg viewBox="0 0 100 30" width="80" height="24"><polyline points="0,28 12,26 24,24 36,21 48,19 60,15 72,12 84,8 100,4" stroke="#FFC83C" stroke-width="2" fill="none"/></svg>
+            </div>
+          </div>
+          <div class="stat-box" style="text-align:left; padding:16px;">
+            <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase;">K rate · 7d</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <div class="stat-val" style="font-size:28px;">14%</div>
+              <svg viewBox="0 0 100 30" width="80" height="24"><polyline points="0,8 12,11 24,9 36,14 48,16 60,15 72,18 84,22 100,24" stroke="var(--cool)" stroke-width="2" fill="none"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 14 IDEA 10 — Pitch arsenal donut ===== -->
+<section data-screen-label="14 Idea 10 Pitch Arsenal">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 10 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t2"><span class="dot"></span>Tier 2</div>
+    <h1 class="slide-title"><span class="num">10</span>Pitch arsenal donut.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>For pitchers, "ERA / WHIP / K" is half the story. Pitch mix and velo is the other half.</li>
+        <li>Donut on the left, ranked list on the right — name, %, avg velo, max velo.</li>
+        <li>Only renders for the Pitching tab. Doesn't affect hitters.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/people/{id}/stats?stats=pitchArsenal</div>
+        <div><b>Lives in</b>Player Stats → Advanced</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Kodai Senga<span class="sub">RHP · 2026 Pitch Arsenal</span></div>
+      <div class="arsenal">
+        <svg viewBox="0 0 200 200" width="200" height="200">
+          <circle cx="100" cy="100" r="76" fill="none" stroke="var(--card2)" stroke-width="32"/>
+          <!-- 4-seam 38% -->
+          <circle cx="100" cy="100" r="76" fill="none" stroke="#FF5910" stroke-width="32" stroke-dasharray="181 477" transform="rotate(-90 100 100)"/>
+          <!-- forkball 24% -->
+          <circle cx="100" cy="100" r="76" fill="none" stroke="#A064FF" stroke-width="32" stroke-dasharray="115 477" stroke-dashoffset="-181" transform="rotate(-90 100 100)"/>
+          <!-- cutter 18% -->
+          <circle cx="100" cy="100" r="76" fill="none" stroke="#4FA3FF" stroke-width="32" stroke-dasharray="86 477" stroke-dashoffset="-296" transform="rotate(-90 100 100)"/>
+          <!-- slider 12% -->
+          <circle cx="100" cy="100" r="76" fill="none" stroke="#FFC83C" stroke-width="32" stroke-dasharray="57 477" stroke-dashoffset="-382" transform="rotate(-90 100 100)"/>
+          <!-- curve 8% -->
+          <circle cx="100" cy="100" r="76" fill="none" stroke="#3CBE64" stroke-width="32" stroke-dasharray="38 477" stroke-dashoffset="-439" transform="rotate(-90 100 100)"/>
+          <text x="100" y="96" text-anchor="middle" fill="#fff" font-size="28" font-weight="800">2,184</text>
+          <text x="100" y="118" text-anchor="middle" fill="#9aa0a8" font-size="11" letter-spacing="2">PITCHES</text>
+        </svg>
+        <div class="arsenal-list">
+          <div class="arsenal-row"><span class="swatch" style="background:#FF5910;"></span><span class="pname">4-Seam Fastball</span><span class="pmeta">95.2 / 98.4 mph</span><span class="ppct">38%</span></div>
+          <div class="arsenal-row"><span class="swatch" style="background:#A064FF;"></span><span class="pname">Forkball (Ghost)</span><span class="pmeta">83.1 mph</span><span class="ppct">24%</span></div>
+          <div class="arsenal-row"><span class="swatch" style="background:#4FA3FF;"></span><span class="pname">Cutter</span><span class="pmeta">88.6 mph</span><span class="ppct">18%</span></div>
+          <div class="arsenal-row"><span class="swatch" style="background:#FFC83C;"></span><span class="pname">Slider</span><span class="pmeta">85.4 mph</span><span class="ppct">12%</span></div>
+          <div class="arsenal-row"><span class="swatch" style="background:#3CBE64;"></span><span class="pname">Curveball</span><span class="pmeta">78.9 mph</span><span class="ppct">8%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 15 DIVIDER TIER 3 ===== -->
+<section data-screen-label="15 Tier 3" class="divider t3">
+  <div class="tier-num">03</div>
+  <div class="tier-tag t3"><span class="dot"></span>Tier 3 · Make it a destination</div>
+  <h2>Tools, not<br/>just tables.</h2>
+  <div class="desc">Six features that turn the tab from "look up a stat" into "spend ten minutes here every morning."</div>
+</section>
+
+<!-- ===== 16 IDEA 11 — Compare mode ===== -->
+<section data-screen-label="16 Idea 11 Compare">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 11 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t3"><span class="dot"></span>Tier 3</div>
+    <h1 class="slide-title"><span class="num">11</span>Compare mode.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Shift-click two roster rows → side-by-side stat lines, winner per row in green.</li>
+        <li>One of the all-time most-engaging stat features. Makes the page social.</li>
+        <li>Even works cross-team — pin a Met against an opposing player before a series.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>existing /people/{id}/stats — × 2</div>
+        <div><b>UI cost</b>tiny</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Compare<span class="sub">2026 · Hitting</span></div>
+      <div class="compare">
+        <div>
+          <div class="cmp-name">Juan Soto</div>
+          <div class="cmp-row"><div class="cmp-v win">.312</div><div class="cmp-l">AVG</div><div class="cmp-v lose">.291</div></div>
+          <div class="cmp-row"><div class="cmp-v win">28</div><div class="cmp-l">HR</div><div class="cmp-v lose">22</div></div>
+          <div class="cmp-row"><div class="cmp-v lose">71</div><div class="cmp-l">RBI</div><div class="cmp-v win">84</div></div>
+          <div class="cmp-row"><div class="cmp-v win">.962</div><div class="cmp-l">OPS</div><div class="cmp-v lose">.844</div></div>
+          <div class="cmp-row"><div class="cmp-v lose">7</div><div class="cmp-l">SB</div><div class="cmp-v win">19</div></div>
+          <div class="cmp-row"><div class="cmp-v win">.418</div><div class="cmp-l">OBP</div><div class="cmp-v lose">.371</div></div>
+          <div class="cmp-row"><div class="cmp-v lose">68</div><div class="cmp-l">K</div><div class="cmp-v win">61</div></div>
+        </div>
+        <div class="vs">VS</div>
+        <div>
+          <div class="cmp-name">Francisco Lindor</div>
+          <div style="height:7px;"></div>
+        </div>
+      </div>
+      <div style="margin-top:18px; padding:10px 14px; background:var(--card2); border:1px solid var(--border); border-radius:8px; font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center;">
+        <span style="color:var(--good); font-weight:800;">5</span><span>categories Soto leads</span><span style="color:var(--muted); margin:0 4px;">·</span><span style="color:var(--good); font-weight:800;">3</span><span>Lindor leads</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 17 IDEA 12 — Statcast tab ===== -->
+<section data-screen-label="17 Idea 12 Statcast">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 12 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t3"><span class="dot"></span>Tier 3</div>
+    <h1 class="slide-title"><span class="num">12</span>Statcast / Advanced tab.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Exit velo, barrel %, hard-hit %, sprint speed — these are the stats people actually argue about now.</li>
+        <li>Each metric: value, percentile bar, league rank. Use the canonical Savant percentile palette (red→blue).</li>
+        <li>Powered by `expectedStatistics` + `sabermetrics`.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoints</b>expectedStatistics, sabermetrics</div>
+        <div><b>Lives in</b>Player Stats → Advanced</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto · Statcast<span class="sub">2026 percentile</span></div>
+      <div style="display:flex; flex-direction:column; gap:9px;">
+        <div style="display:grid; grid-template-columns:120px 1fr 80px; align-items:center; gap:14px;">
+          <div style="font-size:13px; color:#cfd3dc;">xwOBA</div>
+          <div style="height:8px; background:var(--card2); border-radius:4px; overflow:hidden;"><div style="width:96%; height:100%; background:linear-gradient(90deg,#4FA3FF,#FF5910);"></div></div>
+          <div style="text-align:right; font-weight:800; color:#fff;">.418 <span style="color:#FF5910; font-size:11px;">96</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:120px 1fr 80px; align-items:center; gap:14px;">
+          <div style="font-size:13px; color:#cfd3dc;">Exit Velo</div>
+          <div style="height:8px; background:var(--card2); border-radius:4px; overflow:hidden;"><div style="width:91%; height:100%; background:linear-gradient(90deg,#4FA3FF,#FF5910);"></div></div>
+          <div style="text-align:right; font-weight:800; color:#fff;">93.4 <span style="color:#FF5910; font-size:11px;">91</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:120px 1fr 80px; align-items:center; gap:14px;">
+          <div style="font-size:13px; color:#cfd3dc;">Barrel %</div>
+          <div style="height:8px; background:var(--card2); border-radius:4px; overflow:hidden;"><div style="width:88%; height:100%; background:linear-gradient(90deg,#4FA3FF,#FF5910);"></div></div>
+          <div style="text-align:right; font-weight:800; color:#fff;">14.2% <span style="color:#FF5910; font-size:11px;">88</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:120px 1fr 80px; align-items:center; gap:14px;">
+          <div style="font-size:13px; color:#cfd3dc;">Hard Hit %</div>
+          <div style="height:8px; background:var(--card2); border-radius:4px; overflow:hidden;"><div style="width:84%; height:100%; background:linear-gradient(90deg,#4FA3FF,#FF5910);"></div></div>
+          <div style="text-align:right; font-weight:800; color:#fff;">52.1% <span style="color:#FF5910; font-size:11px;">84</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:120px 1fr 80px; align-items:center; gap:14px;">
+          <div style="font-size:13px; color:#cfd3dc;">Chase %</div>
+          <div style="height:8px; background:var(--card2); border-radius:4px; overflow:hidden;"><div style="width:78%; height:100%; background:linear-gradient(90deg,#4FA3FF,#FF5910);"></div></div>
+          <div style="text-align:right; font-weight:800; color:#fff;">22.0% <span style="color:#FF5910; font-size:11px;">78</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:120px 1fr 80px; align-items:center; gap:14px;">
+          <div style="font-size:13px; color:#cfd3dc;">Whiff %</div>
+          <div style="height:8px; background:var(--card2); border-radius:4px; overflow:hidden;"><div style="width:64%; height:100%; background:linear-gradient(90deg,#4FA3FF,#FFC83C);"></div></div>
+          <div style="text-align:right; font-weight:800; color:#fff;">23.8% <span style="color:#FFC83C; font-size:11px;">64</span></div>
+        </div>
+        <div style="display:grid; grid-template-columns:120px 1fr 80px; align-items:center; gap:14px;">
+          <div style="font-size:13px; color:#cfd3dc;">Sprint Speed</div>
+          <div style="height:8px; background:var(--card2); border-radius:4px; overflow:hidden;"><div style="width:34%; height:100%; background:linear-gradient(90deg,#4FA3FF,#4FA3FF);"></div></div>
+          <div style="text-align:right; font-weight:800; color:#fff;">26.8 <span style="color:#4FA3FF; font-size:11px;">34</span></div>
+        </div>
+      </div>
+      <div style="margin-top:14px; font-size:11px; color:var(--muted);">Bar = MLB percentile. Right number = percentile rank.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 18 IDEA 13 — Hot zone heatmap ===== -->
+<section data-screen-label="18 Idea 13 Heatmap">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 13 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t3"><span class="dot"></span>Tier 3</div>
+    <h1 class="slide-title"><span class="num">13</span>Hot zone heatmap.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>One of the most visually iconic stats in baseball — and a free 13-cell payload from the API.</li>
+        <li>Two views: AVG (cool→warm) and SLG. Toggleable by chip.</li>
+        <li>Tooltip on hover: zone PA, hits, AVG, SLG.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/people/{id}/stats?stats=hotColdZones</div>
+        <div><b>Render</b>3×3 grid + 4 corner zones (SVG)</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Hot Zones<span class="sub">Soto · 2026 · AVG</span></div>
+      <div style="display:flex; gap:32px; align-items:center;">
+        <svg viewBox="0 0 280 320" width="260" height="300">
+          <!-- batter silhouette hint -->
+          <rect x="5" y="5" width="270" height="310" fill="none" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4" rx="6"/>
+          <!-- strike zone -->
+          <g transform="translate(40,40)">
+            <!-- 3x3 -->
+            <rect x="0" y="0" width="66" height="66" fill="#9bd6ff" stroke="#fff" stroke-width="2"/>
+            <rect x="66" y="0" width="66" height="66" fill="#FF5910" stroke="#fff" stroke-width="2"/>
+            <rect x="132" y="0" width="66" height="66" fill="#FFC83C" stroke="#fff" stroke-width="2"/>
+            <rect x="0" y="66" width="66" height="66" fill="#FFC83C" stroke="#fff" stroke-width="2"/>
+            <rect x="66" y="66" width="66" height="66" fill="#FF7430" stroke="#fff" stroke-width="2"/>
+            <rect x="132" y="66" width="66" height="66" fill="#FF5910" stroke="#fff" stroke-width="2"/>
+            <rect x="0" y="132" width="66" height="66" fill="#9bd6ff" stroke="#fff" stroke-width="2"/>
+            <rect x="66" y="132" width="66" height="66" fill="#bce0a8" stroke="#fff" stroke-width="2"/>
+            <rect x="132" y="132" width="66" height="66" fill="#9bd6ff" stroke="#fff" stroke-width="2"/>
+            <!-- inline zone numbers -->
+            <text x="33" y="38" text-anchor="middle" fill="#0a0f1e" font-size="14" font-weight="800">.218</text>
+            <text x="99" y="38" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">.392</text>
+            <text x="165" y="38" text-anchor="middle" fill="#0a0f1e" font-size="14" font-weight="800">.301</text>
+            <text x="33" y="104" text-anchor="middle" fill="#0a0f1e" font-size="14" font-weight="800">.288</text>
+            <text x="99" y="104" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">.351</text>
+            <text x="165" y="104" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">.378</text>
+            <text x="33" y="170" text-anchor="middle" fill="#0a0f1e" font-size="14" font-weight="800">.197</text>
+            <text x="99" y="170" text-anchor="middle" fill="#0a0f1e" font-size="14" font-weight="800">.244</text>
+            <text x="165" y="170" text-anchor="middle" fill="#0a0f1e" font-size="14" font-weight="800">.211</text>
+          </g>
+          <!-- batter side -->
+          <text x="140" y="280" text-anchor="middle" fill="#9aa0a8" font-size="11" letter-spacing="3">CATCHER VIEW · LHB</text>
+        </svg>
+        <div style="flex:1;">
+          <div class="pills" style="margin-bottom:14px;">
+            <span class="pill active">AVG</span>
+            <span class="pill">SLG</span>
+            <span class="pill">Whiff%</span>
+          </div>
+          <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px;">Hottest zone</div>
+          <div style="font-size:32px; font-weight:800; color:#fff;">.392</div>
+          <div style="font-size:13px; color:var(--muted); margin-bottom:18px;">Up + Middle (zone 2) · 28 PA</div>
+          <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px;">Coldest zone</div>
+          <div style="font-size:32px; font-weight:800; color:var(--cool);">.197</div>
+          <div style="font-size:13px; color:var(--muted);">Down + Out (zone 7) · 21 PA</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 19 IDEA 14 — Career arc ===== -->
+<section data-screen-label="19 Idea 14 Career">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 14 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t3"><span class="dot"></span>Tier 3</div>
+    <h1 class="slide-title"><span class="num">14</span>Career arc chart.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>The current page lives entirely in 2026. A career view widens the lens — and gives veterans real estate they earn.</li>
+        <li>One bar per season for the chosen stat (HR, OPS, ERA…). Click a bar → that season's stat line drops in.</li>
+        <li>Career totals strip beneath it.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/people/{id}/stats?stats=yearByYear</div>
+        <div><b>Switch stat</b>same pills as Leaders</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto · Career<span class="sub">HR by season · 2018 → 2026</span></div>
+      <svg viewBox="0 0 540 200" width="100%" height="200" style="margin-top:6px;">
+        <line x1="40" y1="180" x2="540" y2="180" stroke="var(--border)" stroke-width="1"/>
+        <line x1="40" y1="120" x2="540" y2="120" stroke="var(--border)" stroke-width="1" stroke-dasharray="2 4" opacity=".5"/>
+        <line x1="40" y1="60" x2="540" y2="60" stroke="var(--border)" stroke-width="1" stroke-dasharray="2 4" opacity=".5"/>
+        <text x="32" y="184" text-anchor="end" fill="#9aa0a8" font-size="10">0</text>
+        <text x="32" y="124" text-anchor="end" fill="#9aa0a8" font-size="10">25</text>
+        <text x="32" y="64" text-anchor="end" fill="#9aa0a8" font-size="10">50</text>
+        <!-- bars -->
+        <g>
+          <!-- 2018 22HR -->
+          <rect x="60" y="127" width="42" height="53" fill="#FF5910" opacity=".6" rx="2"/>
+          <text x="81" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'18</text>
+          <!-- 2019 34HR -->
+          <rect x="112" y="98" width="42" height="82" fill="#FF5910" opacity=".7" rx="2"/>
+          <text x="133" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'19</text>
+          <!-- 2020 13HR -->
+          <rect x="164" y="149" width="42" height="31" fill="#FF5910" opacity=".5" rx="2"/>
+          <text x="185" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'20</text>
+          <!-- 2021 29 -->
+          <rect x="216" y="110" width="42" height="70" fill="#FF5910" opacity=".7" rx="2"/>
+          <text x="237" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'21</text>
+          <!-- 2022 27 -->
+          <rect x="268" y="115" width="42" height="65" fill="#FF5910" opacity=".7" rx="2"/>
+          <text x="289" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'22</text>
+          <!-- 2023 35 -->
+          <rect x="320" y="96" width="42" height="84" fill="#FF5910" opacity=".75" rx="2"/>
+          <text x="341" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'23</text>
+          <!-- 2024 41 -->
+          <rect x="372" y="82" width="42" height="98" fill="#FF5910" opacity=".85" rx="2"/>
+          <text x="393" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'24</text>
+          <!-- 2025 38 -->
+          <rect x="424" y="89" width="42" height="91" fill="#FF5910" opacity=".8" rx="2"/>
+          <text x="445" y="195" text-anchor="middle" fill="#9aa0a8" font-size="10">'25</text>
+          <!-- 2026 28 (active) -->
+          <rect x="476" y="113" width="42" height="67" fill="#FF5910" rx="2" stroke="#fff" stroke-width="2"/>
+          <text x="497" y="195" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">'26*</text>
+          <text x="497" y="106" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">28</text>
+        </g>
+      </svg>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px;">
+        <div class="stat-box"><div class="stat-val">267</div><div class="stat-lbl">Career HR</div></div>
+        <div class="stat-box"><div class="stat-val">.291</div><div class="stat-lbl">Career AVG</div></div>
+        <div class="stat-box"><div class="stat-val">752</div><div class="stat-lbl">Career RBI</div></div>
+        <div class="stat-box"><div class="stat-val">.954</div><div class="stat-lbl">Career OPS</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 20 IDEA 15 — Awards strip ===== -->
+<section data-screen-label="20 Idea 15 Awards">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 15 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t3"><span class="dot"></span>Tier 3</div>
+    <h1 class="slide-title"><span class="num">15</span>Awards & milestones strip.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Tiny visual band beneath the headshot — pure bio character. Adds zero density to the stat grid.</li>
+        <li>Auto-built from `awards` + career totals. Milestones surface at thresholds (1,000 H, 200 HR, 1,500 K).</li>
+        <li>For a Senga or a deGrom this is the biggest "I want to read this card" moment.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/people/{id}?hydrate=awards · careerRegularSeason</div>
+        <div><b>Where</b>under headshot, above grid</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto<span class="sub">RF · #22 · Bats: L</span></div>
+      <div class="headshot" style="width:100px; height:100px; font-size:28px;">JS<div class="jersey">#22</div></div>
+      <div class="awards" style="justify-content:center; margin-bottom:18px;">
+        <span class="award"><span class="star">★</span>4× All-Star</span>
+        <span class="award"><span class="star">★</span>2024 Silver Slugger</span>
+        <span class="award"><span class="star">★</span>2× HR Derby Champ</span>
+        <span class="award"><span class="star">⚾</span>1,247 Career H</span>
+        <span class="award"><span class="star">⚾</span>200+ Career HR</span>
+        <span class="award"><span class="star">⚐</span>2019 WS Champion</span>
+      </div>
+      <div style="text-align:center; font-size:13px; color:var(--muted); padding:10px 14px; background:var(--card2); border:1px solid var(--border); border-radius:8px;">
+        Drafted 2015 · Round 2 · International FA · Age 27 · 8th MLB season
+      </div>
+      <div style="margin-top:14px; padding:12px 14px; background:linear-gradient(135deg, rgba(255,200,60,.1), rgba(255,89,16,.06)); border:1px solid rgba(255,200,60,.3); border-radius:8px;">
+        <div style="font-size:11px; color:#FFC83C; letter-spacing:.14em; text-transform:uppercase; margin-bottom:4px;">★ Active Streak</div>
+        <div style="font-size:15px; color:#fff;">14-game on-base streak · longest of season</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 21 IDEA 16 — Today's leaders ===== -->
+<section data-screen-label="21 Idea 16 Today">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 16 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t3"><span class="dot"></span>Tier 3</div>
+    <h1 class="slide-title"><span class="num">16</span>"Today's Leaders" mini-board.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>One small card, top of Stats tab, that updates while games are live: today's HR / RBI / K leaders, league-wide.</li>
+        <li>Reuses the live-poll loop the Pulse tab already runs.</li>
+        <li>Closes the loop with the Pulse tab — "see who's on a tear today."</li>
+      </ul>
+      <div class="meta">
+        <div><b>Endpoint</b>/stats?stats=byDateRange&startDate=today&endDate=today</div>
+        <div><b>Refresh</b>every 60s while games live</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Today's Leaders <span class="sub" style="color:var(--good);">● LIVE · 9 games in progress</span></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+        <div>
+          <div style="font-size:12px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">⚾ Hits</div>
+          <div class="player-row"><div class="left"><span class="rank">1</span><div><div class="name">Y. Alvarez</div><div class="pos">HOU · vs SEA</div></div></div><div class="stat">4</div></div>
+          <div class="player-row"><div class="left"><span class="rank">2</span><div><div class="name">B. Witt Jr.</div><div class="pos">KC · @ BAL</div></div></div><div class="stat">3</div></div>
+          <div class="player-row"><div class="left"><span class="rank">3</span><div><div class="name">J. Soto</div><div class="pos">NYM · vs WSH</div></div></div><div class="stat">3</div></div>
+        </div>
+        <div>
+          <div style="font-size:12px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">💥 HR</div>
+          <div class="player-row"><div class="left"><span class="rank">1</span><div><div class="name">A. Judge</div><div class="pos">NYY · vs BOS</div></div></div><div class="stat">2</div></div>
+          <div class="player-row"><div class="left"><span class="rank">2</span><div><div class="name">K. Schwarber</div><div class="pos">PHI · @ ATL</div></div></div><div class="stat">2</div></div>
+          <div class="player-row"><div class="left"><span class="rank">3</span><div><div class="name">P. Alonso</div><div class="pos">NYM · vs WSH</div></div></div><div class="stat">1</div></div>
+        </div>
+        <div>
+          <div style="font-size:12px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">🥎 K</div>
+          <div class="player-row"><div class="left"><span class="rank">1</span><div><div class="name">P. Skenes</div><div class="pos">PIT · @ CHC</div></div></div><div class="stat">11</div></div>
+          <div class="player-row"><div class="left"><span class="rank">2</span><div><div class="name">T. Skubal</div><div class="pos">DET · vs CLE</div></div></div><div class="stat">9</div></div>
+          <div class="player-row"><div class="left"><span class="rank">3</span><div><div class="name">K. Senga</div><div class="pos">NYM · vs WSH</div></div></div><div class="stat">7</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 22 DIVIDER TIER 4 ===== -->
+<section data-screen-label="22 Tier 4" class="divider t4">
+  <div class="tier-num">04</div>
+  <div class="tier-tag t4"><span class="dot"></span>Tier 4 · Visual polish</div>
+  <h2>Cheap to do.<br/>Big to feel.</h2>
+  <div class="desc">Five visual changes that don't need new data — just better treatment of what's already on the page.</div>
+</section>
+
+<!-- ===== 23 IDEA 17 — Color hero ===== -->
+<section data-screen-label="23 Idea 17 Hero color">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 17 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t4"><span class="dot"></span>Tier 4</div>
+    <h1 class="slide-title"><span class="num">17</span>Color the hero stat by tier.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Today the "hero" box is just a slightly bigger box. Visually it disappears.</li>
+        <li>Treat it like a card: orange-accent background tier when elite, green when good, neutral when fine, red when poor.</li>
+        <li>Pulls double duty with Idea 01 (percentile bar) — they share the same tier mapping.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Cost</b>CSS only</div>
+        <div><b>Pairs with</b>Idea 01</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">Hero treatments by tier</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="stat-box hero" style="min-height:140px;">
+          <div class="stat-val" style="font-size:48px;">.312</div>
+          <div class="stat-lbl">AVG</div>
+          <div style="margin-top:8px; font-size:11px; color:#FF5910; font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Elite · top 6%</div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(60,190,100,.16), rgba(60,190,100,.04)); border:1px solid rgba(60,190,100,.4); border-radius:8px; padding:18px; text-align:center;">
+          <div style="font-size:48px; font-weight:800; color:var(--good); line-height:1;">.291</div>
+          <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:6px;">AVG</div>
+          <div style="margin-top:8px; font-size:11px; color:var(--good); font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Above avg · top 25%</div>
+        </div>
+        <div style="background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center;">
+          <div style="font-size:48px; font-weight:800; color:#fff; line-height:1;">.252</div>
+          <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:6px;">AVG</div>
+          <div style="margin-top:8px; font-size:11px; color:var(--muted); font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Average · mid 50%</div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(224,72,72,.16), rgba(224,72,72,.04)); border:1px solid rgba(224,72,72,.4); border-radius:8px; padding:18px; text-align:center;">
+          <div style="font-size:48px; font-weight:800; color:var(--bad); line-height:1;">.198</div>
+          <div style="font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:6px;">AVG</div>
+          <div style="margin-top:8px; font-size:11px; color:var(--bad); font-weight:700; letter-spacing:.1em; text-transform:uppercase;">Below avg · bottom 25%</div>
+        </div>
+      </div>
+      <div style="margin-top:14px; font-size:11px; color:var(--muted);">Tier maps to the same percentile bands used in Idea 01. Reusable.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 24 IDEA 18 — Pills not dropdown ===== -->
+<section data-screen-label="24 Idea 18 Pills">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 18 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t4"><span class="dot"></span>Tier 4</div>
+    <h1 class="slide-title"><span class="num">18</span>Drop the redundant dropdown.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Pills + select today = double work. Pills are already the primary interaction.</li>
+        <li>Hide the &lt;select&gt; on desktop. Keep it hidden behind a "more stats" pill on mobile.</li>
+        <li>Cleaner, faster, easier to scan which stat is active.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Cost</b>~10 lines CSS</div>
+        <div><b>Risk</b>none</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">Before / After</div>
+      <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">Now</div>
+      <div style="background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:18px; opacity:.7;">
+        <div class="pills" style="margin-bottom:10px;"><span class="pill active">AVG</span><span class="pill">HR</span><span class="pill">RBI</span><span class="pill">OPS</span><span class="pill">H</span><span class="pill">SB</span><span class="pill">BB</span></div>
+        <div style="background:#0a0f1e; border:1px solid var(--border); border-radius:6px; padding:10px 12px; font-size:13px; color:var(--muted); display:flex; justify-content:space-between;">
+          <span>Batting Average (AVG)</span><span>▼</span>
+        </div>
+        <div style="font-size:10px; color:var(--bad); margin-top:6px; letter-spacing:.1em; text-transform:uppercase;">↑ Same control, twice</div>
+      </div>
+      <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px;">After</div>
+      <div style="background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:14px;">
+        <div class="pills" style="margin:0;">
+          <span class="pill active">AVG</span><span class="pill">HR</span><span class="pill">RBI</span><span class="pill">OPS</span><span class="pill">H</span><span class="pill">SB</span><span class="pill">BB</span><span class="pill">2B</span><span class="pill">R</span><span class="pill" style="border-style:dashed;">+ more</span>
+        </div>
+      </div>
+      <div style="margin-top:18px; padding:12px 14px; background:rgba(60,190,100,.06); border:1px solid rgba(60,190,100,.25); border-radius:8px; font-size:13px; color:#9be36a;">
+        Mobile: pill row scrolls horizontally; "+ more" opens a sheet.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 25 IDEA 19 — Roster grouping ===== -->
+<section data-screen-label="25 Idea 19 Grouping">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 19 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t4"><span class="dot"></span>Tier 4</div>
+    <h1 class="slide-title"><span class="num">19</span>Roster grouping by position.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>One long alphabetical list is hard to navigate. Section headers (C / IF / OF) chunk it.</li>
+        <li>Each section gets a position icon + count.</li>
+        <li>Sticky section headers as the list scrolls.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Cost</b>UI-only</div>
+        <div><b>Pairs with</b>Idea 20 (inline preview)</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">2026 Roster<span class="sub">26 active</span></div>
+      <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; padding:8px 12px; background:rgba(0,45,114,.5); border-radius:6px; margin-bottom:6px;">🧤 Catchers · 2</div>
+      <div class="player-row"><div class="left"><div><div class="name">Francisco Alvarez</div><div class="pos">#4 · C</div></div></div><span class="stat" style="font-size:14px;">.262</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">Hayden Senger</div><div class="pos">#52 · C</div></div></div><span class="stat" style="font-size:14px;">.211</span></div>
+      <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; padding:8px 12px; background:rgba(0,45,114,.5); border-radius:6px; margin:14px 0 6px;">⚾ Infielders · 6</div>
+      <div class="player-row"><div class="left"><div><div class="name">Pete Alonso</div><div class="pos">#20 · 1B</div></div></div><span class="stat" style="font-size:14px;">.275</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">Jeff McNeil</div><div class="pos">#1 · 2B</div></div></div><span class="stat" style="font-size:14px;">.244</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">Francisco Lindor</div><div class="pos">#12 · SS</div></div></div><span class="stat" style="font-size:14px;">.291</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">Mark Vientos</div><div class="pos">#27 · 3B</div></div></div><span class="stat" style="font-size:14px;">.255</span></div>
+      <div style="font-size:11px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; padding:8px 12px; background:rgba(0,45,114,.5); border-radius:6px; margin:14px 0 6px;">🏃 Outfielders · 5</div>
+      <div class="player-row"><div class="left"><div><div class="name">Juan Soto</div><div class="pos">#22 · RF</div></div></div><span class="stat" style="font-size:14px;">.312</span></div>
+      <div class="player-row"><div class="left"><div><div class="name">Brandon Nimmo</div><div class="pos">#9 · LF</div></div></div><span class="stat" style="font-size:14px;">.268</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 26 IDEA 20 — Roster inline preview ===== -->
+<section data-screen-label="26 Idea 20 Inline preview">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 20 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t4"><span class="dot"></span>Tier 4</div>
+    <h1 class="slide-title"><span class="num">20</span>Inline stat under each name.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>Today: name, jersey, position. That's it. The Roster column is mostly empty.</li>
+        <li>Sneak the leading stat for the active group under the position line. Tiny mini-bar shows that player vs the team's best.</li>
+        <li>Scanning gets ~5× more efficient — no clicking required.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Cost</b>Re-uses statsCache already populated</div>
+        <div><b>Mobile</b>looks great</div>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-label">After</div>
+      <div class="card-title">2026 Roster<span class="sub">Hitting view</span></div>
+      <div class="player-row" style="padding:14px 12px;">
+        <div class="left">
+          <div>
+            <div class="name">Juan Soto</div>
+            <div class="pos">#22 · RF · <span style="color:#fff; font-weight:700;">.312 / 28 HR / .962 OPS</span></div>
+            <div style="height:3px; background:var(--border); border-radius:2px; margin-top:6px; width:200px;"><div style="width:100%; height:100%; background:var(--accent); border-radius:2px;"></div></div>
+          </div>
+        </div>
+        <span class="badge hot">🔥 HOT</span>
+      </div>
+      <div class="player-row" style="padding:14px 12px;">
+        <div class="left">
+          <div>
+            <div class="name">Francisco Lindor</div>
+            <div class="pos">#12 · SS · <span style="color:#fff; font-weight:700;">.291 / 22 HR / .844 OPS</span></div>
+            <div style="height:3px; background:var(--border); border-radius:2px; margin-top:6px; width:200px;"><div style="width:88%; height:100%; background:var(--accent); border-radius:2px;"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="player-row" style="padding:14px 12px;">
+        <div class="left">
+          <div>
+            <div class="name">Pete Alonso</div>
+            <div class="pos">#20 · 1B · <span style="color:#fff; font-weight:700;">.275 / 31 HR / .821 OPS</span></div>
+            <div style="height:3px; background:var(--border); border-radius:2px; margin-top:6px; width:200px;"><div style="width:85%; height:100%; background:var(--accent); border-radius:2px;"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="player-row" style="padding:14px 12px;">
+        <div class="left">
+          <div>
+            <div class="name">Brandon Nimmo</div>
+            <div class="pos">#9 · LF · <span style="color:#fff; font-weight:700;">.268 / 18 HR / .768 OPS</span></div>
+            <div style="height:3px; background:var(--border); border-radius:2px; margin-top:6px; width:200px;"><div style="width:78%; height:100%; background:var(--accent); border-radius:2px;"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="player-row" style="padding:14px 12px;">
+        <div class="left">
+          <div>
+            <div class="name">Mark Vientos</div>
+            <div class="pos">#27 · 3B · <span style="color:#fff; font-weight:700;">.255 / 24 HR / .789 OPS</span></div>
+            <div style="height:3px; background:var(--border); border-radius:2px; margin-top:6px; width:200px;"><div style="width:80%; height:100%; background:var(--accent); border-radius:2px;"></div></div>
+          </div>
+        </div>
+        <span class="badge cold">❄ COLD</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 27 IDEA 21 — Hero treatment ===== -->
+<section data-screen-label="27 Idea 21 Hero">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Idea 21 / 21</div></div>
+  <div style="margin-top:60px;">
+    <div class="tier-tag t4"><span class="dot"></span>Tier 4</div>
+    <h1 class="slide-title"><span class="num">21</span>Real hero treatment in Player Stats.</h1>
+  </div>
+  <div class="grid2">
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>The Player Stats card opens with a 4-col grid. There's no anchor, nowhere for the eye to land.</li>
+        <li>Promote the headline stat to a full-width hero panel: huge number, percentile bar, league rank, sparkline, and "vs lg" delta.</li>
+        <li>Below the hero, the existing 4-col grid stays as the supporting cast.</li>
+      </ul>
+      <div class="meta">
+        <div><b>Cost</b>Layout-only</div>
+        <div><b>Combines</b>Ideas 01, 02, 09, 17</div>
+      </div>
+    </div>
+    <div class="mock" style="min-height:520px;">
+      <div class="mock-label">After</div>
+      <div class="card-title">Juan Soto<span class="sub">Hitting · 2026</span></div>
+      <div style="background:linear-gradient(135deg, rgba(255,89,16,.18), rgba(255,89,16,.04)); border:1px solid rgba(255,89,16,.45); border-radius:12px; padding:24px; margin-bottom:14px; display:grid; grid-template-columns:1fr 1.4fr; gap:24px; align-items:center;">
+        <div>
+          <div style="font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted);">2026 OPS</div>
+          <div style="font-size:84px; font-weight:900; color:var(--accent); line-height:1; margin-top:4px;">.962</div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <span class="delta-chip pos" style="font-size:13px;">+.234 vs lg</span>
+            <span style="font-size:11px; color:#FFC83C; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:2px 7px; border:1px solid rgba(255,200,60,.4); border-radius:6px;">★ Elite · Top 6%</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">7-day rolling · trending up</div>
+          <svg viewBox="0 0 320 80" width="100%" height="80">
+            <defs>
+              <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF5910" stop-opacity=".5"/><stop offset="100%" stop-color="#FF5910" stop-opacity="0"/></linearGradient>
+            </defs>
+            <path d="M0,58 L20,52 L40,55 L60,44 L80,38 L100,42 L120,32 L140,36 L160,28 L180,22 L200,26 L220,18 L240,22 L260,14 L280,18 L300,10 L320,8 L320,80 L0,80 Z" fill="url(#hg)"/>
+            <path d="M0,58 L20,52 L40,55 L60,44 L80,38 L100,42 L120,32 L140,36 L160,28 L180,22 L200,26 L220,18 L240,22 L260,14 L280,18 L300,10 L320,8" stroke="#FF5910" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <circle cx="320" cy="8" r="5" fill="#fff" stroke="#FF5910" stroke-width="2"/>
+          </svg>
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px;">
+            <span>Apr 9</span><span style="color:var(--good);">▲ +.087</span><span>Today</span>
+          </div>
+          <div style="height:5px; background:rgba(255,255,255,.05); border-radius:3px; margin-top:14px; position:relative;"><div style="width:94%; height:100%; background:linear-gradient(90deg,#4FA3FF,#FF5910); border-radius:3px;"></div><div style="position:absolute; right:0; top:-22px; font-size:11px; color:var(--accent); font-weight:800;">#11 of 142 MLB</div></div>
+        </div>
+      </div>
+      <div class="stat-grid cols-4">
+        <div class="stat-box"><div class="stat-val">.312</div><div class="stat-lbl">AVG</div></div>
+        <div class="stat-box"><div class="stat-val">28</div><div class="stat-lbl">HR</div></div>
+        <div class="stat-box"><div class="stat-val">71</div><div class="stat-lbl">RBI</div></div>
+        <div class="stat-box"><div class="stat-val">.418</div><div class="stat-lbl">OBP</div></div>
+        <div class="stat-box"><div class="stat-val">112</div><div class="stat-lbl">H</div></div>
+        <div class="stat-box"><div class="stat-val">22</div><div class="stat-lbl">2B</div></div>
+        <div class="stat-box"><div class="stat-val">68</div><div class="stat-lbl">K</div></div>
+        <div class="stat-box"><div class="stat-val">73</div><div class="stat-lbl">BB</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 28 RECAP / TOP 5 ===== -->
+<section data-screen-label="28 Top 5">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Recommendation</div></div>
+  <div style="margin-top:80px;">
+    <div class="tier-tag" style="color:#FFC83C;"><span class="dot" style="background:#FFC83C;"></span>If you only do five</div>
+    <h1 class="slide-title">The minimum viable Stats tab.</h1>
+    <div class="lede">If we ship just these five, the page goes from <strong>"phonebook"</strong> to <strong>"destination"</strong> with one sprint of work.</div>
+  </div>
+  <div class="top5">
+    <div class="card-top">
+      <div class="num">06</div>
+      <h4>Team Stats card</h4>
+      <p>Full-width strip of hitting / pitching / fielding totals + MLB rank. The single largest gap in the page today.</p>
+    </div>
+    <div class="card-top">
+      <div class="num">04</div>
+      <h4>Tabbed Player Stats</h4>
+      <p>Overview · Splits · Game Log · Advanced. Same real estate, 4× the data, no new card needed.</p>
+    </div>
+    <div class="card-top">
+      <div class="num">21</div>
+      <h4>Hero treatment + percentile</h4>
+      <p>Combines ideas 01, 02, 09, 17 into one striking anchor at the top of every player card.</p>
+    </div>
+    <div class="card-top">
+      <div class="num">03</div>
+      <h4>Hot / Cold badges</h4>
+      <p>One nightly fetch turns Leaders and Roster into something that feels alive every morning.</p>
+    </div>
+    <div class="card-top">
+      <div class="num">10</div>
+      <h4>Pitch arsenal donut</h4>
+      <p>Pitchers finally get a real card. Mix + velo by pitch, single endpoint.</p>
+    </div>
+  </div>
+  <div class="footer"><span>Order picked for impact-per-effort</span><span class="endpoint">~1 sprint · zero schema changes · all data already free</span></div>
+</section>
+
+<!-- ===== 29 NEXT STEPS ===== -->
+<section data-screen-label="29 Next">
+  <div class="chrome"><div class="brand"><span class="bolt">⚡</span> MLB PULSE</div><div class="pageno">Next</div></div>
+  <div style="margin-top:140px; max-width:1200px;">
+    <div class="tier-tag"><span class="dot"></span>Decisions to make</div>
+    <h1 class="slide-title" style="font-size:80px;">Pick a path.</h1>
+    <div class="lede" style="font-size:24px; max-width:1100px;">
+      Three reasonable shapes for the next sprint. Pick one and I'll mock the redesigned Stats tab end-to-end as a clickable prototype.
+    </div>
+    <div style="margin-top:48px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;">
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:12px; padding:24px; min-height:240px;">
+        <div style="font-size:13px; color:var(--accent); font-weight:700; letter-spacing:.16em; text-transform:uppercase;">A · Surface fixes</div>
+        <h4 style="color:#fff; font-size:24px; margin:8px 0 12px;">All of Tier 1 + 4</h4>
+        <p style="color:var(--muted); font-size:14px; line-height:1.5; margin:0;">10 small wins, no new endpoints beyond `/stats/leaders`. Ship in days, not weeks.</p>
+      </div>
+      <div style="background:var(--card); border:1px solid rgba(255,89,16,.5); border-radius:12px; padding:24px; min-height:240px; position:relative;">
+        <div style="position:absolute; top:14px; right:14px; font-size:10px; color:var(--accent); font-weight:700; letter-spacing:.14em; text-transform:uppercase; padding:3px 7px; border:1px solid var(--accent); border-radius:4px;">Recommended</div>
+        <div style="font-size:13px; color:#FFC83C; font-weight:700; letter-spacing:.16em; text-transform:uppercase;">B · The five</div>
+        <h4 style="color:#fff; font-size:24px; margin:8px 0 12px;">Top-5 from previous slide</h4>
+        <p style="color:var(--muted); font-size:14px; line-height:1.5; margin:0;">Highest impact-per-sprint. The page feels finished after this. Best place to stop and re-evaluate.</p>
+      </div>
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:12px; padding:24px; min-height:240px;">
+        <div style="font-size:13px; color:#A064FF; font-weight:700; letter-spacing:.16em; text-transform:uppercase;">C · Go big</div>
+        <h4 style="color:#fff; font-size:24px; margin:8px 0 12px;">All 21, two sprints</h4>
+        <p style="color:var(--muted); font-size:14px; line-height:1.5; margin:0;">Statcast tab, heatmap, career arc, compare, today's leaders — the whole nine. Position the tab as a stickiness driver.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>Tell me which shape — A, B, or C — and I'll mock the redesigned Stats tab as a hi-fi prototype.</span><span class="endpoint">Stats v2 · MLB Pulse</span></div>
+</section>
+
+</deck-stage>
+</body>
+</html>
