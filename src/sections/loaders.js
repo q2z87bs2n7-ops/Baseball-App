@@ -252,7 +252,7 @@ export async function selectCalGame(gamePk,evt){
     var panels=await Promise.all(dayGames.map(function(gm,idx){return buildGameDetailPanel(gm,isDH?idx+1:null);}));
     detail.innerHTML=panels.join('');
     detail.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }catch(e){detail.innerHTML='<div class="error">Could not load game details</div>';}
+  }catch(e){/* DEBUG START */console.error('[GameDetail] panel error',e);/* DEBUG END */detail.innerHTML='<div class="error">Could not load game details</div>';}
 }
 
 export function switchBoxTab(bsId,side){
@@ -325,11 +325,16 @@ async function buildGameDetailPanel(g,gameNum){
     html+='<button onclick="showLiveGame('+g.gamePk+')" class="watch-live-btn">▶ Watch Live</button></div>';
     return html;
   }
-  var responses=await Promise.all([fetch(MLB_BASE+'/game/'+g.gamePk+'/linescore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/content')]);
   var ls={},bs={},content={};
-  try{ls=await responses[0].json();}catch(e){}
-  try{bs=await responses[1].json();}catch(e){}
-  try{if(responses[2].ok)content=await responses[2].json();}catch(e){}
+  try{
+    var responses=await Promise.all([fetch(MLB_BASE+'/game/'+g.gamePk+'/linescore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/content')]);
+    // DEBUG START
+    console.log('[GameDetail] pk='+g.gamePk+' ls='+responses[0].status+' bs='+responses[1].status+' ct='+responses[2].status);
+    // DEBUG END
+    try{ls=await responses[0].json();}catch(e){/* DEBUG START */console.error('[GameDetail] ls json',e);/* DEBUG END */}
+    try{bs=await responses[1].json();}catch(e){/* DEBUG START */console.error('[GameDetail] bs json',e);/* DEBUG END */}
+    try{if(responses[2].ok)content=await responses[2].json();}catch(e){/* DEBUG START */console.error('[GameDetail] ct json',e);/* DEBUG END */}
+  }catch(e){/* DEBUG START */console.error('[GameDetail] fetch error pk='+g.gamePk,e);/* DEBUG END */}
   var highlight=content.highlights&&content.highlights.highlights&&content.highlights.highlights.items&&content.highlights.highlights.items[0]?content.highlights.highlights.items[0]:null;
   var highlightUrl=highlight?pickPlayback(highlight.playbacks):null;
   var thumbCuts=highlight&&highlight.image&&highlight.image.cuts?highlight.image.cuts:[];
