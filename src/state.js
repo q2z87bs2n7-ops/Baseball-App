@@ -54,6 +54,9 @@ export const state = {
   todaysLeadersTab: 'hitting',
   // Career year-by-year cache: playerId → { hitting:[...], pitching:[...], ts }
   careerCache: {},
+  // Strike-zone heat map cache: playerId → { zones:[...], ts } — populated
+  // from /people/{id}/stats?stats=hotColdZones (Sprint 3, hitters only).
+  hotColdCache: {},
 
   // ── News State ───────────────────────────────────────────────────────────
   newsFeedMode: 'mlb',

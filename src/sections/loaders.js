@@ -1069,10 +1069,8 @@ function renderPlayerStats(s,group){
           if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderArsenalTab(pid);
         });
       } else if(activeTab==='advanced' && group==='hitting'){
-        if(state.advancedHittingCache[pid]) renderAdvancedHittingTab(pid);
-        else fetchAdvancedHitting(pid).then(function(){
-          if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderAdvancedHittingTab(pid);
-        });
+        if(state.advancedHittingCache[pid] && state.hotColdCache[pid]) renderAdvancedHittingTab(pid);
+        else loadAdvancedHittingForTab(pid);
       } else if(activeTab==='career'){
         ensureCareerLoaded(pid, group);
       }
@@ -1128,12 +1126,8 @@ export function switchPlayerStatsTab(tab,btn){
         renderArsenalTab(pid);
       }
     } else if(group==='hitting'){
-      if(!state.advancedHittingCache[pid]){
-        fetchAdvancedHitting(pid).then(function(){
-          if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced'){
-            renderAdvancedHittingTab(pid);
-          }
-        });
+      if(!state.advancedHittingCache[pid] || !state.hotColdCache[pid]){
+        loadAdvancedHittingForTab(pid);
       } else {
         renderAdvancedHittingTab(pid);
       }
@@ -1392,6 +1386,19 @@ async function fetchAdvancedHitting(playerId){
   }
 }
 
+// Driver for the Advanced (hitter) tab — fires the metrics fetch and the
+// hot-zone fetch in parallel so the section paints when each lands. Lazy:
+// only triggered from the switchPlayerStatsTab dispatch.
+async function loadAdvancedHittingForTab(playerId){
+  await Promise.all([
+    fetchAdvancedHitting(playerId),
+    fetchHotColdZones(playerId)
+  ]);
+  if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id === playerId && state.activeStatsTab === 'advanced'){
+    renderAdvancedHittingTab(playerId);
+  }
+}
+
 // Renders the advanced hitting view into the Advanced panel. Reads each
 // metric across the case-variants the MLB API actually uses (sabermetrics
 // returns mixed-case keys like wRaa / wRc / wRcPlus; seasonAdvanced lowercases
@@ -1457,11 +1464,123 @@ function renderAdvancedHittingTab(playerId){
     return;
   }
   var note = '<div class="adv-source-note">Advanced metrics from MLB Stats API · sabermetrics + seasonAdvanced. Statcast (xBA / xwOBA / exit velo / barrel rate) lives on Baseball Savant and is not proxied here.</div>';
-  panelEl.innerHTML = hero + grid + note;
+  var heatmap = renderHotZoneSection(playerId);
+  panelEl.innerHTML = hero + grid + heatmap + note;
 }
 
 function renderGameLogPlaceholder(){
   return '<div class="tab-empty-state"><div class="tab-empty-icon">📅</div><h4>Last-10 game log</h4><p>Loading game log...</p></div>';
+}
+
+// ── Sprint 3 / Step 5: Strike-zone heat map (hitters) ───────────────────
+// Pulls the 13-zone hot/cold matrix from /people/{id}/stats?stats=hotColdZones
+// and renders it as a 3x3 SVG strike zone (zones 1-9, "in zone") under the
+// Statcast Advanced metrics. Pure batter-AVG flavor for v1; the API also
+// returns slugging / exit-velo zone matrices we could surface later. Statcast
+// hit coordinates (the field-map dot spray chart) live on Baseball Savant
+// and aren't proxied here.
+const HOTCOLD_TTL_MS = 24 * 60 * 60 * 1000;
+
+async function fetchHotColdZones(playerId){
+  if(!playerId) return null;
+  var cached = state.hotColdCache[playerId];
+  if(cached && Date.now()-cached.ts < HOTCOLD_TTL_MS) return cached.data;
+  try{
+    var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=hotColdZones&season='+SEASON+'&group=hitting');
+    if(!r.ok){ state.hotColdCache[playerId] = { data: [], ts: Date.now() }; return []; }
+    var d = await r.json();
+    var splits = (d.stats && d.stats[0] && d.stats[0].splits) || [];
+    state.hotColdCache[playerId] = { data: splits, ts: Date.now() };
+    return splits;
+  }catch(e){
+    state.hotColdCache[playerId] = { data: [], ts: Date.now() };
+    return [];
+  }
+}
+
+// Picks the "Batting Avg" (or closest match) zone matrix from the hotColdZones
+// payload. Each split.stat carries a `name` ("Batting Avg" / "Slugging Pct" /
+// "Exit Velocity") and a `zones` array. Zones 1-9 = inside the strike zone in
+// row-major order (top→bottom, left→right from catcher's view).
+function pickAvgZoneMatrix(splits){
+  if(!splits || !splits.length) return null;
+  var preferred = null;
+  for(var i=0;i<splits.length;i++){
+    var s = splits[i].stat;
+    if(!s || !s.zones) continue;
+    var name = (s.name||'').toLowerCase();
+    if(name.indexOf('batting') >= 0 || name.indexOf('avg') >= 0){
+      preferred = s;
+      break;
+    }
+    if(!preferred) preferred = s; // fallback to first available
+  }
+  return preferred;
+}
+
+// Returns CSS background-color for a zone cell based on its AVG. Hand-rolled
+// 3-stop heat scale: deep red ≤.180, yellow ~.250, deep green ≥.330. Falls
+// back to the API-provided color when present.
+function avgHeatColor(value){
+  var n = parseFloat(value);
+  if(isNaN(n)) return 'rgba(255,255,255,.05)';
+  // Normalize to 0-1 across .150 → .380
+  var t = Math.max(0, Math.min(1, (n - 0.150) / (0.380 - 0.150)));
+  // Two-segment lerp: red→yellow (0→0.5), yellow→green (0.5→1)
+  var r,g,b;
+  if(t < 0.5){
+    var u = t / 0.5;
+    r = Math.round(224 + (240-224)*u);
+    g = Math.round( 72 + (208- 72)*u);
+    b = Math.round( 72 + ( 60- 72)*u);
+  } else {
+    var u2 = (t - 0.5) / 0.5;
+    r = Math.round(240 + ( 60-240)*u2);
+    g = Math.round(208 + (190-208)*u2);
+    b = Math.round( 60 + (100- 60)*u2);
+  }
+  return 'rgba('+r+','+g+','+b+',.55)';
+}
+
+// Builds the 3x3 strike-zone heat map HTML. Returns '' when the data is
+// missing — caller decides whether to render a section header.
+function renderHotZoneSection(playerId){
+  var cached = state.hotColdCache[playerId];
+  if(!cached || !cached.data || !cached.data.length) return '';
+  var matrix = pickAvgZoneMatrix(cached.data);
+  if(!matrix || !matrix.zones) return '';
+  // Map zones by id for predictable order.
+  var byZone = {};
+  matrix.zones.forEach(function(z){ if(z && z.zone) byZone[String(z.zone).replace(/^0/,'')] = z; });
+  function fmtR(v){ var n = parseFloat(v); if(isNaN(n)) return '—'; var s = n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; }
+  // Build the 3x3 inner zone grid (zones 1-9).
+  var cells = '';
+  for(var i=1;i<=9;i++){
+    var z = byZone[String(i)];
+    var v = z && (z.value != null ? z.value : null);
+    var bg = z ? avgHeatColor(v) : 'rgba(255,255,255,.04)';
+    cells += '<div class="hotzone-cell" style="background:'+bg+'">'+
+      '<div class="hotzone-val">'+(z ? fmtR(v) : '—')+'</div>'+
+    '</div>';
+  }
+  var label = matrix.name || 'Batting Avg';
+  return '<div class="hotzone-section">'+
+    '<div class="hotzone-section-head">🎯 Strike Zone Heat Map · '+label+'</div>'+
+    '<div class="hotzone-frame">'+
+      '<div class="hotzone-axis-top">High</div>'+
+      '<div class="hotzone-axis-left">Inside</div>'+
+      '<div class="hotzone-grid">'+cells+'</div>'+
+      '<div class="hotzone-axis-right">Outside</div>'+
+      '<div class="hotzone-axis-bot">Low</div>'+
+    '</div>'+
+    '<div class="hotzone-legend">'+
+      '<span class="hotzone-legend-bar"></span>'+
+      '<span class="hotzone-legend-label">cold .150</span>'+
+      '<span class="hotzone-legend-spacer"></span>'+
+      '<span class="hotzone-legend-label">.380 hot</span>'+
+    '</div>'+
+    '<div class="hotzone-foot">View from catcher · inside / outside relative to RHB. Statcast spray-chart coordinates require Baseball Savant and aren’t proxied here.</div>'+
+  '</div>';
 }
 
 // ── Sprint 3 / Step 3: Career history (year-by-year) ─────────────────────

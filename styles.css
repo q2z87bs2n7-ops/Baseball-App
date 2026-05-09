@@ -2046,6 +2046,102 @@ nav button.active {
   font-style: italic
 }
 
+/* ── Stats v3 / Sprint 3: Strike-zone heat map ──────────────────────────── */
+.hotzone-section {
+  margin-top: 18px;
+  padding: 14px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px
+}
+.hotzone-section-head {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 12px
+}
+.hotzone-frame {
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
+  grid-template-rows: 18px auto 18px;
+  grid-template-areas:
+    ".    top    ."
+    "left grid   right"
+    ".    bot    .";
+  align-items: center;
+  justify-items: center;
+  gap: 4px;
+  max-width: 360px;
+  margin: 0 auto
+}
+.hotzone-axis-top   { grid-area: top;   font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700 }
+.hotzone-axis-bot   { grid-area: bot;   font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700 }
+.hotzone-axis-left  { grid-area: left;  font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; writing-mode: vertical-rl; transform: rotate(180deg) }
+.hotzone-axis-right { grid-area: right; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; writing-mode: vertical-rl }
+.hotzone-grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6px;
+  width: 220px;
+  height: 220px;
+  padding: 6px;
+  background: rgba(255,255,255,.04);
+  border: 2px dashed var(--border);
+  border-radius: 6px
+}
+.hotzone-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(0,0,0,.35);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08)
+}
+.hotzone-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,.6);
+  letter-spacing: -.01em
+}
+.hotzone-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase
+}
+.hotzone-legend-bar {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right,
+    rgba(224,72,72,.55),
+    rgba(240,208,60,.55),
+    rgba(60,190,100,.55))
+}
+.hotzone-legend-spacer { flex: 1 }
+.hotzone-foot {
+  margin-top: 10px;
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+  font-style: italic;
+  text-align: center
+}
+
 /* ── Stats v3 / Sprint 3: Today's Leaders (MLB-wide module) ─────────────── */
 .todays-leaders-grid {
   display: grid;
