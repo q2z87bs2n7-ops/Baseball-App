@@ -4108,9 +4108,20 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 .mock-progress {
+  flex: 1;
+  text-align: center;
   font-size: .69rem;
   color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mock-exit-btn {
   flex-shrink: 0;
+  border-color: rgba(255,100,100,.5);
+  color: var(--muted);
 }
 
 .mock-speed-seg {
@@ -4131,6 +4142,31 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   display: inline-flex;
   gap: 4px;
   flex-shrink: 0;
+}
+
+@media(max-width:480px) {
+  #mockBar {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 5px 10px;
+    gap: 6px;
+    row-gap: 2px;
+  }
+  #mockBar .mock-btn {
+    padding: 0.2rem 0.5rem;
+  }
+  #demoExitBtn {
+    order: 4;
+    margin-left: auto;
+  }
+  .mock-progress {
+    order: 5;
+    flex: 0 0 100%;
+    text-align: center;
+    padding-bottom: 3px;
+    font-size: .65rem;
+    white-space: normal;
+  }
 }
 
 /* ── Story Carousel (v2.7.1) ─────────────────────────────────────────────── */

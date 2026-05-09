@@ -17,8 +17,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.6.4"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.6.4">
+<script defer src="dist/app.bundle.js?v=4.6.5"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.6.5">
 </head>
 <body>
 <header>
@@ -82,7 +82,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.6.4</div>
+        <div class="settings-version">v4.6.5</div>
       </div>
     </div>
   </div>
@@ -283,7 +283,7 @@
       <button class="mock-btn" id="demoForwardBtn" onclick="forwardDemoPlay()">▶</button>
     </span>
     <span class="mock-progress" id="mockProgress"></span>
-    <button class="mock-btn" id="demoExitBtn" onclick="exitDemo()" style="margin-left:auto;border-color:rgba(255,100,100,.5);color:var(--muted)">⏹ Exit</button>
+    <button class="mock-btn mock-exit-btn" id="demoExitBtn" onclick="exitDemo()">⏹ Exit</button>
   </div>
   <div id="feedWrap">
     <div id="feedEmpty">
@@ -354,6 +354,7 @@
 <div id="pulseOverflowSheet" class="more-sheet" role="dialog" aria-label="Pulse controls">
   <div class="more-sheet-grid">
     <button class="more-sheet-item" onclick="openYesterdayRecap();closePulseOverflow()"><span class="icon">◷</span><span>Yesterday</span></button>
+    <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseOverflow()"><span class="icon">🔊</span><span>Sound</span></button>
     <button class="more-sheet-item" onclick="togglePulseColorScheme();closePulseOverflow()"><span class="icon">☀️</span><span>Theme</span></button>
   </div>
 </div>
@@ -362,6 +363,7 @@
   <div class="more-sheet-grid">
     <button class="more-sheet-item" onclick="toggleDemoMode();closePulseShortcuts()"><span class="icon">▶</span><span>Demo Mode</span></button>
     <button class="more-sheet-item" onclick="openCollection();closePulseShortcuts()"><span class="icon">🃏</span><span>Cards</span></button>
+    <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseShortcuts()"><span class="icon">🔊</span><span>Sound</span></button>
   </div>
 </div>
 <div id="videoOverlay" onclick="if(event.target===this)closeVideoOverlay()" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.94);flex-direction:column;align-items:center;justify-content:center;padding:20px">
