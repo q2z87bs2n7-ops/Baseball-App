@@ -120,12 +120,12 @@ nav button[data-section="more"] {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(72px + env(safe-area-inset-bottom));
+  bottom: 72px;
   background: var(--card);
   border-top: 1px solid var(--border);
   border-radius: 16px 16px 0 0;
-  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-  transform: translateY(calc(100% + 72px + env(safe-area-inset-bottom)));
+  padding: 16px 16px 16px;
+  transform: translateY(calc(100% + 72px));
   transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
   z-index: 90;
   box-shadow: 0 -8px 32px rgba(0,0,0,.4);
@@ -2256,7 +2256,7 @@ select {
 
 @media(max-width:480px) {
   :root {
-    --header-h: calc(42px + env(safe-area-inset-top))
+    --header-h: 42px
   }
   html, body {
     overflow-x: hidden;
@@ -2265,9 +2265,9 @@ select {
   header {
     position: sticky;
     top: 0;
-    height: calc(42px + env(safe-area-inset-top));
+    height: 42px;
     min-height: 0;
-    padding: env(safe-area-inset-top) 12px 0;
+    padding: 0 12px 0;
     flex-wrap: nowrap;
     justify-content: space-between
   }
@@ -2299,7 +2299,7 @@ select {
     display: flex;
     gap: 0;
     flex-wrap: nowrap;
-    padding: 8px 0 calc(8px + env(safe-area-inset-bottom))
+    padding: 8px 0 8px
   }
   nav button {
     flex: 1;
@@ -2373,8 +2373,8 @@ select {
     bottom: 0;
     width: auto;
     border-radius: 16px 16px 0 0;
-    padding: 16px 16px calc(72px + env(safe-area-inset-bottom));
-    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+    padding: 16px 16px 72px;
+    transform: translateY(100%);
     transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
     z-index: 200;
     pointer-events: none
@@ -2384,12 +2384,12 @@ select {
     pointer-events: auto
   }
   .main {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom))
+    padding-bottom: 72px
   }
   .live-view {
     padding-left: 0;
     padding-right: 0;
-    padding-bottom: calc(72px + env(safe-area-inset-bottom))
+    padding-bottom: 72px
   }
   .game-big {
     padding: 16px;
@@ -2460,7 +2460,7 @@ select {
     flex-shrink: 0
   }
   #feedWrap {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom) + 24px)
+    padding-bottom: calc(72px + 24px)
   }
   .mock-bar-label {
     display: none
