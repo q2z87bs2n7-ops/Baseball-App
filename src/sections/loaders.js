@@ -1138,6 +1138,9 @@ export function switchPlayerStatsTab(tab,btn){
     if(p.dataset.tab===tab)p.removeAttribute('hidden');
     else p.setAttribute('hidden','');
   });
+  // Mobile: keep the freshly-activated tab in view within its scrollable
+  // container (scrollTabIntoView only scrolls the parent, never the document).
+  if(btn) scrollTabIntoView(btn);
   // Lazy renderers
   var sel = state.selectedPlayer;
   var pid = sel && sel.person && sel.person.id;
@@ -1961,7 +1964,30 @@ function renderCareerTab(playerId, group){
   } else {
     tablesHtml = tableFor(hittingRows,'hitting') + tableFor(pitchingRows,'pitching');
   }
-  panelEl.innerHTML = tablesHtml;
+  var isMobile = (typeof window!=='undefined') && window.matchMedia && window.matchMedia('(max-width: 480px)').matches;
+  var hintHtml = (isMobile && !state.careerSwipeHintShown)
+    ? '<div class="career-swipe-hint" id="careerSwipeHint">'+
+        '<span>← Swipe to see more →</span>'+
+        '<button type="button" aria-label="Dismiss" onclick="dismissCareerSwipeHint()">✕</button>'+
+      '</div>'
+    : '';
+  panelEl.innerHTML = hintHtml + tablesHtml;
+  // Toggle the right-edge fade off once the user has scrolled the table fully.
+  Array.prototype.forEach.call(panelEl.querySelectorAll('.career-table-wrap'), function(w){
+    var update = function(){
+      var atEnd = (w.scrollLeft + w.clientWidth) >= (w.scrollWidth - 2);
+      w.classList.toggle('scrolled-end', atEnd);
+    };
+    w.addEventListener('scroll', update, { passive: true });
+    update();
+  });
+}
+
+export function dismissCareerSwipeHint(){
+  state.careerSwipeHintShown = true;
+  try { if(typeof localStorage!=='undefined') localStorage.setItem('mlb_stats_career_hint_shown','1'); } catch(_){}
+  var el = document.getElementById('careerSwipeHint');
+  if(el && el.parentNode) el.parentNode.removeChild(el);
 }
 
 // ── Sprint 3 / Step 2: Today's Leaders (MLB-wide) ────────────────────────

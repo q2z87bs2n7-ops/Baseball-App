@@ -130,7 +130,7 @@ import {
   loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
   loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
   loadStandings,
-  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, loadTodaysLeaders, switchTodaysLeadersTab, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
+  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, loadTodaysLeaders, switchTodaysLeadersTab, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
   selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
   showLiveGame, closeLiveView, fetchLiveGame,
@@ -735,7 +735,7 @@ Object.assign(window, {
   openYesterdayRecap, closeYesterdayRecap,
   // Section loaders (refresh buttons, day toggles)
   loadSchedule, loadNews, loadLeaders, loadLeagueMatchups, changeMonth,
-  switchLeaderTab, selectLeaderPill, switchRosterTab, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, switchTodaysLeadersTab, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup, switchNewsFeed, toggleNewsTeamLens,
+  switchLeaderTab, selectLeaderPill, switchRosterTab, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, switchTodaysLeadersTab, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup, switchNewsFeed, toggleNewsTeamLens,
   switchLeagueLeaderTab, switchMatchupDay, selectNewsSource,
   // Live game view + matchup grid
   showLiveGame, closeLiveView, fetchLiveGame, switchBoxTab, selectCalGame,

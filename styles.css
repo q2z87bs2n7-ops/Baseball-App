@@ -1674,6 +1674,10 @@ nav button.active {
   .hero-panel { grid-template-columns: 1fr; padding: 18px; gap: 16px }
   .hero-panel-val { font-size: 3.2rem }
 }
+@media (max-width: 480px) {
+  .hero-panel { padding: 14px }
+  .hero-panel-val { font-size: 2.6rem }
+}
 
 /* ── Stats v2: Qualified toggle on Leaders card ─────────────────────────── */
 .leaders-card-head {
@@ -1838,6 +1842,7 @@ nav button.active {
   margin-top: 14px
 }
 @media (max-width: 767px) { .gamelog-strip { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (max-width: 480px) { .gamelog-strip { grid-template-columns: 1fr } }
 .glog-item {
   background: var(--card2);
   border: 1px solid var(--border);
@@ -2473,8 +2478,45 @@ nav button.active {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--card2)
+  background: var(--card2);
+  position: relative
 }
+.career-table-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--card2));
+  opacity: 1;
+  transition: opacity .2s ease
+}
+.career-table-wrap.scrolled-end::after { opacity: 0 }
+.career-swipe-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,.04);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+  font-style: italic
+}
+.career-swipe-hint button {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .9rem;
+  padding: 0 4px;
+  line-height: 1
+}
+.career-swipe-hint button:hover { color: var(--text) }
 .career-table {
   width: 100%;
   border-collapse: collapse;
@@ -2510,6 +2552,13 @@ nav button.active {
 .career-table tbody tr:last-child td { border-bottom: 0 }
 .career-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent) }
 .career-col-avg, .career-col-obp, .career-col-slg, .career-col-ops, .career-col-era, .career-col-whip { color: var(--accent); font-weight: 700 }
+
+/* ── Stats mobile polish (≤480px): tighter Player tabs + Today's Leaders ── */
+@media (max-width: 480px) {
+  .player-tab { font-size: .62rem; padding: 6px 8px; letter-spacing: .02em }
+  .tl-cat { padding: 8px 10px }
+  .tl-cat-list li { font-size: .76rem }
+}
 
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {
