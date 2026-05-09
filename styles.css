@@ -1952,17 +1952,16 @@ nav button.active {
 
 /* ── Stats v2 / Sprint 2: Pitch arsenal donut ────────────────────────────── */
 .arsenal-grid {
-  display: grid;
-  grid-template-columns: 160px minmax(0,1fr);
-  gap: 22px;
-  margin-top: 14px;
-  align-items: center
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 14px
 }
-@media (max-width: 767px) { .arsenal-grid { grid-template-columns: 1fr; justify-items: center; gap: 14px } }
 .arsenal-donut {
   position: relative;
   width: 140px;
-  height: 140px
+  height: 140px;
+  margin: 0 auto
 }
 .arsenal-donut svg { display: block }
 .arsenal-donut-center {
