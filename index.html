@@ -17,10 +17,46 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.7"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.7">
+<script defer src="dist/app.bundle.js?v=4.7.6"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.7.6">
+<style>
+/* In-app Daybreak splash — full lifecycle is ours. iOS shows manifest background_color (#0a0f1e, matches body) until HTML parses to #appSplash, then this overlay takes over.
+   Entry (0-300ms): gradient + content fade IN from the matching dark bg → no snap-in jump from manifest bg.
+   Hold: until Pulse first-render or 4s safety timeout (window.dismissAppSplash + MAX_HOLD).
+   Dismiss phase 1 (0-400ms): gradient + glow + stars + mark/wordmark fade to 0 → splash becomes uniform dark (matches body bg).
+   Dismiss phase 2 (400-750ms): the now-uniform-dark container fades to 0 → fade is visually invisible since body underneath is same color.
+   Net: warm splash eases in from dark, holds, dims gracefully, then app shell appears on a dark canvas with no color whiplash. */
+.app-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background-color:var(--dark,#0a0f1e);color:#FAFAF6;font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;transition:opacity .35s ease .4s}
+.app-splash.dismissed{opacity:0;pointer-events:none}
+.app-splash__bg{position:absolute;inset:0;background:linear-gradient(180deg,#F5B49A 0%,#E88A6F 18%,#C45A85 32%,#6F4368 48%,#2C3754 65%,#14233D 80%,#0a0f1e 100%);transition:opacity .4s ease;pointer-events:none;animation:appSplashIn .3s ease-out both}
+.app-splash__glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:130vw;aspect-ratio:1.6;background:radial-gradient(ellipse at 50% 0%,rgba(255,220,200,0.45) 0%,transparent 60%);pointer-events:none;transition:opacity .4s ease;animation:appSplashIn .3s ease-out both}
+.app-splash__stars{position:absolute;bottom:0;left:0;right:0;height:35vh;background-image:radial-gradient(rgba(255,255,255,0.5) 0.5px,transparent 0.7px),radial-gradient(rgba(245,200,74,0.3) 0.5px,transparent 0.7px);background-size:14px 11px,23px 19px;background-position:0 0,7px 5px;-webkit-mask-image:linear-gradient(180deg,transparent 0%,black 60%);mask-image:linear-gradient(180deg,transparent 0%,black 60%);transition:opacity .4s ease;animation:appSplashIn .3s ease-out both}
+.app-splash__stack{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:22px;transition:opacity .4s ease;animation:appSplashIn .3s ease-out both .05s}
+@keyframes appSplashIn{from{opacity:0}to{opacity:1}}
+.app-splash.dismissed .app-splash__bg,
+.app-splash.dismissed .app-splash__glow,
+.app-splash.dismissed .app-splash__stars,
+.app-splash.dismissed .app-splash__stack{opacity:0;animation:none}
+.app-splash__mark{width:42vmin;aspect-ratio:512/360}
+.app-splash__mark svg{width:100%;height:100%}
+.app-splash__wm{font-weight:900;font-size:6.5vmin;letter-spacing:.32em;text-indent:.32em;line-height:1}
+.app-splash__tag{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:1.6vmin;color:rgba(250,250,246,.6);letter-spacing:.32em;text-indent:.32em;margin-top:-10px}
+</style>
 </head>
 <body>
+<div id="appSplash" class="app-splash" aria-hidden="true">
+  <div class="app-splash__bg"></div>
+  <div class="app-splash__glow"></div>
+  <div class="app-splash__stars"></div>
+  <div class="app-splash__stack">
+    <div class="app-splash__mark">
+      <svg viewBox="0 0 512 360" xmlns="http://www.w3.org/2000/svg"><path d="M 24 220 L 130 220 L 158 220 L 184 160 L 218 304 L 246 96 L 274 304 L 302 160 L 332 220 L 488 220" fill="none" stroke="#FAFAF6" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><rect x="0" y="290" width="512" height="36" fill="#FAFAF6"/><rect x="0" y="334" width="512" height="4" fill="#FAFAF6" opacity="0.6"/><rect x="0" y="346" width="512" height="4" fill="#FAFAF6" opacity="0.4"/><circle cx="246" cy="96" r="20" fill="#FAFAF6"/></svg>
+    </div>
+    <div class="app-splash__wm">PULSE</div>
+    <div class="app-splash__tag">LIVE · BASEBALL</div>
+  </div>
+</div>
+<script>(function(){var startTime=Date.now();var MIN_SHOW=1500;var MAX_HOLD=4000;var FADE_TOTAL=800;var dismissed=false;function fadeOut(){var el=document.getElementById('appSplash');if(!el)return;el.classList.add('dismissed');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},FADE_TOTAL);}window.dismissAppSplash=function(){if(dismissed)return;dismissed=true;var remaining=Math.max(0,MIN_SHOW-(Date.now()-startTime));if(remaining>0)setTimeout(fadeOut,remaining);else fadeOut();};setTimeout(function(){window.dismissAppSplash();},MAX_HOLD);})();</script>
 <header>
   <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span><span class="header-crumb" id="headerCrumb">PULSE</span></div>
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
@@ -82,7 +118,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.7</div>
+        <div class="settings-version">v4.7.6</div>
       </div>
     </div>
   </div>

@@ -16,7 +16,19 @@ Outfield Horizon design — stadium sunset scene with heartbeat/pulse line. File
 - `icon-mono.svg` — monochrome (iOS 16.4+)
 - `favicon.svg` — browser tab
 
-`manifest.json`: `background_color: #7C2D5C`, `theme_color: #0E3E1A`, `short_name: "Pulse"`, `orientation: "any"` (for iPad landscape).
+`manifest.json`: `background_color: #0a0f1e` (matches body bg `var(--dark)` exactly so the iOS pre-paint / Android splash bg doesn't jump when the app shell mounts), `theme_color: #0E3E1A`, `short_name: "Pulse"`, `orientation: "any"` (for iPad landscape).
+
+### Splash screen (in-app HTML, Daybreak)
+
+We do not ship `apple-touch-startup-image` PNGs. iOS shows the manifest `background_color` (solid `#0a0f1e`) for the ~250ms before HTML parses, then the in-app `#appSplash` overlay (defined inline in `index.html` `<head>` + top of `<body>`) takes over. This avoids the 12-PNG device matrix + the `apple-touch-startup-image` exact-pixel-match rules + the iOS-controlled dismiss timing.
+
+Lifecycle (CSS animation + JS):
+1. **Entry (0–300ms after parse):** gradient + glow + stars + mark/wordmark fade IN from the matching dark bg via `@keyframes appSplashIn`. Eases out of the manifest pre-paint.
+2. **Hold:** until `window.dismissAppSplash()` is called by `src/main.js` after the first `pollLeaguePulse().then(...)` resolves. Min-show floor 600ms; max-hold safety timeout 4000ms.
+3. **Dismiss phase 1 (0–400ms):** gradient + content fade out. Container stays opaque on `var(--dark, #0a0f1e)` so screen converges to uniform dark.
+4. **Dismiss phase 2 (400–750ms):** container fades — visually invisible since body underneath is the same color.
+
+To tweak the design, edit the inline `<style>` block + `#appSplash` markup in `index.html` directly and bump versions per CLAUDE.md rule 7. The original Daybreak source template + Playwright-based PNG generator lived in `handoff/daybreak/` through v4.7.5 and were removed in v4.7.6 — recoverable from git history if anyone wants to ship `apple-touch-startup-image` PNGs again.
 
 ## Push Notifications
 
