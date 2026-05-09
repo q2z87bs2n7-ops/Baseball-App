@@ -24,9 +24,46 @@ Division standings (active team highlighted) + Wild Card Race (top 9 non-divisio
 Source: `/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,division,league`
 
 ## 📊 Stats
-Three-column layout: Leaders | Roster (40-man, hitting/pitching/fielding tabs, first player auto-selected) | Player Stats (headshot + 12-stat grid, hitting/pitching 4-col, fielding 3-col, first stat `.hero`).
+Four-card layout (Stats Tab Revamp Sprints 1+2, shipped under v4.7): **Team Stats** (top, full-width) → **Leaders | Roster | Player Stats** (three-column row below).
 
-Source: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats`
+### Team Stats card (`#teamStats`, `loadTeamStats()`)
+Full-width card showing team-wide hitting + pitching tiles (HR / RBI / AVG / OPS / ERA / WHIP / K / SV) + a record / last-10 / run-diff form line. Each tile shows the stat value alongside a `#N MLB` rank chip in `var(--accent)` (chip text uses `--accent` not `--primary` so dark-primary teams stay readable).
+
+Source: `/teams/{id}/stats?stats=season&group=hitting,pitching` + `/standings` (record context).
+
+### Leaders card
+Roster leaders for the active team. Top of the card has a **Qualified toggle** (default ON, `state.qualifiedOnly`, persisted) that hides players below the threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers); footer caption surfaces the hidden count. Stat selection by pill row — hitting (`AVG · HR · RBI · OPS · OBP · SLG · H · SB`) and pitching (`ERA · WHIP · K · W · L · SV · IP`) plus a dashed `+ more` pill at the end of each row that expands an extras row inline (BB, R, 2B, 3B, K, PA for hitting; K/9, BB/9, K/BB, BB, H, HR for pitching). `selectLeaderPill` clears `.active` across both rows; `loadLeaders` finds the active pill in either. `switchLeaderTab` collapses BOTH extras rows on tab switch (avoids the v4.6.12 bug where pitching extras leaked into the hitting tab — root cause: `[hidden]` shadowed by `.stat-tabs { display:flex }`, fixed by `.leader-pill-extras[hidden] { display:none !important }`). Hot/Cold inline badges next to hitter names where last-15 OPS Δ vs season OPS ≥ ±0.080 (🔥 HOT / ❄ COLD).
+
+### Roster card (`#playerList`)
+40-man roster with hitting/pitching/fielding tabs, grouped by position bucket: hitting/fielding into 🧤 Catchers / ⚾ Infielders / 🏃 Outfielders / 🦾 DH; pitching into 🎯 Starters / 🔥 Relievers (split by GS/G ratio when `state.statsCache.pitching` is populated). Sticky section headers with bucket label + count chip. Each row shows: name + HOT/COLD badge · `#22 · Right Field · .312 / 28 HR / .962 OPS` (hitting) or `· 3.81 ERA · 67 K · 1.18 WHIP` (pitching) + a thin mini-bar beneath showing the player vs the team-best (OPS for hitting, ERA inverted for pitching).
+
+### Player Stats card (`#playerStats`) — 4 tabs
+Tabs persist via `state.activeStatsTab` → `localStorage('mlb_stats_tab')`. `renderPlayerStats` is the orchestrator that emits all four panels (only the active one visible). Switching tabs is a class-flip — no `/people` refetch. Per-tab fetchers (Game Log / Splits / Arsenal) lazy-load on first visit and cache for 24h. Fielding view auto-collapses to Overview only.
+
+| Tab | What it shows |
+|---|---|
+| **Overview** | Headshot · two-pill `Compare [VS MLB] [VS TEAM]` basis toggle (default VS MLB; persisted) · full-width hero panel: 4rem display number + `#N of M MLB` rank + 6px percentile bar + `★ Elite · Top X%` pill + `Avg: X` chip + 7-day rolling sparkline · 4-col supporting grid where each box has stat / label / percentile bar / `MLB · #N` rank caption / `Avg: X` chip. Tier coloring: hero panel always; supporting boxes only at extremes (≥ 90 or ≤ 10). |
+| **Splits** | Two-column layout — left col stacks `vs Handedness` (vs LHP / vs RHP) + `Home / Away`; right col shows `Situations` (RISP / Bases Empty / Runners On / Late & Close). Each row: split label + slash line `.AVG / .OBP / .SLG` + OPS-relative mini-bar + OPS value + PA count. Pitcher splits show "opponents' AVG/OBP/SLG" hint banner. Source: `/people/{id}/stats?stats=statSplits&sitCodes=vl,vr,h,a,risp,e,r,lc&season=2026&group=…`. |
+| **Game Log** | Up to 10 mini-cards most-recent-first (date · opp `@ABC`/`vsXYZ` · line `3/4 · 2HR` or `5.2IP · 7K · 1ER`). Cards: green/red left-border = W/L, purple inset shadow = HR-game. Tap → opens `#liveView` for that gamePk. L10 summary strip below: AVG/HR/RBI/OPS or ERA/K/WHIP/IP, all client-side aggregated. Source: `/people/{id}/stats?stats=gameLog&season=2026&group=…`. |
+| **Advanced** | Pitchers: 140px SVG donut + ranked list pulled from `/people/{id}/stats?stats=pitchArsenal&season=2026`. Each pitch type gets a deterministic color (FF=red, SI=orange, SL=yellow, CU=purple, CH=green, FC=pink, FS=teal, ST=gold, etc.); donut center shows the most-used pitch's percentage and label; list rows: color dot · pitch label · usage % · avg velocity (mph). The donut + list stack vertically at all viewports (v4.6.16 — desktop two-column squeezed labels into "Sin..." / "Sw..." ellipses). Hitters: Sprint-3 placeholder (Statcast: xwOBA, exit velo, barrel %, hard-hit %, sprint speed). |
+
+### Stats v2 helpers (`src/utils/stats-math.js`)
+
+| Helper | Purpose |
+|---|---|
+| `LEADER_CATS_FOR_PERCENTILE` | 27-stat catalog mapping internal stat keys → MLB API leader categories (with `decimals` and `lowerIsBetter` flags). |
+| `fetchLeagueLeaders(group)` | TTL-cached league leader pulls keyed by `group + ':' + leaderCategory`. Stored in `state.leagueLeaders`. |
+| `computePercentile(group, statKey, raw)` | Binary-search rank → 0–99 percentile against the cached leader board. Returns `{ percentile, rank, total }`. |
+| `tierFromPercentile(p)` | `'elite'` ≥ 90 / `'good'` 70–89 / `'mid'` 30–69 / `'bad'` < 30. |
+| `pctBar(p)` / `rankCaption(rank, total)` | HTML fragments for the percentile bar + `MLB · #N` caption used by the Overview grid + hero panel. |
+| `avgChip(playerVal, basisVal, decimals, lowerIsBetter)` | `<span class="delta-chip avg-chip pos|neg">Avg: X</span>` — shows the basis average (league or team) directly, color-coded by polarity. Replaced the prior `deltaChip` `+/−Δ` rendering in v4.6.12. |
+| `leagueAverage(group, statKey)` / `teamAverage(group, statKey)` | Mean of every entry in the leaders cache (league) or `state.statsCache` (team) for the requested stat. |
+
+### Per-player caches (24h TTL unless noted)
+
+`state.gameLogCache[playerId+':'+group]` · `state.statSplitsCache[playerId+':'+group]` · `state.pitchArsenalCache[playerId]` · `state.lastNCache[playerId]` (12h TTL — last-15 OPS for HOT/COLD).
+
+Sources: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats` (season / gameLog / statSplits / pitchArsenal / lastXGames variants).
 
 ## 🌐 Around the League
 Matchups: all MLB games, 3-per-row, day toggle (Yesterday/Today/Tomorrow), opacity fade on switch. Live games show inning. Clickable → live game view. ⚠️ **Leaders index mapping is fragile** — API doesn't guarantee response order matches `leaderCategories` order; re-test empirically after API changes.
