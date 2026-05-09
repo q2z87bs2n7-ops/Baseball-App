@@ -57,6 +57,12 @@ export const state = {
   // Strike-zone heat map cache: playerId → { zones:[...], ts } — populated
   // from /people/{id}/stats?stats=hotColdZones (Sprint 3, hitters only).
   hotColdCache: {},
+  // Compare overlay state (Sprint 3 Batch D)
+  compareOpen: false,
+  compareA: null,        // full player object {person, position, jerseyNumber}
+  compareB: null,
+  compareGroup: 'hitting' // 'hitting' | 'pitching'
+,
 
   // ── News State ───────────────────────────────────────────────────────────
   newsFeedMode: 'mlb',
