@@ -17,8 +17,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.6.10"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.6.10">
+<script defer src="dist/app.bundle.js?v=4.6.11"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.6.11">
 </head>
 <body>
 <header>
@@ -82,7 +82,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.6.10</div>
+        <div class="settings-version">v4.6.11</div>
       </div>
     </div>
   </div>
@@ -147,28 +147,54 @@
   </div>
   <div class="grid3">
     <div class="card">
-      <div class="card-title">Leaders</div>
+      <div class="leaders-card-head">
+        <div class="card-title">Leaders</div>
+        <button type="button" id="qualifiedToggle" class="qualified-toggle on" role="switch" aria-checked="true" onclick="toggleQualifiedOnly()" title="Hide players below qualified threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers)">
+          <span class="qualified-toggle-track"><span class="qualified-toggle-knob"></span></span>
+          <span class="qualified-toggle-label">Qualified</span>
+        </button>
+      </div>
       <div class="stat-tabs" style="margin-bottom:10px">
         <button class="stat-tab active" onclick="switchLeaderTab('hitting',this)">⚾ Hitting</button>
         <button class="stat-tab" onclick="switchLeaderTab('pitching',this)">🥎 Pitching</button>
       </div>
       <div style="margin-bottom:12px">
-        <div id="hitLeaderPills" class="stat-tabs" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <div id="hitLeaderPills" class="stat-tabs leader-pill-row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
           <button type="button" class="stat-tab leader-pill active" data-stat="avg" onclick="selectLeaderPill('hitting','avg',this)">AVG</button>
           <button type="button" class="stat-tab leader-pill" data-stat="homeRuns" onclick="selectLeaderPill('hitting','homeRuns',this)">HR</button>
           <button type="button" class="stat-tab leader-pill" data-stat="rbi" onclick="selectLeaderPill('hitting','rbi',this)">RBI</button>
           <button type="button" class="stat-tab leader-pill" data-stat="ops" onclick="selectLeaderPill('hitting','ops',this)">OPS</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="obp" onclick="selectLeaderPill('hitting','obp',this)">OBP</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="slg" onclick="selectLeaderPill('hitting','slg',this)">SLG</button>
           <button type="button" class="stat-tab leader-pill" data-stat="hits" onclick="selectLeaderPill('hitting','hits',this)">H</button>
           <button type="button" class="stat-tab leader-pill" data-stat="stolenBases" onclick="selectLeaderPill('hitting','stolenBases',this)">SB</button>
-          <button type="button" class="stat-tab leader-pill" data-stat="baseOnBalls" onclick="selectLeaderPill('hitting','baseOnBalls',this)">BB</button>
+          <button type="button" class="stat-tab leader-pill leader-pill--more" onclick="toggleLeaderMore('hitting',this)" aria-expanded="false">+ more</button>
         </div>
-        <div id="pitLeaderPills" class="stat-tabs" style="flex-wrap:wrap;gap:6px;margin-bottom:8px;display:none">
+        <div id="hitLeaderPillsExtras" class="stat-tabs leader-pill-extras" style="flex-wrap:wrap;gap:6px;margin-bottom:8px" hidden>
+          <button type="button" class="stat-tab leader-pill" data-stat="baseOnBalls" onclick="selectLeaderPill('hitting','baseOnBalls',this)">BB</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="runs" onclick="selectLeaderPill('hitting','runs',this)">R</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="doubles" onclick="selectLeaderPill('hitting','doubles',this)">2B</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="triples" onclick="selectLeaderPill('hitting','triples',this)">3B</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="strikeOuts" onclick="selectLeaderPill('hitting','strikeOuts',this)">K</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="plateAppearances" onclick="selectLeaderPill('hitting','plateAppearances',this)">PA</button>
+        </div>
+        <div id="pitLeaderPills" class="stat-tabs leader-pill-row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px;display:none">
           <button type="button" class="stat-tab leader-pill active" data-stat="era" onclick="selectLeaderPill('pitching','era',this)">ERA</button>
           <button type="button" class="stat-tab leader-pill" data-stat="whip" onclick="selectLeaderPill('pitching','whip',this)">WHIP</button>
           <button type="button" class="stat-tab leader-pill" data-stat="strikeOuts" onclick="selectLeaderPill('pitching','strikeOuts',this)">K</button>
           <button type="button" class="stat-tab leader-pill" data-stat="wins" onclick="selectLeaderPill('pitching','wins',this)">W</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="losses" onclick="selectLeaderPill('pitching','losses',this)">L</button>
           <button type="button" class="stat-tab leader-pill" data-stat="saves" onclick="selectLeaderPill('pitching','saves',this)">SV</button>
           <button type="button" class="stat-tab leader-pill" data-stat="inningsPitched" onclick="selectLeaderPill('pitching','inningsPitched',this)">IP</button>
+          <button type="button" class="stat-tab leader-pill leader-pill--more" onclick="toggleLeaderMore('pitching',this)" aria-expanded="false">+ more</button>
+        </div>
+        <div id="pitLeaderPillsExtras" class="stat-tabs leader-pill-extras" style="flex-wrap:wrap;gap:6px;margin-bottom:8px" hidden>
+          <button type="button" class="stat-tab leader-pill" data-stat="strikeoutsPer9Inn" onclick="selectLeaderPill('pitching','strikeoutsPer9Inn',this)">K/9</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="walksPer9Inn" onclick="selectLeaderPill('pitching','walksPer9Inn',this)">BB/9</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="strikeoutWalkRatio" onclick="selectLeaderPill('pitching','strikeoutWalkRatio',this)">K/BB</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="baseOnBalls" onclick="selectLeaderPill('pitching','baseOnBalls',this)">BB</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="hits" onclick="selectLeaderPill('pitching','hits',this)">H</button>
+          <button type="button" class="stat-tab leader-pill" data-stat="homeRuns" onclick="selectLeaderPill('pitching','homeRuns',this)">HR</button>
         </div>
       </div>
       <div id="leaderList"><div class="loading">Loading leaders...</div></div>

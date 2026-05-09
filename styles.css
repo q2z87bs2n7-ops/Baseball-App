@@ -1657,6 +1657,132 @@ nav button.active {
   .hero-panel-val { font-size: 3.2rem }
 }
 
+/* ── Stats v2: Qualified toggle on Leaders card ─────────────────────────── */
+.leaders-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px
+}
+.qualified-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background .15s ease
+}
+.qualified-toggle:hover { background: rgba(255,255,255,.05) }
+.qualified-toggle-track {
+  width: 30px;
+  height: 16px;
+  background: var(--border);
+  border-radius: 999px;
+  position: relative;
+  transition: background .2s ease
+}
+.qualified-toggle-knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 12px; height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left .2s ease
+}
+.qualified-toggle.on .qualified-toggle-track { background: var(--accent) }
+.qualified-toggle.on .qualified-toggle-knob { left: 16px }
+.qualified-toggle-label {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600
+}
+.qualified-toggle.on .qualified-toggle-label { color: var(--text) }
+.leader-qual-footer {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: rgba(255,200,60,.08);
+  border: 1px solid rgba(255,200,60,.25);
+  border-radius: 6px;
+  font-size: .68rem;
+  color: #FFC83C;
+  letter-spacing: .04em
+}
+
+/* ── Stats v2: Roster section headers + inline stat + mini-bar ─────────── */
+.roster-section-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: .65rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--card);
+  padding: 8px 10px;
+  margin: 12px 0 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700
+}
+.roster-section-header:first-child { margin-top: 0 }
+.roster-section-count {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: .6rem
+}
+.roster-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px
+}
+.roster-inline-stat {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums
+}
+.roster-mini-bar {
+  height: 3px;
+  background: rgba(255,255,255,.06);
+  border-radius: 2px;
+  margin-top: 4px;
+  width: 70%;
+  overflow: hidden
+}
+.roster-mini-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width .3s ease
+}
+
+/* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
+.leader-pill--more {
+  border-style: dashed !important;
+  color: var(--muted) !important;
+  font-style: italic;
+  letter-spacing: .04em
+}
+.leader-pill--more:hover { color: var(--text) !important; border-color: var(--accent) !important }
+.leader-pill--more.open {
+  border-style: solid !important;
+  color: var(--accent) !important;
+  font-style: normal
+}
+.leader-pill-extras { padding-top: 4px; padding-left: 4px; border-left: 2px solid var(--border) }
+.leader-pill-extras .leader-pill { opacity: .92 }
+
 .stat-tabs {
   display: flex;
   gap: 6px;

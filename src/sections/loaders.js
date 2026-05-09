@@ -459,7 +459,12 @@ function renderHomeStandings(divMap){
 }
 
 // ── STATS/ROSTER SECTION ────────────────────────────────────────────────────
-export function selectLeaderPill(group,stat,btn){var pillsId=group==='hitting'?'hitLeaderPills':'pitLeaderPills';document.getElementById(pillsId).querySelectorAll('.leader-pill').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');loadLeaders();}
+export function selectLeaderPill(group,stat,btn){
+  var ids=group==='hitting'?['hitLeaderPills','hitLeaderPillsExtras']:['pitLeaderPills','pitLeaderPillsExtras'];
+  ids.forEach(function(id){var el=document.getElementById(id);if(el)el.querySelectorAll('.leader-pill').forEach(function(b){b.classList.remove('active');});});
+  btn.classList.add('active');
+  loadLeaders();
+}
 
 // Center an active tab inside its horizontally-scrolling container. Only scrolls
 // when the container actually overflows, so it's a no-op on desktop where tabs
@@ -474,12 +479,53 @@ function scrollTabIntoView(btn){
 
 export function switchLeaderTab(tab,btn){state.currentLeaderTab=tab;document.querySelectorAll('.stat-tabs button').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);document.getElementById('hitLeaderPills').style.display=tab==='hitting'?'flex':'none';document.getElementById('pitLeaderPills').style.display=tab==='pitching'?'flex':'none';loadLeaders();}
 
+// Qualified-leader thresholds (per Idea #05, Sprint 1):
+//   Hitters: PA ≥ 3.1 × team games played
+//   Pitchers: IP ≥ 1.0 × team games played
+// Pulled from state.teamStats.{hitting,pitching}.gamesPlayed when available.
+function teamGamesFor(group){
+  var ts=state.teamStats||{};
+  var src=group==='pitching'?ts.pitching:ts.hitting;
+  if(!src)return 0;
+  var g=parseInt(src.gamesPlayed,10);
+  return isNaN(g)?0:g;
+}
+
+function isQualified(group, stat){
+  var g=teamGamesFor(group);
+  if(!g)return true; // unknown → don't filter
+  if(group==='hitting'){
+    var pa=parseFloat(stat.plateAppearances);
+    return !isNaN(pa) && pa >= 3.1 * g;
+  }
+  if(group==='pitching'){
+    var ip=parseFloat(stat.inningsPitched);
+    return !isNaN(ip) && ip >= 1.0 * g;
+  }
+  return true;
+}
+
 export function loadLeaders(){
-  var group=state.currentLeaderTab,pillsId=group==='hitting'?'hitLeaderPills':'pitLeaderPills',activePill=document.querySelector('#'+pillsId+' .leader-pill.active'),stat=activePill?activePill.dataset.stat:(group==='hitting'?'avg':'era'),data=state.statsCache[group];
+  var group=state.currentLeaderTab;
+  var rowSel=group==='hitting'?'#hitLeaderPills, #hitLeaderPillsExtras':'#pitLeaderPills, #pitLeaderPillsExtras';
+  var activePill=document.querySelector(rowSel.split(',').map(function(s){return s.trim()+' .leader-pill.active';}).join(','));
+  var stat=activePill?activePill.dataset.stat:(group==='hitting'?'avg':'era');
+  var data=state.statsCache[group];
   if(!data||!data.length){document.getElementById('leaderList').innerHTML='<div style="color:var(--muted);padding:12px;font-size:.85rem">Stats still loading...</div>';return;}
-  var isAsc=['era','whip','walksAndHitsPerInningPitched'].indexOf(stat)>-1;
-  var sorted=data.filter(function(s){return s.stat[stat]!=null&&s.stat[stat]!=='';}).slice().sort(function(a,b){return isAsc?parseFloat(a.stat[stat])-parseFloat(b.stat[stat]):parseFloat(b.stat[stat])-parseFloat(a.stat[stat]);}).slice(0,10);
-  if(!sorted.length){document.getElementById('leaderList').innerHTML='<div style="color:var(--muted);padding:12px;font-size:.85rem">No data for this stat yet</div>';return;}
+  var isAsc=['era','whip','walksAndHitsPerInningPitched','walksPer9Inn','losses'].indexOf(stat)>-1;
+  // Pre-filter: stat must have a value at all
+  var withStat=data.filter(function(s){return s.stat[stat]!=null&&s.stat[stat]!=='';});
+  // Apply qualified filter (default ON per kickoff Q4)
+  var qualified=state.qualifiedOnly?withStat.filter(function(s){return isQualified(group,s.stat);}):withStat;
+  var hiddenCount=withStat.length-qualified.length;
+  var sorted=qualified.slice().sort(function(a,b){return isAsc?parseFloat(a.stat[stat])-parseFloat(b.stat[stat]):parseFloat(b.stat[stat])-parseFloat(a.stat[stat]);}).slice(0,10);
+  if(!sorted.length){
+    var emptyMsg=hiddenCount>0
+      ? hiddenCount+' player(s) hidden by qualified filter — toggle off to show'
+      : 'No data for this stat yet';
+    document.getElementById('leaderList').innerHTML='<div style="color:var(--muted);padding:12px;font-size:.85rem">'+emptyMsg+'</div>';
+    return;
+  }
   var html='';
   sorted.forEach(function(s,i){
     var val=parseFloat(s.stat[stat]),display=val<1&&val>0?val.toFixed(3).slice(1):Number.isInteger(val)?val:val.toFixed(2);
@@ -495,7 +541,32 @@ export function loadLeaders(){
       '<div style="font-size:1.1rem;font-weight:800;color:var(--accent)">'+display+'</div>'+
     '</div>';
   });
+  if(state.qualifiedOnly && hiddenCount>0){
+    html+='<div class="leader-qual-footer">⚠ '+hiddenCount+' player'+(hiddenCount===1?'':'s')+' hidden · toggle off to show small samples</div>';
+  }
   document.getElementById('leaderList').innerHTML=html;
+}
+
+// Show / hide the "+ more" overflow pill row for a leader group. Adds an
+// 'open' class to the trigger so CSS can flip the dashed border to solid.
+export function toggleLeaderMore(group,btn){
+  var extrasId=group==='hitting'?'hitLeaderPillsExtras':'pitLeaderPillsExtras';
+  var el=document.getElementById(extrasId);
+  if(!el)return;
+  var isOpen=!el.hasAttribute('hidden');
+  if(isOpen){el.setAttribute('hidden','');btn.classList.remove('open');btn.setAttribute('aria-expanded','false');btn.textContent='+ more';}
+  else{el.removeAttribute('hidden');btn.classList.add('open');btn.setAttribute('aria-expanded','true');btn.textContent='− less';}
+}
+
+// Toggle the qualified-only filter. Persisted to localStorage.
+export function toggleQualifiedOnly(){
+  state.qualifiedOnly=!state.qualifiedOnly;
+  if(typeof localStorage!=='undefined')localStorage.setItem('mlb_stats_qualified_only',state.qualifiedOnly?'1':'0');
+  // Re-paint toggle UI + leaders
+  var sw=document.getElementById('qualifiedToggle');
+  if(sw)sw.setAttribute('aria-checked',state.qualifiedOnly?'true':'false');
+  if(sw)sw.classList.toggle('on',state.qualifiedOnly);
+  loadLeaders();
 }
 
 // ── Team Stats card (Stats tab v2 — Sprint 1 #06) ──────────────────────────
@@ -771,20 +842,117 @@ export async function loadRoster(){
   }catch(e){document.getElementById('playerList').innerHTML='<div class="error">Could not load players</div>';}
 }
 
+// Position bucketing for Roster grouping. Catchers / Infielders / Outfielders
+// / DH for hitters and fielders; Starters vs Relievers for pitchers (split by
+// games-started ratio in statsCache when available, falls back to a single
+// "Pitchers" bucket otherwise).
+function rosterBucketKey(player, tab){
+  if(tab==='pitching'){
+    var entry=(state.statsCache.pitching||[]).find(function(p){return p.player&&p.player.id===player.person.id;});
+    if(entry&&entry.stat){
+      var gs=parseInt(entry.stat.gamesStarted,10)||0;
+      var gp=parseInt(entry.stat.gamesPlayed,10)||0;
+      if(gs>=3 || (gp>0 && gs/gp >= 0.5)) return 'SP';
+      return 'RP';
+    }
+    return 'P';
+  }
+  var abbr=player.position&&player.position.abbreviation||'';
+  if(abbr==='C') return 'C';
+  if(abbr==='1B'||abbr==='2B'||abbr==='3B'||abbr==='SS'||abbr==='IF') return 'IF';
+  if(abbr==='LF'||abbr==='CF'||abbr==='RF'||abbr==='OF') return 'OF';
+  if(abbr==='DH') return 'DH';
+  return 'OTH';
+}
+
+const ROSTER_BUCKET_ORDER = {
+  hitting:  ['C','IF','OF','DH','OTH'],
+  fielding: ['C','IF','OF','DH','OTH'],
+  pitching: ['SP','RP','P']
+};
+const ROSTER_BUCKET_LABEL = {
+  C:  '🧤 Catchers',
+  IF: '⚾ Infielders',
+  OF: '🏃 Outfielders',
+  DH: '🦾 DH',
+  SP: '🎯 Starters',
+  RP: '🔥 Relievers',
+  P:  '🥎 Pitchers',
+  OTH:'➖ Other'
+};
+
+// Returns { display, raw } for the inline-stat preview under each roster name,
+// keyed off the active leader pill so the Roster column reflects the current
+// stat focus. Falls back to OPS/ERA when no pill is active.
+function rosterInlineStatFor(player, tab){
+  var group=tab==='fielding'?'hitting':tab; // fielding tab still surfaces hitting line
+  var pool=state.statsCache[group]||[];
+  var entry=pool.find(function(p){return p.player&&p.player.id===player.person.id;});
+  if(!entry||!entry.stat)return null;
+  var s=entry.stat;
+  if(group==='hitting'){
+    return{
+      display:fmtRate(s.avg)+' / '+(s.homeRuns||0)+' HR / '+fmtRate(s.ops)+' OPS',
+      raw:parseFloat(s.ops)
+    };
+  }
+  return{
+    display:fmt(s.era,2)+' ERA · '+(s.strikeOuts||0)+' K · '+fmt(s.whip,2)+' WHIP',
+    raw:parseFloat(s.era)
+  };
+}
+
+// Team-best raw value for the inline mini-bar denominator. OPS for hitting
+// (higher = better), ERA for pitching (lower = better — bar widths are
+// inverted in the renderer).
+function rosterTeamBest(group){
+  var pool=state.statsCache[group]||[];
+  if(!pool.length)return null;
+  var key=group==='pitching'?'era':'ops';
+  var values=pool.map(function(p){return p.stat?parseFloat(p.stat[key]):NaN;}).filter(function(v){return !isNaN(v);});
+  if(!values.length)return null;
+  return group==='pitching'?Math.min.apply(null,values):Math.max.apply(null,values);
+}
+
 function renderPlayerList(){
-  var players=state.rosterData[state.currentRosterTab]||[];if(!players.length){document.getElementById('playerList').innerHTML='<div class="loading">No players found</div>';return;}
-  var html='';
-  var showBadges=state.currentRosterTab==='hitting';
+  var tab=state.currentRosterTab;
+  var players=state.rosterData[tab]||[];
+  if(!players.length){document.getElementById('playerList').innerHTML='<div class="loading">No players found</div>';return;}
+  var showBadges=tab==='hitting';
+  var statGroup=tab==='fielding'?'hitting':tab;
+  var teamBest=rosterTeamBest(statGroup);
+  // Bucket players by position
+  var buckets={};
   players.forEach(function(p){
-    var sel=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id===p.person.id;
-    var badge=showBadges?hotColdBadge(p.person.id):'';
-    html+='<div class="player-item'+(sel?' selected':'')+'" onclick="selectPlayer('+p.person.id+',\''+state.currentRosterTab+'\')">'+
-      '<div>'+
-        '<div class="player-name">'+p.person.fullName+badge+'</div>'+
-        '<div class="player-pos">#'+(p.jerseyNumber||'—')+' · '+(p.position&&p.position.name?p.position.name:'—')+'</div>'+
-      '</div>'+
-      '<span class="player-chevron">›</span>'+
-    '</div>';
+    var k=rosterBucketKey(p,tab);
+    (buckets[k]=buckets[k]||[]).push(p);
+  });
+  var order=ROSTER_BUCKET_ORDER[tab]||['OTH'];
+  var html='';
+  order.forEach(function(key){
+    var list=buckets[key];
+    if(!list||!list.length)return;
+    html+='<div class="roster-section-header">'+(ROSTER_BUCKET_LABEL[key]||key)+' <span class="roster-section-count">'+list.length+'</span></div>';
+    list.forEach(function(p){
+      var sel=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id===p.person.id;
+      var badge=showBadges?hotColdBadge(p.person.id):'';
+      var inline=rosterInlineStatFor(p,tab);
+      var barW=0;
+      if(inline && teamBest){
+        if(statGroup==='pitching') barW = isFinite(teamBest/inline.raw) ? Math.min(100,Math.max(8,(teamBest/inline.raw)*100)) : 0;
+        else barW = isFinite(inline.raw/teamBest) ? Math.min(100,Math.max(8,(inline.raw/teamBest)*100)) : 0;
+      }
+      html+='<div class="player-item'+(sel?' selected':'')+'" onclick="selectPlayer('+p.person.id+',\''+tab+'\')">'+
+        '<div class="roster-row-main">'+
+          '<div class="player-name">'+p.person.fullName+badge+'</div>'+
+          '<div class="player-pos">#'+(p.jerseyNumber||'—')+' · '+(p.position&&p.position.name?p.position.name:'—')+
+            (inline?' · <span class="roster-inline-stat">'+inline.display+'</span>':'')+
+          '</div>'+
+          (barW?'<div class="roster-mini-bar"><i style="width:'+barW.toFixed(0)+'%"></i></div>':'')+
+        '</div>'+
+        '<span class="player-chevron">›</span>'+
+      '</div>';
+    });
   });
   document.getElementById('playerList').innerHTML=html;
 }
