@@ -84,8 +84,11 @@ export function avgChip(playerValue, basisValue, decimals, lowerIsBetter) {
 }
 
 // Mean of every entry in the league leaders cache for a stat. Approximates
-// "average qualified player" since fetchLeagueLeaders pulls limit=300. Returns
-// null if the cache is empty or the stat isn't configured.
+// "average qualified player" — fetchLeagueLeaders pulls the full
+// playerPool=Qualifier cohort and slices the top 300 client-side, so the mean
+// reflects a real qualified-cohort baseline (not a top-10% / leader-board
+// average that would skew high). Returns null if the cache is empty or the
+// stat isn't configured.
 export function leagueAverage(group, statKey) {
   var entry = leaderEntry(group, statKey);
   if (!entry) return null;
