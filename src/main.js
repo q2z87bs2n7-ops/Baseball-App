@@ -130,7 +130,7 @@ import {
   loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
   loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
   loadStandings,
-  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab,
+  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, loadTodaysLeaders, switchTodaysLeadersTab,
   selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
   showLiveGame, closeLiveView, fetchLiveGame,
@@ -473,7 +473,7 @@ function showSection(id,btn){
   }
   if(id==='schedule'&&!state.scheduleLoaded)loadSchedule();
   if(id==='standings')loadStandings();
-  if(id==='stats'){loadTeamStats();if(!state.rosterData.hitting.length){loadRoster();loadLeaders();}else loadLeaders();}
+  if(id==='stats'){loadTeamStats();loadTodaysLeaders();if(!state.rosterData.hitting.length){loadRoster();loadLeaders();}else loadLeaders();}
   if(id==='league')loadLeagueView();
   if(id==='news')loadNews();
   // Restore scroll position for incoming section + sync URL hash for deep linking
@@ -735,7 +735,7 @@ Object.assign(window, {
   openYesterdayRecap, closeYesterdayRecap,
   // Section loaders (refresh buttons, day toggles)
   loadSchedule, loadNews, loadLeaders, loadLeagueMatchups, changeMonth,
-  switchLeaderTab, selectLeaderPill, switchRosterTab, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, switchNewsFeed, toggleNewsTeamLens,
+  switchLeaderTab, selectLeaderPill, switchRosterTab, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, switchTodaysLeadersTab, switchNewsFeed, toggleNewsTeamLens,
   switchLeagueLeaderTab, switchMatchupDay, selectNewsSource,
   // Live game view + matchup grid
   showLiveGame, closeLiveView, fetchLiveGame, switchBoxTab, selectCalGame,

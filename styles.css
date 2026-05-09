@@ -2016,6 +2016,109 @@ nav button.active {
 .arsenal-row-pct { color: var(--accent); font-weight: 700; text-align: right }
 .arsenal-row-velo { color: var(--muted); text-align: right; font-size: .7rem }
 
+/* ── Stats v3 / Sprint 3: Statcast Advanced (hitters) ───────────────────── */
+.adv-hero-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 8px;
+  margin-top: 14px
+}
+.adv-hero-row .stat-box .stat-val {
+  font-size: 1.6rem;
+  color: var(--accent)
+}
+.adv-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+  margin-top: 10px
+}
+@media (max-width: 767px) { .adv-stat-grid { grid-template-columns: repeat(2, minmax(0,1fr)) } }
+.adv-source-note {
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+  font-style: italic
+}
+
+/* ── Stats v3 / Sprint 3: Today's Leaders (MLB-wide module) ─────────────── */
+.todays-leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 12px;
+  margin-top: 8px
+}
+@media (max-width: 1024px) { .todays-leaders-grid { grid-template-columns: repeat(2, minmax(0,1fr)) } }
+@media (max-width: 480px)  { .todays-leaders-grid { grid-template-columns: 1fr } }
+.tl-cat {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px
+}
+.tl-cat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border)
+}
+.tl-cat-label {
+  font-size: .78rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: .08em
+}
+.tl-cat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px
+}
+.tl-cat-list li {
+  display: grid;
+  grid-template-columns: 18px minmax(0,1fr) auto auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums
+}
+.tl-rank {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: .68rem;
+  text-align: center
+}
+.tl-name {
+  color: var(--text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0
+}
+.tl-team {
+  color: var(--muted);
+  font-size: .62rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  font-weight: 700
+}
+.tl-val {
+  color: var(--accent);
+  font-weight: 800;
+  text-align: right
+}
+.tl-cat-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 16px 0 }
+
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {
   border-style: dashed !important;

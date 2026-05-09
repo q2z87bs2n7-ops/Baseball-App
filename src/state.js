@@ -47,6 +47,11 @@ export const state = {
   pitchArsenalCache: {},
   // Splits cache: playerId → { splits: {...}, ts }
   statSplitsCache: {},
+  // Sprint-3 caches
+  // Statcast / advanced hitting metrics: playerId → { stat: {...}, ts }
+  advancedHittingCache: {},
+  // Today's Leaders module visibility / tab: 'hitting' | 'pitching'
+  todaysLeadersTab: 'hitting',
 
   // ── News State ───────────────────────────────────────────────────────────
   newsFeedMode: 'mlb',

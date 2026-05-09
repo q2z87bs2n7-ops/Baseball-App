@@ -774,7 +774,14 @@ export async function fetchLeagueLeaders(group){
         var leaders=(blk.leaders||[]).map(function(l){
           var v=parseFloat(l.value);
           if(isNaN(v))return null;
-          return{playerId:l.person&&l.person.id,value:v,rank:parseInt(l.rank,10)||null};
+          return{
+            playerId:l.person&&l.person.id,
+            playerName:l.person&&l.person.fullName,
+            teamId:l.team&&l.team.id,
+            teamAbbr:l.team&&(l.team.abbreviation||l.team.name),
+            value:v,
+            rank:parseInt(l.rank,10)||null
+          };
         }).filter(function(x){return x!==null;});
         leaders.sort(function(a,b){return entry.lowerIsBetter?a.value-b.value:b.value-a.value;});
         state.leagueLeaders[group+':'+blk.leaderCategory]=leaders;
@@ -1055,6 +1062,11 @@ function renderPlayerStats(s,group){
         else fetchPitchArsenal(pid).then(function(){
           if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderArsenalTab(pid);
         });
+      } else if(activeTab==='advanced' && group==='hitting'){
+        if(state.advancedHittingCache[pid]) renderAdvancedHittingTab(pid);
+        else fetchAdvancedHitting(pid).then(function(){
+          if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderAdvancedHittingTab(pid);
+        });
       }
     }
   }
@@ -1106,6 +1118,16 @@ export function switchPlayerStatsTab(tab,btn){
         });
       } else {
         renderArsenalTab(pid);
+      }
+    } else if(group==='hitting'){
+      if(!state.advancedHittingCache[pid]){
+        fetchAdvancedHitting(pid).then(function(){
+          if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced'){
+            renderAdvancedHittingTab(pid);
+          }
+        });
+      } else {
+        renderAdvancedHittingTab(pid);
       }
     }
   }
@@ -1317,8 +1339,199 @@ function renderArsenalTab(playerId){
   }).join('')+'</div>';
   panelEl.innerHTML = '<div class="arsenal-grid">'+donut+list+'</div>';
 }
+
+// ── Sprint 3 / Step 1: Statcast Advanced for hitters ─────────────────────
+const ADV_HITTING_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Fetches expectedStatistics + sabermetrics in parallel and merges them into a
+// single stat blob keyed in state.advancedHittingCache. Two endpoints because
+// xBA / xSLG / xwOBA / Statcast classification rates ship under
+// expectedStatistics, while wOBA / wRC+ live under sabermetrics. Both are
+// optional — render gracefully degrades.
+async function fetchAdvancedHitting(playerId){
+  if(!playerId) return null;
+  var cached = state.advancedHittingCache[playerId];
+  if(cached && Date.now()-cached.ts < ADV_HITTING_TTL_MS) return cached.stat;
+  try{
+    var urls = [
+      MLB_BASE+'/people/'+playerId+'/stats?stats=expectedStatistics&season='+SEASON+'&group=hitting',
+      MLB_BASE+'/people/'+playerId+'/stats?stats=sabermetrics&season='+SEASON+'&group=hitting'
+    ];
+    var responses = await Promise.all(urls.map(function(u){
+      return fetch(u).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    }));
+    var merged = {};
+    responses.forEach(function(d){
+      if(!d || !d.stats) return;
+      d.stats.forEach(function(block){
+        var split = block.splits && block.splits[0];
+        if(split && split.stat) Object.assign(merged, split.stat);
+      });
+    });
+    state.advancedHittingCache[playerId] = { stat: merged, ts: Date.now() };
+    return merged;
+  }catch(e){
+    return null;
+  }
+}
+
+// Renders the Statcast / advanced hitting view into the Advanced panel.
+// Defensively reads each metric — keys vary across MLB API endpoints, and
+// every metric is independently optional so the layout shrinks gracefully
+// to whatever's available.
+function renderAdvancedHittingTab(playerId){
+  var cached = state.advancedHittingCache[playerId];
+  var panelEl = document.querySelector('.player-tab-panel[data-tab="advanced"]');
+  if(!panelEl) return;
+  if(!cached){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Statcast / Advanced</h4><p>Loading advanced metrics…</p></div>';
+    return;
+  }
+  var s = cached.stat || {};
+  function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
+  function fmtR(n){ var s = n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; }
+  function fmtPct(n){ return (n*100).toFixed(1)+'%'; }
+  // Hero trio: prefer expected metrics; fall back to actuals when absent.
+  // Field-name variants observed across MLB API endpoints and snapshots.
+  var xwoba = num(s.xwoba) || num(s.expectedWoba);
+  var woba  = num(s.woba)  || num(s.expectedWoba);
+  var xba   = num(s.xba)   || num(s.expectedBattingAvg) || num(s.expectedBa);
+  var xslg  = num(s.xslg)  || num(s.expectedSluggingPct) || num(s.expectedSlg);
+  var xobp  = num(s.xobp)  || num(s.expectedOnBasePct);
+  var avgEv = num(s.avgHitSpeed) || num(s.exitVelocityAvg) || num(s.averageExitVelocity);
+  var maxEv = num(s.maxHitSpeed) || num(s.maxExitVelocity);
+  var hardHit = num(s.hardHitRate) || num(s.hardHitPercentage);
+  var barrel  = num(s.barrelRate) || num(s.barrelsPerBbeRate) || num(s.barrelsPerPlateAppearance);
+  var sweet   = num(s.sweetSpotRate) || num(s.sweetSpotPercentage);
+  var launch  = num(s.avgLaunchAngle) || num(s.launchAngleAvg);
+  var hitDist = num(s.avgHitDistance);
+  var sprint  = num(s.sprintSpeed);
+  var wrcPlus = num(s.wrcPlus) || num(s.weightedRunsCreatedPlus);
+  // Hero row (3 boxes)
+  var hero = '';
+  if(xwoba != null || xba != null || hardHit != null){
+    hero = '<div class="adv-hero-row">'+
+      (xwoba != null ? '<div class="stat-box"><div class="stat-val">'+fmtR(xwoba)+'</div><div class="stat-lbl">xwOBA</div></div>' : '')+
+      (xba   != null ? '<div class="stat-box"><div class="stat-val">'+fmtR(xba)+'</div><div class="stat-lbl">xBA</div></div>' : '')+
+      (hardHit != null ? '<div class="stat-box"><div class="stat-val">'+fmtPct(hardHit)+'</div><div class="stat-lbl">Hard Hit %</div></div>' : '')+
+      '</div>';
+  }
+  // Statcast metric grid
+  var rows = [];
+  if(avgEv != null) rows.push({l:'Avg Exit Velo', v: avgEv.toFixed(1)+' mph'});
+  if(maxEv != null) rows.push({l:'Max Exit Velo', v: maxEv.toFixed(1)+' mph'});
+  if(barrel != null) rows.push({l:'Barrel %', v: fmtPct(barrel)});
+  if(sweet != null) rows.push({l:'Sweet Spot %', v: fmtPct(sweet)});
+  if(launch != null) rows.push({l:'Avg Launch Angle', v: launch.toFixed(1)+'°'});
+  if(hitDist != null) rows.push({l:'Avg Hit Distance', v: hitDist.toFixed(0)+' ft'});
+  if(sprint != null) rows.push({l:'Sprint Speed', v: sprint.toFixed(1)+' ft/s'});
+  if(xslg != null) rows.push({l:'xSLG', v: fmtR(xslg)});
+  if(xobp != null) rows.push({l:'xOBP', v: fmtR(xobp)});
+  if(woba != null && (xwoba == null || woba !== xwoba)) rows.push({l:'wOBA', v: fmtR(woba)});
+  if(wrcPlus != null) rows.push({l:'wRC+', v: Math.round(wrcPlus)});
+  var grid = rows.length
+    ? '<div class="adv-stat-grid">'+rows.map(function(r){return '<div class="stat-box"><div class="stat-val">'+r.v+'</div><div class="stat-lbl">'+r.l+'</div></div>';}).join('')+'</div>'
+    : '';
+  if(!hero && !grid){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>No advanced metrics</h4><p>This player has no '+SEASON+' Statcast / advanced data yet.</p></div>';
+    return;
+  }
+  var note = '<div class="adv-source-note">Statcast metrics from MLB Stats API · expectedStatistics + sabermetrics</div>';
+  panelEl.innerHTML = hero + grid + note;
+}
+
 function renderGameLogPlaceholder(){
   return '<div class="tab-empty-state"><div class="tab-empty-icon">📅</div><h4>Last-10 game log</h4><p>Loading game log...</p></div>';
+}
+
+// ── Sprint 3 / Step 2: Today's Leaders (MLB-wide) ────────────────────────
+// Categories surfaced per group. Order mirrors fan-facing priority.
+const TODAYS_LEADERS_CATS = {
+  hitting:  [
+    { stat:'homeRuns',         leaderCategory:'homeRuns',       label:'HR',  decimals:0 },
+    { stat:'avg',              leaderCategory:'battingAverage', label:'AVG', decimals:3 },
+    { stat:'rbi',              leaderCategory:'rbi',            label:'RBI', decimals:0 },
+    { stat:'ops',              leaderCategory:'ops',            label:'OPS', decimals:3 },
+    { stat:'obp',              leaderCategory:'onBasePercentage', label:'OBP', decimals:3 },
+    { stat:'stolenBases',      leaderCategory:'stolenBases',    label:'SB',  decimals:0 }
+  ],
+  pitching: [
+    { stat:'era',              leaderCategory:'earnedRunAverage', label:'ERA',  decimals:2 },
+    { stat:'strikeOuts',       leaderCategory:'strikeouts',       label:'K',    decimals:0 },
+    { stat:'wins',             leaderCategory:'wins',             label:'W',    decimals:0 },
+    { stat:'saves',            leaderCategory:'saves',            label:'SV',   decimals:0 },
+    { stat:'whip',             leaderCategory:'walksAndHitsPerInningPitched', label:'WHIP', decimals:2 },
+    { stat:'inningsPitched',   leaderCategory:'inningsPitched',   label:'IP',   decimals:1 }
+  ]
+};
+
+// Switch active tab on the Today's Leaders card. Persisted via state.
+export function switchTodaysLeadersTab(tab, btn){
+  if(tab !== 'hitting' && tab !== 'pitching') return;
+  state.todaysLeadersTab = tab;
+  document.querySelectorAll('#todaysLeadersTabs .stat-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
+  renderTodaysLeaders();
+}
+
+// Renders the four-category leader-board block from cached state.leagueLeaders.
+// Triggers fetchLeagueLeaders for the active group when the cache is empty —
+// the percentile system already calls this on selectPlayer, so the cache is
+// usually warm by the time the user looks. First-paint warming is handled by
+// loadTodaysLeaders().
+export function renderTodaysLeaders(){
+  var el = document.getElementById('todaysLeadersContent');
+  if(!el) return;
+  var group = state.todaysLeadersTab || 'hitting';
+  var cats = TODAYS_LEADERS_CATS[group] || [];
+  function fmtVal(v, decimals){
+    if(decimals >= 3){
+      var s = v.toFixed(3);
+      return s.charAt(0)==='0' ? s.slice(1) : s;
+    }
+    if(decimals === 1) return v.toFixed(1);
+    if(decimals === 2) return v.toFixed(2);
+    return Math.round(v).toString();
+  }
+  function lastName(full){
+    if(!full) return '';
+    var parts = full.split(' ');
+    return parts.length > 1 ? parts.slice(1).join(' ') : full;
+  }
+  var html = '<div class="todays-leaders-grid">';
+  cats.forEach(function(c){
+    var arr = state.leagueLeaders[group+':'+c.leaderCategory];
+    var top5 = arr ? arr.slice(0,5) : [];
+    html += '<div class="tl-cat">'+
+      '<div class="tl-cat-head"><span class="tl-cat-label">'+c.label+'</span></div>';
+    if(top5.length){
+      html += '<ol class="tl-cat-list">'+ top5.map(function(p, i){
+        var name = p.playerName ? lastName(p.playerName) : '#'+p.playerId;
+        var teamAbbr = p.teamAbbr || '';
+        return '<li>'+
+          '<span class="tl-rank">'+(i+1)+'</span>'+
+          '<span class="tl-name" title="'+(p.playerName||'')+(teamAbbr?' · '+teamAbbr:'')+'">'+name+'</span>'+
+          (teamAbbr ? '<span class="tl-team">'+teamAbbr+'</span>' : '')+
+          '<span class="tl-val">'+fmtVal(p.value, c.decimals)+'</span>'+
+        '</li>';
+      }).join('') +'</ol>';
+    } else {
+      html += '<div class="tl-cat-empty">—</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// Warms the league-leaders cache for both groups (idempotent — fetchLeagueLeaders
+// is TTL-cached at 5min) then renders. Called from loadRoster's section-init
+// path so the card is populated when the user first opens the Stats tab.
+export async function loadTodaysLeaders(){
+  await Promise.all([
+    fetchLeagueLeaders('hitting'),
+    fetchLeagueLeaders('pitching')
+  ]);
+  renderTodaysLeaders();
 }
 
 // 24h TTL on the gameLog cache — game log only changes once per game-day per
@@ -1565,7 +1778,7 @@ function onGameLogResolved(playerId, group){
 }
 function renderAdvancedPlaceholder(group){
   if(group==='hitting'){
-    return '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Statcast / Advanced</h4><p>xwOBA, exit velo, barrel %, hard-hit %, sprint speed. Coming in Sprint 3.</p></div>';
+    return '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Statcast / Advanced</h4><p>Loading advanced metrics…</p></div>';
   }
   if(group==='pitching'){
     return '<div class="tab-empty-state"><div class="tab-empty-icon">🎯</div><h4>Pitch arsenal</h4><p>Loading pitch arsenal...</p></div>';
