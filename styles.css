@@ -2378,96 +2378,6 @@ nav button.active {
   .compare-cell { font-size: .9rem }
 }
 
-/* ── Stats v3 / Sprint 3: Today's Leaders (MLB-wide module) ─────────────── */
-.todays-leaders-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 12px;
-  margin-top: 8px
-}
-@media (max-width: 1024px) { .todays-leaders-grid { grid-template-columns: repeat(2, minmax(0,1fr)) } }
-@media (max-width: 480px)  { .todays-leaders-grid { grid-template-columns: 1fr } }
-.tl-cat {
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px
-}
-.tl-cat-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border)
-}
-.tl-cat-label {
-  font-size: .78rem;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: .08em
-}
-.tl-cat-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px
-}
-.tl-cat-list li {
-  display: grid;
-  grid-template-columns: 18px minmax(0,1fr) auto auto;
-  gap: 8px;
-  align-items: baseline;
-  font-size: .78rem;
-  font-variant-numeric: tabular-nums
-}
-.tl-rank {
-  color: var(--muted);
-  font-weight: 700;
-  font-size: .68rem;
-  text-align: center
-}
-.tl-name {
-  color: var(--text);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0
-}
-.tl-team {
-  color: var(--muted);
-  font-size: .62rem;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  font-weight: 700
-}
-.tl-val {
-  color: var(--accent);
-  font-weight: 800;
-  text-align: right
-}
-.tl-cat-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 16px 0 }
-/* Today's Leaders card head + subtitle. Replaced four inline style="…"
-   attributes from v4.6.18 in v4.6.26. */
-.todays-leaders-card { margin-top: 16px }
-.todays-leaders-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px
-}
-.todays-leaders-sub {
-  color: var(--muted);
-  font-weight: 500;
-  font-size: .72rem;
-  letter-spacing: .04em
-}
-.todays-leaders-tabs { margin: 0 }
-
 /* ── Stats v3 / Sprint 3: Career tab (year-by-year tables) ─────────────── */
 .career-section { margin-top: 16px }
 .career-section:first-child { margin-top: 14px }
@@ -2558,31 +2468,10 @@ nav button.active {
 .career-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent) }
 .career-col-avg, .career-col-obp, .career-col-slg, .career-col-ops, .career-col-era, .career-col-whip { color: var(--accent); font-weight: 700 }
 
-/* ── Stats mobile polish (≤480px): tighter Player tabs + Today's Leaders ── */
+/* ── Stats mobile polish (≤480px): tighter Player tabs ── */
 @media (max-width: 480px) {
   .player-tab { font-size: .62rem; padding: 6px 8px; letter-spacing: .02em }
-  .tl-cat { padding: 8px 10px }
-  .tl-cat-list li { font-size: .76rem }
 }
-.tl-expand-toggle {
-  display: none;
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px 14px;
-  background: var(--card2);
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  color: var(--muted);
-  font-size: .68rem;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color .15s ease, border-color .15s ease, background .15s ease
-}
-.tl-expand-toggle:hover { color: var(--accent); border-color: var(--accent) }
-.tl-expand-toggle:active { background: color-mix(in srgb, var(--accent) 8%, var(--card2)) }
-@media (max-width: 480px) { .tl-expand-toggle { display: block } }
 
 /* ── Stats mobile quick-nav (≤480px only — hidden on tablet/desktop) ── */
 .stats-quicknav { display: none }
