@@ -53,6 +53,10 @@ export const state = {
   advancedHittingCache: {},
   // Today's Leaders module visibility / tab: 'hitting' | 'pitching'
   todaysLeadersTab: 'hitting',
+  // Mobile-only collapse: show top 3 categories per group by default; expand
+  // reveals the full 6. In-memory only — resets per session so first-time
+  // mobile users always land on the compact view.
+  todaysLeadersExpanded: false,
   // Career year-by-year cache: playerId → { hitting:[...], pitching:[...], ts }
   careerCache: {},
   // Strike-zone heat map cache: playerId → { zones:[...], ts } — populated

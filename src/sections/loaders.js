@@ -2013,6 +2013,14 @@ const TODAYS_LEADERS_CATS = {
   ]
 };
 
+// Mobile (≤480px) collapsed view shows only these 3 categories per group;
+// keyed by leaderCategory so the lookup survives any reorder of the parent
+// catalog. Desktop / iPad always render the full TODAYS_LEADERS_CATS list.
+const TODAYS_LEADERS_MOBILE_TOP = {
+  hitting:  ['homeRuns', 'battingAverage', 'onBasePlusSlugging'],
+  pitching: ['earnedRunAverage', 'strikeouts', 'wins']
+};
+
 // Switch active tab on the Today's Leaders card. Persisted via state.
 export function switchTodaysLeadersTab(tab, btn){
   if(tab !== 'hitting' && tab !== 'pitching') return;
@@ -2030,7 +2038,13 @@ export function renderTodaysLeaders(){
   var el = document.getElementById('todaysLeadersContent');
   if(!el) return;
   var group = state.todaysLeadersTab || 'hitting';
-  var cats = TODAYS_LEADERS_CATS[group] || [];
+  var allCats = TODAYS_LEADERS_CATS[group] || [];
+  var isMobile = (typeof window!=='undefined') && window.matchMedia && window.matchMedia('(max-width: 480px)').matches;
+  var collapsedOnMobile = isMobile && !state.todaysLeadersExpanded;
+  var mobileSet = TODAYS_LEADERS_MOBILE_TOP[group] || [];
+  var cats = collapsedOnMobile
+    ? allCats.filter(function(c){ return mobileSet.indexOf(c.leaderCategory) >= 0; })
+    : allCats;
   function fmtVal(v, decimals){
     if(decimals >= 3){
       var s = v.toFixed(3);
@@ -2068,7 +2082,18 @@ export function renderTodaysLeaders(){
     html += '</div>';
   });
   html += '</div>';
+  // Mobile-only expand/collapse pill below the grid.
+  if(isMobile && allCats.length > cats.length){
+    html += '<button type="button" class="tl-expand-toggle" onclick="toggleTodaysLeadersExpanded()">View all '+allCats.length+' categories ▾</button>';
+  } else if(isMobile && state.todaysLeadersExpanded && allCats.length > mobileSet.length){
+    html += '<button type="button" class="tl-expand-toggle" onclick="toggleTodaysLeadersExpanded()">Show top '+mobileSet.length+' ▴</button>';
+  }
   el.innerHTML = html;
+}
+
+export function toggleTodaysLeadersExpanded(){
+  state.todaysLeadersExpanded = !state.todaysLeadersExpanded;
+  renderTodaysLeaders();
 }
 
 // Warms the league-leaders cache for both groups (idempotent — fetchLeagueLeaders
