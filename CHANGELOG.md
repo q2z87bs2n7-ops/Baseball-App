@@ -5,7 +5,13 @@
 
 ---
 
-**Current version:** v4.5
+**Current version:** v4.6.3
+
+**v4.6.3** — Add `touch-action: manipulation` to `body` in `styles.css` to suppress WebKit's ~300ms double-tap-zoom disambiguation delay. Click events now fire immediately on tap-end. Pinch-zoom and panning are unaffected — `manipulation` only disables double-tap-zoom. Custom touch handlers (carousel, scrubber) are unaffected since they use `pointerdown`/`touchstart`, not `click`.
+
+**v4.6.2** — Fix iPad detection in v4.6.1 — was using deprecated `navigator.platform`, which on modern iOS Safari may return `"MacIntel"` for iPhone too (privacy-driven entropy reduction), causing the regex to match iPhone and strip `viewport-fit=cover` (which broke v4.4.1's status-bar bleed in iPhone PWA). Switched to `navigator.userAgent`: iPhone UA contains `"iPhone"` (never `"Macintosh"`); iPadOS 13+ contains `"Macintosh"` with `maxTouchPoints > 1`; legacy iPad contains `"iPad"`; Mac desktop has `maxTouchPoints === 0`.
+
+**v4.6.1** — Inline pre-paint script in `index.html` (alongside the theme-flash IIFE) strips `viewport-fit=cover` from the viewport meta on iPad only. v4.4.1's `viewport-fit=cover` was needed on iPhone PWA to fill the status-bar zone with team color, but on iPad PWA the same flag triggers iPadOS edge-touch disambiguation, adding noticeable lag to button presses. iPad has no notch/home-indicator inset to fill, and the existing safe-area CSS is gated to `@media (max-width:480px)`, so removing it on iPad has no visual cost.
 
 **v4.5** — **Release rollup.** Drops the patch on merge of `claude/mobile-nav-updates-XVaaU` (PR #14) into main. No content changes — bumps `<title>`, settings panel version, and CHANGELOG. Mobile-nav refactor (Direction A from `Mobile Nav.zip` handoff), `src/nav/` module, and HR speed/distance work all shipped under v4.4.3 → v4.4.16; see those entries for detail.
 
