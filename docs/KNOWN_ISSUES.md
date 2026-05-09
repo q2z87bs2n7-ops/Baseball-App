@@ -6,7 +6,7 @@ Project-management issues tracked here. **Critical Gotchas** (subtle bugs that c
 
 1. **News fallback** — if ESPN API is CORS-blocked, no fallback source. MLB RSS was considered but not yet implemented.
 
-2. **Around the League leaders index mapping** — empirically derived, fragile. The API does not guarantee response order matches requested `leaderCategories` order; app uses index-based mapping. Re-test each position empirically if results look wrong after an API change.
+2. **`/stats/leaders` ~100-cap on qualified pool** — the leader-board endpoint server-caps the per-category response at ~100 entries even with `limit=300`. v4.8.4 attempted to bypass via `/stats?stats=season&playerPool=Qualifier` but the new query returned empty splits in production (param-naming mismatch suspected — `group` vs `statGroup`, `Qualifier` vs `Qualified`) — reverted in v4.8.8. Mitigation in v4.8.11: when a player's value never beats nor ties any leader (`computePercentile` returns `outsideTop=true`), the renderer skips the rank caption + bar entirely so the dead-last fallback (`#100 of 100`) doesn't render misleadingly. Open: probe the correct `/stats?` parameter shape on a live API call before re-attempting a bigger pool.
 
 3. **allorigins.win proxy** — no SLA, free service. Retry logic (3 attempts, 1s gap) mitigates failures but a paid or self-hosted proxy would be more reliable.
 

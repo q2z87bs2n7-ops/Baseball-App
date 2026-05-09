@@ -147,12 +147,13 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 | `ensureCareerLoaded(playerId, group)` | Lazy-load entrypoint for the Career tab. Pulls `/people/{id}/stats?stats=yearByYear&group=hitting,pitching` into `state.careerCache`. 24h TTL. (Awards module dropped pre-prod in v4.6.21.) |
 | `renderCareerTab(playerId, group)` | Renders year-by-year hitting + pitching tables (two-way players get both, primary group first). Sorted ascending (Baseball Reference convention). Sticky header, horizontal-scroll on narrow viewports, accent-colored rate cells. |
 
-#### Today's Leaders (MLB-wide)
+#### Mobile polish helpers (v4.9)
 | Function | Purpose |
 |---|---|
-| `loadTodaysLeaders()` | Warms `fetchLeagueLeaders('hitting')` + `fetchLeagueLeaders('pitching')` in parallel, then renders the card. Called from the Stats section's load path. |
-| `switchTodaysLeadersTab(tab, btn)` | Flips active tab between hitting/pitching; re-renders from cached `state.leagueLeaders`. |
-| `renderTodaysLeaders()` | 6-category top-5 grid per group. `TODAYS_LEADERS_CATS` catalog uses canonical leaderCategory names (`runsBattedIn`, `onBasePlusSlugging`, `walksAndHitsPerInningPitched`, `earnedRunAverage`, etc.) — friendly names won't hit the cache (v4.6.19 fix). |
+| `installStatsQuickNav()` | Idempotent installer for the mobile-only sticky 4-chip quick-nav at the top of `#stats` (Team / Leaders / Roster / Player). Wires a delegated click handler that smooth-scrolls to the matching card and an IntersectionObserver (`rootMargin: -45%`) that lights the active chip as the user scrolls. Hidden via CSS at ≥481px. Called from main.js Stats dispatch. |
+| `dismissCareerSwipeHint()` | One-shot dismissal of the `← Swipe to see more →` hint banner above the Career table on mobile. Persists via `localStorage.mlb_stats_career_hint_shown` so the hint stays gone across sessions. |
+
+(Today's Leaders module — `loadTodaysLeaders` / `renderTodaysLeaders` / `switchTodaysLeadersTab` / `toggleTodaysLeadersExpanded` — was removed in v4.8.6 as redundant with the League → Stat Leaders card.)
 
 #### Compare overlay (Sprint 3 Batch D)
 | Function | Purpose |
@@ -175,7 +176,7 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 |---|---|
 | `fetchLeagueLeaders(group)` | TTL-cached `/stats/leaders` pulls keyed by `group + ':' + leaderCategory`. Stored on `state.leagueLeaders`. |
 | `leaderEntry(group, statKey)` | Returns the `LEADER_CATS_FOR_PERCENTILE` entry (`{ leaderCategory, decimals, lowerIsBetter }`) for a stat key, or `null`. |
-| `computePercentile(group, statKey, raw)` | Binary-search rank → `{ percentile (0–99), rank, total }` against the cached leaderboard. Polarity-aware via `lowerIsBetter`. |
+| `computePercentile(group, statKey, raw)` | Binary-search rank → `{ percentile (0–99), rank, total, outsideTop }` against the cached leaderboard. Polarity-aware via `lowerIsBetter`. `outsideTop=true` when the player's value never beats nor ties any entry — caller (`renderOverviewTab`) skips the rank caption + bar in that case so `#100 of 100` doesn't render misleadingly (v4.8.11). |
 | `tierFromPercentile(p)` | `'elite'` ≥ 90, `'good'` 70–89, `'mid'` 30–69, `'bad'` < 30. |
 | `pctBar(p)` | Returns `<div class="pct-bar"><i style="width:N%"></i></div>` HTML — the thin colored bar beneath each stat box. |
 | `rankCaption(rank, total)` | Returns `<div class="pct-rank">MLB · #N</div>` HTML. |

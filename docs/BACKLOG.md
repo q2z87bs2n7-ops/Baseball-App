@@ -38,6 +38,27 @@ Extracted from `CLAUDE.md` — tracks completed and pending features. Active blo
 - [ ] Stats v4 — **Statcast spray data via Baseball Savant proxy** (deferred). Would unlock xBA / xwOBA / exit velo / max EV / barrel rate / hard-hit % / sprint speed (advanced hitter metrics) + dot-on-field spray chart. Requires a separate proxy because Savant doesn't have permissive CORS.
 - [ ] Stats v4 — **Cross-team Compare** (deferred). Current overlay is same-team only; cross-team compare would need a name-search picker + per-player season-stat fetches (currently we only warm `state.statsCache` for the active team).
 
+### 📊 Stats Mobile Polish + League Polish (v4.9)
+
+- [x] Stats — mobile player tabs shrink to fit 360px (`.62rem` font, `6×8px` padding) (Batch A, v4.8.1)
+- [x] Stats — hero panel value 3.2rem → 2.6rem at ≤480px to keep 4-char rate stats from truncating (Batch A, v4.8.1)
+- [x] Stats — Game Log strip drops to 1-col at ≤480px (uneven 2+2+1 grid) (Batch A, v4.8.1)
+- [x] Stats — Career table right-edge gradient fade + dismissable `← Swipe to see more →` mobile hint banner (`careerSwipeHintShown` localStorage) (Batch A, v4.8.1)
+- [x] Stats — `switchPlayerStatsTab` calls `scrollTabIntoView(btn)` so the active tab centers within its container (Batch A, v4.8.1)
+- [x] Stats — sticky 4-chip mobile quick-nav at top of `#stats` (Team / Leaders / Roster / Player) with smooth-scroll + IntersectionObserver active-state (Batch C, v4.8.3)
+- [x] Stats — Team Stats tile values 1.35rem → 1.05rem at ≤480px (matched the Leaders row tier instead of dominating) (v4.8.5)
+- [x] Stats — Leaders card position abbreviation row removed (redundant with stat-category context) (v4.8.5)
+- [x] Stats — Today's Leaders module removed entirely (~95% redundant with League → Stat Leaders, ~600px mobile scroll savings) (v4.8.6)
+- [x] Stats — `Outside MLB top 100` rank caption + 0%-width bar **suppressed** entirely when player is below leader pool. `computePercentile` returns `outsideTop` flag; renderer skips the row. (v4.8.9 → v4.8.11)
+- [x] League — `loadLeagueLeaders` reads from shared `state.leagueLeaders` (one fewer request per visit, categories aligned with the Stats percentile system) (v4.8.7)
+- [x] League — probable pitchers under each pre-game matchup card; suppressed for Live + Final (v4.8.7)
+- [x] League — `Game N of M` series eyebrow above status row when `gamesInSeries > 1` (v4.8.7)
+- [ ] **National TV "marquee game" badge** (deferred). MLB's `/schedule?hydrate=broadcasts` returns `broadcasts[]` per game; presence of `isNational: true` (ESPN / FOX / FS1 / MLB Network / Apple TV+ / Peacock) is the de-facto "game of the day" signal. External source, no logic invention. Render as a badge / colored border on matchup cards.
+- [ ] **Mobile League quick-nav** (deferred). Same sticky chip-row pattern as Stats Batch C if League's mobile scroll grows.
+- [ ] **Mobile League Stat Leaders top-5 toggle** (deferred). Currently top-10, ~1100px scroll on mobile. A `Show 6-10` toggle would mirror the v4.9 mobile-polish pattern.
+- [ ] **MLB News card consolidation** (deferred). Single-source ESPN news on the League tab partially duplicates the multi-source News tab. Either match the source picker here or replace with a link to `#news`.
+- [ ] **Open: bigger qualified pool than `/stats/leaders` ~100 cap.** v4.8.4 attempted `/stats?stats=season&group=<g>&playerPool=Qualifier&limit=2000` to bypass the cap, but the response was empty — likely param-naming mismatch (`group` vs `statGroup`, `Qualifier` vs `Qualified`, or `playerPool` not accepted by `/stats`). Reverted in v4.8.8. Future investigation: probe the exact accepted param shape on a live API call before re-attempting; fall back to v4.8.11's renderer-suppression if the cap is unavoidable.
+
 ### 🛠️ Tech debt
 
 - [ ] **Inline styles in `index.html`** — 253 `style="…"` attributes pre-existing across the markup (calendar, news, schedule, settings sections). Some I added in Sprint 3 are already cleaned up (Today's Leaders card head, v4.6.26). A broader cleanup sprint could move all layout-only inline styles to CSS classes for maintainability + smaller HTML payload.
