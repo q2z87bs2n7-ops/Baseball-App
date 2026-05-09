@@ -1782,6 +1782,9 @@ nav button.active {
 }
 .leader-pill-extras { padding-top: 4px; padding-left: 4px; border-left: 2px solid var(--border) }
 .leader-pill-extras .leader-pill { opacity: .92 }
+/* The [hidden] attr on a .stat-tabs element gets shadowed by display:flex from
+   the .stat-tabs base rule. Force it back to none here. */
+.leader-pill-extras[hidden] { display: none !important }
 
 .stat-tabs {
   display: flex;

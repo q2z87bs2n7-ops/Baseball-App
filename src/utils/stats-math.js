@@ -62,22 +62,25 @@ export function rankCaption(rank, total) {
   return '<div class="rank-caption"><span>MLB</span><b>' + label + '</b></div>';
 }
 
-// vs-league delta chip. direction = 'higher-better' | 'lower-better' (defaults
-// higher-better). basisLabel is the suffix shown after the magnitude
-// ('vs lg' / 'vs team'). Decimals controls magnitude formatting; rate-style
-// values (decimals ≥ 3) drop their leading zero (.064 not 0.064).
-export function deltaChip(value, basisValue, direction, decimals, basisLabel) {
-  if (value == null || basisValue == null) return '';
-  var v = parseFloat(value), b = parseFloat(basisValue);
-  if (isNaN(v) || isNaN(b)) return '';
+// "Avg: X" comparison chip. Shows the basis (league or team) average of the
+// stat directly — caller decides which basis. Coloring: green when the player
+// beats the basis, red when below. Polarity flips for lower-is-better stats
+// via the `lowerIsBetter` flag. decimals controls formatting; rate-style
+// values (decimals ≥ 3) drop their leading zero (.248 not 0.248).
+export function avgChip(playerValue, basisValue, decimals, lowerIsBetter) {
+  if (basisValue == null) return '';
   decimals = decimals === undefined ? 3 : decimals;
-  basisLabel = basisLabel || 'vs lg';
-  var diff = v - b;
-  var positive = direction === 'lower-better' ? diff < 0 : diff > 0;
-  var sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
-  var abs = Math.abs(diff).toFixed(decimals);
-  if (decimals >= 3 && abs.charAt(0) === '0') abs = abs.slice(1);
-  return '<span class="delta-chip ' + (positive ? 'pos' : 'neg') + '">' + sign + abs + ' ' + basisLabel + '</span>';
+  var b = parseFloat(basisValue);
+  if (isNaN(b)) return '';
+  var s = b.toFixed(decimals);
+  if (decimals >= 3 && s.charAt(0) === '0') s = s.slice(1);
+  var p = playerValue == null ? NaN : parseFloat(playerValue);
+  var cls = '';
+  if (!isNaN(p)) {
+    var beats = lowerIsBetter ? p < b : p > b;
+    cls = beats ? ' pos' : ' neg';
+  }
+  return '<span class="delta-chip avg-chip' + cls + '">Avg: ' + s + '</span>';
 }
 
 // Mean of every entry in the league leaders cache for a stat. Approximates

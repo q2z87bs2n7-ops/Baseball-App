@@ -8,7 +8,7 @@ import {
   tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
   etDateStr, etDatePlus,
 } from '../utils/format.js';
-import { computePercentile, tierFromPercentile, pctBar, rankCaption, deltaChip, leagueAverage, teamAverage, leaderEntry } from '../utils/stats-math.js';
+import { computePercentile, tierFromPercentile, pctBar, rankCaption, avgChip, leagueAverage, teamAverage, leaderEntry } from '../utils/stats-math.js';
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from '../utils/news.js';
 
 // ── Callbacks (injected by main.js) ──────────────────────────────────────────
@@ -477,7 +477,25 @@ function scrollTabIntoView(btn){
   p.scrollTo({left:Math.max(0,tgt),behavior:'smooth'});
 }
 
-export function switchLeaderTab(tab,btn){state.currentLeaderTab=tab;document.querySelectorAll('.stat-tabs button').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);document.getElementById('hitLeaderPills').style.display=tab==='hitting'?'flex':'none';document.getElementById('pitLeaderPills').style.display=tab==='pitching'?'flex':'none';loadLeaders();}
+export function switchLeaderTab(tab,btn){
+  state.currentLeaderTab=tab;
+  document.querySelectorAll('.stat-tabs button').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  scrollTabIntoView(btn);
+  document.getElementById('hitLeaderPills').style.display=tab==='hitting'?'flex':'none';
+  document.getElementById('pitLeaderPills').style.display=tab==='pitching'?'flex':'none';
+  // Collapse BOTH extras rows + reset "+ more" pills when switching tabs.
+  ['hitLeaderPillsExtras','pitLeaderPillsExtras'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.setAttribute('hidden','');
+  });
+  document.querySelectorAll('.leader-pill--more').forEach(function(b){
+    b.classList.remove('open');
+    b.setAttribute('aria-expanded','false');
+    b.textContent='+ more';
+  });
+  loadLeaders();
+}
 
 // Qualified-leader thresholds (per Idea #05, Sprint 1):
 //   Hitters: PA ≥ 3.1 × team games played
@@ -1037,7 +1055,7 @@ function renderPlayerStats(s,group){
   if(group!=='fielding'){
     html+='<div class="vs-basis-row"><span class="vs-basis-label">Compare</span>'+
       ['mlb','team'].map(function(bv){
-        return '<button type="button" class="vs-basis-pill'+(basis===bv?' active':'')+'" onclick="switchVsBasis(\''+bv+'\')">vs '+(bv==='mlb'?'MLB':'team')+'</button>';
+        return '<button type="button" class="vs-basis-pill'+(basis===bv?' active':'')+'" onclick="switchVsBasis(\''+bv+'\')">VS '+(bv==='mlb'?'MLB':'TEAM')+'</button>';
       }).join('')+'</div>';
   }
 
@@ -1052,7 +1070,7 @@ function renderPlayerStats(s,group){
     var hDir=hEntry&&hEntry.lowerIsBetter?'lower-better':'higher-better';
     var hDec=hEntry?hEntry.decimals:0;
     var hBasisVal=hb.k?(basis==='mlb'?leagueAverage(group,hb.k):teamAverage(group,hb.k)):null;
-    var hChip=hb.k?deltaChip(hb.raw,hBasisVal,hDir,hDec,basis==='mlb'?'vs lg':'vs tm'):'';
+    var hChip=hb.k?avgChip(hb.raw,hBasisVal,hDec,hEntry&&hEntry.lowerIsBetter):'';
     var heroLabelMap={AVG:'Batting Average',OPS:'On-Base + Slugging',ERA:'Earned Run Average',WHIP:'Walks + Hits / IP'};
     var heroLabel=heroLabelMap[hb.l]||hb.l;
     var heroMeta=SEASON+' '+(group.charAt(0).toUpperCase()+group.slice(1));
@@ -1087,11 +1105,9 @@ function renderPlayerStats(s,group){
     var chip='';
     if(b.k&&group!=='fielding'){
       var entry=leaderEntry(group,b.k);
-      var dir=entry&&entry.lowerIsBetter?'lower-better':'higher-better';
       var dec=entry?entry.decimals:0;
       var basisVal=basis==='mlb'?leagueAverage(group,b.k):teamAverage(group,b.k);
-      var basisLbl=basis==='mlb'?'vs lg':'vs tm';
-      chip=deltaChip(b.raw,basisVal,dir,dec,basisLbl);
+      chip=avgChip(b.raw,basisVal,dec,entry&&entry.lowerIsBetter);
     }
     html+='<div class="stat-box'+tierCls+'">'+
           '<div class="stat-val">'+(b.v!=null?b.v:'—')+'</div>'+
