@@ -553,7 +553,6 @@ export function loadLeaders(){
         '<span style="color:var(--accent);font-weight:800;width:18px;font-size:.85rem">'+(i+1)+'</span>'+
         '<div>'+
           '<div class="player-name" style="font-size:.85rem">'+(s.player.fullName||'—')+badge+'</div>'+
-          '<div class="player-pos">'+(s.position&&s.position.abbreviation?s.position.abbreviation:'')+'</div>'+
         '</div>'+
       '</div>'+
       '<div style="font-size:1.1rem;font-weight:800;color:var(--accent)">'+display+'</div>'+

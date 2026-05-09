@@ -1415,6 +1415,11 @@ nav button.active {
 @media (max-width: 767px) {
   .team-stats-strip { grid-template-columns: 1fr }
 }
+@media (max-width: 480px) {
+  .team-stat-tile { padding: 10px 12px }
+  .team-stat-tile-head { margin-bottom: 6px }
+  .team-stat-tile-stat .v { font-size: 1.05rem }
+}
 
 .stat-grid {
   display: grid;
