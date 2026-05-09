@@ -477,6 +477,53 @@ nav button.active {
   font-weight: 600
 }
 
+.matchup-series {
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 4px;
+  font-weight: 600
+}
+
+.matchup-pitcher-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent)
+}
+
+.matchup-pitcher-col {
+  text-align: center;
+  min-width: 0
+}
+
+.matchup-pitcher {
+  font-size: .68rem;
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis
+}
+
+.matchup-pitcher--tbd {
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 500
+}
+
+.matchup-pitcher-sep {
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase
+}
+
 .leader-stat-card {
   background: var(--card);
   border: 1px solid var(--border);
