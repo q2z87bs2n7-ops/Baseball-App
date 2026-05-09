@@ -220,8 +220,7 @@ export async function pollGamePlays(gamePk) {
       var pitcherId = (play.matchup && play.matchup.pitcher && play.matchup.pitcher.id) || null;
       var pitcherName = (play.matchup && play.matchup.pitcher && play.matchup.pitcher.fullName) || '';
       var hrDistance = (event === 'Home Run' && play.hitData && play.hitData.totalDistance > 0) ? Math.round(play.hitData.totalDistance) : null;
-      var hrSpeed = (event === 'Home Run' && play.hitData && play.hitData.launchSpeed > 0) ? Math.round(play.hitData.launchSpeed) : null;
-      addFeedItem(gamePk, { type: 'play', event: event, desc: desc, scoring: isScoringP, awayScore: aScore, homeScore: hScore, inning: inning, halfInning: halfInning, outs: outs, risp: hasRISP, playClass: playClass, playTime: playTime, batterId: batterId, batterName: batterName, pitcherName: pitcherName, distance: hrDistance, speed: hrSpeed });
+      addFeedItem(gamePk, { type: 'play', event: event, desc: desc, scoring: isScoringP, awayScore: aScore, homeScore: hScore, inning: inning, halfInning: halfInning, outs: outs, risp: hasRISP, playClass: playClass, playTime: playTime, batterId: batterId, batterName: batterName, pitcherName: pitcherName, distance: hrDistance });
       if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
         window.Recorder._capturePlayPitches(play, gamePk, g);
       }
@@ -261,7 +260,6 @@ export async function pollGamePlays(gamePk) {
         var found = state.feedItems.find(function(i) { return i.gamePk === gamePk && i.data && i.data.event === 'Home Run' && pt && i.ts && Math.abs(i.ts.getTime() - pt.getTime()) < 5000; });
         if (found) {
           if (!found.data.distance && play.hitData && play.hitData.totalDistance > 0) found.data.distance = Math.round(play.hitData.totalDistance);
-          if (!found.data.speed && play.hitData && play.hitData.launchSpeed > 0) found.data.speed = Math.round(play.hitData.launchSpeed);
           if (newDesc.match(/\(\d+\)/) && !(found.data.desc || '').match(/\(\d+\)/)) found.data.desc = newDesc;
         }
       }

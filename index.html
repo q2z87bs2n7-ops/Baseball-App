@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>MLB Pulse v4.4.16</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MLB Pulse v4.3</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,8 +16,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.4.13"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.4.13">
+<script defer src="dist/app.bundle.js?v=4.3"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.3">
 </head>
 <body>
 <header>
@@ -31,7 +31,7 @@
     <button data-section="news" onclick="showSection('news',this)">📰<span class="nav-label"> News</span></button>
     <button data-section="standings" onclick="showSection('standings',this)">🏆<span class="nav-label"> Standings</span></button>
     <button data-section="stats" onclick="showSection('stats',this)">📊<span class="nav-label"> Stats</span></button>
-    <button data-section="more" class="nav-more" aria-label="More" aria-haspopup="dialog" onclick="toggleMoreSheet()">⋯<span class="nav-label"> More</span></button>
+    <button data-section="more" class="nav-more" aria-label="More" aria-haspopup="dialog" onclick="openMoreSheet()">⋯<span class="nav-label"> More</span></button>
   </nav>
   <div class="settings-wrap">
     <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
@@ -80,7 +80,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.4.16</div>
+        <div class="settings-version">v4.3</div>
       </div>
     </div>
   </div>
@@ -256,25 +256,24 @@
 <div id="pulse" class="section active">
   <div id="pulseLeft">
   <div id="alertStack"></div>
-  <div id="pulseTopBar" class="section-bar">
-    <div class="ptb-kicker section-bar-eyebrow">
+  <div id="pulseTopBar">
+    <div class="ptb-kicker">
       <span class="ptb-bolt">⚡</span>
       <span class="ptb-brand">MLB PULSE</span>
     </div>
-    <div class="section-bar-toggles">
-      <button id="ptbYestBtn" onclick="openYesterdayRecap()" class="ptb-lens ptb-launcher" style="display:none;padding:5px 12px">
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button id="ptbYestBtn" onclick="openYesterdayRecap()" class="ptb-lens" style="display:none;padding:5px 12px">
         <span class="ptb-lens-label">YESTERDAY'S RECAP</span>
       </button>
-      <button id="myTeamLensBtn" class="ptb-lens ptb-toggle" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
+      <button id="myTeamLensBtn" class="ptb-lens" onclick="toggleMyTeamLens()" title="Filter feed to my team's games">
         <span class="ptb-lens-label">MY TEAM</span>
         <span class="ptb-lens-track"><span class="ptb-lens-knob" id="myTeamLensKnob"></span></span>
       </button>
-      <button id="ptbSoundBtn" class="ptb-lens ptb-launcher" onclick="toggleSoundPanel()" title="Sound Alerts" style="padding:5px 10px;font-size:.85rem">🔊</button>
-      <button id="ptbRadioBtn" class="ptb-lens ptb-toggle" onclick="toggleRadio()" title="Live Game Radio" style="padding:5px 10px;font-size:.85rem">📻<span id="ptbRadioDot" style="display:none;width:6px;height:6px;background:#22c55e;border-radius:50%;flex-shrink:0;align-self:center;margin-left:2px"></span></button>
-      <button id="ptbSchemeBtn" class="ptb-lens ptb-launcher" onclick="togglePulseColorScheme()" title="Toggle light/dark mode" style="padding:5px 10px;font-size:.85rem">
+      <button id="ptbSoundBtn" class="ptb-lens" onclick="toggleSoundPanel()" title="Sound Alerts" style="padding:5px 10px;font-size:.85rem">🔊</button>
+      <button id="ptbRadioBtn" class="ptb-lens" onclick="toggleRadio()" title="Live Game Radio" style="padding:5px 10px;font-size:.85rem">📻<span id="ptbRadioDot" style="display:none;width:6px;height:6px;background:#22c55e;border-radius:50%;flex-shrink:0;align-self:center;margin-left:2px"></span></button>
+      <button id="ptbSchemeBtn" class="ptb-lens" onclick="setPulseColorScheme(pulseColorScheme==='dark'?'light':'dark')" title="Toggle light/dark mode" style="padding:5px 10px;font-size:.85rem">
         <span id="ptbSchemeIcon">☀️</span>
       </button>
-      <button class="ptb-overflow" aria-label="More controls" onclick="togglePulseOverflow()">⋯</button>
     </div>
   </div>
   <div id="gameTicker"><span class="ticker-empty">No games loaded</span></div>
@@ -329,21 +328,18 @@
   </div>
 </div>
 <div id="yesterday" class="section">
-  <div id="ydSectionBar" class="section-bar">
-    <div class="ptb-kicker section-bar-eyebrow">
-      <span class="ptb-bolt">◷</span>
-      <span class="ptb-brand">HIGHLIGHTS</span>
-    </div>
-    <div class="section-bar-context">
+  <div id="ydSectionBar">
+    <div class="ptb-kicker">
+      <span class="ptb-bolt">⚡</span>
+      <span class="ptb-brand">MLB PULSE</span>
+      <span class="ptb-sep">·</span>
       <button onclick="ydChangeDate(-1)" class="yd-date-btn" aria-label="Previous day">‹</button>
       <span class="ptb-tagline" id="ydDateLabel">Yesterday</span>
       <button onclick="ydChangeDate(1)" id="ydNextDateBtn" class="yd-date-btn" disabled aria-label="Next day">›</button>
     </div>
-    <div class="section-bar-toggles">
-      <button onclick="closeYesterdayRecap()" class="ptb-lens" style="padding:5px 12px">
-        <span class="ptb-lens-label">← BACK</span>
-      </button>
-    </div>
+    <button onclick="closeYesterdayRecap()" class="ptb-lens" style="padding:5px 12px">
+      <span class="ptb-lens-label">← BACK</span>
+    </button>
   </div>
   <div id="yesterdayCard" style="padding:0 0 40px"></div>
 </div>
@@ -365,22 +361,6 @@
     <button class="more-sheet-item" data-section="news" onclick="showSection('news');closeMoreSheet()"><span class="icon">📰</span><span>News</span></button>
     <button class="more-sheet-item" data-section="standings" onclick="showSection('standings');closeMoreSheet()"><span class="icon">🏆</span><span>Standings</span></button>
     <button class="more-sheet-item" data-section="stats" onclick="showSection('stats');closeMoreSheet()"><span class="icon">📊</span><span>Stats</span></button>
-  </div>
-</div>
-<div id="pulseOverflowBackdrop" class="more-sheet-backdrop" onclick="closePulseOverflow()"></div>
-<div id="pulseOverflowSheet" class="more-sheet" role="dialog" aria-label="Pulse controls">
-  <div class="more-sheet-grid">
-    <button class="more-sheet-item" onclick="openYesterdayRecap();closePulseOverflow()"><span class="icon">◷</span><span>Yesterday</span></button>
-    <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseOverflow()"><span class="icon">🔊</span><span>Sound</span></button>
-    <button class="more-sheet-item" onclick="togglePulseColorScheme();closePulseOverflow()"><span class="icon">☀️</span><span>Theme</span></button>
-  </div>
-</div>
-<div id="pulseShortcutsBackdrop" class="more-sheet-backdrop" onclick="closePulseShortcuts()"></div>
-<div id="pulseShortcuts" class="more-sheet" role="dialog" aria-label="Pulse shortcuts">
-  <div class="more-sheet-grid">
-    <button class="more-sheet-item" onclick="toggleDemoMode();closePulseShortcuts()"><span class="icon">▶</span><span>Demo Mode</span></button>
-    <button class="more-sheet-item" onclick="openCollection();closePulseShortcuts()"><span class="icon">🃏</span><span>Cards</span></button>
-    <button class="more-sheet-item" onclick="event.stopPropagation();toggleSoundPanel();closePulseShortcuts()"><span class="icon">🔊</span><span>Sound</span></button>
   </div>
 </div>
 <div id="videoOverlay" onclick="if(event.target===this)closeVideoOverlay()" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.94);flex-direction:column;align-items:center;justify-content:center;padding:20px">

@@ -34,6 +34,7 @@ export function openYesterdayRecap() {
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById('yesterday').classList.add('active');
+  window.scrollTo(0,0);
   var lbl=document.getElementById('ydDateLabel');
   if(lbl) lbl.textContent=getYesterdayDisplayStr();
   var nextBtn=document.getElementById('ydNextDateBtn');
@@ -52,6 +53,7 @@ export function openYesterdayRecap() {
   }else{
     renderYesterdayRecap();
   }
+  requestAnimationFrame(function(){ window.scrollTo(0,0); });
 }
 
 export async function ydChangeDate(dir){
@@ -77,6 +79,7 @@ export async function ydChangeDate(dir){
     state.ydDisplayCache=await loadYdForDate(getYesterdayDateStr());
   }
   renderYesterdayRecap();
+  window.scrollTo(0,0);
 }
 
 export function closeYesterdayRecap() {
