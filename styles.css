@@ -1326,12 +1326,12 @@ nav button.active {
 
 .player-name {
   font-weight: 600;
-  font-size: .9rem
+  font-size: .82rem
 }
 
 .player-pos {
   color: var(--muted);
-  font-size: .78rem
+  font-size: .68rem
 }
 
 /* ── Team Stats card (Stats tab v2) ─────────────────────────────────────── */
@@ -1519,7 +1519,7 @@ nav button.active {
   font-weight: 600
 }
 .vs-basis-pill {
-  font-size: .7rem;
+  font-size: .72rem;
   font-weight: 600;
   padding: 4px 10px;
   border: 1px solid var(--border);
@@ -1715,10 +1715,10 @@ nav button.active {
 .qualified-toggle.on .qualified-toggle-knob { left: 16px }
 .qualified-toggle-label {
   font-size: .68rem;
-  letter-spacing: .14em;
+  letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--muted);
-  font-weight: 600
+  font-weight: 700
 }
 .qualified-toggle.on .qualified-toggle-label { color: var(--text) }
 .leader-qual-footer {
@@ -1727,9 +1727,10 @@ nav button.active {
   background: rgba(255,200,60,.08);
   border: 1px solid rgba(255,200,60,.25);
   border-radius: 6px;
-  font-size: .68rem;
+  font-size: .62rem;
   color: #FFC83C;
-  letter-spacing: .04em
+  letter-spacing: .04em;
+  font-style: italic
 }
 
 /* ── Stats v2: Roster section headers + inline stat + mini-bar ─────────── */
@@ -1738,7 +1739,7 @@ nav button.active {
   top: 0;
   z-index: 1;
   font-size: .65rem;
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
   background: var(--card);
@@ -1802,7 +1803,7 @@ nav button.active {
   padding: 8px 12px;
   margin-bottom: -1px;
   color: var(--muted);
-  font-size: .8rem;
+  font-size: .72rem;
   font-weight: 600;
   letter-spacing: .04em;
   cursor: pointer;
@@ -1903,21 +1904,23 @@ nav button.active {
 .splits-section { margin-bottom: 14px }
 .splits-section:last-child { margin-bottom: 0 }
 .splits-section-head {
-  font-size: .62rem;
-  letter-spacing: .14em;
+  font-size: .65rem;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
   margin-bottom: 8px
 }
 .splits-hint {
-  font-size: .72rem;
+  font-size: .62rem;
   color: var(--muted);
   background: rgba(255,255,255,.04);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px 12px;
-  margin-top: 14px
+  margin-top: 14px;
+  letter-spacing: .04em;
+  font-style: italic
 }
 .splits-hint strong { color: var(--text); font-weight: 700 }
 .split-row {
@@ -1935,8 +1938,8 @@ nav button.active {
   margin-bottom: 5px
 }
 .split-row-label {
-  font-size: .8rem;
-  font-weight: 700;
+  font-size: .82rem;
+  font-weight: 600;
   color: var(--text)
 }
 .split-row-line {
@@ -2073,8 +2076,8 @@ nav button.active {
   border-radius: 8px
 }
 .hotzone-section-head {
-  font-size: .68rem;
-  letter-spacing: .14em;
+  font-size: .65rem;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
@@ -2153,7 +2156,7 @@ nav button.active {
 .hotzone-legend-spacer { flex: 1 }
 .hotzone-foot {
   margin-top: 10px;
-  font-size: .58rem;
+  font-size: .62rem;
   color: var(--muted);
   letter-spacing: .04em;
   font-style: italic;
@@ -2209,10 +2212,10 @@ nav button.active {
   margin-bottom: 14px
 }
 .compare-title {
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: .68rem;
+  font-weight: 700;
   color: var(--text);
-  letter-spacing: .06em;
+  letter-spacing: .1em;
   text-transform: uppercase
 }
 .compare-close {
@@ -2236,7 +2239,7 @@ nav button.active {
   border-radius: 999px;
   padding: 6px 12px;
   font-size: .72rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: .04em;
   color: var(--muted);
   cursor: pointer;
@@ -2333,8 +2336,8 @@ nav button.active {
 .compare-cell.compare-lose { color: var(--muted) }
 .compare-label {
   text-align: center;
-  font-size: .62rem;
-  letter-spacing: .14em;
+  font-size: .68rem;
+  letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700
@@ -2351,7 +2354,7 @@ nav button.active {
 }
 .compare-foot {
   margin-top: 6px;
-  font-size: .58rem;
+  font-size: .62rem;
   letter-spacing: .04em;
   color: var(--muted);
   font-style: italic;
@@ -2443,7 +2446,7 @@ nav button.active {
 .career-section:first-child { margin-top: 14px }
 .career-section-head {
   font-size: .65rem;
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 700;
