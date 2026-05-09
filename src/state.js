@@ -24,6 +24,21 @@ export const state = {
   currentLeaderTab: 'hitting',
   selectedPlayer: null,
 
+  // ── Stats Tab v2 (Sprint 1+) ─────────────────────────────────────────────
+  // leagueLeaders: keyed `${group}:${leaderCategory}` → sorted [{playerId, value, rank}]
+  leagueLeaders: {},
+  leagueLeadersFetchedAt: {},      // keyed by group → ms timestamp
+  leagueLeadersInflight: {},       // keyed by group → in-flight Promise
+  // teamStats: { hitting, pitching, fielding } each = MLB stats payload + ranks
+  teamStats: { hitting: null, pitching: null, fielding: null, ranks: {} },
+  teamStatsFetchedAt: 0,
+  teamStatsInflight: null,
+  // lastNCache: playerId → { last15: <stat object>, season: <stat object>, ts }
+  lastNCache: {},
+  // Persisted prefs
+  qualifiedOnly: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_qualified_only') === '0') ? false : true,
+  vsLeagueBasis: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_vs_basis')) || 'mlb',
+
   // ── News State ───────────────────────────────────────────────────────────
   newsFeedMode: 'mlb',
   newsSourceFilter: 'all',

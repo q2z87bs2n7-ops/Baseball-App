@@ -130,7 +130,7 @@ import {
   loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
   loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
   loadStandings,
-  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer,
+  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats,
   selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
   showLiveGame, closeLiveView, fetchLiveGame,
@@ -232,7 +232,7 @@ function initReal() {
   setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore, localDateStr: localDateStr, getEffectiveDate: getEffectiveDate, tcLookup: tcLookup });
   setRotationCallbacks({ refreshDebugPanel: refreshDebugPanel });
   setSyncCallbacks({ loadCollection: loadCollection, saveCollection: saveCollection, updateCollectionUI: updateCollectionUI });
-  setThemeCallbacks({ loadTodayGame: loadTodayGame, loadNextGame: loadNextGame, loadNews: loadNews, loadStandings: loadStandings, loadRoster: loadRoster, loadHomeYoutubeWidget: loadHomeYoutubeWidget, applyMyTeamLens: applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
+  setThemeCallbacks({ loadTodayGame: loadTodayGame, loadNextGame: loadNextGame, loadNews: loadNews, loadStandings: loadStandings, loadRoster: loadRoster, loadTeamStats: loadTeamStats, loadHomeYoutubeWidget: loadHomeYoutubeWidget, applyMyTeamLens: applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
   setFeedCallbacks({ localDateStr: localDateStr });
   setSectionCallbacks({ renderNextGame: renderNextGame, getSeriesInfo: getSeriesInfo, localDateStr: localDateStr, teamCapImg: teamCapImg, capImgError: capImgError });
   setRadioCheckCallbacks({ toggleSettings: toggleSettings });
@@ -473,7 +473,7 @@ function showSection(id,btn){
   }
   if(id==='schedule'&&!state.scheduleLoaded)loadSchedule();
   if(id==='standings')loadStandings();
-  if(id==='stats'&&!state.rosterData.hitting.length){loadRoster();loadLeaders();}else if(id==='stats')loadLeaders();
+  if(id==='stats'){loadTeamStats();if(!state.rosterData.hitting.length){loadRoster();loadLeaders();}else loadLeaders();}
   if(id==='league')loadLeagueView();
   if(id==='news')loadNews();
   // Restore scroll position for incoming section + sync URL hash for deep linking

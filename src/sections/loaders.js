@@ -2,11 +2,13 @@
 import { state } from '../state.js';
 import {
   SEASON, WC_SPOTS, MLB_BASE, API_BASE, TEAMS, TIMING,
+  LEADER_CATS_FOR_PERCENTILE,
 } from '../config/constants.js';
 import {
   tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
   etDateStr, etDatePlus,
 } from '../utils/format.js';
+import { computePercentile, tierFromPercentile, pctBar, rankCaption } from '../utils/stats-math.js';
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from '../utils/news.js';
 
 // ── Callbacks (injected by main.js) ──────────────────────────────────────────
@@ -483,6 +485,206 @@ export function loadLeaders(){
   document.getElementById('leaderList').innerHTML=html;
 }
 
+// ── Team Stats card (Stats tab v2 — Sprint 1 #06) ──────────────────────────
+// Loads team-level totals + L10 form line for the Team Stats card above the
+// .grid3. Cached for 5 min per team; in-flight dedupe protects against double-
+// fetch on rapid nav. Honors kickoff Q2: L10 stat aggregates use the
+// /teams/{id}/stats?stats=lastXGames endpoint. The W-L · streak · run-diff
+// form line uses /standings (already fetched elsewhere; cheap and canonical).
+export async function loadTeamStats(){
+  var stripEl=document.getElementById('teamStatsStrip');
+  var formEl=document.getElementById('teamFormLine');
+  var titleEl=document.getElementById('teamStatsTitle');
+  if(!stripEl)return;
+  titleEl.textContent=SEASON+' '+state.activeTeam.short+' · Team Stats';
+  var FRESH_MS=300000;
+  var teamId=state.activeTeam.id;
+  if(state.teamStats.teamId===teamId&&Date.now()-state.teamStatsFetchedAt<FRESH_MS){renderTeamStats();return;}
+  if(state.teamStatsInflight)return state.teamStatsInflight;
+  stripEl.innerHTML='<div class="loading">Loading team stats...</div>';
+  if(formEl)formEl.innerHTML='';
+  state.teamStatsInflight=(async function(){
+    try{
+      var seasonReq=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching,fielding&stats=season&season='+SEASON);
+      var l10Req=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching&stats=lastXGames&limitGames=10&season='+SEASON);
+      var standingsReq=fetch(MLB_BASE+'/standings?leagueId=103,104&season='+SEASON);
+      var rankReq=fetchTeamRanks();
+      var [seasonRes,l10Res,standingsRes]=await Promise.all([seasonReq,l10Req,standingsReq]);
+      await rankReq;
+      var seasonData=seasonRes&&seasonRes.ok?await seasonRes.json():null;
+      var l10Data=l10Res&&l10Res.ok?await l10Res.json():null;
+      var standingsData=standingsRes&&standingsRes.ok?await standingsRes.json():null;
+      state.teamStats.hitting=extractTeamStat(seasonData,'hitting');
+      state.teamStats.pitching=extractTeamStat(seasonData,'pitching');
+      state.teamStats.fielding=extractTeamStat(seasonData,'fielding');
+      state.teamStats.l10Hitting=extractTeamStat(l10Data,'hitting');
+      state.teamStats.l10Pitching=extractTeamStat(l10Data,'pitching');
+      state.teamStats.standingsRecord=extractTeamRecord(standingsData,teamId);
+      state.teamStats.teamId=teamId;
+      state.teamStatsFetchedAt=Date.now();
+      renderTeamStats();
+    }catch(e){
+      if(stripEl)stripEl.innerHTML='<div class="error">Could not load team stats</div>';
+    }finally{
+      state.teamStatsInflight=null;
+    }
+  })();
+  return state.teamStatsInflight;
+}
+
+function extractTeamStat(payload,group){
+  if(!payload||!payload.stats)return null;
+  var blk=payload.stats.find(function(s){return s.group&&s.group.displayName&&s.group.displayName.toLowerCase()===group;});
+  if(!blk||!blk.splits||!blk.splits.length)return null;
+  return blk.splits[0].stat;
+}
+
+function extractTeamRecord(standingsData,teamId){
+  if(!standingsData||!standingsData.records)return null;
+  for(var i=0;i<standingsData.records.length;i++){
+    var teams=standingsData.records[i].teamRecords||[];
+    for(var j=0;j<teams.length;j++){
+      if(teams[j].team&&teams[j].team.id===teamId){
+        var split=(teams[j].records&&teams[j].records.splitRecords||[]).find(function(s){return s.type==='lastTen';});
+        return{
+          lastTen:split?(split.wins+'-'+split.losses):'',
+          lastTenWins:split?split.wins:0,
+          lastTenLosses:split?split.losses:0,
+          streak:teams[j].streak?teams[j].streak.streakCode:'',
+          runDiff:typeof teams[j].runDifferential!=='undefined'?teams[j].runDifferential:null
+        };
+      }
+    }
+  }
+  return null;
+}
+
+// Fetch byTeam league ranks for the headline categories shown in the Team Stats
+// tiles. Stores in state.teamStats.ranks keyed `${group}:${leaderCategory}`.
+async function fetchTeamRanks(){
+  var groups=[
+    {group:'hitting', cats:['battingAverage','homeRuns','onBasePlusSlugging','runs']},
+    {group:'pitching',cats:['earnedRunAverage','walksAndHitsPerInningPitched','strikeouts','saves']},
+    {group:'fielding',cats:['fieldingPercentage','errors']}
+  ];
+  var teamId=state.activeTeam.id;
+  state.teamStats.ranks={};
+  await Promise.all(groups.map(async function(g){
+    try{
+      var url=MLB_BASE+'/stats/leaders?leaderCategories='+g.cats.join(',')+'&statGroup='+g.group+'&statsType=byTeam&season='+SEASON+'&limit=30';
+      var r=await fetch(url);
+      if(!r.ok)return;
+      var d=await r.json();
+      (d.leagueLeaders||[]).forEach(function(blk){
+        var leaders=blk.leaders||[];
+        var idx=leaders.findIndex(function(l){return l.team&&l.team.id===teamId;});
+        state.teamStats.ranks[g.group+':'+blk.leaderCategory]={
+          rank:idx>=0?(idx+1):null,
+          total:leaders.length||30
+        };
+      });
+    }catch(e){/* silent — tile renders without rank */}
+  }));
+}
+
+function renderTeamStats(){
+  var stripEl=document.getElementById('teamStatsStrip');
+  var formEl=document.getElementById('teamFormLine');
+  if(!stripEl)return;
+  var ts=state.teamStats;
+  var ranks=ts.ranks||{};
+  function rk(group,cat){var r=ranks[group+':'+cat];return (r&&r.rank)?' <span class="rk">#'+r.rank+'</span>':'';}
+  function headRk(group,cat){var r=ranks[group+':'+cat];return (r&&r.rank)?'<span class="team-stat-tile-rank">#'+r.rank+' MLB</span>':'';}
+  var html='';
+  if(ts.hitting){
+    var h=ts.hitting;
+    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>⚾ Hitting</span>'+headRk('hitting','onBasePlusSlugging')+'</div>'+
+      '<div class="team-stat-tile-grid">'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(h.avg)+'</div><div class="l">AVG'+rk('hitting','battingAverage')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(h.homeRuns||0)+'</div><div class="l">HR'+rk('hitting','homeRuns')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(h.ops)+'</div><div class="l">OPS'+rk('hitting','onBasePlusSlugging')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(h.runs||0)+'</div><div class="l">R'+rk('hitting','runs')+'</div></div>'+
+      '</div></div>';
+  }
+  if(ts.pitching){
+    var p=ts.pitching;
+    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🥎 Pitching</span>'+headRk('pitching','earnedRunAverage')+'</div>'+
+      '<div class="team-stat-tile-grid">'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmt(p.era,2)+'</div><div class="l">ERA'+rk('pitching','earnedRunAverage')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmt(p.whip,2)+'</div><div class="l">WHIP'+rk('pitching','walksAndHitsPerInningPitched')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(p.strikeOuts||0)+'</div><div class="l">K'+rk('pitching','strikeouts')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(p.saves||0)+'</div><div class="l">SV'+rk('pitching','saves')+'</div></div>'+
+      '</div></div>';
+  }
+  if(ts.fielding){
+    var f=ts.fielding;
+    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🧤 Fielding</span>'+headRk('fielding','fieldingPercentage')+'</div>'+
+      '<div class="team-stat-tile-grid">'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(f.fielding)+'</div><div class="l">FPCT'+rk('fielding','fieldingPercentage')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(f.errors||0)+'</div><div class="l">E'+rk('fielding','errors')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(f.doublePlays||0)+'</div><div class="l">DP</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(f.assists||0)+'</div><div class="l">A</div></div>'+
+      '</div></div>';
+  }
+  if(!html)html='<div class="empty-state" style="grid-column:1/-1">No team stats available</div>';
+  stripEl.innerHTML=html;
+  if(!formEl)return;
+  var rec=ts.standingsRecord;
+  if(rec&&rec.lastTen){
+    var streakUp=rec.streak&&rec.streak.charAt(0)==='W';
+    var rd=rec.runDiff;
+    var rdStr=rd==null?'':' · run diff '+(rd>=0?'+':'')+rd;
+    formEl.className='team-form-line'+(streakUp?'':' cold');
+    formEl.innerHTML='<div><b style="color:#fff;">Last 10:</b> '+rec.lastTen+(rec.streak?' · '+(streakUp?'▲ ':'▼ ')+rec.streak:'')+rdStr+'</div><div class="form-meta">Form</div>';
+  }else{
+    formEl.className='team-form-line empty';
+    formEl.innerHTML='<div>L10 form not yet available</div><div class="form-meta">Form</div>';
+  }
+}
+
+// Fetch and cache league-wide leader rankings for one stat group (hitting or
+// pitching). All categories registered for that group in
+// LEADER_CATS_FOR_PERCENTILE are pulled in a single MLB API call. Result is
+// stored sorted (best→worst polarity-aware) in state.leagueLeaders, then read
+// by computePercentile() in src/utils/stats-math.js. 5-minute TTL per group;
+// in-flight Promise dedupe protects against double-fetch on rapid nav.
+export async function fetchLeagueLeaders(group){
+  if(!group)return;
+  var FRESH_MS=300000;
+  if(state.leagueLeadersInflight[group])return state.leagueLeadersInflight[group];
+  if(state.leagueLeadersFetchedAt[group]&&Date.now()-state.leagueLeadersFetchedAt[group]<FRESH_MS)return;
+  var entries=LEADER_CATS_FOR_PERCENTILE.filter(function(e){return e.group===group;});
+  if(!entries.length)return;
+  // Dedupe leaderCategories so 'walks'/'hits'/'homeRuns' (which appear in both
+  // hitting and pitching tables but with different polarity flags) don't get
+  // requested twice for the same group.
+  var seen={},cats=[];
+  entries.forEach(function(e){if(!seen[e.leaderCategory]){seen[e.leaderCategory]=true;cats.push(e.leaderCategory);}});
+  var url=MLB_BASE+'/stats/leaders?leaderCategories='+cats.join(',')+'&statGroup='+group+'&season='+SEASON+'&limit=300';
+  var p=(async function(){
+    try{
+      var r=await fetch(url);
+      var d=await r.json();
+      var blocks=d.leagueLeaders||[];
+      blocks.forEach(function(blk){
+        var entry=entries.find(function(e){return e.leaderCategory===blk.leaderCategory;});
+        if(!entry)return;
+        var leaders=(blk.leaders||[]).map(function(l){
+          var v=parseFloat(l.value);
+          if(isNaN(v))return null;
+          return{playerId:l.person&&l.person.id,value:v,rank:parseInt(l.rank,10)||null};
+        }).filter(function(x){return x!==null;});
+        leaders.sort(function(a,b){return entry.lowerIsBetter?a.value-b.value:b.value-a.value;});
+        state.leagueLeaders[group+':'+blk.leaderCategory]=leaders;
+      });
+      state.leagueLeadersFetchedAt[group]=Date.now();
+    }catch(e){/* silent: percentile UI will simply not render */}
+    finally{delete state.leagueLeadersInflight[group];}
+  })();
+  state.leagueLeadersInflight[group]=p;
+  return p;
+}
+
 async function fetchAllPlayerStats(){
   var groups=['hitting','pitching'];
   for(var gi=0;gi<groups.length;gi++){
@@ -520,20 +722,87 @@ export async function selectPlayer(id,type){
   state.selectedPlayer=playerObj;renderPlayerList();
   document.getElementById('playerStatsTitle').textContent=playerObj.person&&playerObj.person.fullName?playerObj.person.fullName:'Player Stats';
   document.getElementById('playerStats').innerHTML='<div class="loading">Loading stats...</div>';
-  try{var group=type==='pitching'?'pitching':type==='fielding'?'fielding':'hitting';var r=await fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group);var d=await r.json();var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;if(!stats){document.getElementById('playerStats').innerHTML='<div class="empty-state">No '+SEASON+' stats available yet</div>';if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}return;}renderPlayerStats(stats,group);if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}}catch(e){document.getElementById('playerStats').innerHTML='<div class="error">Could not load stats</div>';}
+  try{
+    var group=type==='pitching'?'pitching':type==='fielding'?'fielding':'hitting';
+    // Fire player-stats fetch + league-leaders fetch in parallel. League leaders
+    // are TTL-cached per group and feed percentile bars in renderPlayerStats.
+    var [r]=await Promise.all([
+      fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group),
+      group==='fielding'?Promise.resolve():fetchLeagueLeaders(group)
+    ]);
+    var d=await r.json();
+    var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;
+    if(!stats){
+      document.getElementById('playerStats').innerHTML='<div class="empty-state">No '+SEASON+' stats available yet</div>';
+      if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}
+      return;
+    }
+    renderPlayerStats(stats,group);
+    if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}
+  }catch(e){
+    document.getElementById('playerStats').innerHTML='<div class="error">Could not load stats</div>';
+  }
 }
 
+// Each box descriptor: { v: display string, l: label, k: percentile-lookup
+// key (null = skip percentile), raw: raw numeric value for the lookup }.
+// PA / IP / W-L / fielding boxes skip percentile (counting/threshold/composite).
 function renderPlayerStats(s,group){
   var pid=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id;
   var jerseyOverlay=(state.selectedPlayer&&state.selectedPlayer.jerseyNumber)?'<div class="headshot-jersey-pill">#'+state.selectedPlayer.jerseyNumber+'</div>':'';
   var html=pid?'<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current">'+jerseyOverlay+'</div>':'';
   var boxes=[];
-  if(group==='hitting')boxes=[{v:fmtRate(s.avg),l:'AVG'},{v:s.homeRuns,l:'HR'},{v:s.rbi,l:'RBI'},{v:fmtRate(s.ops),l:'OPS'},{v:s.hits,l:'H'},{v:s.doubles,l:'2B'},{v:s.triples,l:'3B'},{v:s.strikeOuts,l:'K'},{v:s.baseOnBalls,l:'BB'},{v:s.runs,l:'R'},{v:s.stolenBases,l:'SB'},{v:s.plateAppearances,l:'PA'}];
-  else if(group==='pitching')boxes=[{v:fmt(s.era,2),l:'ERA'},{v:fmt(s.whip,2),l:'WHIP'},{v:s.strikeOuts,l:'K'},{v:s.wins+'-'+s.losses,l:'W-L'},{v:fmt(s.inningsPitched,1),l:'IP'},{v:s.hits,l:'H'},{v:s.baseOnBalls,l:'BB'},{v:s.homeRuns,l:'HR'},{v:fmt(s.strikeoutWalkRatio,2),l:'K/BB'},{v:fmt(s.strikeoutsPer9Inn,2),l:'K/9'},{v:fmt(s.walksPer9Inn,2),l:'BB/9'},{v:s.saves,l:'SV'}];
-  else boxes=[{v:fmtRate(s.fielding),l:'FPCT'},{v:s.putOuts,l:'PO'},{v:s.assists,l:'A'},{v:s.errors,l:'E'},{v:s.chances,l:'TC'},{v:s.doublePlays,l:'DP'}];
+  if(group==='hitting')boxes=[
+    {v:fmtRate(s.avg),         l:'AVG', k:'avg',          raw:s.avg},
+    {v:s.homeRuns,             l:'HR',  k:'homeRuns',     raw:s.homeRuns},
+    {v:s.rbi,                  l:'RBI', k:'rbi',          raw:s.rbi},
+    {v:fmtRate(s.ops),         l:'OPS', k:'ops',          raw:s.ops},
+    {v:s.hits,                 l:'H',   k:'hits',         raw:s.hits},
+    {v:s.doubles,              l:'2B',  k:'doubles',      raw:s.doubles},
+    {v:s.triples,              l:'3B',  k:'triples',      raw:s.triples},
+    {v:s.strikeOuts,           l:'K',   k:'strikeOuts',   raw:s.strikeOuts},
+    {v:s.baseOnBalls,          l:'BB',  k:'baseOnBalls',  raw:s.baseOnBalls},
+    {v:s.runs,                 l:'R',   k:'runs',         raw:s.runs},
+    {v:s.stolenBases,          l:'SB',  k:'stolenBases',  raw:s.stolenBases},
+    {v:s.plateAppearances,     l:'PA',  k:null,           raw:null}
+  ];
+  else if(group==='pitching')boxes=[
+    {v:fmt(s.era,2),                  l:'ERA',  k:'era',                 raw:s.era},
+    {v:fmt(s.whip,2),                 l:'WHIP', k:'whip',                raw:s.whip},
+    {v:s.strikeOuts,                  l:'K',    k:'strikeOuts',          raw:s.strikeOuts},
+    {v:s.wins+'-'+s.losses,           l:'W-L',  k:null,                  raw:null},
+    {v:fmt(s.inningsPitched,1),       l:'IP',   k:null,                  raw:null},
+    {v:s.hits,                        l:'H',    k:'hits',                raw:s.hits},
+    {v:s.baseOnBalls,                 l:'BB',   k:'baseOnBalls',         raw:s.baseOnBalls},
+    {v:s.homeRuns,                    l:'HR',   k:'homeRuns',            raw:s.homeRuns},
+    {v:fmt(s.strikeoutWalkRatio,2),   l:'K/BB', k:'strikeoutWalkRatio',  raw:s.strikeoutWalkRatio},
+    {v:fmt(s.strikeoutsPer9Inn,2),    l:'K/9',  k:'strikeoutsPer9Inn',   raw:s.strikeoutsPer9Inn},
+    {v:fmt(s.walksPer9Inn,2),         l:'BB/9', k:'walksPer9Inn',        raw:s.walksPer9Inn},
+    {v:s.saves,                       l:'SV',   k:'saves',               raw:s.saves}
+  ];
+  else boxes=[
+    {v:fmtRate(s.fielding), l:'FPCT', k:null, raw:null},
+    {v:s.putOuts,           l:'PO',   k:null, raw:null},
+    {v:s.assists,           l:'A',    k:null, raw:null},
+    {v:s.errors,            l:'E',    k:null, raw:null},
+    {v:s.chances,           l:'TC',   k:null, raw:null},
+    {v:s.doublePlays,       l:'DP',   k:null, raw:null}
+  ];
   var cols=group==='fielding'?3:4;
   html+='<div class="stat-grid stat-grid--cols-'+cols+'">';
-  boxes.forEach(function(b,i){html+='<div class="stat-box'+(i===0?' hero':'')+'"><div class="stat-val">'+(b.v!=null?b.v:'—')+'</div><div class="stat-lbl">'+b.l+'</div></div>';});
+  boxes.forEach(function(b,i){
+    var pInfo=(b.k&&group!=='fielding')?computePercentile(group,b.k,b.raw):null;
+    var tier=pInfo?tierFromPercentile(pInfo.percentile):null;
+    var heroCls=i===0?' hero':'';
+    // Tier-color the hero box always; non-hero boxes only when pinned at the
+    // extremes (≥90 elite or ≤10 bad) so the grid stays readable.
+    var tierCls=tier&&(i===0||pInfo.percentile>=90||pInfo.percentile<=10)?' stat-box--'+tier:'';
+    html+='<div class="stat-box'+heroCls+tierCls+'">'+
+          '<div class="stat-val">'+(b.v!=null?b.v:'—')+'</div>'+
+          '<div class="stat-lbl">'+b.l+'</div>'+
+          (pInfo?pctBar(pInfo.percentile)+rankCaption(pInfo.rank,pInfo.total):'')+
+          '</div>';
+  });
   document.getElementById('playerStats').innerHTML=html+'</div>';
 }
 

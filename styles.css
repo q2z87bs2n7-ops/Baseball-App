@@ -1334,6 +1334,83 @@ nav button.active {
   font-size: .78rem
 }
 
+/* ── Team Stats card (Stats tab v2) ─────────────────────────────────────── */
+.team-stats-card { margin-bottom: 16px }
+.team-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 8px
+}
+.team-stat-tile {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px
+}
+.team-stat-tile-head {
+  font-size: .7rem;
+  color: var(--muted);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px
+}
+.team-stat-tile-rank { color: var(--primary); font-weight: 700 }
+.team-stat-tile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px
+}
+.team-stat-tile-stat .v {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1
+}
+.team-stat-tile-stat .l {
+  font-size: .65rem;
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-top: 2px
+}
+.team-stat-tile-stat .l .rk { color: var(--primary); font-weight: 700; margin-left: 4px }
+.team-form-line {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(60,190,100,.06);
+  border: 1px solid rgba(60,190,100,.25);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .78rem;
+  color: #9be36a
+}
+.team-form-line.cold {
+  background: rgba(255,89,16,.06);
+  border-color: rgba(255,89,16,.25);
+  color: #FF9A5C
+}
+.team-form-line.empty {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--muted)
+}
+.team-form-line .form-meta {
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: .65rem
+}
+@media (max-width: 767px) {
+  .team-stats-strip { grid-template-columns: 1fr }
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4,1fr);
@@ -1372,6 +1449,52 @@ nav button.active {
   color: var(--muted);
   text-transform: uppercase;
   margin-top: 2px
+}
+
+/* ── Stats v2: percentile bar + rank caption + tier-colored stat-box ───── */
+.pct-bar {
+  height: 3px;
+  background: rgba(255,255,255,.07);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden
+}
+.pct-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: #777;
+  transition: width .3s ease
+}
+.pct-bar--elite i { background: var(--primary) }
+.pct-bar--good i  { background: #3CBE64 }
+.pct-bar--mid i   { background: #FFC83C }
+.pct-bar--bad i   { background: #E04848 }
+.rank-caption {
+  margin-top: 5px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px
+}
+.rank-caption b { color: #fff; font-weight: 700; letter-spacing: .04em }
+/* Tier overlays. Elite uses team primary (per kickoff Q1 — active team primary,
+   not a hardcoded orange). color-mix lets us tint with the runtime --primary. */
+.stat-box--elite {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 18%, transparent), transparent);
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border))
+}
+.stat-box--good {
+  background: linear-gradient(135deg, rgba(60,190,100,.12), transparent);
+  border-color: rgba(60,190,100,.4)
+}
+.stat-box--bad {
+  background: linear-gradient(135deg, rgba(224,72,72,.10), transparent);
+  border-color: rgba(224,72,72,.35)
 }
 
 .stat-tabs {
