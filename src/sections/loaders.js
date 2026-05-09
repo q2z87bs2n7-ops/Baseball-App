@@ -803,42 +803,40 @@ export async function fetchLeagueLeaders(group){
   if(state.leagueLeadersFetchedAt[group]&&Date.now()-state.leagueLeadersFetchedAt[group]<FRESH_MS)return;
   var entries=LEADER_CATS_FOR_PERCENTILE.filter(function(e){return e.group===group;});
   if(!entries.length)return;
-  // v4.8.4: switched from /stats/leaders to /stats. The leader-board endpoint
-  // server-caps the per-category pool at ~100 entries even with limit=300, so
-  // the percentile denominator (`#X of 100 MLB`) misrepresented the true
-  // qualified cohort and any qualified-but-bottom-of-the-pack hitter showed up
-  // as rank "100 of 100". /stats?stats=season&playerPool=Qualifier returns the
-  // entire qualified pool in one shot — typically 150-250 mid-to-late season —
-  // and we sort + slice top-300 per category client-side.
-  var url=MLB_BASE+'/stats?stats=season&group='+group+'&season='+SEASON+'&gameType=R&playerPool=Qualifier&sportId=1&limit=2000';
+  // v4.8.8: reverted to /stats/leaders. v4.8.4 attempted /stats?stats=season
+  // with playerPool=Qualifier to bypass the leader-board ~100 cap, but the
+  // endpoint silently returned empty splits in production (param naming /
+  // schema mismatch suspected — `group` vs `statGroup`, `Qualifier` vs
+  // `Qualified`). Effect was that state.leagueLeaders never populated, which
+  // broke both the percentile UI in Stats and the League → Stat Leaders
+  // display. Restored the v4.7.6-era query; the per-category pool is again
+  // capped at ~100, accepted as the trade-off until we can verify a working
+  // alternative endpoint shape.
+  var seen={},cats=[];
+  entries.forEach(function(e){if(!seen[e.leaderCategory]){seen[e.leaderCategory]=true;cats.push(e.leaderCategory);}});
+  var url=MLB_BASE+'/stats/leaders?leaderCategories='+cats.join(',')+'&statGroup='+group+'&season='+SEASON+'&limit=300';
   var p=(async function(){
     try{
       var r=await fetch(url);
       var d=await r.json();
-      var splits=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
-      // Build a per-category leader array by sorting the qualified pool
-      // client-side. Multiple entries can share a leaderCategory across the
-      // hitting/pitching split (e.g. 'walks'); within a single group call the
-      // entries list is already group-scoped, so each leaderCategory key is
-      // assigned exactly once.
-      entries.forEach(function(entry){
-        var rows=splits.map(function(sp){
-          var raw=sp.stat?sp.stat[entry.key]:null;
-          var v=raw==null||raw===''?NaN:parseFloat(raw);
+      var blocks=d.leagueLeaders||[];
+      blocks.forEach(function(blk){
+        var entry=entries.find(function(e){return e.leaderCategory===blk.leaderCategory;});
+        if(!entry)return;
+        var leaders=(blk.leaders||[]).map(function(l){
+          var v=parseFloat(l.value);
           if(isNaN(v))return null;
           return{
-            playerId:sp.player&&sp.player.id,
-            playerName:sp.player&&sp.player.fullName,
-            teamId:sp.team&&sp.team.id,
-            teamAbbr:sp.team&&(sp.team.abbreviation||sp.team.name),
+            playerId:l.person&&l.person.id,
+            playerName:l.person&&l.person.fullName,
+            teamId:l.team&&l.team.id,
+            teamAbbr:l.team&&(l.team.abbreviation||l.team.name),
             value:v,
-            rank:null
+            rank:parseInt(l.rank,10)||null
           };
         }).filter(function(x){return x!==null;});
-        rows.sort(function(a,b){return entry.lowerIsBetter?a.value-b.value:b.value-a.value;});
-        if(rows.length>300)rows=rows.slice(0,300);
-        rows.forEach(function(l,i){l.rank=i+1;});
-        state.leagueLeaders[group+':'+entry.leaderCategory]=rows;
+        leaders.sort(function(a,b){return entry.lowerIsBetter?a.value-b.value:b.value-a.value;});
+        state.leagueLeaders[group+':'+blk.leaderCategory]=leaders;
       });
       state.leagueLeadersFetchedAt[group]=Date.now();
     }catch(e){/* silent: percentile UI will simply not render */}
