@@ -30,15 +30,23 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.7.2"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.7.2">
+<script defer src="dist/app.bundle.js?v=4.7.3"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.7.3">
 <style>
-/* In-app Daybreak splash — held until Pulse first-render or 4s safety timeout. Inline so it paints before stylesheet loads. */
-.app-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#F5B49A 0%,#E88A6F 18%,#C45A85 32%,#6F4368 48%,#2C3754 65%,#14233D 80%,#0a1929 100%);color:#FAFAF6;font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;transition:opacity .4s ease}
+/* In-app Daybreak splash — held until Pulse first-render or 4s safety timeout. Two-phase fade to avoid color/layout jump:
+   Phase 1 (0-400ms): gradient + glow + stars + mark/wordmark fade to 0 → splash becomes uniform dark (matches body bg).
+   Phase 2 (400-750ms): the now-uniform-dark container fades to 0 → fade is visually invisible since body underneath is same color.
+   Net effect: warm splash dims gracefully, then app shell appears on a dark canvas with no color whiplash. */
+.app-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background-color:var(--dark,#0a0f1e);color:#FAFAF6;font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;transition:opacity .35s ease .4s}
 .app-splash.dismissed{opacity:0;pointer-events:none}
-.app-splash__glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:130vw;aspect-ratio:1.6;background:radial-gradient(ellipse at 50% 0%,rgba(255,220,200,0.45) 0%,transparent 60%);pointer-events:none}
-.app-splash__stars{position:absolute;bottom:0;left:0;right:0;height:35vh;background-image:radial-gradient(rgba(255,255,255,0.5) 0.5px,transparent 0.7px),radial-gradient(rgba(245,200,74,0.3) 0.5px,transparent 0.7px);background-size:14px 11px,23px 19px;background-position:0 0,7px 5px;-webkit-mask-image:linear-gradient(180deg,transparent 0%,black 60%);mask-image:linear-gradient(180deg,transparent 0%,black 60%)}
-.app-splash__stack{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:22px}
+.app-splash__bg{position:absolute;inset:0;background:linear-gradient(180deg,#F5B49A 0%,#E88A6F 18%,#C45A85 32%,#6F4368 48%,#2C3754 65%,#14233D 80%,#0a0f1e 100%);transition:opacity .4s ease;pointer-events:none}
+.app-splash__glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:130vw;aspect-ratio:1.6;background:radial-gradient(ellipse at 50% 0%,rgba(255,220,200,0.45) 0%,transparent 60%);pointer-events:none;transition:opacity .4s ease}
+.app-splash__stars{position:absolute;bottom:0;left:0;right:0;height:35vh;background-image:radial-gradient(rgba(255,255,255,0.5) 0.5px,transparent 0.7px),radial-gradient(rgba(245,200,74,0.3) 0.5px,transparent 0.7px);background-size:14px 11px,23px 19px;background-position:0 0,7px 5px;-webkit-mask-image:linear-gradient(180deg,transparent 0%,black 60%);mask-image:linear-gradient(180deg,transparent 0%,black 60%);transition:opacity .4s ease}
+.app-splash__stack{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:22px;transition:opacity .4s ease}
+.app-splash.dismissed .app-splash__bg,
+.app-splash.dismissed .app-splash__glow,
+.app-splash.dismissed .app-splash__stars,
+.app-splash.dismissed .app-splash__stack{opacity:0}
 .app-splash__mark{width:42vmin;aspect-ratio:512/360}
 .app-splash__mark svg{width:100%;height:100%}
 .app-splash__wm{font-weight:900;font-size:6.5vmin;letter-spacing:.32em;text-indent:.32em;line-height:1}
@@ -47,6 +55,7 @@
 </head>
 <body>
 <div id="appSplash" class="app-splash" aria-hidden="true">
+  <div class="app-splash__bg"></div>
   <div class="app-splash__glow"></div>
   <div class="app-splash__stars"></div>
   <div class="app-splash__stack">
@@ -57,7 +66,7 @@
     <div class="app-splash__tag">LIVE · BASEBALL</div>
   </div>
 </div>
-<script>(function(){var startTime=Date.now();var MIN_SHOW=600;var MAX_HOLD=4000;var dismissed=false;function fadeOut(){var el=document.getElementById('appSplash');if(!el)return;el.classList.add('dismissed');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},500);}window.dismissAppSplash=function(){if(dismissed)return;dismissed=true;var remaining=Math.max(0,MIN_SHOW-(Date.now()-startTime));if(remaining>0)setTimeout(fadeOut,remaining);else fadeOut();};setTimeout(function(){window.dismissAppSplash();},MAX_HOLD);})();</script>
+<script>(function(){var startTime=Date.now();var MIN_SHOW=600;var MAX_HOLD=4000;var FADE_TOTAL=800;var dismissed=false;function fadeOut(){var el=document.getElementById('appSplash');if(!el)return;el.classList.add('dismissed');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},FADE_TOTAL);}window.dismissAppSplash=function(){if(dismissed)return;dismissed=true;var remaining=Math.max(0,MIN_SHOW-(Date.now()-startTime));if(remaining>0)setTimeout(fadeOut,remaining);else fadeOut();};setTimeout(function(){window.dismissAppSplash();},MAX_HOLD);})();</script>
 <header>
   <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span><span class="header-crumb" id="headerCrumb">PULSE</span></div>
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
@@ -119,7 +128,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.7.2</div>
+        <div class="settings-version">v4.7.3</div>
       </div>
     </div>
   </div>
