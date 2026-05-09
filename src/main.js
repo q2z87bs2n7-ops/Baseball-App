@@ -21,7 +21,7 @@ import {
   toggleSoundPanel, onSoundPanelClickOutside,
 } from './ui/sound.js';
 import {
-  setThemeCallbacks, applyTeamTheme, applyPulseMLBTheme, setPulseColorScheme, togglePulseColorScheme, updatePulseToggle,
+  setThemeCallbacks, applyTeamTheme, applyPulseMLBTheme, setPulseColorScheme, updatePulseToggle,
   toggleSettings, setupSettingsClickOutside, toggleInvert, buildThemeSelect, buildTeamSelect,
   switchTheme, switchThemeScope, switchTeam,
 } from './ui/theme.js';
@@ -142,8 +142,7 @@ import {
   setCarouselCallbacks, loadOnThisDayCache, loadYesterdayCache, loadTransactionsCache, loadHighLowCache,
 } from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
-import { openMoreSheet, closeMoreSheet, toggleMoreSheet, openPulseOverflow, closePulseOverflow, togglePulseOverflow, openPulseShortcuts, closePulseShortcuts, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
-import { installHideOnScroll, captureScroll, restoreScroll, installHashRouter, syncHash, installNavDotsRefresh, installNavLongPress } from './nav/behavior.js';
+import { openMoreSheet, closeMoreSheet, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
@@ -447,9 +446,6 @@ function showSection(id,btn){
   if(document.getElementById('liveView').classList.contains('active'))closeLiveView();
   if(id!=='league')clearLeagueTimer();
   if(id!=='home')clearHomeTimer();
-  // Capture scroll for the outgoing section before swapping
-  var prev=document.querySelector('.section.active');
-  if(prev)captureScroll(prev.id);
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
   document.getElementById(id).classList.add('active');
@@ -476,9 +472,6 @@ function showSection(id,btn){
   if(id==='stats'&&!state.rosterData.hitting.length){loadRoster();loadLeaders();}else if(id==='stats')loadLeaders();
   if(id==='league')loadLeagueView();
   if(id==='news')loadNews();
-  // Restore scroll position for incoming section + sync URL hash for deep linking
-  restoreScroll(id);
-  syncHash(id);
 }
 
 // --- NEXT GAME CARD ---
@@ -664,12 +657,6 @@ document.addEventListener('visibilitychange',function(){
 });
 
 installMoreSheetEscClose();
-installHideOnScroll();
-installHashRouter(showSection);
-installNavDotsRefresh(30000);
-installNavLongPress({
-  pulse: function(){ openPulseShortcuts(); }
-});
 
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&state.focusOverlayOpen) { closeFocusOverlay(); return; }
@@ -721,13 +708,11 @@ if('serviceWorker' in navigator){
 Object.assign(window, {
   // Navigation + section dispatch
   showSection,
-  openMoreSheet, closeMoreSheet, toggleMoreSheet,
-  openPulseOverflow, closePulseOverflow, togglePulseOverflow,
-  openPulseShortcuts, closePulseShortcuts,
+  openMoreSheet, closeMoreSheet,
   // Settings + theme + team
   switchTeam, switchTheme, switchThemeScope, toggleSettings, toggleInvert,
   togglePush, toggleRadio, toggleDevTools, toggleMyTeamLens, toggleSoundPanel,
-  setPulseColorScheme, togglePulseColorScheme, setSoundPref,
+  setPulseColorScheme, setSoundPref,
   // Collection + Yesterday Recap + Radio Check overlays
   openCollection, closeCollection, openRadioCheck, closeRadioCheck,
   openYesterdayRecap, closeYesterdayRecap,

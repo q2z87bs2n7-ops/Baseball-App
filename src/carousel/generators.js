@@ -48,11 +48,10 @@ function genHRStories(){
       id='hr_'+item.gamePk+'_'+item.ts.getTime();
       var pitcherStr=item.data.pitcherName?' off '+item.data.pitcherName:'';
       var distStr=item.data.distance?item.data.distance+'ft ':'';
-      var speedStr=item.data.speed?' at '+item.data.speed+' mph':'';
       var innStr=item.data.inning?' in the '+ordinal(item.data.inning)+' inning':'';
       var hrNumMatch=(item.data.desc||'').match(/\((\d+)\)/);
       var hrTag=hrNumMatch?' (HR #'+hrNumMatch[1]+' this season)':'';
-      headline=bname+' hit a '+distStr+'homer'+speedStr+pitcherStr+innStr+hrTag;
+      headline=bname+' hit a '+distStr+'homer'+pitcherStr+innStr+hrTag;
       priority=state.devTuning.hr_priority;
     } else {
       id='hr_multi_'+bid+'_'+entries[0].item.gamePk+'_'+count;

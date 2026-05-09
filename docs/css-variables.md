@@ -42,9 +42,7 @@ All CSS variables are **runtime-computed** — set dynamically by `applyTeamThem
 
 ```css
 /* Dimension constants */
---header-h      /* 60px desktop — used by Pulse ticker sticky offset and soundPanel top position.
-                   Overridden in @media(max-width:480px) to `calc(42px + env(safe-area-inset-top))`
-                   so #gameTicker / .section-bar stick flush below the slimmer mobile sticky header (v4.4). */
+--header-h      /* 60px — used by Pulse ticker sticky offset and soundPanel top position */
 --ticker-h      /* 50px — min-height of #gameTicker */
 --mockbar-h     /* 48px — height of #mockBar */
 
@@ -125,7 +123,7 @@ Single `@media` block at end of `styles.css`.
 | `≤1024px` (iPad landscape + portrait) | `.grid3` and `.live-grid` collapse to 1 col; `.matchup-grid` goes 3→2 cols; header wraps; `.main` padding reduced to 12px |
 | `≤1024px and ≥481px` (tablet band) | header `flex-wrap:nowrap`; `.logo span` hidden; nav icon-only (`.nav-label` hidden); header `z-index:100` **must stay 100** — sticky header stacking context; `.settings-panel` (z-index:200) would render under `#gameTicker` (z-index:90) if header drops below 100 |
 | `≤767px` (portrait / phone) | `.grid2` collapses to 1 col; `.card-cap` shrinks to 40px; `.series-ghost` shrinks to 220px |
-| `≤480px` (iPhone) | `html,body{overflow-x:hidden}` (both required — iOS Safari independent scroll contexts); **header is `position:sticky` at `calc(42px + env(safe-area-inset-top))`** (v4.4 — was static and scrolled away in v4.2/v4.3); `--header-h` overridden to match; nav becomes fixed bottom bar with 5 visible buttons + a "More" sheet for News/Standings/Stats (v4.4); nav labels shown at 11px (raised from 9.5px in v4.4 to clear iOS HIG); `.team-chip` hidden; `.game-big{padding:16px}`; `.live-view` side padding zeroed; `.ng-grid{gap:8px}`, `.ng-name{font-size:18px}`, `.ng-score{font-size:26px}` (long team names overflow on 375–390px phones); `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.cal-day` min-height 44px; `padding-bottom:calc(72px + env(safe-area-inset-bottom))`; `.stat-tabs`/`.boxscore-tabs` switch to horizontal-scroll with mask-image fade; `.settings-panel` becomes a bottom sheet (`position:fixed; bottom:0`). |
+| `≤480px` (iPhone) | `html,body{overflow-x:hidden}` (both required — iOS Safari independent scroll contexts); nav becomes fixed bottom bar with short labels (`.nav-label` shown at 9.5px); `.team-chip` hidden; header scrolls away; `.game-big{padding:16px}`; `.live-view` side padding zeroed; `.ng-grid{gap:8px}`, `.ng-name{font-size:18px}`, `.ng-score{font-size:26px}` (long team names overflow on 375–390px phones); `.stat-grid` → 2-col; `.game-notes-grid`, `.media-layout`, `.league-leaders-grid` → 1-col; `.cal-day` min-height 44px; `padding-bottom:calc(72px + env(safe-area-inset-bottom))` |
 
 ## Layout utility classes
 
