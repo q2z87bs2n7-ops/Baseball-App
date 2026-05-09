@@ -140,6 +140,21 @@ src/
     oauth.js                        — signInWithGitHub, signInWithEmail.
     session.js                      — signOut, updateSyncUI, showSignInCTA.
 
+  nav/                              — Mobile nav behavioral helpers (v4.4).
+                                     All behaviors are mobile-only, gated by
+                                     matchMedia('(max-width: 480px)').
+    behavior.js                     — installHideOnScroll (bottom nav hides on
+                                     scroll-down), captureScroll/restoreScroll
+                                     (per-section scroll memory), installHashRouter
+                                     + navTo + syncHash (hashchange routing,
+                                     deep links), setNavDot/clearNavDot/
+                                     refreshNavDots/installNavDotsRefresh
+                                     (live-state dots), attachLongPress +
+                                     installNavLongPress (long-press shortcuts).
+    sheet.js                        — openMoreSheet/closeMoreSheet/toggleMoreSheet
+                                     (mobile More sheet for News/Standings/Stats),
+                                     plus #pulseTopBar overflow sheet open/close.
+
   sections/
     loaders.js                      — All section loaders: loadTodayGame,
                                      loadNextGame, loadHomeYoutubeWidget,
@@ -188,8 +203,9 @@ build.mjs                           — esbuild driver. `npm run build` →
                                      `npm run watch` for dev.
 ```
 
-**Total:** ~30 modules, ~6,500 LOC distributed across `src/`. `main.js` is now
-~680 lines of orchestration glue. Original monolith was 7,127 lines.
+**Total:** ~32 modules, ~6,800 LOC distributed across `src/`. `main.js` is now
+~770 lines of orchestration glue (grew with v4.4 nav wiring). Original monolith
+was 7,127 lines.
 
 ---
 
@@ -198,11 +214,11 @@ build.mjs                           — esbuild driver. `npm run build` →
 Modules import only from strictly lower layers — never from a higher layer or peer.
 
 ```
-Layer 6:  main.js                 (boot IIFE, event listeners, SW register)
-Layer 5:  bridge in main.js       (Object.assign(window, {...}) at the bottom)
-Layer 4:  sections/, dev/, demo/  (UI section loaders + dev tools)
+Layer 6:  main.js                       (boot IIFE, event listeners, SW register)
+Layer 5:  bridge in main.js             (Object.assign(window, {...}) at the bottom)
+Layer 4:  sections/, dev/, demo/, nav/  (UI section loaders, dev tools, mobile nav)
 Layer 3:  carousel/, focus/, feed/, collection/, cards/, radio/, push/
-Layer 2:  pulse/, ui/, data/      (polling, theme, helpers)
+Layer 2:  pulse/, ui/, data/            (polling, theme, helpers)
 Layer 1:  state.js, config/, devtools-feed/, utils/, auth/  (foundation)
 ```
 
