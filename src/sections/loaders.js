@@ -986,10 +986,15 @@ export async function selectPlayer(id,type){
     var group=type==='pitching'?'pitching':type==='fielding'?'fielding':'hitting';
     // Fire player-stats fetch + league-leaders fetch in parallel. League leaders
     // are TTL-cached per group and feed percentile bars in renderPlayerStats.
+    // Game log is also kicked off (Sprint 2) for the sparkline + Game Log tab —
+    // not awaited; onGameLogResolved repaints when it lands.
     var [r]=await Promise.all([
       fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group),
       group==='fielding'?Promise.resolve():fetchLeagueLeaders(group)
     ]);
+    if(group!=='fielding'){
+      fetchGameLog(id, group).then(function(){ onGameLogResolved(id, group); });
+    }
     var d=await r.json();
     var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;
     if(!stats){
@@ -1004,10 +1009,326 @@ export async function selectPlayer(id,type){
   }
 }
 
-// Each box descriptor: { v: display string, l: label, k: percentile-lookup
-// key (null = skip percentile), raw: raw numeric value for the lookup }.
-// PA / IP / W-L / fielding boxes skip percentile (counting/threshold/composite).
+// Player Stats card now hosts a 4-tab layout (Overview / Splits / Game Log /
+// Advanced). renderPlayerStats is the orchestrator: it caches the current
+// player's season stat, syncs the tab buttons, and emits all four panels with
+// only the active one visible. Tab switches are cheap class-flip operations
+// (see switchPlayerStatsTab) — no re-fetch required between Overview and the
+// placeholders, and per-tab fetchers (gameLog, splits, arsenal) are wired in
+// later Sprint-2 steps.
 function renderPlayerStats(s,group){
+  state.selectedPlayerStat={ stat: s, group: group };
+  var activeTab=state.activeStatsTab||'overview';
+  // Fielding only has Overview content; hide the other tab buttons.
+  var fieldingMode=group==='fielding';
+  if(fieldingMode)activeTab='overview';
+  document.querySelectorAll('#playerTabs .player-tab').forEach(function(b){
+    var t=b.dataset.tab;
+    b.style.display=fieldingMode&&t!=='overview'?'none':'';
+    b.classList.toggle('active', t===activeTab);
+  });
+  var html='<div class="player-tab-panels">'+
+    '<div class="player-tab-panel" data-tab="overview"'+(activeTab!=='overview'?' hidden':'')+'>'+renderOverviewTab(s,group)+'</div>'+
+    '<div class="player-tab-panel" data-tab="splits"'+(activeTab!=='splits'?' hidden':'')+'>'+renderSplitsPlaceholder()+'</div>'+
+    '<div class="player-tab-panel" data-tab="gamelog"'+(activeTab!=='gamelog'?' hidden':'')+'>'+renderGameLogPlaceholder()+'</div>'+
+    '<div class="player-tab-panel" data-tab="advanced"'+(activeTab!=='advanced'?' hidden':'')+'>'+renderAdvancedPlaceholder(group)+'</div>'+
+    '</div>';
+  document.getElementById('playerStats').innerHTML=html;
+}
+
+// Switch the active Player Stats tab. Persisted to localStorage. Re-uses the
+// cached stat from state.selectedPlayerStat — no /people refetch. Per-tab
+// lazy renderers (Game Log / Splits / Arsenal) fire the first time their tab
+// is shown.
+export function switchPlayerStatsTab(tab,btn){
+  if(['overview','splits','gamelog','advanced'].indexOf(tab)<0)return;
+  state.activeStatsTab=tab;
+  if(typeof localStorage!=='undefined')localStorage.setItem('mlb_stats_tab',tab);
+  document.querySelectorAll('#playerTabs .player-tab').forEach(function(b){b.classList.toggle('active', b.dataset.tab===tab);});
+  document.querySelectorAll('.player-tab-panel').forEach(function(p){
+    if(p.dataset.tab===tab)p.removeAttribute('hidden');
+    else p.setAttribute('hidden','');
+  });
+  // Lazy renderers
+  var sel = state.selectedPlayer;
+  var pid = sel && sel.person && sel.person.id;
+  var group = state.selectedPlayerStat ? state.selectedPlayerStat.group : (state.currentRosterTab||'hitting');
+  if(!pid) return;
+  if(tab==='gamelog'){
+    // Trigger fetch if the cache is missing for this player+group
+    var cacheKey = pid + ':' + (group==='fielding'?'hitting':group);
+    if(!state.gameLogCache[cacheKey]){
+      fetchGameLog(pid, group).then(function(){ onGameLogResolved(pid, group); });
+    } else {
+      renderGameLogTab(pid, group);
+    }
+  }
+}
+
+// Empty-state placeholders. Replaced by real renderers in subsequent sprint steps.
+function renderSplitsPlaceholder(){
+  return '<div class="tab-empty-state"><div class="tab-empty-icon">📊</div><h4>Splits panel</h4><p>vs LHP / vs RHP, Home / Away, RISP, late &amp; close, high leverage. Coming in Sprint 2 / Step 4.</p></div>';
+}
+function renderGameLogPlaceholder(){
+  return '<div class="tab-empty-state"><div class="tab-empty-icon">📅</div><h4>Last-10 game log</h4><p>Loading game log...</p></div>';
+}
+
+// 24h TTL on the gameLog cache — game log only changes once per game-day per
+// player, so cheap to re-use across tab toggles.
+const GAMELOG_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Fetch and cache the per-game log for a player. Used by the Game Log tab and
+// by the sparkline rendered inside the Overview hero panel. Returns the array
+// of game splits or null on failure.
+async function fetchGameLog(playerId, group){
+  if(!playerId) return null;
+  if(group==='fielding') group='hitting';
+  var cacheKey = playerId + ':' + group;
+  var existing = state.gameLogCache[cacheKey];
+  if(existing && Date.now() - existing.ts < GAMELOG_TTL_MS) return existing.games;
+  try {
+    var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=gameLog&season='+SEASON+'&group='+group);
+    var d = await r.json();
+    var games = (d.stats && d.stats[0] && d.stats[0].splits) ? d.stats[0].splits : [];
+    state.gameLogCache[cacheKey] = { games: games, ts: Date.now() };
+    return games;
+  } catch(e) {
+    return null;
+  }
+}
+
+// Renders the Game Log tab from cached data. Tap a card → opens live view.
+// Cards are color-bordered W/L; HR-game cards get a purple accent bar.
+function renderGameLogTab(playerId, group){
+  if(group==='fielding') group='hitting';
+  var cacheKey = playerId + ':' + group;
+  var cached = state.gameLogCache[cacheKey];
+  var panelEl = document.querySelector('.player-tab-panel[data-tab="gamelog"]');
+  if(!panelEl) return;
+  if(!cached || !cached.games){
+    panelEl.innerHTML = renderGameLogPlaceholder();
+    return;
+  }
+  var games = cached.games.slice().reverse().slice(0, 10); // last 10 most recent first
+  if(!games.length){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📅</div><h4>No games yet</h4><p>This player has no '+SEASON+' game log entries.</p></div>';
+    return;
+  }
+  // Aggregate L10 summary (re-derived client-side; matches the deck's pattern)
+  var sum = { ab:0, h:0, hr:0, rbi:0, bb:0, hbp:0, sf:0, tb:0, ip:0, er:0, k:0, bbA:0, hA:0 };
+  games.forEach(function(g){
+    var st = g.stat || {};
+    if(group==='hitting'){
+      sum.ab += parseInt(st.atBats,10)||0;
+      sum.h += parseInt(st.hits,10)||0;
+      sum.hr += parseInt(st.homeRuns,10)||0;
+      sum.rbi += parseInt(st.rbi,10)||0;
+      sum.bb += parseInt(st.baseOnBalls,10)||0;
+      sum.hbp += parseInt(st.hitByPitch,10)||0;
+      sum.sf += parseInt(st.sacFlies,10)||0;
+      sum.tb += parseInt(st.totalBases,10)||0;
+    } else {
+      sum.ip += parseFloat(st.inningsPitched)||0;
+      sum.er += parseInt(st.earnedRuns,10)||0;
+      sum.k += parseInt(st.strikeOuts,10)||0;
+      sum.bbA += parseInt(st.baseOnBalls,10)||0;
+      sum.hA += parseInt(st.hits,10)||0;
+    }
+  });
+  var summaryHtml='';
+  if(group==='hitting'){
+    var avg = sum.ab>0 ? sum.h/sum.ab : 0;
+    var pa = sum.ab + sum.bb + sum.hbp + sum.sf;
+    var obp = pa>0 ? (sum.h+sum.bb+sum.hbp)/pa : 0;
+    var slg = sum.ab>0 ? sum.tb/sum.ab : 0;
+    var fmtR = function(n){ var s=n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; };
+    summaryHtml = '<div class="gamelog-summary">'+
+      '<div class="stat-box"><div class="stat-val">'+fmtR(avg)+'</div><div class="stat-lbl">L10 AVG</div></div>'+
+      '<div class="stat-box"><div class="stat-val">'+sum.hr+'</div><div class="stat-lbl">L10 HR</div></div>'+
+      '<div class="stat-box"><div class="stat-val">'+sum.rbi+'</div><div class="stat-lbl">L10 RBI</div></div>'+
+      '<div class="stat-box"><div class="stat-val">'+fmtR(obp+slg)+'</div><div class="stat-lbl">L10 OPS</div></div>'+
+      '</div>';
+  } else {
+    var era = sum.ip>0 ? (sum.er*9)/sum.ip : 0;
+    var whip = sum.ip>0 ? (sum.bbA+sum.hA)/sum.ip : 0;
+    summaryHtml = '<div class="gamelog-summary">'+
+      '<div class="stat-box"><div class="stat-val">'+era.toFixed(2)+'</div><div class="stat-lbl">L10 ERA</div></div>'+
+      '<div class="stat-box"><div class="stat-val">'+sum.k+'</div><div class="stat-lbl">L10 K</div></div>'+
+      '<div class="stat-box"><div class="stat-val">'+whip.toFixed(2)+'</div><div class="stat-lbl">L10 WHIP</div></div>'+
+      '<div class="stat-box"><div class="stat-val">'+sum.ip.toFixed(1)+'</div><div class="stat-lbl">L10 IP</div></div>'+
+      '</div>';
+  }
+  // Mini-cards
+  var html = '<div class="gamelog-strip">';
+  games.forEach(function(g){
+    var st = g.stat || {};
+    var d = g.date ? new Date(g.date+'T12:00:00Z') : null;
+    var dateLabel = d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+    var oppId = g.opponent && g.opponent.id;
+    var oppD = oppId ? tcLookup(oppId) : { abbr:'?', primary:'#444' };
+    var atVs = g.isHome===true ? 'vs' : (g.isHome===false ? '@' : '');
+    var oppLabel = atVs + ' ' + (oppD.abbr||'?');
+    var resultCls = '';
+    if(typeof g.gameResult === 'string'){
+      if(g.gameResult.charAt(0)==='W') resultCls = ' win';
+      else if(g.gameResult.charAt(0)==='L') resultCls = ' loss';
+    }
+    var hr = parseInt(st.homeRuns,10)||0;
+    var hrCls = hr>0 ? ' hr' : '';
+    var lineLabel='';
+    if(group==='hitting'){
+      var ab = parseInt(st.atBats,10)||0;
+      var h = parseInt(st.hits,10)||0;
+      lineLabel = h+'/'+ab + (hr>0 ? ' · '+(hr>1?hr+'HR':'HR') : '');
+    } else {
+      var ip = parseFloat(st.inningsPitched)||0;
+      var k = parseInt(st.strikeOuts,10)||0;
+      var er = parseInt(st.earnedRuns,10)||0;
+      lineLabel = ip.toFixed(1)+'IP · '+k+'K · '+er+'ER';
+    }
+    var clickAttr = g.game && g.game.gamePk ? ' onclick="showLiveGame('+g.game.gamePk+')"' : '';
+    html += '<div class="glog-item'+resultCls+hrCls+'"'+clickAttr+'>'+
+      '<div class="glog-d">'+dateLabel+'</div>'+
+      '<div class="glog-o">'+oppLabel+'</div>'+
+      '<div class="glog-s">'+lineLabel+'</div>'+
+      '</div>';
+  });
+  html += '</div>';
+  panelEl.innerHTML = html + summaryHtml;
+}
+
+// Compute a rolling-window aggregate for the hero stat from cached gameLog.
+// For hitting: rolling AVG (or OPS if heroKey === 'ops'). For pitching:
+// rolling ERA. Returns array of {x, y} objects oldest-first; null if no data.
+function computeRollingSeries(games, group, heroKey, windowSize){
+  if(!games || !games.length) return null;
+  windowSize = windowSize || 7;
+  var ordered = games.slice().reverse(); // oldest → newest
+  var out = [];
+  if(group==='hitting'){
+    var window = [];
+    var sumAB=0, sumH=0, sumPA=0, sumOBP_n=0, sumTB=0;
+    for(var i=0;i<ordered.length;i++){
+      var st = ordered[i].stat || {};
+      var ab = parseInt(st.atBats,10)||0;
+      var h = parseInt(st.hits,10)||0;
+      var pa = parseInt(st.plateAppearances,10)||(ab + (parseInt(st.baseOnBalls,10)||0) + (parseInt(st.hitByPitch,10)||0) + (parseInt(st.sacFlies,10)||0));
+      var bbHbp = (parseInt(st.baseOnBalls,10)||0) + (parseInt(st.hitByPitch,10)||0);
+      var tb = parseInt(st.totalBases,10)||0;
+      window.push({ ab:ab, h:h, pa:pa, bbHbp:bbHbp, tb:tb });
+      sumAB+=ab; sumH+=h; sumPA+=pa; sumOBP_n+=h+bbHbp; sumTB+=tb;
+      if(window.length>windowSize){
+        var drop = window.shift();
+        sumAB-=drop.ab; sumH-=drop.h; sumPA-=drop.pa; sumOBP_n-=drop.h+drop.bbHbp; sumTB-=drop.tb;
+      }
+      // Emit a point every iteration once we have at least 2 games' worth of
+      // data — early-season players still get a meaningful line.
+      if(window.length>=2){
+        var avg = sumAB>0 ? sumH/sumAB : 0;
+        var obp = sumPA>0 ? sumOBP_n/sumPA : 0;
+        var slg = sumAB>0 ? sumTB/sumAB : 0;
+        var y = heroKey==='ops' ? (obp+slg) : avg;
+        out.push({ x: i, y: y });
+      }
+    }
+  } else {
+    // pitching: rolling ERA
+    var w = [];
+    var sumIP=0, sumER=0;
+    for(var j=0;j<ordered.length;j++){
+      var ps = ordered[j].stat || {};
+      var ip = parseFloat(ps.inningsPitched)||0;
+      var er = parseInt(ps.earnedRuns,10)||0;
+      w.push({ ip:ip, er:er });
+      sumIP+=ip; sumER+=er;
+      if(w.length>windowSize){
+        var dr = w.shift();
+        sumIP-=dr.ip; sumER-=dr.er;
+      }
+      if(w.length>=2){
+        var era = sumIP>0 ? (sumER*9)/sumIP : 0;
+        out.push({ x: j, y: era });
+      }
+    }
+  }
+  return out.length ? out : null;
+}
+
+// Build an SVG sparkline from a series of {x,y} points. Inverts y for pitching
+// (lower-is-better → lower line position is "better" visually). Adds a today-
+// marker dot at the rightmost point and renders a faint area fill below.
+function renderSparklineSVG(series, opts){
+  if(!series || series.length<2) return '';
+  opts = opts || {};
+  var w = opts.width || 320;
+  var h = opts.height || 56;
+  var lowerIsBetter = !!opts.lowerIsBetter;
+  var ys = series.map(function(p){ return p.y; });
+  var ymin = Math.min.apply(null, ys);
+  var ymax = Math.max.apply(null, ys);
+  if(ymax === ymin){ ymax = ymin + 0.001; }
+  var pad = 4;
+  var step = (w - pad*2) / Math.max(1, series.length-1);
+  function plotY(y){
+    var t = (y - ymin) / (ymax - ymin);
+    return lowerIsBetter ? (pad + t*(h - pad*2)) : (h - pad - t*(h - pad*2));
+  }
+  var pts = series.map(function(p, idx){ return [pad + idx*step, plotY(p.y)]; });
+  var d = pts.map(function(pt, i){ return (i===0?'M':'L') + pt[0].toFixed(1) + ',' + pt[1].toFixed(1); }).join(' ');
+  var area = d + ' L' + pts[pts.length-1][0].toFixed(1) + ',' + h + ' L' + pts[0][0].toFixed(1) + ',' + h + ' Z';
+  var last = pts[pts.length-1];
+  var first = ys[0];
+  var lastY = ys[ys.length-1];
+  var diff = lowerIsBetter ? (first - lastY) : (lastY - first);
+  var trendCls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+  var trendArrow = trendCls==='up' ? '▲' : trendCls==='down' ? '▼' : '▬';
+  var dec = opts.decimals == null ? 3 : opts.decimals;
+  var absStr = Math.abs(diff).toFixed(dec);
+  if(dec >= 3 && absStr.charAt(0) === '0') absStr = absStr.slice(1);
+  var sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
+  var diffStr = sign + absStr;
+  return ''+
+    '<svg class="hero-spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" width="100%" height="'+h+'">'+
+      '<defs><linearGradient id="spk-grad" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0%" stop-color="currentColor" stop-opacity=".4"/>'+
+        '<stop offset="100%" stop-color="currentColor" stop-opacity="0"/>'+
+      '</linearGradient></defs>'+
+      '<path class="hero-spark-area" d="'+area+'" fill="url(#spk-grad)"/>'+
+      '<path class="hero-spark-line" d="'+d+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+      '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3.5" fill="#fff" stroke="currentColor" stroke-width="2"/>'+
+    '</svg>'+
+    '<div class="hero-spark-meta"><span>'+series.length+'g rolling</span><span class="hero-spark-trend '+trendCls+'">'+trendArrow+' '+diffStr+'</span></div>';
+}
+
+// After the gameLog fetch lands, re-render Game Log + Overview (sparkline) for
+// the active player when the panels are still displayed.
+function onGameLogResolved(playerId, group){
+  if(!state.selectedPlayer || !state.selectedPlayer.person) return;
+  if(state.selectedPlayer.person.id !== playerId) return;
+  if(group==='fielding') group='hitting';
+  var stat = state.selectedPlayerStat && state.selectedPlayerStat.stat;
+  if(stat && state.selectedPlayerStat.group !== 'fielding'){
+    // Refresh Overview's sparkline
+    var ovEl = document.querySelector('.player-tab-panel[data-tab="overview"]');
+    if(ovEl) ovEl.innerHTML = renderOverviewTab(stat, state.selectedPlayerStat.group);
+  }
+  // Refresh Game Log panel content
+  renderGameLogTab(playerId, group);
+}
+function renderAdvancedPlaceholder(group){
+  if(group==='hitting'){
+    return '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Statcast / Advanced</h4><p>xwOBA, exit velo, barrel %, hard-hit %, sprint speed. Coming in Sprint 3.</p></div>';
+  }
+  if(group==='pitching'){
+    return '<div class="tab-empty-state"><div class="tab-empty-icon">🎯</div><h4>Pitch arsenal</h4><p>Loading pitch arsenal...</p></div>';
+  }
+  return '<div class="tab-empty-state"><div class="tab-empty-icon">⚾</div><h4>Advanced</h4><p>Not available for fielding view.</p></div>';
+}
+
+// Renders the Overview panel — the existing hero + grid layout pulled out of
+// the old monolithic renderPlayerStats so the 4-tab orchestrator can compose
+// each panel independently. Returns an HTML string.
+function renderOverviewTab(s,group){
   var pid=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id;
   var jerseyOverlay=(state.selectedPlayer&&state.selectedPlayer.jerseyNumber)?'<div class="headshot-jersey-pill">#'+state.selectedPlayer.jerseyNumber+'</div>':'';
   var html=pid?'<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current">'+jerseyOverlay+'</div>':'';
@@ -1079,6 +1400,25 @@ function renderPlayerStats(s,group){
       var topPct=Math.max(1,Math.round(hPInfo.rank/hPInfo.total*100));
       tierPill='<span class="hero-tier-pill">★ Elite · Top '+topPct+'%</span>';
     }
+    // Sparkline — pulled from gameLog cache populated in selectPlayer. Falls
+    // back to a "still loading" hint when the fetch hasn't resolved yet;
+    // onGameLogResolved repaints once data lands.
+    var heroSparkHtml='';
+    var glogKey = (state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id) + ':' + group;
+    var glogCached = state.gameLogCache[glogKey];
+    if(glogCached && glogCached.games && glogCached.games.length){
+      var rollingKey = group==='hitting' ? (hb.l==='OPS'?'ops':'avg') : 'era';
+      var series = computeRollingSeries(glogCached.games, group, rollingKey, 7);
+      if(series && series.length>=2){
+        var sparkClass = hTier ? 'hero-spark-wrap hero-spark-wrap--'+hTier : 'hero-spark-wrap';
+        heroSparkHtml = '<div class="'+sparkClass+'">'+
+          renderSparklineSVG(series,{ lowerIsBetter: !!(hEntry&&hEntry.lowerIsBetter), decimals: hDec })+
+          '</div>';
+      }
+    }
+    if(!heroSparkHtml){
+      heroSparkHtml = '<div class="hero-panel-trend"><span class="hero-trend-pending">trend loading…</span></div>';
+    }
     html+='<div class="hero-panel'+(hTier?' hero-panel--'+hTier:'')+'">'+
       '<div class="hero-panel-stat">'+
         '<div class="hero-panel-meta">'+heroMeta+'</div>'+
@@ -1089,7 +1429,7 @@ function renderPlayerStats(s,group){
       '<div class="hero-panel-context">'+
         (hPInfo?'<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>':'')+
         (hPInfo?'<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>':'')+
-        '<div class="hero-panel-trend"><span class="hero-trend-pending">7-day trend · coming Sprint 2</span></div>'+
+        heroSparkHtml+
       '</div>'+
     '</div>';
     boxes=boxes.slice(1);
@@ -1116,7 +1456,7 @@ function renderPlayerStats(s,group){
           chip+
           '</div>';
   });
-  document.getElementById('playerStats').innerHTML=html+'</div>';
+  return html+'</div>';
 }
 
 // Toggle the vs-league basis between MLB-wide avg and active team's roster avg.

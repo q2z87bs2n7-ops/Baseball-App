@@ -1767,6 +1767,113 @@ nav button.active {
   transition: width .3s ease
 }
 
+/* ── Stats v2 / Sprint 2: Player Stats tabs (Overview / Splits / Game Log / Advanced) ── */
+.player-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0 6px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none
+}
+.player-tabs::-webkit-scrollbar { display: none }
+.player-tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px 12px;
+  margin-bottom: -1px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s ease, border-color .15s ease
+}
+.player-tab:hover { color: var(--text) }
+.player-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent)
+}
+.player-tab-panels { margin-top: 6px }
+.player-tab-panel[hidden] { display: none }
+.tab-empty-state {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--card2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  margin-top: 14px
+}
+.tab-empty-state .tab-empty-icon { font-size: 1.6rem; margin-bottom: 8px }
+.tab-empty-state h4 { color: var(--text); margin: 0 0 6px; font-size: .95rem; font-weight: 700 }
+.tab-empty-state p { margin: 0; font-size: .8rem; line-height: 1.5 }
+
+/* ── Stats v2 / Sprint 2: Game Log strip ─────────────────────────────────── */
+.gamelog-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px
+}
+@media (max-width: 767px) { .gamelog-strip { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.glog-item {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: .72rem;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0
+}
+.glog-item:hover { transform: translateY(-1px); border-color: var(--accent) }
+.glog-item.win  { border-left-color: #3CBE64 }
+.glog-item.loss { border-left-color: #E04848 }
+.glog-item.hr   { box-shadow: 0 0 0 1px #A064FF inset }
+.glog-d { color: var(--muted); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600 }
+.glog-o { color: var(--text); font-size: .78rem; font-weight: 700 }
+.glog-s { color: var(--accent); font-size: .72rem; font-weight: 700 }
+.gamelog-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px
+}
+@media (max-width: 767px) { .gamelog-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+/* ── Stats v2 / Sprint 2: Hero sparkline ─────────────────────────────────── */
+.hero-spark-wrap {
+  position: relative;
+  color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 4px
+}
+.hero-spark-wrap--elite { color: var(--primary) }
+.hero-spark-wrap--good  { color: #3CBE64 }
+.hero-spark-wrap--bad   { color: #E04848 }
+.hero-spark { display: block; width: 100%; height: 56px }
+.hero-spark-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 600
+}
+.hero-spark-trend.up   { color: #6FDC8E }
+.hero-spark-trend.down { color: #FF8A8A }
+.hero-spark-trend.flat { color: var(--muted) }
+
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {
   border-style: dashed !important;

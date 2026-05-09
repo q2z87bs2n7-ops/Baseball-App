@@ -38,6 +38,15 @@ export const state = {
   // Persisted prefs
   qualifiedOnly: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_qualified_only') === '0') ? false : true,
   vsLeagueBasis: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_vs_basis')) || 'mlb',
+  activeStatsTab: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_tab')) || 'overview',
+  // Game Log + Sparkline cache: playerId → { games: [...], ts }
+  gameLogCache: {},
+  // Sprint-2 cache: cached current player season stat for cheap tab re-renders
+  selectedPlayerStat: null,
+  // Pitch arsenal cache: playerId → { arsenal: [...], totalPitches, ts }
+  pitchArsenalCache: {},
+  // Splits cache: playerId → { splits: {...}, ts }
+  statSplitsCache: {},
 
   // ── News State ───────────────────────────────────────────────────────────
   newsFeedMode: 'mlb',
