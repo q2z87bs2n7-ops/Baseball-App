@@ -8,7 +8,7 @@ import {
   tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
   etDateStr, etDatePlus,
 } from '../utils/format.js';
-import { computePercentile, tierFromPercentile, pctBar, rankCaption } from '../utils/stats-math.js';
+import { computePercentile, tierFromPercentile, pctBar, rankCaption, deltaChip, leagueAverage, teamAverage, leaderEntry } from '../utils/stats-math.js';
 import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from '../utils/news.js';
 
 // ── Callbacks (injected by main.js) ──────────────────────────────────────────
@@ -481,7 +481,20 @@ export function loadLeaders(){
   var sorted=data.filter(function(s){return s.stat[stat]!=null&&s.stat[stat]!=='';}).slice().sort(function(a,b){return isAsc?parseFloat(a.stat[stat])-parseFloat(b.stat[stat]):parseFloat(b.stat[stat])-parseFloat(a.stat[stat]);}).slice(0,10);
   if(!sorted.length){document.getElementById('leaderList').innerHTML='<div style="color:var(--muted);padding:12px;font-size:.85rem">No data for this stat yet</div>';return;}
   var html='';
-  sorted.forEach(function(s,i){var val=parseFloat(s.stat[stat]),display=val<1&&val>0?val.toFixed(3).slice(1):Number.isInteger(val)?val:val.toFixed(2);html+='<div class="player-item" onclick="selectPlayer('+s.player.id+',\''+group+'\')">'+'<div style="display:flex;align-items:center;gap:10px"><span style="color:var(--accent);font-weight:800;width:18px;font-size:.85rem">'+(i+1)+'</span><div><div class="player-name" style="font-size:.85rem">'+(s.player.fullName||'—')+'</div><div class="player-pos">'+(s.position&&s.position.abbreviation?s.position.abbreviation:'')+'</div></div></div><div style="font-size:1.1rem;font-weight:800;color:var(--accent)">'+display+'</div></div>';});
+  sorted.forEach(function(s,i){
+    var val=parseFloat(s.stat[stat]),display=val<1&&val>0?val.toFixed(3).slice(1):Number.isInteger(val)?val:val.toFixed(2);
+    var badge=group==='hitting'?hotColdBadge(s.player.id):'';
+    html+='<div class="player-item" onclick="selectPlayer('+s.player.id+',\''+group+'\')">'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<span style="color:var(--accent);font-weight:800;width:18px;font-size:.85rem">'+(i+1)+'</span>'+
+        '<div>'+
+          '<div class="player-name" style="font-size:.85rem">'+(s.player.fullName||'—')+badge+'</div>'+
+          '<div class="player-pos">'+(s.position&&s.position.abbreviation?s.position.abbreviation:'')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="font-size:1.1rem;font-weight:800;color:var(--accent)">'+display+'</div>'+
+    '</div>';
+  });
   document.getElementById('leaderList').innerHTML=html;
 }
 
@@ -693,6 +706,56 @@ async function fetchAllPlayerStats(){
     state.statsCache[group]=results.filter(function(x){return x!==null;});
   }
   loadLeaders();
+  // Kick off last-15 fetches for HOT/COLD badges. Don't await — re-renders
+  // happen as data lands.
+  fetchLastNForRoster();
+}
+
+// HOT / COLD threshold: last-15 OPS Δ vs season OPS. ±0.080 per Idea #03.
+const HOT_COLD_THRESHOLD = 0.080;
+const HOT_COLD_TTL_MS = 12 * 60 * 60 * 1000;
+
+// Pulls last-15-games hitting stats for a single player. 12h TTL on
+// state.lastNCache so we don't re-fetch within a session. Pitchers are
+// excluded — HOT/COLD is an offensive concept tied to OPS.
+async function fetchLastN(playerId, n){
+  n = n || 15;
+  var existing = state.lastNCache[playerId];
+  if(existing && Date.now() - existing.ts < HOT_COLD_TTL_MS) return existing;
+  try{
+    var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=lastXGames&group=hitting&season='+SEASON+'&gameNumber='+n);
+    var d = await r.json();
+    var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+    if(stat){ state.lastNCache[playerId] = { last15: stat, ts: Date.now() }; return state.lastNCache[playerId]; }
+  }catch(e){}
+  return null;
+}
+
+// Batched fetch for every hitter in the active roster. After resolution, kick
+// off a re-render so the badges appear without user interaction.
+async function fetchLastNForRoster(){
+  var hitters = state.rosterData.hitting || [];
+  if(!hitters.length) return;
+  await Promise.all(hitters.map(function(p){ return fetchLastN(p.person.id, 15); }));
+  if(state.currentLeaderTab === 'hitting') loadLeaders();
+  if(state.currentRosterTab === 'hitting') renderPlayerList();
+}
+
+// Returns inline HOT/COLD badge HTML for a player, or '' if no signal.
+function hotColdBadge(playerId){
+  var cached = state.lastNCache[playerId];
+  if(!cached || !cached.last15) return '';
+  var seasonEntry = (state.statsCache.hitting || []).find(function(p){ return p.player && p.player.id === playerId; });
+  if(!seasonEntry || !seasonEntry.stat) return '';
+  var l15 = parseFloat(cached.last15.ops);
+  var sea = parseFloat(seasonEntry.stat.ops);
+  if(isNaN(l15) || isNaN(sea)) return '';
+  var delta = l15 - sea;
+  var fmtO = function(n){ var s = n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; };
+  var tip = 'Last 15 OPS '+fmtO(l15)+' vs season '+fmtO(sea);
+  if(delta >= HOT_COLD_THRESHOLD) return ' <span class="story-badge hot stats-hot-cold" title="'+tip+'">🔥 HOT</span>';
+  if(delta <= -HOT_COLD_THRESHOLD) return ' <span class="story-badge cold stats-hot-cold" title="'+tip+'">❄ COLD</span>';
+  return '';
 }
 
 export async function loadRoster(){
@@ -711,7 +774,18 @@ export async function loadRoster(){
 function renderPlayerList(){
   var players=state.rosterData[state.currentRosterTab]||[];if(!players.length){document.getElementById('playerList').innerHTML='<div class="loading">No players found</div>';return;}
   var html='';
-  players.forEach(function(p){var sel=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id===p.person.id;html+='<div class="player-item'+(sel?' selected':'')+'" onclick="selectPlayer('+p.person.id+',\''+state.currentRosterTab+'\')">'+'<div><div class="player-name">'+p.person.fullName+'</div><div class="player-pos">#'+(p.jerseyNumber||'—')+' · '+(p.position&&p.position.name?p.position.name:'—')+'</div></div><span class="player-chevron">›</span></div>';});
+  var showBadges=state.currentRosterTab==='hitting';
+  players.forEach(function(p){
+    var sel=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id===p.person.id;
+    var badge=showBadges?hotColdBadge(p.person.id):'';
+    html+='<div class="player-item'+(sel?' selected':'')+'" onclick="selectPlayer('+p.person.id+',\''+state.currentRosterTab+'\')">'+
+      '<div>'+
+        '<div class="player-name">'+p.person.fullName+badge+'</div>'+
+        '<div class="player-pos">#'+(p.jerseyNumber||'—')+' · '+(p.position&&p.position.name?p.position.name:'—')+'</div>'+
+      '</div>'+
+      '<span class="player-chevron">›</span>'+
+    '</div>';
+  });
   document.getElementById('playerList').innerHTML=html;
 }
 
@@ -789,21 +863,92 @@ function renderPlayerStats(s,group){
     {v:s.doublePlays,       l:'DP',   k:null, raw:null}
   ];
   var cols=group==='fielding'?3:4;
+  var basis=state.vsLeagueBasis||'mlb';
+  // vs-league basis toggle (hitting/pitching only — fielding has no league
+  // averages cache). Pills wired to switchVsBasis() exposed via main.js bridge.
+  if(group!=='fielding'){
+    html+='<div class="vs-basis-row"><span class="vs-basis-label">Compare</span>'+
+      ['mlb','team'].map(function(bv){
+        return '<button type="button" class="vs-basis-pill'+(basis===bv?' active':'')+'" onclick="switchVsBasis(\''+bv+'\')">vs '+(bv==='mlb'?'MLB':'team')+'</button>';
+      }).join('')+'</div>';
+  }
+
+  // Hero panel — promotes the headline stat (boxes[0]) to a full-width banner
+  // with rank, tier, delta, and a sparkline slot reserved for Sprint 2's
+  // gameLog-fed trend line. Fielding skips the panel; the 3-col grid is enough.
+  if(group!=='fielding' && boxes.length){
+    var hb=boxes[0];
+    var hPInfo=hb.k?computePercentile(group,hb.k,hb.raw):null;
+    var hTier=hPInfo?tierFromPercentile(hPInfo.percentile):null;
+    var hEntry=hb.k?leaderEntry(group,hb.k):null;
+    var hDir=hEntry&&hEntry.lowerIsBetter?'lower-better':'higher-better';
+    var hDec=hEntry?hEntry.decimals:0;
+    var hBasisVal=hb.k?(basis==='mlb'?leagueAverage(group,hb.k):teamAverage(group,hb.k)):null;
+    var hChip=hb.k?deltaChip(hb.raw,hBasisVal,hDir,hDec,basis==='mlb'?'vs lg':'vs tm'):'';
+    var heroLabelMap={AVG:'Batting Average',OPS:'On-Base + Slugging',ERA:'Earned Run Average',WHIP:'Walks + Hits / IP'};
+    var heroLabel=heroLabelMap[hb.l]||hb.l;
+    var heroMeta=SEASON+' '+(group.charAt(0).toUpperCase()+group.slice(1));
+    var tierPill='';
+    if(hTier==='elite' && hPInfo){
+      var topPct=Math.max(1,Math.round(hPInfo.rank/hPInfo.total*100));
+      tierPill='<span class="hero-tier-pill">★ Elite · Top '+topPct+'%</span>';
+    }
+    html+='<div class="hero-panel'+(hTier?' hero-panel--'+hTier:'')+'">'+
+      '<div class="hero-panel-stat">'+
+        '<div class="hero-panel-meta">'+heroMeta+'</div>'+
+        '<div class="hero-panel-val">'+(hb.v!=null?hb.v:'—')+'</div>'+
+        '<div class="hero-panel-lbl">'+heroLabel+'</div>'+
+        ((hChip||tierPill)?'<div class="hero-panel-deltas">'+hChip+tierPill+'</div>':'')+
+      '</div>'+
+      '<div class="hero-panel-context">'+
+        (hPInfo?'<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>':'')+
+        (hPInfo?'<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>':'')+
+        '<div class="hero-panel-trend"><span class="hero-trend-pending">7-day trend · coming Sprint 2</span></div>'+
+      '</div>'+
+    '</div>';
+    boxes=boxes.slice(1);
+  }
+
   html+='<div class="stat-grid stat-grid--cols-'+cols+'">';
-  boxes.forEach(function(b,i){
+  boxes.forEach(function(b){
     var pInfo=(b.k&&group!=='fielding')?computePercentile(group,b.k,b.raw):null;
     var tier=pInfo?tierFromPercentile(pInfo.percentile):null;
-    var heroCls=i===0?' hero':'';
-    // Tier-color the hero box always; non-hero boxes only when pinned at the
-    // extremes (≥90 elite or ≤10 bad) so the grid stays readable.
-    var tierCls=tier&&(i===0||pInfo.percentile>=90||pInfo.percentile<=10)?' stat-box--'+tier:'';
-    html+='<div class="stat-box'+heroCls+tierCls+'">'+
+    // Hero panel above is the dominant stat now; supporting boxes are uniform
+    // and only get a tier background at the extremes.
+    var tierCls=tier&&(pInfo.percentile>=90||pInfo.percentile<=10)?' stat-box--'+tier:'';
+    var chip='';
+    if(b.k&&group!=='fielding'){
+      var entry=leaderEntry(group,b.k);
+      var dir=entry&&entry.lowerIsBetter?'lower-better':'higher-better';
+      var dec=entry?entry.decimals:0;
+      var basisVal=basis==='mlb'?leagueAverage(group,b.k):teamAverage(group,b.k);
+      var basisLbl=basis==='mlb'?'vs lg':'vs tm';
+      chip=deltaChip(b.raw,basisVal,dir,dec,basisLbl);
+    }
+    html+='<div class="stat-box'+tierCls+'">'+
           '<div class="stat-val">'+(b.v!=null?b.v:'—')+'</div>'+
           '<div class="stat-lbl">'+b.l+'</div>'+
           (pInfo?pctBar(pInfo.percentile)+rankCaption(pInfo.rank,pInfo.total):'')+
+          chip+
           '</div>';
   });
   document.getElementById('playerStats').innerHTML=html+'</div>';
+}
+
+// Toggle the vs-league basis between MLB-wide avg and active team's roster avg.
+// Persists choice. Re-renders the current player's stat grid using the cached
+// stat from state.statsCache so we don't re-fetch /people/{id}.
+export function switchVsBasis(basis){
+  if(basis!=='mlb'&&basis!=='team')return;
+  state.vsLeagueBasis=basis;
+  if(typeof localStorage!=='undefined')localStorage.setItem('mlb_stats_vs_basis',basis);
+  var sel=state.selectedPlayer;
+  if(!sel||!sel.person)return;
+  var group=state.currentRosterTab==='fielding'?'fielding':state.currentRosterTab;
+  if(group==='fielding')return;
+  var pool=state.statsCache[group]||[];
+  var entry=pool.find(function(p){return p.player&&p.player.id===sel.person.id;});
+  if(entry&&entry.stat)renderPlayerStats(entry.stat,group);
 }
 
 // ── NEWS SECTION ────────────────────────────────────────────────────────────

@@ -63,17 +63,46 @@ export function rankCaption(rank, total) {
 }
 
 // vs-league delta chip. direction = 'higher-better' | 'lower-better' (defaults
-// higher-better). Decimals controls magnitude formatting; rate-style values
-// (decimals ≥ 3) drop their leading zero (.064 not 0.064).
-export function deltaChip(value, basisValue, direction, decimals) {
+// higher-better). basisLabel is the suffix shown after the magnitude
+// ('vs lg' / 'vs team'). Decimals controls magnitude formatting; rate-style
+// values (decimals ≥ 3) drop their leading zero (.064 not 0.064).
+export function deltaChip(value, basisValue, direction, decimals, basisLabel) {
   if (value == null || basisValue == null) return '';
   var v = parseFloat(value), b = parseFloat(basisValue);
   if (isNaN(v) || isNaN(b)) return '';
   decimals = decimals === undefined ? 3 : decimals;
+  basisLabel = basisLabel || 'vs lg';
   var diff = v - b;
   var positive = direction === 'lower-better' ? diff < 0 : diff > 0;
   var sign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
   var abs = Math.abs(diff).toFixed(decimals);
   if (decimals >= 3 && abs.charAt(0) === '0') abs = abs.slice(1);
-  return '<span class="delta-chip ' + (positive ? 'pos' : 'neg') + '">' + sign + abs + ' vs lg</span>';
+  return '<span class="delta-chip ' + (positive ? 'pos' : 'neg') + '">' + sign + abs + ' ' + basisLabel + '</span>';
+}
+
+// Mean of every entry in the league leaders cache for a stat. Approximates
+// "average qualified player" since fetchLeagueLeaders pulls limit=300. Returns
+// null if the cache is empty or the stat isn't configured.
+export function leagueAverage(group, statKey) {
+  var entry = leaderEntry(group, statKey);
+  if (!entry) return null;
+  var arr = state.leagueLeaders[group + ':' + entry.leaderCategory];
+  if (!arr || !arr.length) return null;
+  var sum = 0;
+  for (var i = 0; i < arr.length; i++) sum += arr[i].value;
+  return sum / arr.length;
+}
+
+// Mean across the active team's roster from state.statsCache. Used for the
+// "vs team" basis option. Returns null if statsCache is empty for the group.
+export function teamAverage(group, statKey) {
+  var pool = state.statsCache[group] || [];
+  if (!pool.length) return null;
+  var sum = 0, n = 0;
+  for (var i = 0; i < pool.length; i++) {
+    var raw = pool[i].stat ? pool[i].stat[statKey] : null;
+    var v = raw == null ? NaN : parseFloat(raw);
+    if (!isNaN(v)) { sum += v; n++; }
+  }
+  return n ? sum / n : null;
 }
