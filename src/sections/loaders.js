@@ -1343,19 +1343,26 @@ function renderArsenalTab(playerId){
 // ── Sprint 3 / Step 1: Statcast Advanced for hitters ─────────────────────
 const ADV_HITTING_TTL_MS = 24 * 60 * 60 * 1000;
 
-// Fetches expectedStatistics + sabermetrics in parallel and merges them into a
-// single stat blob keyed in state.advancedHittingCache. Two endpoints because
-// xBA / xSLG / xwOBA / Statcast classification rates ship under
-// expectedStatistics, while wOBA / wRC+ live under sabermetrics. Both are
-// optional — render gracefully degrades.
+// Fetches sabermetrics + seasonAdvanced in parallel and merges them into a
+// single stat blob keyed in state.advancedHittingCache. Both endpoints are
+// part of the public MLB Stats API and reliably populated for qualified
+// hitters. (Earlier v4.6.18 attempt also pulled `expectedStatistics`, but
+// that endpoint is inconsistently exposed and Statcast-flavored xBA / xSLG /
+// xwOBA / exit velo / barrel rate are sourced from Baseball Savant — a
+// separate Statcast service we don't proxy. The advanced view focuses on
+// what MLB Stats API actually returns.)
+//
+// sabermetrics  → woba, wRaa, wRc, wRcPlus, babip (hitting)
+// seasonAdvanced → babip, iso, groundOutsToAirouts, walks/strikeouts per PA,
+//                  pitches per PA, etc.
 async function fetchAdvancedHitting(playerId){
   if(!playerId) return null;
   var cached = state.advancedHittingCache[playerId];
   if(cached && Date.now()-cached.ts < ADV_HITTING_TTL_MS) return cached.stat;
   try{
     var urls = [
-      MLB_BASE+'/people/'+playerId+'/stats?stats=expectedStatistics&season='+SEASON+'&group=hitting',
-      MLB_BASE+'/people/'+playerId+'/stats?stats=sabermetrics&season='+SEASON+'&group=hitting'
+      MLB_BASE+'/people/'+playerId+'/stats?stats=sabermetrics&season='+SEASON+'&group=hitting',
+      MLB_BASE+'/people/'+playerId+'/stats?stats=seasonAdvanced&season='+SEASON+'&group=hitting'
     ];
     var responses = await Promise.all(urls.map(function(u){
       return fetch(u).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
@@ -1375,68 +1382,71 @@ async function fetchAdvancedHitting(playerId){
   }
 }
 
-// Renders the Statcast / advanced hitting view into the Advanced panel.
-// Defensively reads each metric — keys vary across MLB API endpoints, and
-// every metric is independently optional so the layout shrinks gracefully
-// to whatever's available.
+// Renders the advanced hitting view into the Advanced panel. Reads each
+// metric across the case-variants the MLB API actually uses (sabermetrics
+// returns mixed-case keys like wRaa / wRc / wRcPlus; seasonAdvanced lowercases
+// most). Every field is independently optional so the row count adapts.
 function renderAdvancedHittingTab(playerId){
   var cached = state.advancedHittingCache[playerId];
   var panelEl = document.querySelector('.player-tab-panel[data-tab="advanced"]');
   if(!panelEl) return;
   if(!cached){
-    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Statcast / Advanced</h4><p>Loading advanced metrics…</p></div>';
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>Advanced Metrics</h4><p>Loading advanced metrics…</p></div>';
     return;
   }
   var s = cached.stat || {};
   function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
-  function fmtR(n){ var s = n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s; }
-  function fmtPct(n){ return (n*100).toFixed(1)+'%'; }
-  // Hero trio: prefer expected metrics; fall back to actuals when absent.
-  // Field-name variants observed across MLB API endpoints and snapshots.
-  var xwoba = num(s.xwoba) || num(s.expectedWoba);
-  var woba  = num(s.woba)  || num(s.expectedWoba);
-  var xba   = num(s.xba)   || num(s.expectedBattingAvg) || num(s.expectedBa);
-  var xslg  = num(s.xslg)  || num(s.expectedSluggingPct) || num(s.expectedSlg);
-  var xobp  = num(s.xobp)  || num(s.expectedOnBasePct);
-  var avgEv = num(s.avgHitSpeed) || num(s.exitVelocityAvg) || num(s.averageExitVelocity);
-  var maxEv = num(s.maxHitSpeed) || num(s.maxExitVelocity);
-  var hardHit = num(s.hardHitRate) || num(s.hardHitPercentage);
-  var barrel  = num(s.barrelRate) || num(s.barrelsPerBbeRate) || num(s.barrelsPerPlateAppearance);
-  var sweet   = num(s.sweetSpotRate) || num(s.sweetSpotPercentage);
-  var launch  = num(s.avgLaunchAngle) || num(s.launchAngleAvg);
-  var hitDist = num(s.avgHitDistance);
-  var sprint  = num(s.sprintSpeed);
-  var wrcPlus = num(s.wrcPlus) || num(s.weightedRunsCreatedPlus);
-  // Hero row (3 boxes)
-  var hero = '';
-  if(xwoba != null || xba != null || hardHit != null){
-    hero = '<div class="adv-hero-row">'+
-      (xwoba != null ? '<div class="stat-box"><div class="stat-val">'+fmtR(xwoba)+'</div><div class="stat-lbl">xwOBA</div></div>' : '')+
-      (xba   != null ? '<div class="stat-box"><div class="stat-val">'+fmtR(xba)+'</div><div class="stat-lbl">xBA</div></div>' : '')+
-      (hardHit != null ? '<div class="stat-box"><div class="stat-val">'+fmtPct(hardHit)+'</div><div class="stat-lbl">Hard Hit %</div></div>' : '')+
-      '</div>';
-  }
-  // Statcast metric grid
+  function pick(){ for(var i=0;i<arguments.length;i++){ var v = num(arguments[i]); if(v != null) return v; } return null; }
+  function fmtR(n){ var v = n.toFixed(3); return v.charAt(0)==='0' ? v.slice(1) : v; }
+  function fmtPct(n){ return (n>1.5 ? n.toFixed(1) : (n*100).toFixed(1))+'%'; }
+
+  // Real MLB Stats API field names (sabermetrics + seasonAdvanced for hitters):
+  var woba    = pick(s.woba, s.wOba);
+  var babip   = pick(s.babip);
+  var iso     = pick(s.iso);
+  var wRcPlus = pick(s.wRcPlus, s.wrcPlus);
+  var wRaa    = pick(s.wRaa, s.wraa);
+  var wRc     = pick(s.wRc, s.wrc);
+  var go_ao   = pick(s.groundOutsToAirouts, s.groundOutsToAirOuts);
+  var walksPerPa = pick(s.walksPerPlateAppearance);
+  var ksPerPa    = pick(s.strikeoutsPerPlateAppearance);
+  var pitchesPerPa = pick(s.pitchesPerPlateAppearance);
+  var atBatsPerHr  = pick(s.atBatsPerHomeRun);
+  var totalBases   = pick(s.totalBases);
+  var extraBaseHits= pick(s.extraBaseHits);
+
+  // Hero trio — wOBA · BABIP · wRC+ if available, else ISO.
+  var heroParts = [];
+  if(woba != null)    heroParts.push({ v:fmtR(woba), l:'wOBA' });
+  if(babip != null)   heroParts.push({ v:fmtR(babip), l:'BABIP' });
+  if(wRcPlus != null) heroParts.push({ v:Math.round(wRcPlus), l:'wRC+' });
+  else if(iso != null)heroParts.push({ v:fmtR(iso), l:'ISO' });
+  var hero = heroParts.length
+    ? '<div class="adv-hero-row">'+heroParts.map(function(p){return '<div class="stat-box"><div class="stat-val">'+p.v+'</div><div class="stat-lbl">'+p.l+'</div></div>';}).join('')+'</div>'
+    : '';
+
+  // Supporting grid
   var rows = [];
-  if(avgEv != null) rows.push({l:'Avg Exit Velo', v: avgEv.toFixed(1)+' mph'});
-  if(maxEv != null) rows.push({l:'Max Exit Velo', v: maxEv.toFixed(1)+' mph'});
-  if(barrel != null) rows.push({l:'Barrel %', v: fmtPct(barrel)});
-  if(sweet != null) rows.push({l:'Sweet Spot %', v: fmtPct(sweet)});
-  if(launch != null) rows.push({l:'Avg Launch Angle', v: launch.toFixed(1)+'°'});
-  if(hitDist != null) rows.push({l:'Avg Hit Distance', v: hitDist.toFixed(0)+' ft'});
-  if(sprint != null) rows.push({l:'Sprint Speed', v: sprint.toFixed(1)+' ft/s'});
-  if(xslg != null) rows.push({l:'xSLG', v: fmtR(xslg)});
-  if(xobp != null) rows.push({l:'xOBP', v: fmtR(xobp)});
-  if(woba != null && (xwoba == null || woba !== xwoba)) rows.push({l:'wOBA', v: fmtR(woba)});
-  if(wrcPlus != null) rows.push({l:'wRC+', v: Math.round(wrcPlus)});
+  if(wRcPlus != null && iso != null) rows.push({l:'ISO', v: fmtR(iso)});
+  if(wRaa != null) rows.push({l:'wRAA', v: wRaa.toFixed(1)});
+  if(wRc != null)  rows.push({l:'wRC',  v: wRc.toFixed(1)});
+  if(walksPerPa != null) rows.push({l:'BB rate', v: fmtPct(walksPerPa)});
+  if(ksPerPa != null)    rows.push({l:'K rate',  v: fmtPct(ksPerPa)});
+  if(pitchesPerPa != null) rows.push({l:'P / PA', v: pitchesPerPa.toFixed(2)});
+  if(atBatsPerHr != null && atBatsPerHr > 0) rows.push({l:'AB / HR', v: atBatsPerHr.toFixed(1)});
+  if(go_ao != null) rows.push({l:'GO / AO', v: go_ao.toFixed(2)});
+  if(extraBaseHits != null) rows.push({l:'XBH', v: Math.round(extraBaseHits)});
+  if(totalBases != null) rows.push({l:'Total Bases', v: Math.round(totalBases)});
+
   var grid = rows.length
     ? '<div class="adv-stat-grid">'+rows.map(function(r){return '<div class="stat-box"><div class="stat-val">'+r.v+'</div><div class="stat-lbl">'+r.l+'</div></div>';}).join('')+'</div>'
     : '';
+
   if(!hero && !grid){
-    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>No advanced metrics</h4><p>This player has no '+SEASON+' Statcast / advanced data yet.</p></div>';
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📈</div><h4>No advanced metrics</h4><p>This player has no '+SEASON+' advanced data yet.</p></div>';
     return;
   }
-  var note = '<div class="adv-source-note">Statcast metrics from MLB Stats API · expectedStatistics + sabermetrics</div>';
+  var note = '<div class="adv-source-note">Advanced metrics from MLB Stats API · sabermetrics + seasonAdvanced. Statcast (xBA / xwOBA / exit velo / barrel rate) lives on Baseball Savant and is not proxied here.</div>';
   panelEl.innerHTML = hero + grid + note;
 }
 
@@ -1445,23 +1455,25 @@ function renderGameLogPlaceholder(){
 }
 
 // ── Sprint 3 / Step 2: Today's Leaders (MLB-wide) ────────────────────────
-// Categories surfaced per group. Order mirrors fan-facing priority.
+// Categories surfaced per group. leaderCategory strings MUST match the canonical
+// names accepted by /stats/leaders (and used in LEADER_CATS_FOR_PERCENTILE) —
+// "runsBattedIn" not "rbi", "onBasePlusSlugging" not "ops" (v4.6.19 fix).
 const TODAYS_LEADERS_CATS = {
   hitting:  [
-    { stat:'homeRuns',         leaderCategory:'homeRuns',       label:'HR',  decimals:0 },
-    { stat:'avg',              leaderCategory:'battingAverage', label:'AVG', decimals:3 },
-    { stat:'rbi',              leaderCategory:'rbi',            label:'RBI', decimals:0 },
-    { stat:'ops',              leaderCategory:'ops',            label:'OPS', decimals:3 },
-    { stat:'obp',              leaderCategory:'onBasePercentage', label:'OBP', decimals:3 },
-    { stat:'stolenBases',      leaderCategory:'stolenBases',    label:'SB',  decimals:0 }
+    { stat:'homeRuns',         leaderCategory:'homeRuns',                 label:'HR',  decimals:0 },
+    { stat:'avg',              leaderCategory:'battingAverage',           label:'AVG', decimals:3 },
+    { stat:'rbi',              leaderCategory:'runsBattedIn',             label:'RBI', decimals:0 },
+    { stat:'ops',              leaderCategory:'onBasePlusSlugging',       label:'OPS', decimals:3 },
+    { stat:'obp',              leaderCategory:'onBasePercentage',         label:'OBP', decimals:3 },
+    { stat:'stolenBases',      leaderCategory:'stolenBases',              label:'SB',  decimals:0 }
   ],
   pitching: [
-    { stat:'era',              leaderCategory:'earnedRunAverage', label:'ERA',  decimals:2 },
-    { stat:'strikeOuts',       leaderCategory:'strikeouts',       label:'K',    decimals:0 },
-    { stat:'wins',             leaderCategory:'wins',             label:'W',    decimals:0 },
-    { stat:'saves',            leaderCategory:'saves',            label:'SV',   decimals:0 },
+    { stat:'era',              leaderCategory:'earnedRunAverage',         label:'ERA',  decimals:2 },
+    { stat:'strikeOuts',       leaderCategory:'strikeouts',               label:'K',    decimals:0 },
+    { stat:'wins',             leaderCategory:'wins',                     label:'W',    decimals:0 },
+    { stat:'saves',            leaderCategory:'saves',                    label:'SV',   decimals:0 },
     { stat:'whip',             leaderCategory:'walksAndHitsPerInningPitched', label:'WHIP', decimals:2 },
-    { stat:'inningsPitched',   leaderCategory:'inningsPitched',   label:'IP',   decimals:1 }
+    { stat:'inningsPitched',   leaderCategory:'inningsPitched',           label:'IP',   decimals:1 }
   ]
 };
 
