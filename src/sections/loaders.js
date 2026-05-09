@@ -34,7 +34,7 @@ export function clearLeagueTimer(){
 // ── Module state variables ──────────────────────────────────────────────────
 var calMonth=new Date().getMonth(),calYear=new Date().getFullYear(),selectedGamePk=null;
 var liveGamePk=null,liveInterval=null;
-var leagueLeaderTab='hitting',leagueLeadersCache={hitting:{},pitching:{}},leagueStandingsMap={},leagueMatchupOffset=0;
+var leagueLeaderTab='hitting',leagueStandingsMap={},leagueMatchupOffset=0;
 export let homeLiveTimer=null;
 export let leagueRefreshTimer=null;
 var selectedVideoId=null,mediaVideos=[];
@@ -553,7 +553,6 @@ export function loadLeaders(){
         '<span style="color:var(--accent);font-weight:800;width:18px;font-size:.85rem">'+(i+1)+'</span>'+
         '<div>'+
           '<div class="player-name" style="font-size:.85rem">'+(s.player.fullName||'—')+badge+'</div>'+
-          '<div class="player-pos">'+(s.position&&s.position.abbreviation?s.position.abbreviation:'')+'</div>'+
         '</div>'+
       '</div>'+
       '<div style="font-size:1.1rem;font-weight:800;color:var(--accent)">'+display+'</div>'+
@@ -804,9 +803,15 @@ export async function fetchLeagueLeaders(group){
   if(state.leagueLeadersFetchedAt[group]&&Date.now()-state.leagueLeadersFetchedAt[group]<FRESH_MS)return;
   var entries=LEADER_CATS_FOR_PERCENTILE.filter(function(e){return e.group===group;});
   if(!entries.length)return;
-  // Dedupe leaderCategories so 'walks'/'hits'/'homeRuns' (which appear in both
-  // hitting and pitching tables but with different polarity flags) don't get
-  // requested twice for the same group.
+  // v4.8.8: reverted to /stats/leaders. v4.8.4 attempted /stats?stats=season
+  // with playerPool=Qualifier to bypass the leader-board ~100 cap, but the
+  // endpoint silently returned empty splits in production (param naming /
+  // schema mismatch suspected — `group` vs `statGroup`, `Qualifier` vs
+  // `Qualified`). Effect was that state.leagueLeaders never populated, which
+  // broke both the percentile UI in Stats and the League → Stat Leaders
+  // display. Restored the v4.7.6-era query; the per-category pool is again
+  // capped at ~100, accepted as the trade-off until we can verify a working
+  // alternative endpoint shape.
   var seen={},cats=[];
   entries.forEach(function(e){if(!seen[e.leaderCategory]){seen[e.leaderCategory]=true;cats.push(e.leaderCategory);}});
   var url=MLB_BASE+'/stats/leaders?leaderCategories='+cats.join(',')+'&statGroup='+group+'&season='+SEASON+'&limit=300';
@@ -1138,6 +1143,9 @@ export function switchPlayerStatsTab(tab,btn){
     if(p.dataset.tab===tab)p.removeAttribute('hidden');
     else p.setAttribute('hidden','');
   });
+  // Mobile: keep the freshly-activated tab in view within its scrollable
+  // container (scrollTabIntoView only scrolls the parent, never the document).
+  if(btn) scrollTabIntoView(btn);
   // Lazy renderers
   var sel = state.selectedPlayer;
   var pid = sel && sel.person && sel.person.id;
@@ -1961,99 +1969,69 @@ function renderCareerTab(playerId, group){
   } else {
     tablesHtml = tableFor(hittingRows,'hitting') + tableFor(pitchingRows,'pitching');
   }
-  panelEl.innerHTML = tablesHtml;
-}
-
-// ── Sprint 3 / Step 2: Today's Leaders (MLB-wide) ────────────────────────
-// Categories surfaced per group. leaderCategory strings MUST match the canonical
-// names accepted by /stats/leaders (and used in LEADER_CATS_FOR_PERCENTILE) —
-// "runsBattedIn" not "rbi", "onBasePlusSlugging" not "ops" (v4.6.19 fix).
-const TODAYS_LEADERS_CATS = {
-  hitting:  [
-    { stat:'homeRuns',         leaderCategory:'homeRuns',                 label:'HR',  decimals:0 },
-    { stat:'avg',              leaderCategory:'battingAverage',           label:'AVG', decimals:3 },
-    { stat:'rbi',              leaderCategory:'runsBattedIn',             label:'RBI', decimals:0 },
-    { stat:'ops',              leaderCategory:'onBasePlusSlugging',       label:'OPS', decimals:3 },
-    { stat:'obp',              leaderCategory:'onBasePercentage',         label:'OBP', decimals:3 },
-    { stat:'stolenBases',      leaderCategory:'stolenBases',              label:'SB',  decimals:0 }
-  ],
-  pitching: [
-    { stat:'era',              leaderCategory:'earnedRunAverage',         label:'ERA',  decimals:2 },
-    { stat:'strikeOuts',       leaderCategory:'strikeouts',               label:'K',    decimals:0 },
-    { stat:'wins',             leaderCategory:'wins',                     label:'W',    decimals:0 },
-    { stat:'saves',            leaderCategory:'saves',                    label:'SV',   decimals:0 },
-    { stat:'whip',             leaderCategory:'walksAndHitsPerInningPitched', label:'WHIP', decimals:2 },
-    { stat:'inningsPitched',   leaderCategory:'inningsPitched',           label:'IP',   decimals:1 }
-  ]
-};
-
-// Switch active tab on the Today's Leaders card. Persisted via state.
-export function switchTodaysLeadersTab(tab, btn){
-  if(tab !== 'hitting' && tab !== 'pitching') return;
-  state.todaysLeadersTab = tab;
-  document.querySelectorAll('#todaysLeadersTabs .stat-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
-  renderTodaysLeaders();
-}
-
-// Renders the four-category leader-board block from cached state.leagueLeaders.
-// Triggers fetchLeagueLeaders for the active group when the cache is empty —
-// the percentile system already calls this on selectPlayer, so the cache is
-// usually warm by the time the user looks. First-paint warming is handled by
-// loadTodaysLeaders().
-export function renderTodaysLeaders(){
-  var el = document.getElementById('todaysLeadersContent');
-  if(!el) return;
-  var group = state.todaysLeadersTab || 'hitting';
-  var cats = TODAYS_LEADERS_CATS[group] || [];
-  function fmtVal(v, decimals){
-    if(decimals >= 3){
-      var s = v.toFixed(3);
-      return s.charAt(0)==='0' ? s.slice(1) : s;
-    }
-    if(decimals === 1) return v.toFixed(1);
-    if(decimals === 2) return v.toFixed(2);
-    return Math.round(v).toString();
-  }
-  function lastName(full){
-    if(!full) return '';
-    var parts = full.split(' ');
-    return parts.length > 1 ? parts.slice(1).join(' ') : full;
-  }
-  var html = '<div class="todays-leaders-grid">';
-  cats.forEach(function(c){
-    var arr = state.leagueLeaders[group+':'+c.leaderCategory];
-    var top5 = arr ? arr.slice(0,5) : [];
-    html += '<div class="tl-cat">'+
-      '<div class="tl-cat-head"><span class="tl-cat-label">'+c.label+'</span></div>';
-    if(top5.length){
-      html += '<ol class="tl-cat-list">'+ top5.map(function(p, i){
-        var name = p.playerName ? lastName(p.playerName) : '#'+p.playerId;
-        var teamAbbr = p.teamAbbr || '';
-        return '<li>'+
-          '<span class="tl-rank">'+(i+1)+'</span>'+
-          '<span class="tl-name" title="'+(p.playerName||'')+(teamAbbr?' · '+teamAbbr:'')+'">'+name+'</span>'+
-          (teamAbbr ? '<span class="tl-team">'+teamAbbr+'</span>' : '')+
-          '<span class="tl-val">'+fmtVal(p.value, c.decimals)+'</span>'+
-        '</li>';
-      }).join('') +'</ol>';
-    } else {
-      html += '<div class="tl-cat-empty">—</div>';
-    }
-    html += '</div>';
+  var isMobile = (typeof window!=='undefined') && window.matchMedia && window.matchMedia('(max-width: 480px)').matches;
+  var hintHtml = (isMobile && !state.careerSwipeHintShown)
+    ? '<div class="career-swipe-hint" id="careerSwipeHint">'+
+        '<span>← Swipe to see more →</span>'+
+        '<button type="button" aria-label="Dismiss" onclick="dismissCareerSwipeHint()">✕</button>'+
+      '</div>'
+    : '';
+  panelEl.innerHTML = hintHtml + tablesHtml;
+  // Toggle the right-edge fade off once the user has scrolled the table fully.
+  Array.prototype.forEach.call(panelEl.querySelectorAll('.career-table-wrap'), function(w){
+    var update = function(){
+      var atEnd = (w.scrollLeft + w.clientWidth) >= (w.scrollWidth - 2);
+      w.classList.toggle('scrolled-end', atEnd);
+    };
+    w.addEventListener('scroll', update, { passive: true });
+    update();
   });
-  html += '</div>';
-  el.innerHTML = html;
 }
 
-// Warms the league-leaders cache for both groups (idempotent — fetchLeagueLeaders
-// is TTL-cached at 5min) then renders. Called from loadRoster's section-init
-// path so the card is populated when the user first opens the Stats tab.
-export async function loadTodaysLeaders(){
-  await Promise.all([
-    fetchLeagueLeaders('hitting'),
-    fetchLeagueLeaders('pitching')
-  ]);
-  renderTodaysLeaders();
+export function dismissCareerSwipeHint(){
+  state.careerSwipeHintShown = true;
+  try { if(typeof localStorage!=='undefined') localStorage.setItem('mlb_stats_career_hint_shown','1'); } catch(_){}
+  var el = document.getElementById('careerSwipeHint');
+  if(el && el.parentNode) el.parentNode.removeChild(el);
+}
+
+// Mobile-only sticky chip-row at the top of the Stats section. Tap a chip to
+// scroll the matching card into view; an IntersectionObserver highlights the
+// active chip as the user scrolls. Idempotent — safe to call on every Stats
+// section entry.
+let _statsQuickNavInstalled = false;
+export function installStatsQuickNav(){
+  if(_statsQuickNavInstalled) return;
+  var nav = document.getElementById('statsQuickNav');
+  if(!nav) return;
+  _statsQuickNavInstalled = true;
+  // Click delegation: scroll the matching card into view, accounting for the
+  // sticky page header (≈42px) + the quicknav itself (≈44px).
+  nav.addEventListener('click', function(e){
+    var btn = e.target && e.target.closest && e.target.closest('button[data-target]');
+    if(!btn) return;
+    var tgt = document.getElementById(btn.dataset.target);
+    if(!tgt) return;
+    var headerH = nav.getBoundingClientRect().bottom; // bottom of quicknav = top of content
+    var top = tgt.getBoundingClientRect().top + window.pageYOffset - headerH - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  });
+  // Active-chip highlighting via IntersectionObserver. Fires when a card
+  // crosses the viewport center, marking its chip .active.
+  if(typeof IntersectionObserver === 'undefined') return;
+  var ids = Array.prototype.map.call(nav.querySelectorAll('button[data-target]'), function(b){ return b.dataset.target; });
+  var targets = ids.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+  if(!targets.length) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(!en.isIntersecting) return;
+      var id = en.target.id;
+      Array.prototype.forEach.call(nav.querySelectorAll('button[data-target]'), function(b){
+        b.classList.toggle('active', b.dataset.target === id);
+      });
+    });
+  }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+  targets.forEach(function(t){ io.observe(t); });
 }
 
 // 24h TTL on the gameLog cache — game log only changes once per game-day per
@@ -2411,6 +2389,15 @@ function renderOverviewTab(s,group){
     if(!heroSparkHtml){
       heroSparkHtml = '<div class="hero-panel-trend"><span class="hero-trend-pending">trend loading…</span></div>';
     }
+    // When the player is outside the leader pool, skip the rank caption +
+    // percentile bar entirely — the tier shading on the panel is enough signal,
+    // and the verbose "Outside MLB top 100" message in every box was noise.
+    var hRankHtml='';
+    var hBarHtml='';
+    if(hPInfo && !hPInfo.outsideTop){
+      hRankHtml='<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>';
+      hBarHtml='<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>';
+    }
     html+='<div class="hero-panel'+(hTier?' hero-panel--'+hTier:'')+'">'+
       '<div class="hero-panel-stat">'+
         '<div class="hero-panel-meta">'+heroMeta+'</div>'+
@@ -2419,8 +2406,8 @@ function renderOverviewTab(s,group){
         ((hChip||tierPill)?'<div class="hero-panel-deltas">'+hChip+tierPill+'</div>':'')+
       '</div>'+
       '<div class="hero-panel-context">'+
-        (hPInfo?'<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>':'')+
-        (hPInfo?'<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>':'')+
+        hRankHtml+
+        hBarHtml+
         (!hPInfo && hEntry && !hShowRank ? '<div class="hero-panel-unq" title="Below MLB qualification threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers). Rank suppressed for rate stats.">Below qualification · rank not shown</div>' : '')+
         heroSparkHtml+
       '</div>'+
@@ -2444,10 +2431,16 @@ function renderOverviewTab(s,group){
       var basisVal=basis==='mlb'?leagueAverage(group,b.k):teamAverage(group,b.k);
       chip=avgChip(b.raw,basisVal,dec,entry&&entry.lowerIsBetter);
     }
+    // Outside-top players: skip the rank caption + bar entirely. Tier
+    // shading carries the "below average" signal on its own.
+    var boxRankHtml='';
+    if(pInfo && !pInfo.outsideTop){
+      boxRankHtml=pctBar(pInfo.percentile)+rankCaption(pInfo.rank,pInfo.total);
+    }
     html+='<div class="stat-box'+tierCls+'">'+
           '<div class="stat-val">'+(b.v!=null?b.v:'—')+'</div>'+
           '<div class="stat-lbl">'+b.l+'</div>'+
-          (pInfo?pctBar(pInfo.percentile)+rankCaption(pInfo.rank,pInfo.total):'')+
+          boxRankHtml+
           chip+
           '</div>';
   });
@@ -2560,23 +2553,53 @@ export async function loadLeagueMatchups(){
   el.style.transition='opacity 0.18s ease';el.style.opacity='0.3';
   var dateStr=etDatePlus(etDateStr(),leagueMatchupOffset);
   try{
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team');var d=await r.json(),games=[];
+    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+dateStr+'&hydrate=linescore,team,probablePitcher');
+    var d=await r.json(),games=[];
     (d.dates||[]).forEach(function(dt){games=games.concat(dt.games||[]);});
     games.sort(function(a,b){return new Date(a.gameDate).getTime()-new Date(b.gameDate).getTime();});
     if(!games.length){el.innerHTML='<div class="empty-state">No games scheduled '+dayLabel.replace("'s","")+'</div>';requestAnimationFrame(function(){el.style.opacity='1';});return;}
+    function lastName(full){if(!full)return '';var parts=full.split(' ');return parts.length>1?parts.slice(1).join(' '):full;}
+    function pitcherChip(side){
+      var p=side&&side.probablePitcher;
+      if(!p||!p.fullName)return '<div class="matchup-pitcher matchup-pitcher--tbd">TBD</div>';
+      return '<div class="matchup-pitcher" title="'+p.fullName+'">'+lastName(p.fullName)+'</div>';
+    }
     var html='<div class="matchup-grid">';
     games.forEach(function(g){
       var home=g.teams.home,away=g.teams.away,status=g.status.abstractGameState,detailed=g.status.detailedState;
       var actuallyLive=status==='Live'&&detailed!=='Warmup'&&detailed!=='Pre-Game';
       var clickable=(actuallyLive||status==='Final');
+      var preGame=!actuallyLive&&status!=='Final';
       var statusHtml='';
       if(actuallyLive){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'Bot ':'Top ')+g.linescore.currentInning:'In Progress';statusHtml='<div class="matchup-status is-live"><span class="matchup-live-dot"></span>LIVE · '+inn+'</div>';}
       else if(status==='Final')statusHtml='<div class="matchup-status">FINAL</div>';
       else{var t=new Date(g.gameDate);statusHtml='<div class="matchup-status">'+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</div>';}
-      var scoreOrVs;if(actuallyLive){scoreOrVs='<span class="matchup-score">'+(away.score!=null?away.score:0)+'</span><span class="matchup-divider">—</span><span class="matchup-score">'+(home.score!=null?home.score:0)+'</span>';}else if(status==='Final'){var awayWon=away.score>home.score;scoreOrVs='<span class="matchup-score'+(awayWon?'':' is-dim')+'">'+(away.score!=null?away.score:0)+'</span><span class="matchup-divider">—</span><span class="matchup-score'+(awayWon?' is-dim':'')+'">'+(home.score!=null?home.score:0)+'</span>';}else{scoreOrVs='<span class="matchup-vs">vs</span>';}
+      // Series eyebrow — only for multi-game series and only when both fields present.
+      var seriesHtml='';
+      if(g.gamesInSeries>1&&g.seriesGameNumber){
+        seriesHtml='<div class="matchup-series">Game '+g.seriesGameNumber+' of '+g.gamesInSeries+'</div>';
+      }
+      var scoreOrVs;
+      if(actuallyLive){scoreOrVs='<span class="matchup-score">'+(away.score!=null?away.score:0)+'</span><span class="matchup-divider">—</span><span class="matchup-score">'+(home.score!=null?home.score:0)+'</span>';}
+      else if(status==='Final'){var awayWon=away.score>home.score;scoreOrVs='<span class="matchup-score'+(awayWon?'':' is-dim')+'">'+(away.score!=null?away.score:0)+'</span><span class="matchup-divider">—</span><span class="matchup-score'+(awayWon?' is-dim':'')+'">'+(home.score!=null?home.score:0)+'</span>';}
+      else{scoreOrVs='<span class="matchup-vs">vs</span>';}
       var awayRec=leagueStandingsMap[away.team.id],homeRec=leagueStandingsMap[home.team.id];
       var awayD=TEAMS.find(function(t){return t.id===away.team.id;})||{},homeD=TEAMS.find(function(t){return t.id===home.team.id;})||{};
-      html+='<div class="matchup-card"'+(clickable?' onclick="showLiveGame('+g.gamePk+')"':'')+'>'+statusHtml+'<div class="matchup-score-row"><div class="matchup-team">'+sectionCallbacks.teamCapImg(away.team.id,away.team.teamName,awayD.primary||'#333',awayD.secondary||'#fff','matchup-cap')+'<div class="matchup-abbr">'+(away.team.abbreviation||away.team.teamName)+'</div><div class="matchup-record">'+(awayRec?'('+awayRec.w+'-'+awayRec.l+')':'')+'</div></div>'+scoreOrVs+'<div class="matchup-team">'+sectionCallbacks.teamCapImg(home.team.id,home.team.teamName,homeD.primary||'#333',homeD.secondary||'#fff','matchup-cap')+'<div class="matchup-abbr">'+(home.team.abbreviation||home.team.teamName)+'</div><div class="matchup-record">'+(homeRec?'('+homeRec.w+'-'+homeRec.l+')':'')+'</div></div></div></div>';
+      // Probable pitchers — only render the row pre-game; live and final cards
+      // suppress to avoid mixing prediction with actual outcome.
+      var pitcherRow=preGame
+        ? '<div class="matchup-pitcher-row"><div class="matchup-pitcher-col">'+pitcherChip(away)+'</div><div class="matchup-pitcher-sep">vs</div><div class="matchup-pitcher-col">'+pitcherChip(home)+'</div></div>'
+        : '';
+      html+='<div class="matchup-card"'+(clickable?' onclick="showLiveGame('+g.gamePk+')"':'')+'>'+
+        seriesHtml+
+        statusHtml+
+        '<div class="matchup-score-row">'+
+          '<div class="matchup-team">'+sectionCallbacks.teamCapImg(away.team.id,away.team.teamName,awayD.primary||'#333',awayD.secondary||'#fff','matchup-cap')+'<div class="matchup-abbr">'+(away.team.abbreviation||away.team.teamName)+'</div><div class="matchup-record">'+(awayRec?'('+awayRec.w+'-'+awayRec.l+')':'')+'</div></div>'+
+          scoreOrVs+
+          '<div class="matchup-team">'+sectionCallbacks.teamCapImg(home.team.id,home.team.teamName,homeD.primary||'#333',homeD.secondary||'#fff','matchup-cap')+'<div class="matchup-abbr">'+(home.team.abbreviation||home.team.teamName)+'</div><div class="matchup-record">'+(homeRec?'('+homeRec.w+'-'+homeRec.l+')':'')+'</div></div>'+
+        '</div>'+
+        pitcherRow+
+      '</div>';
     });
     el.innerHTML=html+'</div>';
   }catch(e){el.innerHTML='<div class="error">Could not load games</div>';}
@@ -2594,11 +2617,57 @@ export function switchMatchupDay(offset,btn){
 
 async function loadLeagueNews(){var el=document.getElementById('leagueNews');el.innerHTML='<div class="loading">Loading...</div>';try{var r=await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=15');var d=await r.json(),articles=(d.articles||[]).filter(function(a){return a.headline;}).slice(0,10);if(!articles.length)throw new Error('none');var html='';articles.forEach(function(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var headline=escapeNewsHtml(decodeNewsHtml(a.headline||''));html+='<div class="news-item"><div class="news-dot"></div><div><div class="news-title"><a href="'+link+'" target="_blank">'+headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';});el.innerHTML=html;}catch(e){el.innerHTML='<div class="error">News unavailable (ESPN API may be blocked by browser).</div>';}}
 
-async function loadLeagueLeaders(){var el=document.getElementById('leagueLeaders');el.innerHTML='<div class="loading">Loading leaders...</div>';var stats=leagueLeaderTab==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS,group=leagueLeaderTab;try{var cats=stats.map(function(s){return s.cats;}).join(',');var r=await fetch(MLB_BASE+'/stats/leaders?leaderCategories='+cats+'&season='+SEASON+'&leaderGameTypes=R&limit=10&statGroup='+group+'&hydrate=person');var d=await r.json(),leaderMap={};(d.leagueLeaders||[]).forEach(function(cat){var key=cat.leaderCategory;if(key)leaderMap[key]=cat.leaders||[];});leagueLeadersCache[leagueLeaderTab]=leaderMap;renderLeagueLeaders(leaderMap,stats);}catch(e){el.innerHTML='<div class="error">Could not load leaders</div>';}}
+// v4.8.7: read from the shared state.leagueLeaders cache (populated by
+// fetchLeagueLeaders, used by Stats percentile system + Today's Leaders prior
+// to v4.8.6) instead of doing a parallel /stats/leaders fetch. Same data, one
+// fewer request per League visit, and category lists stay aligned with the
+// percentile system.
+async function loadLeagueLeaders(){
+  var el=document.getElementById('leagueLeaders');
+  el.innerHTML='<div class="loading">Loading leaders...</div>';
+  var group=leagueLeaderTab;
+  try{
+    await fetchLeagueLeaders(group);
+    renderLeagueLeaders(group);
+  }catch(e){
+    el.innerHTML='<div class="error">Could not load leaders</div>';
+  }
+}
 
-function renderLeagueLeaders(leaderMap,stats){var el=document.getElementById('leagueLeaders'),html='<div class="league-leaders-grid">';stats.forEach(function(s){var leaders=leaderMap[s.cats]||[];html+='<div class="leader-stat-card"><div class="leader-stat-label">'+s.label+'</div>';if(!leaders.length)html+='<div class="empty-state" style="padding:6px;font-size:.8rem">No data</div>';leaders.slice(0,10).forEach(function(l,i){var val=l.value;if(val!=null){var n=parseFloat(val);if(!isNaN(n))val=s.noLeadZero&&n>0&&n<1?n.toFixed(s.decimals).slice(1):n.toFixed(s.decimals);}html+='<div class="leader-row"><div class="leader-row-left"><span class="leader-rank">'+(i+1)+'</span><span class="leader-name">'+((l.person&&l.person.fullName)||'—')+'</span></div><span class="leader-val">'+val+'</span></div>';});html+='</div>';});el.innerHTML=html+'</div>';}
+function renderLeagueLeaders(group){
+  var el=document.getElementById('leagueLeaders');
+  if(!el)return;
+  var stats=group==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS;
+  var html='<div class="league-leaders-grid">';
+  stats.forEach(function(s){
+    var leaders=state.leagueLeaders[group+':'+s.cats]||[];
+    html+='<div class="leader-stat-card"><div class="leader-stat-label">'+s.label+'</div>';
+    if(!leaders.length){
+      html+='<div class="empty-state" style="padding:6px;font-size:.8rem">No data</div>';
+    }
+    leaders.slice(0,10).forEach(function(l,i){
+      var val=l.value;
+      if(val!=null){
+        var n=parseFloat(val);
+        if(!isNaN(n))val=s.noLeadZero&&n>0&&n<1?n.toFixed(s.decimals).slice(1):n.toFixed(s.decimals);
+      }
+      html+='<div class="leader-row"><div class="leader-row-left"><span class="leader-rank">'+(i+1)+'</span><span class="leader-name">'+(l.playerName||'—')+'</span></div><span class="leader-val">'+val+'</span></div>';
+    });
+    html+='</div>';
+  });
+  el.innerHTML=html+'</div>';
+}
 
-export function switchLeagueLeaderTab(tab,btn){leagueLeaderTab=tab;document.getElementById('leagueHitTab').classList.toggle('active',tab==='hitting');document.getElementById('leaguePitTab').classList.toggle('active',tab==='pitching');var cached=leagueLeadersCache[tab],stats=tab==='hitting'?LEAGUE_HIT_STATS:LEAGUE_PIT_STATS;if(cached&&Object.keys(cached).length)renderLeagueLeaders(cached,stats);else loadLeagueLeaders();}
+export function switchLeagueLeaderTab(tab,btn){
+  leagueLeaderTab=tab;
+  document.getElementById('leagueHitTab').classList.toggle('active',tab==='hitting');
+  document.getElementById('leaguePitTab').classList.toggle('active',tab==='pitching');
+  // Render immediately if the shared cache is warm; otherwise show loading +
+  // warm via loadLeagueLeaders.
+  var key=tab+':'+(tab==='hitting'?'homeRuns':'earnedRunAverage');
+  if(state.leagueLeaders[key]&&state.leagueLeaders[key].length)renderLeagueLeaders(tab);
+  else loadLeagueLeaders();
+}
 
 // ── LIVE GAME VIEW ──────────────────────────────────────────────────────────
 export function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,TIMING.LIVE_REFRESH_MS);}

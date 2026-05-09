@@ -45,7 +45,7 @@ Keyboard listener is located in `app.js` near the bottom, after the `visibilityc
 - **🎬 Replay HR** (`Shift+H`) — `replayHRCard()`: scans `feedItems` for HR plays, calls `showPlayerCard()` with real game data
 - **💰 Replay RBI** (`Shift+B`) — `replayRBICard()`: scans `feedItems` for non-HR scoring plays; bypasses cooldown
 - **💫 Card Variants** (`Shift+V`) — `window.PulseCard.demo()`: cycle through all 4 HR card templates (V1 Stylized, V2 Jumbotron, V3 Comic/Pop Art, V4 Broadcast)
-- **🎴 Test Card** (`Shift+G`) — `generateTestCard()`: injects one random card into collection with `force=true`. Pool = `rosterData.hitting` + hitting leaders from `leagueLeadersCache.hitting` + `dailyLeadersCache` (deduplicated)
+- **🎴 Test Card** (`Shift+G`) — `generateTestCard()`: injects one random card into collection with `force=true`. Pool = `rosterData.hitting` + hitting leaders synthesized from `state.leagueLeaders` (the old `leagueLeadersCache` local was retired in v4.8.7; `getLeagueLeadersCache()` callback in `main.js:248` rebuilds the legacy `{hitting:{cat:[{person,team}]}}` shape from the new flat cache so `book.js:addLeadersFromMap` keeps working) + `dailyLeadersCache` (deduplicated)
 - **📽️ Test Clip** (`Shift+P`) — `devTestVideoClip()`: fallback chain: `lastVideoClip` → `yesterdayContentCache` → fetch yesterday's first game content
 - **📺 Video Debug** — `openVideoDebugPanel()`: diagnostics for video clip matching and playback URLs
 - **🔔 Test Notification** — `testLocalNotification()`: fires a local browser notification via Service Worker to test push permissions

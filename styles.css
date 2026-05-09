@@ -477,6 +477,53 @@ nav button.active {
   font-weight: 600
 }
 
+.matchup-series {
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 4px;
+  font-weight: 600
+}
+
+.matchup-pitcher-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent)
+}
+
+.matchup-pitcher-col {
+  text-align: center;
+  min-width: 0
+}
+
+.matchup-pitcher {
+  font-size: .68rem;
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis
+}
+
+.matchup-pitcher--tbd {
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 500
+}
+
+.matchup-pitcher-sep {
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase
+}
+
 .leader-stat-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -1415,6 +1462,11 @@ nav button.active {
 @media (max-width: 767px) {
   .team-stats-strip { grid-template-columns: 1fr }
 }
+@media (max-width: 480px) {
+  .team-stat-tile { padding: 10px 12px }
+  .team-stat-tile-head { margin-bottom: 6px }
+  .team-stat-tile-stat .v { font-size: 1.05rem }
+}
 
 .stat-grid {
   display: grid;
@@ -1674,6 +1726,10 @@ nav button.active {
   .hero-panel { grid-template-columns: 1fr; padding: 18px; gap: 16px }
   .hero-panel-val { font-size: 3.2rem }
 }
+@media (max-width: 480px) {
+  .hero-panel { padding: 14px }
+  .hero-panel-val { font-size: 2.6rem }
+}
 
 /* ── Stats v2: Qualified toggle on Leaders card ─────────────────────────── */
 .leaders-card-head {
@@ -1838,6 +1894,7 @@ nav button.active {
   margin-top: 14px
 }
 @media (max-width: 767px) { .gamelog-strip { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (max-width: 480px) { .gamelog-strip { grid-template-columns: 1fr } }
 .glog-item {
   background: var(--card2);
   border: 1px solid var(--border);
@@ -2368,96 +2425,6 @@ nav button.active {
   .compare-cell { font-size: .9rem }
 }
 
-/* ── Stats v3 / Sprint 3: Today's Leaders (MLB-wide module) ─────────────── */
-.todays-leaders-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 12px;
-  margin-top: 8px
-}
-@media (max-width: 1024px) { .todays-leaders-grid { grid-template-columns: repeat(2, minmax(0,1fr)) } }
-@media (max-width: 480px)  { .todays-leaders-grid { grid-template-columns: 1fr } }
-.tl-cat {
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px
-}
-.tl-cat-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border)
-}
-.tl-cat-label {
-  font-size: .78rem;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: .08em
-}
-.tl-cat-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px
-}
-.tl-cat-list li {
-  display: grid;
-  grid-template-columns: 18px minmax(0,1fr) auto auto;
-  gap: 8px;
-  align-items: baseline;
-  font-size: .78rem;
-  font-variant-numeric: tabular-nums
-}
-.tl-rank {
-  color: var(--muted);
-  font-weight: 700;
-  font-size: .68rem;
-  text-align: center
-}
-.tl-name {
-  color: var(--text);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0
-}
-.tl-team {
-  color: var(--muted);
-  font-size: .62rem;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  font-weight: 700
-}
-.tl-val {
-  color: var(--accent);
-  font-weight: 800;
-  text-align: right
-}
-.tl-cat-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 16px 0 }
-/* Today's Leaders card head + subtitle. Replaced four inline style="…"
-   attributes from v4.6.18 in v4.6.26. */
-.todays-leaders-card { margin-top: 16px }
-.todays-leaders-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px
-}
-.todays-leaders-sub {
-  color: var(--muted);
-  font-weight: 500;
-  font-size: .72rem;
-  letter-spacing: .04em
-}
-.todays-leaders-tabs { margin: 0 }
-
 /* ── Stats v3 / Sprint 3: Career tab (year-by-year tables) ─────────────── */
 .career-section { margin-top: 16px }
 .career-section:first-child { margin-top: 14px }
@@ -2473,8 +2440,45 @@ nav button.active {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--card2)
+  background: var(--card2);
+  position: relative
 }
+.career-table-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--card2));
+  opacity: 1;
+  transition: opacity .2s ease
+}
+.career-table-wrap.scrolled-end::after { opacity: 0 }
+.career-swipe-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,.04);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+  font-style: italic
+}
+.career-swipe-hint button {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .9rem;
+  padding: 0 4px;
+  line-height: 1
+}
+.career-swipe-hint button:hover { color: var(--text) }
 .career-table {
   width: 100%;
   border-collapse: collapse;
@@ -2510,6 +2514,52 @@ nav button.active {
 .career-table tbody tr:last-child td { border-bottom: 0 }
 .career-table tbody tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent) }
 .career-col-avg, .career-col-obp, .career-col-slg, .career-col-ops, .career-col-era, .career-col-whip { color: var(--accent); font-weight: 700 }
+
+/* ── Stats mobile polish (≤480px): tighter Player tabs ── */
+@media (max-width: 480px) {
+  .player-tab { font-size: .62rem; padding: 6px 8px; letter-spacing: .02em }
+}
+
+/* ── Stats mobile quick-nav (≤480px only — hidden on tablet/desktop) ── */
+.stats-quicknav { display: none }
+@media (max-width: 480px) {
+  .stats-quicknav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: calc(42px + env(safe-area-inset-top));
+    z-index: 50;
+    padding: 8px 4px;
+    margin: -8px -4px 8px;
+    background: var(--dark);
+    border-bottom: 1px solid var(--border);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%)
+  }
+  .stats-quicknav::-webkit-scrollbar { display: none }
+  .stats-quicknav button {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: color .15s ease, border-color .15s ease, background .15s ease
+  }
+  .stats-quicknav button.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--card2))
+  }
+}
 
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {

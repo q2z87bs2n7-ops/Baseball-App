@@ -24,8 +24,12 @@ Division standings (active team highlighted) + Wild Card Race (top 9 non-divisio
 Source: `/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,division,league`
 
 ## 📊 Stats
-Five-card layout (Stats Tab Revamp Sprints 1+2+3, shipped under v4.7):
-**Team Stats** (top, full-width) → **Leaders | Roster | Player Stats** (three-column row) → **Today's Leaders** (bottom, full-width).
+Four-card layout (Stats Tab Revamp Sprints 1+2+3 shipped under v4.7; mobile-polish + Today's Leaders removal in v4.9):
+**Team Stats** (top, full-width) → **Leaders | Roster | Player Stats** (three-column row).
+
+Today's Leaders module was removed in v4.8.6 — it duplicated ~95% of the League → Stat Leaders card (same `state.leagueLeaders` source, near-identical category list).
+
+A sticky 4-chip quick-nav (`#statsQuickNav` / `installStatsQuickNav()` in `src/sections/loaders.js`) appears at the top of `#stats` on mobile only (≤480px, gated by media query). Tapping a chip smooth-scrolls to the matching card; an IntersectionObserver lights the active chip. Hidden at ≥481px so iPad/desktop layout is unchanged.
 
 ### Team Stats card (`#teamStats`, `loadTeamStats()`)
 Full-width card showing team-wide hitting + pitching tiles (HR / RBI / AVG / OPS / ERA / WHIP / K / SV) + a record / last-10 / run-diff form line. Each tile shows the stat value alongside a `#N MLB` rank chip in `var(--accent)` (chip text uses `--accent` not `--primary` so dark-primary teams stay readable).
@@ -53,13 +57,6 @@ The card title row also has a **⇄ Compare** trigger (v4.6.24) that opens the C
 | **Advanced** | **Pitchers** (Sprint 2): 140px SVG donut + ranked list from `/people/{id}/stats?stats=pitchArsenal&season=2026`. Each pitch type gets a deterministic color (FF=red, SI=orange, SL=yellow, CU=purple, CH=green, FC=pink, FS=teal, ST=gold, etc.); donut center shows the most-used pitch's pct and label. **Hitters** (Sprint 3): hero trio (wOBA · BABIP · wRC+) + supporting metric grid (ISO / wRAA / wRC / BB rate / K rate / P/PA / AB/HR / GO/AO / XBH / TB) from `/people/{id}/stats?stats=sabermetrics + seasonAdvanced`, **plus** a 3x3 strike-zone heat map (`?stats=hotColdZones`) showing batting AVG by zone with a red→yellow→green heat scale. Source-note disclaims that Statcast (xBA / xwOBA / exit velo / barrel rate) lives on Baseball Savant and isn't proxied here. |
 | **Career** | Sprint 3. Year-by-year tables for hitting + pitching (two-way players get both, primary group first). Hitting cols: Year · Team · G · PA · AVG · HR · RBI · SB · OBP · SLG · OPS. Pitching cols: Year · Team · G · IP · W · L · ERA · WHIP · K · BB · SV. Sticky header row, horizontal-scroll on narrow viewports (min-width 560px). Source: `/people/{id}/stats?stats=yearByYear&group=hitting,pitching`. (Awards module dropped pre-prod in v4.6.21; the `/people/{id}/awards` endpoint is unused.) |
 
-### Today's Leaders card (`#todaysLeadersCard`, `loadTodaysLeaders()`)
-Sprint 3. Full-width card below the 3-col Stats row. Hitting / Pitching tab toggle. 6-category grid per group:
-- Hitting: HR · AVG · RBI · OPS · OBP · SB
-- Pitching: ERA · K · W · SV · WHIP · IP
-
-Each category shows top-5 league leaders: rank · last name · team abbr · value. Reuses `state.leagueLeaders` cache (warmed by both `fetchLeagueLeaders('hitting')` + `…('pitching')` in parallel). leaderCategory strings MUST match the canonical names from `LEADER_CATS_FOR_PERCENTILE` (`runsBattedIn`, `onBasePlusSlugging`, `walksAndHitsPerInningPitched`, etc.) — the friendly stat names (`rbi`, `ops`, `whip`) won't hit the cache (v4.6.19 fix).
-
 ### Compare overlay (`#compareOverlay`)
 Sprint 3 (Batch D, last shipped feature). Same-team head-to-head comparison launched from the **⇄ Compare** trigger pill on the Player Stats card. Two slot cards (headshot · name · jersey · position · roster dropdown) side-by-side; group toggle (⚾ Hitting / 🥎 Pitching) when both groups have entries. Each row of the comparison grid shows `[A value] · STAT LABEL · [B value]` with the winner cell highlighted green and polarity-aware (lower-better for ERA / WHIP / BB-9 / counting losses). Re-uses `state.statsCache` season stats — no extra fetches when both players are warm.
 
@@ -71,7 +68,7 @@ Cross-team compare deferred (would need a name-search picker + per-player season
 |---|---|
 | `LEADER_CATS_FOR_PERCENTILE` | 27-stat catalog mapping internal stat keys → MLB API leader categories (with `decimals` and `lowerIsBetter` flags). |
 | `fetchLeagueLeaders(group)` | TTL-cached league leader pulls keyed by `group + ':' + leaderCategory`. Stored in `state.leagueLeaders`. |
-| `computePercentile(group, statKey, raw)` | Binary-search rank → 0–99 percentile against the cached leader board. Returns `{ percentile, rank, total }`. |
+| `computePercentile(group, statKey, raw)` | Binary-search rank → 0–99 percentile against the cached leader board. Returns `{ percentile, rank, total, outsideTop }`. `outsideTop=true` when the player's value never beats nor ties any entry in the leader pool — the rank-fallback `arr.length` doesn't actually mean "tied for last", it means "below the leader pool entirely" (v4.8.11 — renderers skip the rank caption + bar when set so `#100 of 100` doesn't render misleadingly). |
 | `tierFromPercentile(p)` | `'elite'` ≥ 90 / `'good'` 70–89 / `'mid'` 30–69 / `'bad'` < 30. |
 | `pctBar(p)` / `rankCaption(rank, total)` | HTML fragments for the percentile bar + `MLB · #N` caption used by the Overview grid + hero panel. |
 | `avgChip(playerVal, basisVal, decimals, lowerIsBetter)` | `<span class="delta-chip avg-chip pos|neg">Avg: X</span>` — shows the basis average (league or team) directly, color-coded by polarity. Replaced the prior `deltaChip` `+/−Δ` rendering in v4.6.12. |

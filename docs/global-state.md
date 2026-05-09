@@ -33,7 +33,7 @@ let lastNCache       = {}               // playerId → { last15: <stat>, ts } �
 let advancedHittingCache = {}            // playerId → { stat: {merged blob}, ts } — 24h TTL; sabermetrics + seasonAdvanced merged, feeds the Advanced tab metrics grid for hitters
 let hotColdCache         = {}            // playerId → { data:[zone splits], ts } — 24h TTL; /people/{id}/stats?stats=hotColdZones, feeds the strike-zone heat map under Advanced (hitters)
 let careerCache          = {}            // playerId → { hitting:[year rows], pitching:[year rows], ts } — 24h TTL; feeds Career tab year-by-year tables
-let todaysLeadersTab     = 'hitting'    // 'hitting' | 'pitching' — Today's Leaders card active group
+let careerSwipeHintShown = false        // persisted in localStorage('mlb_stats_career_hint_shown'); gates the one-time mobile "← Swipe to see more →" banner above the Career table (v4.9)
 // Compare overlay state (in-memory only; no persistence)
 let compareOpen          = false
 let compareA             = null         // full roster player object {person, position, jerseyNumber}

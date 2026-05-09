@@ -130,7 +130,7 @@ import {
   loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
   loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
   loadStandings,
-  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, loadTodaysLeaders, switchTodaysLeadersTab, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
+  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
   selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
   showLiveGame, closeLiveView, fetchLiveGame,
@@ -245,7 +245,28 @@ function initReal() {
     showSignInCTA: showSignInCTA,
     showPlayerCard: showPlayerCard,
     showRBICard: showRBICard,
-    getLeagueLeadersCache: function() { return typeof leagueLeadersCache !== 'undefined' ? leagueLeadersCache : null; },
+    // Was a local /stats/leaders cache from loadLeagueLeaders. Removed in
+    // v4.8.7 when League Leaders started reading from state.leagueLeaders. This
+    // synthesizes the old {hitting:{cat:[{person,team,...}]}} shape so the
+    // test-card pool (book.js:addLeadersFromMap) keeps working.
+    getLeagueLeadersCache: function() {
+      var out = { hitting: {}, pitching: {} };
+      var cache = state.leagueLeaders || {};
+      Object.keys(cache).forEach(function(key) {
+        var i = key.indexOf(':');
+        if (i < 0) return;
+        var grp = key.slice(0, i), cat = key.slice(i + 1);
+        if (!out[grp]) return;
+        out[grp][cat] = (cache[key] || []).map(function(l) {
+          return {
+            person: { id: l.playerId, fullName: l.playerName },
+            team: { id: l.teamId },
+            value: l.value
+          };
+        });
+      });
+      return out;
+    },
   });
   setPlayerCardCallbacks({
     fetchBoxscore: fetchBoxscore,
@@ -473,7 +494,7 @@ function showSection(id,btn){
   }
   if(id==='schedule'&&!state.scheduleLoaded)loadSchedule();
   if(id==='standings')loadStandings();
-  if(id==='stats'){loadTeamStats();loadTodaysLeaders();if(!state.rosterData.hitting.length){loadRoster();loadLeaders();}else loadLeaders();}
+  if(id==='stats'){loadTeamStats();installStatsQuickNav();if(!state.rosterData.hitting.length){loadRoster();loadLeaders();}else loadLeaders();}
   if(id==='league')loadLeagueView();
   if(id==='news')loadNews();
   // Restore scroll position for incoming section + sync URL hash for deep linking
@@ -735,7 +756,7 @@ Object.assign(window, {
   openYesterdayRecap, closeYesterdayRecap,
   // Section loaders (refresh buttons, day toggles)
   loadSchedule, loadNews, loadLeaders, loadLeagueMatchups, changeMonth,
-  switchLeaderTab, selectLeaderPill, switchRosterTab, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, switchTodaysLeadersTab, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup, switchNewsFeed, toggleNewsTeamLens,
+  switchLeaderTab, selectLeaderPill, switchRosterTab, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup, switchNewsFeed, toggleNewsTeamLens,
   switchLeagueLeaderTab, switchMatchupDay, selectNewsSource,
   // Live game view + matchup grid
   showLiveGame, closeLiveView, fetchLiveGame, switchBoxTab, selectCalGame,

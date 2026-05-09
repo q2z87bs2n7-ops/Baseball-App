@@ -39,6 +39,7 @@ export const state = {
   qualifiedOnly: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_qualified_only') === '0') ? false : true,
   vsLeagueBasis: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_vs_basis')) || 'mlb',
   activeStatsTab: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_tab')) || 'overview',
+  careerSwipeHintShown: (typeof localStorage !== 'undefined' && localStorage.getItem('mlb_stats_career_hint_shown') === '1'),
   // Game Log + Sparkline cache: playerId → { games: [...], ts }
   gameLogCache: {},
   // Sprint-2 cache: cached current player season stat for cheap tab re-renders
@@ -50,8 +51,6 @@ export const state = {
   // Sprint-3 caches
   // Statcast / advanced hitting metrics: playerId → { stat: {...}, ts }
   advancedHittingCache: {},
-  // Today's Leaders module visibility / tab: 'hitting' | 'pitching'
-  todaysLeadersTab: 'hitting',
   // Career year-by-year cache: playerId → { hitting:[...], pitching:[...], ts }
   careerCache: {},
   // Strike-zone heat map cache: playerId → { zones:[...], ts } — populated
