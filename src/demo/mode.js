@@ -121,7 +121,7 @@ async function initDemo() {
   demoPaused=false;
   var mockBar=document.getElementById('mockBar');
   if(mockBar){
-    mockBar.style.display='block';
+    mockBar.style.display='flex';
     var badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='📽️ Demo';
     document.getElementById('demoSpeed1x').style.display='';

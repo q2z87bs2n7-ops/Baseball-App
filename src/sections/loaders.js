@@ -457,7 +457,7 @@ function renderHomeStandings(divMap){
 }
 
 // ── STATS/ROSTER SECTION ────────────────────────────────────────────────────
-export function selectLeaderPill(group,stat,btn){var selId=group==='hitting'?'hitLeaderStat':'pitLeaderStat';var sel=document.getElementById(selId);if(sel)sel.value=stat;var pillsId=group==='hitting'?'hitLeaderPills':'pitLeaderPills';document.getElementById(pillsId).querySelectorAll('.leader-pill').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');loadLeaders();}
+export function selectLeaderPill(group,stat,btn){var pillsId=group==='hitting'?'hitLeaderPills':'pitLeaderPills';document.getElementById(pillsId).querySelectorAll('.leader-pill').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');loadLeaders();}
 
 // Center an active tab inside its horizontally-scrolling container. Only scrolls
 // when the container actually overflows, so it's a no-op on desktop where tabs
@@ -470,10 +470,10 @@ function scrollTabIntoView(btn){
   p.scrollTo({left:Math.max(0,tgt),behavior:'smooth'});
 }
 
-export function switchLeaderTab(tab,btn){state.currentLeaderTab=tab;document.querySelectorAll('.stat-tabs button').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);document.getElementById('hitLeaderStat').style.display=tab==='hitting'?'block':'none';document.getElementById('pitLeaderStat').style.display=tab==='pitching'?'block':'none';document.getElementById('hitLeaderPills').style.display=tab==='hitting'?'flex':'none';document.getElementById('pitLeaderPills').style.display=tab==='pitching'?'flex':'none';loadLeaders();}
+export function switchLeaderTab(tab,btn){state.currentLeaderTab=tab;document.querySelectorAll('.stat-tabs button').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);document.getElementById('hitLeaderPills').style.display=tab==='hitting'?'flex':'none';document.getElementById('pitLeaderPills').style.display=tab==='pitching'?'flex':'none';loadLeaders();}
 
 export function loadLeaders(){
-  var group=state.currentLeaderTab,stat=group==='hitting'?document.getElementById('hitLeaderStat').value:document.getElementById('pitLeaderStat').value,data=state.statsCache[group];
+  var group=state.currentLeaderTab,pillsId=group==='hitting'?'hitLeaderPills':'pitLeaderPills',activePill=document.querySelector('#'+pillsId+' .leader-pill.active'),stat=activePill?activePill.dataset.stat:(group==='hitting'?'avg':'era'),data=state.statsCache[group];
   if(!data||!data.length){document.getElementById('leaderList').innerHTML='<div style="color:var(--muted);padding:12px;font-size:.85rem">Stats still loading...</div>';return;}
   var isAsc=['era','whip','walksAndHitsPerInningPitched'].indexOf(stat)>-1;
   var sorted=data.filter(function(s){return s.stat[stat]!=null&&s.stat[stat]!=='';}).slice().sort(function(a,b){return isAsc?parseFloat(a.stat[stat])-parseFloat(b.stat[stat]):parseFloat(b.stat[stat])-parseFloat(a.stat[stat]);}).slice(0,10);
@@ -576,7 +576,7 @@ export function selectNewsSource(key,btn){
 
 export async function loadNews(){
   var fullEl=document.getElementById('newsFull'),homeEl=document.getElementById('homeNews');
-  var teamBtn=document.getElementById('newsTeamBtn');if(teamBtn)teamBtn.textContent=state.activeTeam.short;
+  var teamLensBtn=document.getElementById('newsTeamBtn'),teamLensKnob=document.getElementById('newsTeamLensKnob');if(teamLensBtn){teamLensBtn.classList.toggle('on',state.newsFeedMode==='team');if(teamLensKnob)teamLensKnob.style.left=state.newsFeedMode==='team'?'21px':'2px';}
   if(fullEl)fullEl.innerHTML='<div class="loading">Loading news...</div>';if(homeEl)homeEl.innerHTML='<div class="loading">Loading news...</div>';
   var teamUrl='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?team='+state.activeTeam.espnId+'&limit=20';
   if(state.newsFeedMode==='team'){
@@ -607,13 +607,14 @@ export async function loadNews(){
   }
 }
 
-export function switchNewsFeed(mode,btn){
+export function switchNewsFeed(mode){
   state.newsFeedMode=mode;
-  ['newsMlbBtn','newsTeamBtn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
-  if(btn)btn.classList.add('active');
+  var lensBtn=document.getElementById('newsTeamBtn'),lensKnob=document.getElementById('newsTeamLensKnob');
+  if(lensBtn){lensBtn.classList.toggle('on',mode==='team');if(lensKnob)lensKnob.style.left=mode==='team'?'21px':'2px';}
   var pills=document.getElementById('newsSourcePills');if(pills)pills.style.display=(mode==='mlb')?'flex':'none';
   loadNews();
 }
+export function toggleNewsTeamLens(){switchNewsFeed(state.newsFeedMode==='team'?'mlb':'team');}
 
 // ── LEAGUE VIEW SECTION ─────────────────────────────────────────────────────
 export async function loadLeagueView(){if(leagueRefreshTimer){clearInterval(leagueRefreshTimer);leagueRefreshTimer=null;}leagueMatchupOffset=0;['matchupYest','matchupToday','matchupTomor'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.classList.toggle('active',i===1);});var lbl=document.getElementById('matchupDayLabel');if(lbl)lbl.textContent="Today's";await loadLeagueStandings();loadLeagueMatchups();loadLeagueNews();loadLeagueLeaders();leagueRefreshTimer=setInterval(loadLeagueMatchups,TIMING.LEAGUE_REFRESH_MS);}

@@ -38,7 +38,7 @@ Global live MLB play-by-play feed — scoring plays, home runs, RISP across all 
 
 Ticker: live-only chips sorted by inning progress. Expanded chip (base diamond SVG) fires when `g.onFirst || g.onSecond || g.onThird`. Feed: newest-first, inserted at correct chronological position via `data-ts` attributes.
 
-**`#pulseTopBar`** uses the shared `.section-bar` component (v4.4): eyebrow `⚡ MLB PULSE` + Lens/Radio toggles inline + a `⋯` overflow that opens a sheet with Sound, Yesterday-jump, and Theme. On mobile the launcher pills (`.ptb-launcher`) hide inline and surface only from the overflow sheet. Lens + Radio (`.ptb-toggle`) stay inline so their on/off state is always visible.
+**`#pulseTopBar`** uses the shared `.section-bar` component (v4.4): eyebrow `⚡ MLB PULSE` + Lens/Radio toggles inline + a `⋯` overflow that opens `#pulseOverflowSheet` with Yesterday, Sound, and Theme. A second `⋯` launcher opens `#pulseShortcuts` with Demo Mode, Cards, and Sound. On mobile the launcher pills (`.ptb-launcher`) hide inline and surface only from the overflow sheet. Lens + Radio (`.ptb-toggle`) stay inline so their on/off state is always visible.
 
 **`#playerCardOverlay` must stay top-level DOM** (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`) — never nested inside `#pulse`. Sections create stacking contexts that trap z-index. Current z-index: 600.
 
@@ -49,7 +49,7 @@ Story carousel (15 generators, rotation engine, all story types): `docs/story-ca
 Triggered from the Pulse story carousel or the ticker. Implemented as an overlay (`src/sections/yesterday.js`), not a `<section>`. **`#ydSectionBar`** uses the shared `.section-bar` component (v4.4.8): eyebrow `◷ HIGHLIGHTS` (renamed from "YESTERDAY" in v4.4.10) + a date scrubber (`‹ DATE ›`) as the primary control + a back button. Body shows hero player carousel, heroes strip, per-game tile grid, and collected-cards strip.
 
 ## 📰 News
-ESPN headlines, MLB / Team toggle (pill buttons). Defaults to MLB-wide (no team filter). Team pill shows `activeTeam.short`. Home card always shows team news regardless of toggle.
+ESPN headlines with a **MY TEAM lens toggle** (`#newsTeamBtn`) using the `ptb-lens ptb-toggle` CSS pattern (matching the Pulse MY TEAM lens). Toggle calls `toggleNewsTeamLens()` → `switchNewsFeed(mode)`. Source selector pills (`#newsSourcePills`) visible only in MLB-wide mode; "MLB.com" is the default source pill label. Defaults to MLB-wide (no team filter). Home card always shows team news regardless of toggle.
 
 ## ⚾ Live Game View
 Triggered from Home card or matchup grid. Score header + count/runners + current matchup + linescore + play log (newest first, grouped by inning half) + box score (tabbed away/home) + game info. FINAL header and auto-refresh stop when `abstractGameState === 'Final'`. Auto-refresh every 5 minutes.
@@ -64,3 +64,4 @@ Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}
 - **📻 Live Game Radio** (`#radioRow`, `#radioToggle`) — calls `toggleRadio()`; auto-pairs to focused game's flagship station if in `APPROVED_RADIO_TEAM_IDS`, else Fox Sports. Also toggled from `#ptbRadioBtn`; both synced by `setRadioUI()`.
 - **🛠️ Dev Tools** — `toggleDevTools()` opens `#devToolsPanel`. Includes 🔍 Radio Check sweep tool (moved from Settings in v3.43). See `docs/dev-tools.md` and `docs/radio-system.md`.
 - Panel closes on click outside. All settings persist via `localStorage`.
+- **Toggle element type (v4.6.4):** Radio, Invert, and Push toggles are `<button role="switch" aria-checked="false">` (converted from `<div role="checkbox">` for accessibility). `aria-checked` is reactively updated by `setRadioUI()`, `toggleInvert()`, and the push subscribe/unsubscribe functions.

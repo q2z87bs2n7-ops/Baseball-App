@@ -88,7 +88,16 @@ The signatures listed in the rest of this file are organised by topic, not by mo
 | `switchRosterTab(tab, btn)` | Switches roster tab, auto-selects first player of new tab |
 | `selectPlayer(id, type)` | Looks up full player object from rosterData, updates card title, fetches and renders season stats |
 | `renderPlayerStats(s, group)` | Renders stat grid with player position subtitle. 4-col for hitting/pitching, 3-col for fielding. |
-| `selectLeaderPill(group, stat, btn)` | Sets leader stat select + active pill, calls `loadLeaders()` |
+| `selectLeaderPill(group, stat, btn)` | Sets active pill (by `data-stat`), calls `loadLeaders()`. Select elements removed in v4.6.4 — stat now read from pill's `dataset.stat`. |
+
+## News Tab
+
+| Function | Purpose |
+|---|---|
+| `loadNews()` | Fetches headlines from active source; filters to team news when `state.newsFeedMode === 'team'`; populates `#newsFeed`. |
+| `switchNewsFeed(mode)` | Sets `state.newsFeedMode` ('mlb' or 'team'), syncs `#newsTeamBtn` `.on` class + knob position, shows/hides `#newsSourcePills` (visible in mlb mode only), calls `loadNews()`. |
+| `toggleNewsTeamLens()` | Toggles between `'mlb'` and `'team'` modes by calling `switchNewsFeed`. Exposed on `window` via main.js bridge. |
+| `selectNewsSource(source, btn)` | Sets active news source pill, calls `loadNews()`. |
 
 ## Around the League Tab
 
@@ -206,7 +215,7 @@ The signatures listed in the rest of this file are organised by topic, not by mo
 | `loadRadioStream(pick)` | Tears down prior `radioHls`. Routes to Hls.js / Safari native HLS / plain `<audio>`. |
 | `stopRadio()` | Pauses audio, destroys `radioHls`, clears `radioCurrentTeamId`, calls `setRadioUI(false, null)`. |
 | `handleRadioError(err)` | Console error + `alert()` + `setRadioUI(false, null)`. |
-| `setRadioUI(on, pick)` | Updates `#radioToggle` + `#radioStatusText`. Also syncs `#ptbRadioBtn`. |
+| `setRadioUI(on, pick)` | Updates `#radioToggle` + `#radioStatusText`. Also syncs `#ptbRadioBtn` dot. Sets `aria-checked` on the toggle button. |
 | `updateRadioForFocus()` | Hooked into `setFocusGame(pk)`. Reloads stream if focus changes and radio is playing. |
 | `openRadioCheck()` | Loads results+notes from localStorage, shows `#radioCheckOverlay`, closes Settings. |
 | `closeRadioCheck()` | Hides overlay, calls `radioCheckStop()`. |

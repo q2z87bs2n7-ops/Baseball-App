@@ -99,6 +99,7 @@ function handleRadioError(err) {
 export function setRadioUI(on, pick) {
   var t = document.getElementById('radioToggle'), k = document.getElementById('radioToggleKnob'), s = document.getElementById('radioStatusText');
   if (t) {
+    t.setAttribute('aria-checked', on ? 'true' : 'false');
     if (on) {
       t.style.background = '#22c55e'; k.style.left = '21px';
       var label = pick && pick.name ? pick.name : 'Radio';
