@@ -1241,14 +1241,26 @@ async function fetchPitchArsenal(playerId){
     var splits = (d.stats && d.stats[0] && d.stats[0].splits) ? d.stats[0].splits : [];
     var arsenal = splits.map(function(s){
       var st = s.stat || {};
+      // The pitchArsenal endpoint nests pitch identity under stat.type:
+      //   stat.type.code        e.g. "FF"
+      //   stat.type.description e.g. "Four-Seam Fastball"
+      // Older docs / mirrors sometimes used flat keys, so we fall through.
+      var t = st.type || {};
       return {
-        code: st.pitchTypeCode || (s.split && s.split.code) || '',
-        type: st.pitchType || st.description || (s.split && s.split.description) || '',
+        code: t.code || st.pitchTypeCode || (s.split && s.split.code) || '',
+        type: t.description || st.pitchType || st.description || (s.split && s.split.description) || '',
         count: parseInt(st.count, 10) || parseInt(st.numP, 10) || 0,
         pct: parseFloat(st.percentage) || parseFloat(st.pitchTypePercentage) || 0,
         velo: parseFloat(st.averageSpeed) || parseFloat(st.averageVelocity) || 0
       };
     }).filter(function(p){ return p.pct > 0 || p.count > 0; });
+    // The API returns percentage as a fraction in [0,1]. Normalize to a 0–100
+    // scale so the renderer can format with a single .toFixed(1)+'%' regardless
+    // of which payload variant the backend is on.
+    var maxPct = arsenal.reduce(function(m,p){ return Math.max(m, p.pct); }, 0);
+    if(maxPct > 0 && maxPct <= 1.5){
+      arsenal.forEach(function(p){ p.pct = p.pct * 100; });
+    }
     state.pitchArsenalCache[playerId] = { data: arsenal, ts: Date.now() };
     return arsenal;
   }catch(e){
