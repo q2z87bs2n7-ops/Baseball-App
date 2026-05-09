@@ -74,6 +74,11 @@ header {
   color: var(--accent)
 }
 
+.logo .header-crumb {
+  color: rgba(255,255,255,.55);
+  font-size: 11px
+}
+
 .logo img {
   filter: drop-shadow(0 0 3px rgba(255,255,255,.4))
 }
@@ -120,7 +125,7 @@ nav button[data-section="more"] {
   border-top: 1px solid var(--border);
   border-radius: 16px 16px 0 0;
   padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-  transform: translateY(120%);
+  transform: translateY(calc(100% + 72px + env(safe-area-inset-bottom)));
   transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
   z-index: 90;
   box-shadow: 0 -8px 32px rgba(0,0,0,.4);
@@ -164,6 +169,39 @@ nav button[data-section="more"] {
 .more-sheet-backdrop.open {
   opacity: 1;
   pointer-events: auto
+}
+
+@media(min-width:481px) {
+  .more-sheet,
+  .more-sheet-backdrop {
+    display: none !important
+  }
+}
+
+.nav-dot {
+  position: absolute;
+  top: 4px;
+  right: 18%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  transition: background 200ms ease
+}
+.nav-dot.live {
+  background: #22c55e;
+  animation: nav-dot-pulse 1.6s ease-in-out infinite
+}
+.nav-dot.fresh {
+  background: var(--accent)
+}
+@keyframes nav-dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1 }
+  50% { transform: scale(1.4); opacity: .6 }
+}
+nav button[data-section] {
+  position: relative
 }
 
 nav button.active {
@@ -2218,16 +2256,19 @@ select {
 
 @media(max-width:480px) {
   :root {
-    --header-h: 42px
+    --header-h: calc(42px + env(safe-area-inset-top))
   }
   html, body {
-    overflow-x: hidden
+    overflow-x: hidden;
+    overflow-x: clip
   }
   header {
     position: sticky;
     top: 0;
-    height: 42px;
+    height: calc(42px + env(safe-area-inset-top));
+    min-height: 0;
     padding: env(safe-area-inset-top) 12px 0;
+    flex-wrap: nowrap;
     justify-content: space-between
   }
   .team-chip {
@@ -2238,7 +2279,7 @@ select {
     margin-left: 8px;
     padding-left: 8px;
     border-left: 1px solid rgba(255,255,255,.18);
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: .16em;
     color: rgba(255,255,255,.55);
@@ -2294,6 +2335,53 @@ select {
   }
   nav button[data-section="more"] {
     display: flex
+  }
+  nav {
+    transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1)
+  }
+  nav.nav-hidden {
+    transform: translateY(110%)
+  }
+  .ptb-launcher {
+    display: none !important
+  }
+  .ptb-overflow {
+    display: inline-flex !important
+  }
+  .stat-tabs, .boxscore-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+    padding-right: 24px
+  }
+  .stat-tabs::-webkit-scrollbar, .boxscore-tabs::-webkit-scrollbar {
+    display: none
+  }
+  .stat-tabs > *, .boxscore-tabs > * {
+    flex-shrink: 0
+  }
+  .settings-panel {
+    display: block;
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    border-radius: 16px 16px 0 0;
+    padding: 16px 16px calc(72px + env(safe-area-inset-bottom));
+    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+    transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 200;
+    pointer-events: none
+  }
+  .settings-panel.open {
+    transform: translateY(0);
+    pointer-events: auto
   }
   .main {
     padding-bottom: calc(72px + env(safe-area-inset-bottom))
@@ -2555,6 +2643,7 @@ select {
   animation: progress-drain var(--toast-duration, 5s) linear forwards;
 }
 
+.section-bar,
 #pulseTopBar, #ydSectionBar {
   display: flex;
   align-items: center;
@@ -2563,6 +2652,43 @@ select {
   padding: 0.5rem 0.875rem;
   background: var(--dark);
   border-bottom: 1px solid var(--border);
+}
+
+.section-bar {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 80;
+}
+
+.section-bar-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.section-bar-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.section-bar-context .ptb-tagline {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-bar-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 #yesterday.section.active {
@@ -2595,6 +2721,27 @@ select {
   color: var(--accent);
   font-size: .8rem;
   flex-shrink: 0;
+}
+
+.ptb-overflow {
+  display: none;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.ptb-overflow:hover {
+  background: rgba(255,255,255,.08);
 }
 
 .ptb-brand {
