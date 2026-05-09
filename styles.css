@@ -2627,6 +2627,12 @@ select {
   min-width: 0;
 }
 
+.section-bar-context .ptb-tagline {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .section-bar-toggles {
   display: flex;
   align-items: center;
