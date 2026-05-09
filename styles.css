@@ -2223,7 +2223,7 @@ select {
 
 @media(max-width:480px) {
   :root {
-    --header-h: 42px
+    --header-h: calc(42px + env(safe-area-inset-top))
   }
   html, body {
     overflow-x: hidden;
@@ -2232,7 +2232,7 @@ select {
   header {
     position: sticky;
     top: 0;
-    height: 42px;
+    height: calc(42px + env(safe-area-inset-top));
     min-height: 0;
     padding: env(safe-area-inset-top) 12px 0;
     flex-wrap: nowrap;
