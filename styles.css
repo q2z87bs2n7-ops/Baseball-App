@@ -2119,33 +2119,9 @@ nav button.active {
 }
 .tl-cat-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 16px 0 }
 
-/* ── Stats v3 / Sprint 3: Career tab (Awards strip + year-by-year tables) ─ */
-.awards-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 14px
-}
-.awards-empty {
-  color: var(--muted);
-  font-size: .72rem;
-  letter-spacing: .04em;
-  font-style: italic
-}
-.award-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 16%, transparent), transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-  border-radius: 999px;
-  font-size: .72rem;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: .02em
-}
+/* ── Stats v3 / Sprint 3: Career tab (year-by-year tables) ─────────────── */
 .career-section { margin-top: 16px }
+.career-section:first-child { margin-top: 14px }
 .career-section-head {
   font-size: .65rem;
   letter-spacing: .14em;
