@@ -80,15 +80,63 @@ The signatures listed in the rest of this file are organised by topic, not by mo
 
 ## Stats Tab
 
+The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card, percentile / tier visualizations, vs-MLB / vs-team comparison chips, HOT/COLD badges, position-grouped Roster, and a 4-tab Player Stats card (Overview / Splits / Game Log / Advanced). Math + caching helpers live in `src/utils/stats-math.js`; UI wiring in `src/sections/loaders.js`.
+
+### Section loaders
+
 | Function | Purpose |
 |---|---|
+| `loadTeamStats()` | Fetches `/teams/{id}/stats?stats=season&group=hitting,pitching` + `/standings`; renders the full-width Team Stats card (HR / RBI / AVG / OPS / ERA / WHIP / K / SV tiles + record / last-10 / run-diff form line). Populates `state.teamStats` (also drives the Qualified threshold). |
 | `loadRoster()` | Fetches 40-man roster; splits hitting/pitching/fielding, auto-selects first hitter |
-| `fetchAllPlayerStats()` | Fetches season stats for all roster players in parallel; populates `statsCache` for Leaders panel |
-| `loadLeaders()` | Sorts and renders team leader list from statsCache |
+| `fetchAllPlayerStats()` | Fetches season stats for all roster players in parallel; populates `state.statsCache`. Kicks off `fetchLastNForRoster()` for HOT/COLD badges. |
+| `loadLeaders()` | Sorts and renders team leader list from `statsCache`. Honors `state.qualifiedOnly` (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers). Footer caption surfaces hidden count. Reads active pill from BOTH `#…LeaderPills` and `#…LeaderPillsExtras`. |
+| `switchLeaderTab(tab, btn)` | Switches hitting/pitching leader tab. Collapses BOTH extras rows + resets every `+ more` pill on tab switch (avoids the v4.6.12 leak). |
+| `selectLeaderPill(group, stat, btn)` | Clears `.active` across both rows for the group, marks `btn` active, re-runs `loadLeaders()`. Stat read from `dataset.stat`. |
+| `toggleLeaderMore(group, btn)` | Expand / collapse the extras pill row for `'hitting'` / `'pitching'`. Toggles the `[hidden]` attr; relies on `.leader-pill-extras[hidden] { display:none !important }` to override the `.stat-tabs { display:flex }` cascade. |
+| `toggleQualifiedOnly()` | Flips `state.qualifiedOnly`, persists to `localStorage('mlb_stats_qualified_only')`, re-renders the Leaders + the toggle UI. |
+
+### Roster + Player Stats
+
+| Function | Purpose |
+|---|---|
 | `switchRosterTab(tab, btn)` | Switches roster tab, auto-selects first player of new tab |
-| `selectPlayer(id, type)` | Looks up full player object from rosterData, updates card title, fetches and renders season stats |
-| `renderPlayerStats(s, group)` | Renders stat grid with player position subtitle. 4-col for hitting/pitching, 3-col for fielding. |
-| `selectLeaderPill(group, stat, btn)` | Sets active pill (by `data-stat`), calls `loadLeaders()`. Select elements removed in v4.6.4 — stat now read from pill's `dataset.stat`. |
+| `renderPlayerList()` | Roster card renderer. Buckets players by position (C / IF / OF / DH for hitting/fielding; SP / RP for pitching), emits sticky section headers, inline stat line, mini-bar vs team-best. Adds HOT/COLD badge for hitters. |
+| `selectPlayer(id, type)` | Looks up the full player object from `rosterData`, updates card title, fetches season stats, kicks off `fetchGameLog()` in parallel (so the Overview sparkline and Game Log tab have data ready). |
+| `renderPlayerStats(s, group)` | **Tab orchestrator** (Sprint 2). Caches `state.selectedPlayerStat`, syncs `#playerTabs` UI, emits all four tab panels (only the active one visible). Re-triggers lazy loaders for whichever non-Overview tab is active when the user changes player. Fielding view auto-collapses to Overview only. |
+| `renderOverviewTab(s, group)` | Returns the Overview HTML: headshot · `Compare [VS MLB] [VS TEAM]` basis pills · hero panel (4rem stat + rank + percentile bar + Avg chip + tier pill + sparkline) · 4-col supporting grid (each box: stat / label / percentile bar / `MLB · #N` rank caption / Avg chip). |
+| `switchPlayerStatsTab(tab, btn)` | Switches Player Stats tab. Persists to `localStorage('mlb_stats_tab')`. Fires the lazy renderer for the target tab if its cache is empty (`fetchGameLog` / `fetchStatSplits` / `fetchPitchArsenal`); class-flip if cached. |
+| `switchVsBasis(basis)` | Toggles `state.vsLeagueBasis` between `'mlb'` and `'team'`. Re-renders Overview using the cached `state.statsCache` entry — no `/people` refetch. Persisted. |
+
+### Per-tab data + renderers (Sprint 2)
+
+| Function | Purpose |
+|---|---|
+| `fetchGameLog(playerId, group)` | Pulls `/people/{id}/stats?stats=gameLog&season=2026&group=…` into `state.gameLogCache`. 24h TTL. Returns the splits array. |
+| `renderGameLogTab(playerId, group)` | Renders last-10 mini-cards (date · opp · line) + L10 summary strip into the Game Log panel. Cards: green/red border = W/L, purple inset = HR-game. Tap → `showLiveGame(gamePk)`. |
+| `onGameLogResolved(playerId, group)` | After-fetch hook — repaints both the Overview hero (sparkline) and the Game Log panel for the active player when they're still selected. |
+| `fetchStatSplits(playerId, group)` | Pulls `/people/{id}/stats?stats=statSplits&sitCodes=vl,vr,h,a,risp,e,r,lc&season=2026&group=…` into `state.statSplitsCache`. 24h TTL. |
+| `renderSplitsTab(playerId, group)` | Renders the Splits panel: vs Handedness + Home/Away (left col) + Situations (right col). Each row: slash line + OPS-relative mini-bar + PA count. Pitcher splits show the "opponents'" hint banner. |
+| `fetchPitchArsenal(playerId)` | Pulls `/people/{id}/stats?stats=pitchArsenal&season=2026` into `state.pitchArsenalCache`. 24h TTL. Reads pitch identity from `stat.type.code` / `stat.type.description` (v4.6.15 fix); normalizes `stat.percentage` from fraction → 0-100 scale. |
+| `renderArsenalTab(playerId)` | Renders the donut + ranked list into the Advanced panel for pitchers. Donut + list stack vertically at all viewports (v4.6.16). |
+| `fetchLastN(playerId, n=15)` | Pulls last-15-games hitting stats; cached in `state.lastNCache` with 12h TTL. |
+| `fetchLastNForRoster()` | Batched `fetchLastN` for every hitter in the active roster; re-renders Leaders + Roster on completion. |
+| `hotColdBadge(playerId)` | Returns the inline `🔥 HOT` / `❄ COLD` badge HTML when last-15 OPS Δ vs season OPS ≥ ±0.080; otherwise `''`. Hover tooltip shows both numbers. |
+| `computeRollingSeries(games, group, heroKey, windowSize)` | Rolls AVG/OPS for hitters / ERA for pitchers across the gameLog. Emits points once 2+ games are in the window. |
+| `renderSparklineSVG(series, opts)` | Returns an SVG sparkline (~320×56) with `currentColor` stroke + faint area fill, today-marker dot, trend label (▲/▼/▬ + magnitude). Pitching flips y-axis polarity (lower line = better). Tier-aware via `.hero-spark-wrap--{elite,good,bad}`. |
+
+### Math helpers (`src/utils/stats-math.js`)
+
+| Function | Purpose |
+|---|---|
+| `fetchLeagueLeaders(group)` | TTL-cached `/stats/leaders` pulls keyed by `group + ':' + leaderCategory`. Stored on `state.leagueLeaders`. |
+| `leaderEntry(group, statKey)` | Returns the `LEADER_CATS_FOR_PERCENTILE` entry (`{ leaderCategory, decimals, lowerIsBetter }`) for a stat key, or `null`. |
+| `computePercentile(group, statKey, raw)` | Binary-search rank → `{ percentile (0–99), rank, total }` against the cached leaderboard. Polarity-aware via `lowerIsBetter`. |
+| `tierFromPercentile(p)` | `'elite'` ≥ 90, `'good'` 70–89, `'mid'` 30–69, `'bad'` < 30. |
+| `pctBar(p)` | Returns `<div class="pct-bar"><i style="width:N%"></i></div>` HTML — the thin colored bar beneath each stat box. |
+| `rankCaption(rank, total)` | Returns `<div class="pct-rank">MLB · #N</div>` HTML. |
+| `avgChip(playerVal, basisVal, decimals, lowerIsBetter)` | Returns `<span class="delta-chip avg-chip pos|neg">Avg: X</span>` — basis average shown directly, color-coded by polarity (green = player beats basis, red = worse). Replaced `+/−Δ` rendering in v4.6.12. |
+| `leagueAverage(group, statKey)` | Mean across the league-leaders cache for the requested stat. |
+| `teamAverage(group, statKey)` | Mean across `state.statsCache[group]` for the requested stat. |
 
 ## News Tab
 

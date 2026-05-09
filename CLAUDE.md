@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v4.6.6 (full history in `CHANGELOG.md`)
+**Current version:** v4.7 (full history in `CHANGELOG.md`)
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
@@ -34,7 +34,7 @@ src/main.js             — boot IIFE + initReal callback wiring + top-level eve
 src/state.js            — single mutable hot-state container; all importers receive a live binding.
 src/config/constants.js — SEASON, WC_SPOTS, MLB_BASE, MLB_BASE_V1_1, API_BASE, TEAMS, MLB_THEME, NEWS_SOURCE_LABELS/ICONS, TIMING.
 src/devtools-feed/      — devLog.js (console wrap + ring buffer) + devNet.js (fetch wrap). Runtime instrumentation feeding the Dev Tools panel inspectors. SIDE EFFECTS ON IMPORT.
-src/utils/              — format.js (fmt/fmtRate/tcLookup/pickOppColor) + news.js (NEWS_IMAGE_HOSTS allowlist).
+src/utils/              — format.js (fmt/fmtRate/tcLookup/pickOppColor) + news.js (NEWS_IMAGE_HOSTS allowlist) + stats-math.js (Stats v2: percentile / tier / avg-chip / league + team averages — see "Stats" section below).
 src/data/               — boxscore.js + clips.js (pickPlayback/pickHeroImage/pollPendingVideoClips/devTestVideoClip).
 src/ui/                 — overlays.js (video + player-card overlays), theme.js (applyTeamTheme/applyPulseMLBTheme), sound.js, wakelock.js, lens.js (My Team filter).
 src/feed/render.js      — renderTicker, renderFeed, addFeedItem, showAlert, pulseGreeting, ticker chips.

@@ -43,6 +43,14 @@ src/
     format.js                       — tcLookup, fmt, fmtRate, fmtDateTime,
                                      fmtNewsDate, pickOppColor (all pure).
     news.js                         — NEWS_IMAGE_HOSTS allowlist + isSafeNewsImage.
+    stats-math.js                   — Stats Tab v2 (Sprints 1+2):
+                                     LEADER_CATS_FOR_PERCENTILE catalog,
+                                     fetchLeagueLeaders, computePercentile,
+                                     tierFromPercentile, pctBar, rankCaption,
+                                     avgChip, leagueAverage, teamAverage,
+                                     leaderEntry. Backs Team Stats / Leaders
+                                     percentile bars + Player Stats Overview
+                                     hero panel + grid Avg-chip rendering.
 
   data/
     boxscore.js                     — fetchBoxscore + boxscore cache.

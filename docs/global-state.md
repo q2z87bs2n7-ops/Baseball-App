@@ -17,6 +17,18 @@ let selectedPlayer = null              // full roster object — includes person
 let newsFeedMode = 'mlb'               // 'mlb' (no team filter) | 'team' (activeTeam.espnId filter); home card always shows team news
 let themeScope = 'full'               // 'full' = team theme applied to whole app | 'nav' = team vars scoped to <header> only, rest of app uses MLB_THEME neutral colors; persisted to localStorage('mlb_theme_scope')
 
+// ── 📊 Stats Tab v2 globals (Sprints 1+2, v4.6.7 → v4.6.16) ─────────────────
+let qualifiedOnly    = true             // Leaders Qualified toggle — default ON (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers); persisted to localStorage('mlb_stats_qualified_only')
+let vsLeagueBasis    = 'mlb'            // 'mlb' | 'team' — Player Stats Compare basis pill; persisted to localStorage('mlb_stats_vs_basis')
+let activeStatsTab   = 'overview'       // 'overview' | 'splits' | 'gamelog' | 'advanced' — active Player Stats tab; persisted to localStorage('mlb_stats_tab')
+let selectedPlayerStat = null           // { stat, group } — most-recent season-stat blob for the selected player; cached so tab re-renders don't refetch
+let teamStats        = null             // { hitting, pitching, standingsRecord } — populated by loadTeamStats(); feeds the Team Stats card + qualified threshold
+let leagueLeaders    = {}               // (group + ':' + leaderCategory) → [{playerId, value, rank}, ...] — TTL-cached MLB-wide leaderboards backing percentile bars + league averages
+let gameLogCache     = {}               // (playerId + ':' + group) → { games:[...], ts } — 24h TTL; feeds Game Log tab + Overview hero sparkline
+let statSplitsCache  = {}               // (playerId + ':' + group) → { splits:[...], ts } — 24h TTL; feeds Splits tab
+let pitchArsenalCache= {}               // playerId → { data:[...], ts } — 24h TTL; feeds Advanced tab donut for pitchers; pct values are normalized to a 0–100 scale at fetch time even when the API returns fractions
+let lastNCache       = {}               // playerId → { last15: <stat>, ts } — 12h TTL; feeds HOT/COLD inline badges (last-15 OPS Δ vs season OPS ≥ ±0.080)
+
 // ── ⚡ Pulse globals ──────────────────────────────────────────────────────────
 let pulseInitialized = false           // lazy-init guard — set true on first Pulse nav
 let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayName, homeName, awayPrimary, homePrimary,
@@ -121,3 +133,6 @@ var radioCurrentTeamId = null; // teamId whose feed is loaded; null = fallback
 | `mlb_radio_check` | Radio sweep results (`{ teamId: 'yes'|'no' }`) |
 | `mlb_radio_check_notes` | Radio sweep free-text notes |
 | `mlb_radio_check_notes_seeded_v2` | One-time seed flag for default notes |
+| `mlb_stats_qualified_only` | Stats v2 — Leaders Qualified toggle (`'1'` / `'0'`); default ON when key absent |
+| `mlb_stats_vs_basis` | Stats v2 — Player Stats Compare basis (`'mlb'` / `'team'`); default `'mlb'` |
+| `mlb_stats_tab` | Stats v2 — active Player Stats tab (`'overview'` / `'splits'` / `'gamelog'` / `'advanced'`) |

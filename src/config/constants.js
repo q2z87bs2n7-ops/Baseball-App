@@ -49,6 +49,42 @@ export const MLB_THEME = {id:-1,name:'Default',short:'MLB',primary:'#0E3386',sec
 export const NEWS_SOURCE_LABELS = {mlb:'MLB.com',espn:'ESPN',mlbtr:'MLB Trade Rumors',fangraphs:'FanGraphs',cbs:'CBS Sports'};
 export const NEWS_SOURCE_ICONS = {mlb:'⚾',espn:'📺',mlbtr:'💼',fangraphs:'📊',cbs:'🎙️'};
 
+// Stats-tab percentile lookups. Each entry maps a player-stat field key to the
+// /stats/leaders leaderCategories enum, plus polarity (lowerIsBetter flips the
+// rank comparator for ERA/WHIP/etc.) and decimals for delta-chip formatting.
+// Consumed by src/utils/stats-math.js (computePercentile / leaderEntry) and
+// fetchLeagueLeaders in src/sections/loaders.js.
+export const LEADER_CATS_FOR_PERCENTILE = [
+  // Hitting (higher-is-better unless noted)
+  {group:'hitting',  key:'avg',                 leaderCategory:'battingAverage',                  lowerIsBetter:false, decimals:3},
+  {group:'hitting',  key:'homeRuns',            leaderCategory:'homeRuns',                        lowerIsBetter:false, decimals:0},
+  {group:'hitting',  key:'rbi',                 leaderCategory:'runsBattedIn',                    lowerIsBetter:false, decimals:0},
+  {group:'hitting',  key:'ops',                 leaderCategory:'onBasePlusSlugging',              lowerIsBetter:false, decimals:3},
+  {group:'hitting',  key:'obp',                 leaderCategory:'onBasePercentage',                lowerIsBetter:false, decimals:3},
+  {group:'hitting',  key:'slg',                 leaderCategory:'sluggingPercentage',              lowerIsBetter:false, decimals:3},
+  {group:'hitting',  key:'hits',                leaderCategory:'hits',                            lowerIsBetter:false, decimals:0},
+  {group:'hitting',  key:'doubles',             leaderCategory:'doubles',                         lowerIsBetter:false, decimals:0},
+  {group:'hitting',  key:'triples',             leaderCategory:'triples',                         lowerIsBetter:false, decimals:0},
+  {group:'hitting',  key:'runs',                leaderCategory:'runs',                            lowerIsBetter:false, decimals:0},
+  {group:'hitting',  key:'stolenBases',         leaderCategory:'stolenBases',                     lowerIsBetter:false, decimals:0},
+  {group:'hitting',  key:'baseOnBalls',         leaderCategory:'walks',                           lowerIsBetter:false, decimals:0},
+  // For hitters, more strikeouts = worse
+  {group:'hitting',  key:'strikeOuts',          leaderCategory:'strikeouts',                      lowerIsBetter:true,  decimals:0},
+  // Pitching (mixed polarity)
+  {group:'pitching', key:'era',                 leaderCategory:'earnedRunAverage',                lowerIsBetter:true,  decimals:2},
+  {group:'pitching', key:'whip',                leaderCategory:'walksAndHitsPerInningPitched',    lowerIsBetter:true,  decimals:2},
+  {group:'pitching', key:'strikeOuts',          leaderCategory:'strikeouts',                      lowerIsBetter:false, decimals:0},
+  {group:'pitching', key:'wins',                leaderCategory:'wins',                            lowerIsBetter:false, decimals:0},
+  {group:'pitching', key:'saves',               leaderCategory:'saves',                           lowerIsBetter:false, decimals:0},
+  {group:'pitching', key:'inningsPitched',      leaderCategory:'inningsPitched',                  lowerIsBetter:false, decimals:1},
+  {group:'pitching', key:'strikeoutWalkRatio',  leaderCategory:'strikeoutWalkRatio',              lowerIsBetter:false, decimals:2},
+  {group:'pitching', key:'strikeoutsPer9Inn',   leaderCategory:'strikeoutsPer9Inn',               lowerIsBetter:false, decimals:2},
+  {group:'pitching', key:'walksPer9Inn',        leaderCategory:'walksPer9Inn',                    lowerIsBetter:true,  decimals:2},
+  {group:'pitching', key:'baseOnBalls',         leaderCategory:'walks',                           lowerIsBetter:true,  decimals:0},
+  {group:'pitching', key:'hits',                leaderCategory:'hits',                            lowerIsBetter:true,  decimals:0},
+  {group:'pitching', key:'homeRuns',            leaderCategory:'homeRuns',                        lowerIsBetter:true,  decimals:0},
+];
+
 export const TIMING = {
   PULSE_POLL_MS:      15000,  // pollLeaguePulse interval
   FOCUS_POLL_MS:       5000,  // pollFocusLinescore / focusFastTimer interval

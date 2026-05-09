@@ -1334,6 +1334,83 @@ nav button.active {
   font-size: .78rem
 }
 
+/* ── Team Stats card (Stats tab v2) ─────────────────────────────────────── */
+.team-stats-card { margin-bottom: 16px }
+.team-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 8px
+}
+.team-stat-tile {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px
+}
+.team-stat-tile-head {
+  font-size: .7rem;
+  color: var(--muted);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px
+}
+.team-stat-tile-rank { color: var(--accent); font-weight: 700 }
+.team-stat-tile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px
+}
+.team-stat-tile-stat .v {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1
+}
+.team-stat-tile-stat .l {
+  font-size: .65rem;
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-top: 2px
+}
+.team-stat-tile-stat .l .rk { color: var(--accent); font-weight: 700; margin-left: 4px }
+.team-form-line {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(60,190,100,.06);
+  border: 1px solid rgba(60,190,100,.25);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .78rem;
+  color: #9be36a
+}
+.team-form-line.cold {
+  background: rgba(255,89,16,.06);
+  border-color: rgba(255,89,16,.25);
+  color: #FF9A5C
+}
+.team-form-line.empty {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--muted)
+}
+.team-form-line .form-meta {
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: .65rem
+}
+@media (max-width: 767px) {
+  .team-stats-strip { grid-template-columns: 1fr }
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4,1fr);
@@ -1373,6 +1450,590 @@ nav button.active {
   text-transform: uppercase;
   margin-top: 2px
 }
+
+/* ── Stats v2: percentile bar + rank caption + tier-colored stat-box ───── */
+.pct-bar {
+  height: 3px;
+  background: rgba(255,255,255,.07);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden
+}
+.pct-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: #777;
+  transition: width .3s ease
+}
+.pct-bar--elite i { background: var(--primary) }
+.pct-bar--good i  { background: #3CBE64 }
+.pct-bar--mid i   { background: #FFC83C }
+.pct-bar--bad i   { background: #E04848 }
+.rank-caption {
+  margin-top: 5px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px
+}
+.rank-caption b { color: #fff; font-weight: 700; letter-spacing: .04em }
+/* Tier overlays. Elite uses team primary (per kickoff Q1 — active team primary,
+   not a hardcoded orange). color-mix lets us tint with the runtime --primary. */
+.stat-box--elite {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 18%, transparent), transparent);
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border))
+}
+.stat-box--good {
+  background: linear-gradient(135deg, rgba(60,190,100,.12), transparent);
+  border-color: rgba(60,190,100,.4)
+}
+.stat-box--bad {
+  background: linear-gradient(135deg, rgba(224,72,72,.10), transparent);
+  border-color: rgba(224,72,72,.35)
+}
+
+/* ── Stats v2: vs-league basis toggle + delta chip ─────────────────────── */
+.vs-basis-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 -2px;
+  padding: 0 2px;
+  flex-wrap: wrap
+}
+.vs-basis-label {
+  font-size: .65rem;
+  color: var(--muted);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 600
+}
+.vs-basis-pill {
+  font-size: .7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease
+}
+.vs-basis-pill:hover { color: var(--text); border-color: var(--accent) }
+.vs-basis-pill.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent)
+}
+.delta-chip {
+  display: inline-block;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 6px
+}
+.delta-chip.pos {
+  background: rgba(60,190,100,.14);
+  color: #6FDC8E;
+  border: 1px solid rgba(60,190,100,.3)
+}
+.delta-chip.neg {
+  background: rgba(224,72,72,.14);
+  color: #FF8A8A;
+  border: 1px solid rgba(224,72,72,.3)
+}
+
+/* HOT/COLD inline-row badges override the carousel-context vertical margin
+   so they sit cleanly next to a player's name. */
+.story-badge.stats-hot-cold {
+  margin: 0 0 0 6px;
+  vertical-align: 1px;
+  font-size: .58rem;
+  padding: 1px 6px
+}
+
+/* ── Stats v2: Hero panel (Player Stats card top-of-card promotion) ────── */
+.hero-panel {
+  margin-top: 14px;
+  padding: 22px 24px;
+  border-radius: 12px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: center
+}
+.hero-panel--elite {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 22%, var(--card2)), var(--card2));
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border))
+}
+.hero-panel--good {
+  background: linear-gradient(135deg, rgba(60,190,100,.16), var(--card2));
+  border-color: rgba(60,190,100,.4)
+}
+.hero-panel--bad {
+  background: linear-gradient(135deg, rgba(224,72,72,.14), var(--card2));
+  border-color: rgba(224,72,72,.35)
+}
+.hero-panel-meta {
+  font-size: .6rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px
+}
+.hero-panel-val {
+  font-size: 4rem;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: .95;
+  letter-spacing: -.03em
+}
+.hero-panel-lbl {
+  font-size: .8rem;
+  color: var(--text);
+  margin-top: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em
+}
+.hero-panel-deltas {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  align-items: center
+}
+.hero-panel-deltas .delta-chip { margin-top: 0 }
+.hero-tier-pill {
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 5px
+}
+.hero-panel-context {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0
+}
+.hero-panel-rank {
+  font-size: .8rem;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: .04em
+}
+.hero-panel-bar .pct-bar { height: 6px; background: rgba(255,255,255,.1) }
+.hero-panel-trend {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255,255,255,.02);
+  border: 1px dashed var(--border)
+}
+.hero-trend-pending {
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .7
+}
+@media (max-width: 767px) {
+  .hero-panel { grid-template-columns: 1fr; padding: 18px; gap: 16px }
+  .hero-panel-val { font-size: 3.2rem }
+}
+
+/* ── Stats v2: Qualified toggle on Leaders card ─────────────────────────── */
+.leaders-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px
+}
+.qualified-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background .15s ease
+}
+.qualified-toggle:hover { background: rgba(255,255,255,.05) }
+.qualified-toggle-track {
+  width: 30px;
+  height: 16px;
+  background: var(--border);
+  border-radius: 999px;
+  position: relative;
+  transition: background .2s ease
+}
+.qualified-toggle-knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 12px; height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left .2s ease
+}
+.qualified-toggle.on .qualified-toggle-track { background: var(--accent) }
+.qualified-toggle.on .qualified-toggle-knob { left: 16px }
+.qualified-toggle-label {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600
+}
+.qualified-toggle.on .qualified-toggle-label { color: var(--text) }
+.leader-qual-footer {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: rgba(255,200,60,.08);
+  border: 1px solid rgba(255,200,60,.25);
+  border-radius: 6px;
+  font-size: .68rem;
+  color: #FFC83C;
+  letter-spacing: .04em
+}
+
+/* ── Stats v2: Roster section headers + inline stat + mini-bar ─────────── */
+.roster-section-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: .65rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--card);
+  padding: 8px 10px;
+  margin: 12px 0 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700
+}
+.roster-section-header:first-child { margin-top: 0 }
+.roster-section-count {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: .6rem
+}
+.roster-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px
+}
+.roster-inline-stat {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums
+}
+.roster-mini-bar {
+  height: 3px;
+  background: rgba(255,255,255,.06);
+  border-radius: 2px;
+  margin-top: 4px;
+  width: 70%;
+  overflow: hidden
+}
+.roster-mini-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width .3s ease
+}
+
+/* ── Stats v2 / Sprint 2: Player Stats tabs (Overview / Splits / Game Log / Advanced) ── */
+.player-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0 6px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none
+}
+.player-tabs::-webkit-scrollbar { display: none }
+.player-tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px 12px;
+  margin-bottom: -1px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s ease, border-color .15s ease
+}
+.player-tab:hover { color: var(--text) }
+.player-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent)
+}
+.player-tab-panels { margin-top: 6px }
+.player-tab-panel[hidden] { display: none }
+.tab-empty-state {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--card2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  margin-top: 14px
+}
+.tab-empty-state .tab-empty-icon { font-size: 1.6rem; margin-bottom: 8px }
+.tab-empty-state h4 { color: var(--text); margin: 0 0 6px; font-size: .95rem; font-weight: 700 }
+.tab-empty-state p { margin: 0; font-size: .8rem; line-height: 1.5 }
+
+/* ── Stats v2 / Sprint 2: Game Log strip ─────────────────────────────────── */
+.gamelog-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px
+}
+@media (max-width: 767px) { .gamelog-strip { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.glog-item {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: .72rem;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0
+}
+.glog-item:hover { transform: translateY(-1px); border-color: var(--accent) }
+.glog-item.win  { border-left-color: #3CBE64 }
+.glog-item.loss { border-left-color: #E04848 }
+.glog-item.hr   { box-shadow: 0 0 0 1px #A064FF inset }
+.glog-d { color: var(--muted); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600 }
+.glog-o { color: var(--text); font-size: .78rem; font-weight: 700 }
+.glog-s { color: var(--accent); font-size: .72rem; font-weight: 700 }
+.gamelog-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px
+}
+@media (max-width: 767px) { .gamelog-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+
+/* ── Stats v2 / Sprint 2: Hero sparkline ─────────────────────────────────── */
+.hero-spark-wrap {
+  position: relative;
+  color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 4px
+}
+.hero-spark-wrap--elite { color: var(--primary) }
+.hero-spark-wrap--good  { color: #3CBE64 }
+.hero-spark-wrap--bad   { color: #E04848 }
+.hero-spark { display: block; width: 100%; height: 56px }
+.hero-spark-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: .58rem;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 600
+}
+.hero-spark-trend.up   { color: #6FDC8E }
+.hero-spark-trend.down { color: #FF8A8A }
+.hero-spark-trend.flat { color: var(--muted) }
+
+/* ── Stats v2 / Sprint 2: Splits panel ───────────────────────────────────── */
+.splits-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 16px;
+  margin-top: 14px
+}
+@media (max-width: 767px) { .splits-grid { grid-template-columns: 1fr } }
+.splits-section { margin-bottom: 14px }
+.splits-section:last-child { margin-bottom: 0 }
+.splits-section-head {
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px
+}
+.splits-hint {
+  font-size: .72rem;
+  color: var(--muted);
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 14px
+}
+.splits-hint strong { color: var(--text); font-weight: 700 }
+.split-row {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px
+}
+.split-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px
+}
+.split-row-label {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--text)
+}
+.split-row-line {
+  font-size: .72rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap
+}
+.split-row-bar {
+  height: 4px;
+  background: rgba(255,255,255,.07);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px
+}
+.split-row-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .3s ease
+}
+.split-row-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em
+}
+
+/* ── Stats v2 / Sprint 2: Pitch arsenal donut ────────────────────────────── */
+.arsenal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 14px
+}
+.arsenal-donut {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto
+}
+.arsenal-donut svg { display: block }
+.arsenal-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none
+}
+.arsenal-donut-pct {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -.02em;
+  line-height: 1
+}
+.arsenal-donut-lbl {
+  font-size: .6rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 4px
+}
+.arsenal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  font-variant-numeric: tabular-nums
+}
+.arsenal-row {
+  display: grid;
+  grid-template-columns: 14px minmax(0,1fr) 56px 70px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .76rem
+}
+.arsenal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block
+}
+.arsenal-row-label { color: var(--text); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.arsenal-row-pct { color: var(--accent); font-weight: 700; text-align: right }
+.arsenal-row-velo { color: var(--muted); text-align: right; font-size: .7rem }
+
+/* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
+.leader-pill--more {
+  border-style: dashed !important;
+  color: var(--muted) !important;
+  font-style: italic;
+  letter-spacing: .04em
+}
+.leader-pill--more:hover { color: var(--text) !important; border-color: var(--accent) !important }
+.leader-pill--more.open {
+  border-style: solid !important;
+  color: var(--accent) !important;
+  font-style: normal
+}
+.leader-pill-extras { padding-top: 4px; padding-left: 4px; border-left: 2px solid var(--border) }
+.leader-pill-extras .leader-pill { opacity: .92 }
+/* The [hidden] attr on a .stat-tabs element gets shadowed by display:flex from
+   the .stat-tabs base rule. Force it back to none here. */
+.leader-pill-extras[hidden] { display: none !important }
 
 .stat-tabs {
   display: flex;

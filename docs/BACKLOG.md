@@ -6,6 +6,26 @@ Extracted from `CLAUDE.md` — tracks completed and pending features. Active blo
 
 ---
 
+### 📊 Stats Tab Revamp — Sprints 1 + 2 (v4.7)
+
+- [x] Stats v2 — Team Stats card with team-wide hitting+pitching tiles + record/last-10/run-diff form line; rank chip uses `--accent` (Sprint 1 / Step 2, v4.6.9)
+- [x] Stats v2 — `src/utils/stats-math.js` foundation: `LEADER_CATS_FOR_PERCENTILE` catalog, `fetchLeagueLeaders`, `computePercentile`, `tierFromPercentile`, `pctBar`, `rankCaption` (Sprint 1 / Step 1, v4.6.9)
+- [x] Stats v2 — Percentile bars + `MLB · #N` rank caption + tier coloring on every percentile-eligible stat box (Sprint 1 / Step 3, v4.6.9)
+- [x] Stats v2 — vs-MLB / vs-team comparison: `[VS MLB]` / `[VS TEAM]` basis pills + `Avg: X` chip per box, polarity-aware coloring (Sprint 1 / Step 4 + v4.6.12 fix)
+- [x] Stats v2 — HOT/COLD inline badges next to hitter names where last-15 OPS Δ vs season OPS ≥ ±0.080 (Sprint 1 / Step 5, v4.6.10)
+- [x] Stats v2 — Hero panel in Player Stats: 4rem display number + rank + percentile bar + Avg chip + `★ Elite · Top X%` pill, tier-colored (Sprint 1 / Step 6, v4.6.10)
+- [x] Stats v2 — Qualified-leader toggle on the Leaders card (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers, default ON, persisted) (Sprint 1 / Step 7, v4.6.11)
+- [x] Stats v2 — Roster grouping by position (C / IF / OF / DH / SP / RP) with sticky section headers + inline stat under each name + mini-bar vs team-best (Sprint 1 / Step 8, v4.6.11)
+- [x] Stats v2 — Expanded leader pill set + `+ more` overflow with extras row (Sprint 1 / Step 9, v4.6.11)
+- [x] Stats v2 — Tabbed Player Stats card (Overview / Splits / Game Log / Advanced) with persistent active tab + class-flip switching (Sprint 2 / Step 1, v4.6.13)
+- [x] Stats v2 — Last-10 Game Log strip with W/L + HR borders, tap → `showLiveGame`, L10 summary (Sprint 2 / Step 2, v4.6.13)
+- [x] Stats v2 — 7-day rolling sparkline in the hero panel (AVG/OPS for hitters, ERA for pitchers; pitching y-inverted) (Sprint 2 / Step 3, v4.6.13)
+- [x] Stats v2 — Splits panel (vs Handedness / Home-Away / RISP / Bases Empty / Runners On / Late & Close) with mini-bars (Sprint 2 / Step 4, v4.6.14)
+- [x] Stats v2 — Pitch arsenal donut on Advanced tab for pitchers with deterministic pitch-type colors + ranked list (Sprint 2 / Step 5, v4.6.14)
+- [ ] Stats v3 — Sprint 3 destination features: Compare overlay (#11), Today's Leaders (#12), Statcast advanced for hitters (#13: xwOBA, exit velo, barrel %, hard-hit %, sprint speed), Spray-chart / heatmap (#14), Career history (#15), Awards / leaderboards (#16)
+
+---
+
 - [x] 🎯 Focus Mode — `calcFocusScore()` auto-selects most exciting live game; `selectFocusGame()` hooked into `pollLeaguePulse()` (v2.61)
 - [x] 🎯 Focus Mode — Tier 1 linescore poll every 5s: balls/strikes/outs/runners/matchup names/score/team colors (v2.61)
 - [x] 🎯 Focus Mode — Tier 2 GUMBO fetch every 5s: full `focusPitchSequence` for current at-bat; new-AB detection resets sequence (v2.61)
@@ -96,7 +116,7 @@ Extracted from `CLAUDE.md` — tracks completed and pending features. Active blo
 - [x] Warmup/Pre-Game state no longer shown as Live — `detailedState` exclusion applied in home card, calendar, and Around the League (v1.61)
 - [x] Calendar date timezone fix — `gameByDate` keyed by local date (via `new Date()`) instead of UTC `gameDate.split('T')[0]`; fixes evening games appearing on wrong calendar day (v1.61)
 - [ ] News fallback source (MLB RSS)
-- [ ] Last 10 games record widget
+- [x] Last 10 games — shipped as the L10 summary strip on the Game Log tab in Player Stats v2 (AVG/HR/RBI/OPS for hitters, ERA/K/WHIP/IP for pitchers, all client-side aggregated from `/people/{id}/stats?stats=gameLog`) (v4.6.13)
 - [ ] Dynamic season year
 - [ ] QC all 30 team YouTube channel IDs
 - [ ] Consider more reliable CORS proxy for YouTube RSS
