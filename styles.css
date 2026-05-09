@@ -2592,6 +2592,7 @@ select {
   animation: progress-drain var(--toast-duration, 5s) linear forwards;
 }
 
+.section-bar,
 #pulseTopBar, #ydSectionBar {
   display: flex;
   align-items: center;
@@ -2600,6 +2601,37 @@ select {
   padding: 0.5rem 0.875rem;
   background: var(--dark);
   border-bottom: 1px solid var(--border);
+}
+
+.section-bar {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 80;
+}
+
+.section-bar-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.section-bar-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.section-bar-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 #yesterday.section.active {
