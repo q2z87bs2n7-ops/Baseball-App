@@ -24,7 +24,8 @@ Division standings (active team highlighted) + Wild Card Race (top 9 non-divisio
 Source: `/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,division,league`
 
 ## 📊 Stats
-Four-card layout (Stats Tab Revamp Sprints 1+2, shipped under v4.7): **Team Stats** (top, full-width) → **Leaders | Roster | Player Stats** (three-column row below).
+Five-card layout (Stats Tab Revamp Sprints 1+2+3, shipped under v4.7):
+**Team Stats** (top, full-width) → **Leaders | Roster | Player Stats** (three-column row) → **Today's Leaders** (bottom, full-width).
 
 ### Team Stats card (`#teamStats`, `loadTeamStats()`)
 Full-width card showing team-wide hitting + pitching tiles (HR / RBI / AVG / OPS / ERA / WHIP / K / SV) + a record / last-10 / run-diff form line. Each tile shows the stat value alongside a `#N MLB` rank chip in `var(--accent)` (chip text uses `--accent` not `--primary` so dark-primary teams stay readable).
@@ -37,15 +38,32 @@ Roster leaders for the active team. Top of the card has a **Qualified toggle** (
 ### Roster card (`#playerList`)
 40-man roster with hitting/pitching/fielding tabs, grouped by position bucket: hitting/fielding into 🧤 Catchers / ⚾ Infielders / 🏃 Outfielders / 🦾 DH; pitching into 🎯 Starters / 🔥 Relievers (split by GS/G ratio when `state.statsCache.pitching` is populated). Sticky section headers with bucket label + count chip. Each row shows: name + HOT/COLD badge · `#22 · Right Field · .312 / 28 HR / .962 OPS` (hitting) or `· 3.81 ERA · 67 K · 1.18 WHIP` (pitching) + a thin mini-bar beneath showing the player vs the team-best (OPS for hitting, ERA inverted for pitching).
 
-### Player Stats card (`#playerStats`) — 4 tabs
-Tabs persist via `state.activeStatsTab` → `localStorage('mlb_stats_tab')`. `renderPlayerStats` is the orchestrator that emits all four panels (only the active one visible). Switching tabs is a class-flip — no `/people` refetch. Per-tab fetchers (Game Log / Splits / Arsenal) lazy-load on first visit and cache for 24h. Fielding view auto-collapses to Overview only.
+### Player Stats card (`#playerStats`) — 5 tabs
+Tabs persist via `state.activeStatsTab` → `localStorage('mlb_stats_tab')`. `renderPlayerStats` is the orchestrator that emits all five panels (only the active one visible). Switching tabs is a class-flip — no `/people` refetch. Per-tab fetchers (Splits / Game Log / Advanced / Career) lazy-load on first visit and cache for 24h. Fielding view auto-collapses to Overview only.
+
+`v4.6.23` adds a **qualification gate** on rank/percentile: rate stats (AVG / OBP / SLG / OPS / ERA / WHIP) suppress rank caption + percentile bar when the player is below threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers); the Avg chip + value still render. Hero shows a dashed "Below qualification · rank not shown" pill. Counting stats (HR / RBI / K / SB / BB / R / 2B / 3B / H) always show rank.
+
+The card title row also has a **⇄ Compare** trigger (v4.6.24) that opens the Compare overlay.
 
 | Tab | What it shows |
 |---|---|
 | **Overview** | Headshot · two-pill `Compare [VS MLB] [VS TEAM]` basis toggle (default VS MLB; persisted) · full-width hero panel: 4rem display number + `#N of M MLB` rank + 6px percentile bar + `★ Elite · Top X%` pill + `Avg: X` chip + 7-day rolling sparkline · 4-col supporting grid where each box has stat / label / percentile bar / `MLB · #N` rank caption / `Avg: X` chip. Tier coloring: hero panel always; supporting boxes only at extremes (≥ 90 or ≤ 10). |
 | **Splits** | Two-column layout — left col stacks `vs Handedness` (vs LHP / vs RHP) + `Home / Away`; right col shows `Situations` (RISP / Bases Empty / Runners On / Late & Close). Each row: split label + slash line `.AVG / .OBP / .SLG` + OPS-relative mini-bar + OPS value + PA count. Pitcher splits show "opponents' AVG/OBP/SLG" hint banner. Source: `/people/{id}/stats?stats=statSplits&sitCodes=vl,vr,h,a,risp,e,r,lc&season=2026&group=…`. |
 | **Game Log** | Up to 10 mini-cards most-recent-first (date · opp `@ABC`/`vsXYZ` · line `3/4 · 2HR` or `5.2IP · 7K · 1ER`). Cards: green/red left-border = W/L, purple inset shadow = HR-game. Tap → opens `#liveView` for that gamePk. L10 summary strip below: AVG/HR/RBI/OPS or ERA/K/WHIP/IP, all client-side aggregated. Source: `/people/{id}/stats?stats=gameLog&season=2026&group=…`. |
-| **Advanced** | Pitchers: 140px SVG donut + ranked list pulled from `/people/{id}/stats?stats=pitchArsenal&season=2026`. Each pitch type gets a deterministic color (FF=red, SI=orange, SL=yellow, CU=purple, CH=green, FC=pink, FS=teal, ST=gold, etc.); donut center shows the most-used pitch's percentage and label; list rows: color dot · pitch label · usage % · avg velocity (mph). The donut + list stack vertically at all viewports (v4.6.16 — desktop two-column squeezed labels into "Sin..." / "Sw..." ellipses). Hitters: Sprint-3 placeholder (Statcast: xwOBA, exit velo, barrel %, hard-hit %, sprint speed). |
+| **Advanced** | **Pitchers** (Sprint 2): 140px SVG donut + ranked list from `/people/{id}/stats?stats=pitchArsenal&season=2026`. Each pitch type gets a deterministic color (FF=red, SI=orange, SL=yellow, CU=purple, CH=green, FC=pink, FS=teal, ST=gold, etc.); donut center shows the most-used pitch's pct and label. **Hitters** (Sprint 3): hero trio (wOBA · BABIP · wRC+) + supporting metric grid (ISO / wRAA / wRC / BB rate / K rate / P/PA / AB/HR / GO/AO / XBH / TB) from `/people/{id}/stats?stats=sabermetrics + seasonAdvanced`, **plus** a 3x3 strike-zone heat map (`?stats=hotColdZones`) showing batting AVG by zone with a red→yellow→green heat scale. Source-note disclaims that Statcast (xBA / xwOBA / exit velo / barrel rate) lives on Baseball Savant and isn't proxied here. |
+| **Career** | Sprint 3. Year-by-year tables for hitting + pitching (two-way players get both, primary group first). Hitting cols: Year · Team · G · PA · AVG · HR · RBI · SB · OBP · SLG · OPS. Pitching cols: Year · Team · G · IP · W · L · ERA · WHIP · K · BB · SV. Sticky header row, horizontal-scroll on narrow viewports (min-width 560px). Source: `/people/{id}/stats?stats=yearByYear&group=hitting,pitching`. (Awards module dropped pre-prod in v4.6.21; the `/people/{id}/awards` endpoint is unused.) |
+
+### Today's Leaders card (`#todaysLeadersCard`, `loadTodaysLeaders()`)
+Sprint 3. Full-width card below the 3-col Stats row. Hitting / Pitching tab toggle. 6-category grid per group:
+- Hitting: HR · AVG · RBI · OPS · OBP · SB
+- Pitching: ERA · K · W · SV · WHIP · IP
+
+Each category shows top-5 league leaders: rank · last name · team abbr · value. Reuses `state.leagueLeaders` cache (warmed by both `fetchLeagueLeaders('hitting')` + `…('pitching')` in parallel). leaderCategory strings MUST match the canonical names from `LEADER_CATS_FOR_PERCENTILE` (`runsBattedIn`, `onBasePlusSlugging`, `walksAndHitsPerInningPitched`, etc.) — the friendly stat names (`rbi`, `ops`, `whip`) won't hit the cache (v4.6.19 fix).
+
+### Compare overlay (`#compareOverlay`)
+Sprint 3 (Batch D, last shipped feature). Same-team head-to-head comparison launched from the **⇄ Compare** trigger pill on the Player Stats card. Two slot cards (headshot · name · jersey · position · roster dropdown) side-by-side; group toggle (⚾ Hitting / 🥎 Pitching) when both groups have entries. Each row of the comparison grid shows `[A value] · STAT LABEL · [B value]` with the winner cell highlighted green and polarity-aware (lower-better for ERA / WHIP / BB-9 / counting losses). Re-uses `state.statsCache` season stats — no extra fetches when both players are warm.
+
+Cross-team compare deferred (would need a name-search picker + per-player season-stat fetches). Z-index 600.
 
 ### Stats v2 helpers (`src/utils/stats-math.js`)
 
@@ -61,7 +79,7 @@ Tabs persist via `state.activeStatsTab` → `localStorage('mlb_stats_tab')`. `re
 
 ### Per-player caches (24h TTL unless noted)
 
-`state.gameLogCache[playerId+':'+group]` · `state.statSplitsCache[playerId+':'+group]` · `state.pitchArsenalCache[playerId]` · `state.lastNCache[playerId]` (12h TTL — last-15 OPS for HOT/COLD).
+`state.gameLogCache[playerId+':'+group]` · `state.statSplitsCache[playerId+':'+group]` · `state.pitchArsenalCache[playerId]` · `state.advancedHittingCache[playerId]` · `state.hotColdCache[playerId]` · `state.careerCache[playerId]` · `state.lastNCache[playerId]` (12h TTL — last-15 OPS for HOT/COLD).
 
 Sources: `/teams/{id}/roster?rosterType=40Man` + `/people/{id}/stats` (season / gameLog / statSplits / pitchArsenal / lastXGames variants).
 

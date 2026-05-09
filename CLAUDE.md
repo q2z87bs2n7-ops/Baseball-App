@@ -164,54 +164,15 @@ export const state = {
 - **`#pulseTopBar` and `#ydSectionBar`** share the `.section-bar` component (eyebrow + context + toggles + overflow slots). Pulse keeps Lens + Radio inline (`.ptb-toggle`); Sound/Yesterday-jump/Theme move to a `⋯` overflow sheet (`.ptb-overflow`, 26×26 squared). Yesterday's bar primary control is the date scrubber. Stat / boxscore tabs (`.stat-tabs`, `.boxscore-tabs`) horizontal-scroll on mobile with a soft mask-image fade; active tab uses `scrollIntoView({inline:'center'})` scoped to the tabs container, **never** the document.
 
 ### Team theming
-`applyTeamTheme(team)` sets nine CSS variables dynamically:
-
-| Variable | Value |
-|---|---|
-| `--primary` | Team primary colour — header, active nav |
-| `--secondary` | Team accent — secondary if contrast ≥ 3:1 AND luminance ≥ 0.05, else `#ffffff` |
-| `--accent-text` | Text ON `--secondary` surfaces |
-| `--dark` | Page background — hsl(teamHue, 50%, 18%) |
-| `--card` | Card background — hsl(teamHue, 45%, 22%) |
-| `--card2` | Secondary card / input — hsl(teamHue, 40%, 26%) |
-| `--border` | Borders — hsl(teamHue, 35%, 30%) |
-| `--accent` | Contrast-safe accent for text/borders on dark — raw secondary or HSL-lightened or #FFB273 |
-| `--header-text` | Text on header gradient — #0a0f1e if primary luminance > 0.5, else #ffffff |
-
-All variables are **runtime-computed** — not declared in `styles.css`. Persisted to `localStorage.mlb_theme_vars` and reapplied inline before `<style>` renders to prevent flash-of-wrong-theme.
-
-Full CSS variable reference, V3 design tokens, utility classes, and responsive breakpoints: `docs/css-variables.md`.
+`applyTeamTheme(team)` runtime-computes nine CSS variables (`--primary`, `--secondary`, `--accent`, `--accent-text`, `--header-text`, `--dark`, `--card`, `--card2`, `--border`) per active team. Persisted to `localStorage.mlb_theme_vars` and reapplied inline before `<style>` renders to prevent flash-of-wrong-theme. Full per-variable derivation rules + Pulse `--p-*` variants + utility classes: `docs/css-variables.md`.
 
 ---
 
 ## APIs
 
-| Endpoint | Status | Notes |
-|---|---|---|
-| `/schedule` | ✅ | Primary source for all game data |
-| `/game/{pk}/linescore` | ✅ | Live and completed games |
-| `/game/{pk}/boxscore` | ✅ | Player stats for live and completed games |
-| `/standings` | ✅ | No season param needed |
-| `/teams/{id}/roster` | ✅ | Stats tab uses `rosterType=40Man` to include IL players |
-| `/people/{id}/stats` | ✅ | Individual player season stats |
-| `/stats/leaders` | ✅ | Requires `statGroup` param — omitting it mixes hitting/pitching data |
-| `/game/{pk}/playByPlay` | ✅ | Completed at-bat log. Returns `allPlays[]`, `scoringPlays[]`, `playsByInning[]`. |
-| `/game/{pk}/feed/live` | ⚠️ | **v1 path 404s.** Use `v1.1` (`MLB_BASE_V1_1`). Large payload (~500KB). |
-| `/api/v1.1/game/{pk}/feed/live/timestamps` | ✅ | **Pulse only.** Last element = most recent change. Must use `MLB_BASE_V1_1`. |
-| `/game/{pk}/content` | ✅ | `highlights.highlights.items[]` with headline, blurb, playbacks[], image.cuts[]. |
-| `/game/{pk}/feed/color` | ❌ | Returns 404 for all 2026 games — do not use. |
-| ESPN News API | ⚠️ | Unofficial, may be CORS-blocked |
-| YouTube RSS via allorigins.win | ⚠️ | Public proxy, no SLA. 3-attempt retry in place. |
+Full endpoint table (status, gotchas, query patterns) + external services + game-state string conventions: `docs/api-reference.md`.
 
-**Game state strings:** `abstractGameState`: `"Live"`, `"Final"`, `"Preview"`, `"Scheduled"` — both Preview and Scheduled mean upcoming. `abstractGameState` becomes `"Live"` ~20–30 min before first pitch (warmup) — code excludes `detailedState === 'Warmup'` and `'Pre-Game'`. A `detailedState` of `'Postponed'`, `'Cancelled'`, or `'Suspended'` on a Final game = PPD — shown as grey badge, no score.
-
----
-
-## CSS Variables
-
-All variables are runtime-computed by `applyTeamTheme()` and `applyPulseMLBTheme()` — not in `styles.css`. Full reference including Pulse-specific vars (`--p-*`), V3 design tokens, responsive breakpoints, and all utility classes: `docs/css-variables.md`.
-
-Fixed neutrals: `--text: #e8eaf0`, `--muted: #9aa0a8`.
+**Most-used:** `/schedule`, `/standings`, `/people/{id}/stats?stats=…` (many variants — see api-reference). `MLB_BASE` = `https://statsapi.mlb.com/api/v1`; `MLB_BASE_V1_1` = `…/v1.1` (Pulse only — `v1` `feed/live` 404s).
 
 ---
 
@@ -291,33 +252,18 @@ Icons, VAPID key storage, cron setup: `docs/pwa-push.md`.
 
 ## Dev Tools
 
-| Shortcut | Mnemonic | Command |
-|---|---|---|
-| `Shift+D` | **D**ev tools | `toggleDevTools()` — toggle panel open/closed |
-| `Shift+M` | de**M**o | `toggleDemoMode()` |
-| `Shift+H` | **H**ome run | `replayHRCard()` |
-| `Shift+B` | r**B**i | `replayRBICard()` |
-| `Shift+V` | **V**ariants | `window.PulseCard.demo()` — cycle the 4 HR card templates |
-| `Shift+F` | **F**ocus | `window.FocusCard.demo()` |
-| `Shift+C` | **C**ollection | `window.CollectionCard.demo()` |
-| `Shift+G` | **G**enerate | `generateTestCard()` — inject one random card into collection |
-| `Shift+P` | **P**lay clip | `devTestVideoClip()` — live clip → yesterday cache → fetch fallback |
-| `Shift+N` | **N**ews | `openNewsSourceTest()` |
-| `Shift+L` | **L**og | open Dev Tools, scroll to Log Capture |
-| `Shift+S` | **S**tate | open Dev Tools, scroll to App State |
-| `Shift+I` | **I**nfo dump | `copyDiagnosticSnapshot()` — full snapshot to clipboard |
+`Shift+D` opens the Dev Tools panel. `Shift+M` toggles Demo Mode. `Shift+I` copies a full diagnostic snapshot to clipboard.
 
-Panel contents, all tuning fields and defaults, `replayHRCard()` details, inspector + snapshot details: `docs/dev-tools.md`.
+Full keyboard shortcut table (13 chords), panel contents, tuning fields + defaults, `replayHRCard()` details, inspector + snapshot details: `docs/dev-tools.md`.
 
 ---
 
 ## ⚠️ Critical Gotchas
 
-These are subtle bugs that could be silently re-introduced. Full issue list: `docs/KNOWN_ISSUES.md`.
+Subtle bugs that could be silently re-introduced. Full descriptions + reproductions: `docs/KNOWN_ISSUES.md`.
 
-1. **Date strings use local time** — all `startDate`/`endDate` params are built from `getFullYear`/`getMonth`/`getDate` (local). Avoid `toISOString().split('T')[0]` for date params — it returns UTC and will be one day ahead after ~8 PM ET, causing games to be skipped (fixed v1.45.5). `api/notify.js` intentionally uses UTC since it runs on Vercel servers. **Calendar `gameByDate` key also uses local timezone** (fixed v1.61) — previously used `gameDate.split('T')[0]` (UTC), placing evening US games on the wrong calendar cell.
-
-2. **Audacy radio rights gap** — ~14 MLB market flagships hosted by Audacy (`live.amperwave.net/manifest/audacy-*`) play alternate content during games (talk shows / ads), not OTA simulcast. Adding an Audacy-hosted team to `APPROVED_RADIO_TEAM_IDS` will silently stream ads. Fix requires sourcing replacement URLs from iHeart / StreamTheWorld / Bonneville. See `docs/radio-system.md` → Audacy rights gap.
+1. **Date params use local time** — never `toISOString().split('T')[0]` for `startDate` / `endDate` (off-by-one after ~8pm ET). Use `etDateStr()` / `etDatePlus()` from `src/utils/format.js`.
+2. **Audacy radio rights gap** — `live.amperwave.net/manifest/audacy-*` URLs play alternate content during games, not the broadcast. Never add Audacy URLs to `APPROVED_RADIO_TEAM_IDS`.
 
 ---
 

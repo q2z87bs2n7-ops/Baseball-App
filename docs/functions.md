@@ -124,6 +124,51 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 | `computeRollingSeries(games, group, heroKey, windowSize)` | Rolls AVG/OPS for hitters / ERA for pitchers across the gameLog. Emits points once 2+ games are in the window. |
 | `renderSparklineSVG(series, opts)` | Returns an SVG sparkline (~320×56) with `currentColor` stroke + faint area fill, today-marker dot, trend label (▲/▼/▬ + magnitude). Pitching flips y-axis polarity (lower line = better). Tier-aware via `.hero-spark-wrap--{elite,good,bad}`. |
 
+### Sprint 3 additions (Stats v3 — v4.6.18 → v4.6.25)
+
+#### Statcast / Advanced (hitters)
+| Function | Purpose |
+|---|---|
+| `fetchAdvancedHitting(playerId)` | Pulls `/people/{id}/stats?stats=sabermetrics` + `?stats=seasonAdvanced` in parallel and merges the stat blobs. 24h TTL on `state.advancedHittingCache`. (`expectedStatistics` is NOT used — Statcast metrics like xBA / xwOBA / exit velo / barrel rate live on Baseball Savant which we don't proxy; see v4.6.19 fix note.) |
+| `loadAdvancedHittingForTab(playerId)` | Driver — fires `fetchAdvancedHitting` and `fetchHotColdZones` in parallel, then re-renders. |
+| `renderAdvancedHittingTab(playerId)` | Hero trio (wOBA · BABIP · wRC+ or ISO) + supporting metric grid (ISO / wRAA / wRC / BB rate / K rate / P-PA / AB-HR / GO-AO / XBH / TB) + sabermetrics source-note + heat map section. |
+
+#### Strike-zone heat map (hitters)
+| Function | Purpose |
+|---|---|
+| `fetchHotColdZones(playerId)` | Pulls `/people/{id}/stats?stats=hotColdZones&group=hitting` into `state.hotColdCache`. 24h TTL. |
+| `pickAvgZoneMatrix(splits)` | Picks the "Batting Avg" matrix from the multi-stat hot/cold payload; falls back to whatever's first when AVG isn't present. |
+| `avgHeatColor(value)` | 3-stop heat scale lerp (red ≤.180 → yellow ~.250 → green ≥.380). Returns CSS rgba. |
+| `renderHotZoneSection(playerId)` | 3x3 strike-zone CSS-grid heat map with axis labels, AVG values per cell, legend, catcher-view caption. Embedded inside the Advanced tab beneath the metrics grid. |
+
+#### Career year-by-year
+| Function | Purpose |
+|---|---|
+| `ensureCareerLoaded(playerId, group)` | Lazy-load entrypoint for the Career tab. Pulls `/people/{id}/stats?stats=yearByYear&group=hitting,pitching` into `state.careerCache`. 24h TTL. (Awards module dropped pre-prod in v4.6.21.) |
+| `renderCareerTab(playerId, group)` | Renders year-by-year hitting + pitching tables (two-way players get both, primary group first). Sorted ascending (Baseball Reference convention). Sticky header, horizontal-scroll on narrow viewports, accent-colored rate cells. |
+
+#### Today's Leaders (MLB-wide)
+| Function | Purpose |
+|---|---|
+| `loadTodaysLeaders()` | Warms `fetchLeagueLeaders('hitting')` + `fetchLeagueLeaders('pitching')` in parallel, then renders the card. Called from the Stats section's load path. |
+| `switchTodaysLeadersTab(tab, btn)` | Flips active tab between hitting/pitching; re-renders from cached `state.leagueLeaders`. |
+| `renderTodaysLeaders()` | 6-category top-5 grid per group. `TODAYS_LEADERS_CATS` catalog uses canonical leaderCategory names (`runsBattedIn`, `onBasePlusSlugging`, `walksAndHitsPerInningPitched`, `earnedRunAverage`, etc.) — friendly names won't hit the cache (v4.6.19 fix). |
+
+#### Compare overlay (Sprint 3 Batch D)
+| Function | Purpose |
+|---|---|
+| `openCompareOverlay()` | Opens the `#compareOverlay`. Pre-fills slot A with `state.selectedPlayer`, picks a default slot B from the active team's roster (skipping A). Sets `compareGroup` from the active roster tab. |
+| `closeCompareOverlay()` | Closes the overlay; restores body scroll. |
+| `setCompareSlot(slot, playerId)` | Updates `compareA` or `compareB` to the chosen roster player; re-renders. |
+| `setCompareGroup(group)` | Toggles between hitting/pitching; repicks defaults from the new pool when current slots aren't in it. |
+| `compareBoxesFor(group)` / `compareFmt(box, val)` / `compareStatFor(playerId, group)` | Stat catalog (mirrors the Player Stats Overview boxes), value formatter, and `state.statsCache` lookup helper used by `renderCompare`. |
+| `renderCompare()` | Renders the full overlay body — group bar + two slot pickers + comparison row grid. Polarity-aware winner detection (lower-better for ERA / WHIP / BB-9 / counting losses). |
+
+#### Team Stats helpers (also Sprint 3)
+| Function | Purpose |
+|---|---|
+| `computeLast10RunDiff(schedPayload, teamId)` | Aggregates run differential from the active team's last 10 final games. Pulled from a `/schedule?hydrate=linescore` window fetched in parallel inside `loadTeamStats`. Replaces the standings-aggregate runDifferential reading on the Last-10 form line (v4.6.23 fix). |
+
 ### Math helpers (`src/utils/stats-math.js`)
 
 | Function | Purpose |

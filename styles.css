@@ -2440,6 +2440,23 @@ nav button.active {
   text-align: right
 }
 .tl-cat-empty { color: var(--muted); font-size: .8rem; text-align: center; padding: 16px 0 }
+/* Today's Leaders card head + subtitle. Replaced four inline style="…"
+   attributes from v4.6.18 in v4.6.26. */
+.todays-leaders-card { margin-top: 16px }
+.todays-leaders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px
+}
+.todays-leaders-sub {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: .72rem;
+  letter-spacing: .04em
+}
+.todays-leaders-tabs { margin: 0 }
 
 /* ── Stats v3 / Sprint 3: Career tab (year-by-year tables) ─────────────── */
 .career-section { margin-top: 16px }

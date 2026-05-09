@@ -17,8 +17,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.6.25"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.6.25">
+<script defer src="dist/app.bundle.js?v=4.6.26"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.6.26">
 </head>
 <body>
 <header>
@@ -82,7 +82,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.6.25</div>
+        <div class="settings-version">v4.6.26</div>
       </div>
     </div>
   </div>
@@ -223,10 +223,10 @@
       <div id="playerStats"><div class="loading">Loading...</div></div>
     </div>
   </div>
-  <div class="card" id="todaysLeadersCard" style="margin-top:16px">
-    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <span>⭐ Today's Leaders <span style="color:var(--muted);font-weight:500;font-size:.78rem;letter-spacing:.04em">· Across MLB</span></span>
-      <div class="stat-tabs" id="todaysLeadersTabs" style="margin:0">
+  <div class="card todays-leaders-card" id="todaysLeadersCard">
+    <div class="card-title todays-leaders-head">
+      <span>⭐ Today's Leaders <span class="todays-leaders-sub">· Across MLB</span></span>
+      <div class="stat-tabs todays-leaders-tabs" id="todaysLeadersTabs">
         <button type="button" class="stat-tab active" data-tab="hitting" onclick="switchTodaysLeadersTab('hitting',this)">⚾ Hitting</button>
         <button type="button" class="stat-tab" data-tab="pitching" onclick="switchTodaysLeadersTab('pitching',this)">🥎 Pitching</button>
       </div>

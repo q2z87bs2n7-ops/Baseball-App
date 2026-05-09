@@ -29,6 +29,17 @@ let statSplitsCache  = {}               // (playerId + ':' + group) → { splits
 let pitchArsenalCache= {}               // playerId → { data:[...], ts } — 24h TTL; feeds Advanced tab donut for pitchers; pct values are normalized to a 0–100 scale at fetch time even when the API returns fractions
 let lastNCache       = {}               // playerId → { last15: <stat>, ts } — 12h TTL; feeds HOT/COLD inline badges (last-15 OPS Δ vs season OPS ≥ ±0.080)
 
+// ── 📊 Stats Tab v3 globals (Sprint 3, v4.6.18 → v4.6.25) ──────────────────
+let advancedHittingCache = {}            // playerId → { stat: {merged blob}, ts } — 24h TTL; sabermetrics + seasonAdvanced merged, feeds the Advanced tab metrics grid for hitters
+let hotColdCache         = {}            // playerId → { data:[zone splits], ts } — 24h TTL; /people/{id}/stats?stats=hotColdZones, feeds the strike-zone heat map under Advanced (hitters)
+let careerCache          = {}            // playerId → { hitting:[year rows], pitching:[year rows], ts } — 24h TTL; feeds Career tab year-by-year tables
+let todaysLeadersTab     = 'hitting'    // 'hitting' | 'pitching' — Today's Leaders card active group
+// Compare overlay state (in-memory only; no persistence)
+let compareOpen          = false
+let compareA             = null         // full roster player object {person, position, jerseyNumber}
+let compareB             = null
+let compareGroup         = 'hitting'    // 'hitting' | 'pitching'
+
 // ── ⚡ Pulse globals ──────────────────────────────────────────────────────────
 let pulseInitialized = false           // lazy-init guard — set true on first Pulse nav
 let gameStates       = {}             // gamePk → { awayAbbr, homeAbbr, awayName, homeName, awayPrimary, homePrimary,
