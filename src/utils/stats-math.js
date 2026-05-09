@@ -12,10 +12,16 @@ export function leaderEntry(group, statKey) {
   });
 }
 
-// Compute {rank, total, percentile} for a player's value against the league
-// leaders cache. Returns null if cache empty or stat not configured.
-// Higher rank number = worse (rank 1 = league best). Polarity controlled by
-// entry.lowerIsBetter (e.g. ERA: lower = better).
+// Compute {rank, total, percentile, outsideTop} for a player's value against
+// the league leaders cache. Returns null if cache empty or stat not
+// configured. Higher rank number = worse (rank 1 = league best). Polarity
+// controlled by entry.lowerIsBetter (e.g. ERA: lower = better). The
+// `outsideTop` flag is true when the player's value strictly loses to every
+// entry in the leader pool (and doesn't tie the last one) — so the rank
+// fallback `arr.length` doesn't actually mean "tied for last in the
+// leaderboard", it means "below the leader pool entirely". Used by the
+// renderer to swap "#100 of 100 MLB" for "Outside MLB top 100" so a qualified
+// hitter just below the leader cohort doesn't look like a bug.
 export function computePercentile(group, statKey, value) {
   if (value == null || value === '') return null;
   var entry = leaderEntry(group, statKey);
@@ -27,15 +33,16 @@ export function computePercentile(group, statKey, value) {
   // arr is sorted best→worst by fetchLeagueLeaders. Find first index where v
   // would no longer beat the existing entry — that's our rank.
   var rank = arr.length;
+  var foundInPool = false;
   for (var i = 0; i < arr.length; i++) {
     var beats = entry.lowerIsBetter ? v < arr[i].value : v > arr[i].value;
-    if (beats) { rank = i + 1; break; }
+    if (beats) { rank = i + 1; foundInPool = true; break; }
     var ties = v === arr[i].value;
-    if (ties) { rank = i + 1; break; }
+    if (ties) { rank = i + 1; foundInPool = true; break; }
   }
   var total = arr.length;
   var percentile = Math.max(0, Math.min(100, Math.round(((total - rank) / Math.max(1, total - 1)) * 100)));
-  return { rank: rank, total: total, percentile: percentile };
+  return { rank: rank, total: total, percentile: percentile, outsideTop: !foundInPool };
 }
 
 // Quality tier from percentile. Used for both bar color and box-bg accent.
@@ -54,9 +61,15 @@ export function pctBar(percentile) {
   return '<div class="pct-bar pct-bar--' + tier + '"><i style="width:' + percentile + '%"></i></div>';
 }
 
-// "#9 · Top 6%" caption when in the top decile, "#41" otherwise.
-export function rankCaption(rank, total) {
+// "#9 · Top 6%" caption when in the top decile, "#41" otherwise. When
+// `outsideTop` is true the player is strictly below the leader pool — render
+// "Outside top N" instead of "#N of N" so the dead-last-in-pool fallback
+// doesn't read as a bug.
+export function rankCaption(rank, total, outsideTop) {
   if (rank == null || total == null) return '';
+  if (outsideTop) {
+    return '<div class="rank-caption rank-caption--outside"><span>MLB</span><b>Outside top ' + total + '</b></div>';
+  }
   var topPct = total ? Math.max(1, Math.round((rank / total) * 100)) : 100;
   var label = '#' + rank + (topPct <= 10 ? ' · Top ' + topPct + '%' : '');
   return '<div class="rank-caption"><span>MLB</span><b>' + label + '</b></div>';

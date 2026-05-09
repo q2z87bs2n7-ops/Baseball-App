@@ -2389,6 +2389,17 @@ function renderOverviewTab(s,group){
     if(!heroSparkHtml){
       heroSparkHtml = '<div class="hero-panel-trend"><span class="hero-trend-pending">trend loading…</span></div>';
     }
+    // When the player is outside the leader pool, swap "#100 of 100" for the
+    // honest "Outside MLB top N" message and skip the percentile bar (which
+    // would render at 0% width and look broken).
+    var hRankHtml='';
+    var hBarHtml='';
+    if(hPInfo){
+      hRankHtml=hPInfo.outsideTop
+        ? '<div class="hero-panel-rank hero-panel-rank--outside">Outside MLB top '+hPInfo.total+'</div>'
+        : '<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>';
+      if(!hPInfo.outsideTop) hBarHtml='<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>';
+    }
     html+='<div class="hero-panel'+(hTier?' hero-panel--'+hTier:'')+'">'+
       '<div class="hero-panel-stat">'+
         '<div class="hero-panel-meta">'+heroMeta+'</div>'+
@@ -2397,8 +2408,8 @@ function renderOverviewTab(s,group){
         ((hChip||tierPill)?'<div class="hero-panel-deltas">'+hChip+tierPill+'</div>':'')+
       '</div>'+
       '<div class="hero-panel-context">'+
-        (hPInfo?'<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>':'')+
-        (hPInfo?'<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>':'')+
+        hRankHtml+
+        hBarHtml+
         (!hPInfo && hEntry && !hShowRank ? '<div class="hero-panel-unq" title="Below MLB qualification threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers). Rank suppressed for rate stats.">Below qualification · rank not shown</div>' : '')+
         heroSparkHtml+
       '</div>'+
@@ -2422,10 +2433,17 @@ function renderOverviewTab(s,group){
       var basisVal=basis==='mlb'?leagueAverage(group,b.k):teamAverage(group,b.k);
       chip=avgChip(b.raw,basisVal,dec,entry&&entry.lowerIsBetter);
     }
+    // Outside-top players get the "Outside top N" caption (via rankCaption's
+    // outsideTop arg) and skip the bar to avoid a 0%-width sliver.
+    var boxRankHtml='';
+    if(pInfo){
+      var boxBar=pInfo.outsideTop?'':pctBar(pInfo.percentile);
+      boxRankHtml=boxBar+rankCaption(pInfo.rank,pInfo.total,pInfo.outsideTop);
+    }
     html+='<div class="stat-box'+tierCls+'">'+
           '<div class="stat-val">'+(b.v!=null?b.v:'—')+'</div>'+
           '<div class="stat-lbl">'+b.l+'</div>'+
-          (pInfo?pctBar(pInfo.percentile)+rankCaption(pInfo.rank,pInfo.total):'')+
+          boxRankHtml+
           chip+
           '</div>';
   });
