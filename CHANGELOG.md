@@ -5,7 +5,53 @@
 
 ---
 
-**Current version:** v4.1
+**Current version:** v4.4.16
+
+**v4.4.16** — **HR carousel speed + game-detail panel resilience.** Cherry-picked from `claude/investigate-homerun-speed-awCtj` (commit `d0e560d`). (1) `src/pulse/poll.js` now extracts `play.hitData.launchSpeed` alongside `totalDistance` for HR plays and passes both through `addFeedItem`; same backfill logic in the update loop. (2) `src/carousel/generators.js` `genHRStories()` adds `' at NN mph'` to the headline when speed is present — story now reads "hit a 420ft homer at 108 mph off …". (3) `src/sections/loaders.js` `buildGameDetailPanel()` adds `response.ok` guards on linescore/boxscore fetches (throw early instead of opaque "Could not load game details") and treats `/content` failures as non-fatal — boxscore renders even when highlight content is unavailable. CACHE mlb-v4414 → mlb-v4416. The cherry-pick had only version-string conflicts in `index.html` and `sw.js`; the three substantive files merged cleanly with no logic conflicts against the v4.4 mobile-nav work.
+
+**v4.4.15** — **Documentation sync after v4.4 mobile-nav refactor.** Backfilled CHANGELOG entries for v4.2 → v4.4.14, updated `CLAUDE.md` Current Version line + Repo Structure (`src/nav/`) + Navigation section (full mobile nav architecture: sticky header, More sheet, hide-on-scroll, hashchange routing, scroll memory, live-state nav dots, long-press, settings bottom sheet). Added `src/nav/` to `docs/module-graph.md` (Layer 4) and bumped its module count + `main.js` LOC. Annotated `--header-h` mobile override (42px + safe-area-inset-top) in `docs/css-variables.md` and updated the ≤480px breakpoint row to reflect v4.4 changes (sticky header, 5-tab nav + More sheet, 11px label floor, horizontal-scroll tabs, settings bottom sheet). Added Yesterday Recap section + `.section-bar` notes to `docs/sections.md`. No app-content changes — version-string-only release commit, no CACHE bump.
+
+**v4.4.14** — **Fix two design-floor deviations + catch up `sw.js` CACHE.** Spec audit found three deviations from the `Mobile Nav.zip` design handoff (Direction A); two were fixed: (1) `.header-crumb` font-size raised 9.5px → 11px (Phase 1 design floor — spec explicitly flagged 9.5px as failed in user testing); (2) `.nav-dot.live` animation `2s ease infinite` → `1.6s ease-in-out infinite` (matches Phase 4d spec timing/easing). The third (Yesterday `.section-bar-overflow` slot) was deliberately left as-is — Yesterday is now an overlay with a back button, not a section, so the spec's overflow ⋯ doesn't apply. Also bumped `sw.js` CACHE `mlb-v421` → `mlb-v4414` to invalidate stale PWA caches (CACHE had been stuck at v4.2.1 across 13 content commits in v4.3 → v4.4.13).
+
+**v4.4.13** — **Phase 4b/c/d/e/f in one pass.** Closed out the remaining behavioral upgrades from the design handoff. (4b) Per-section scroll memory via `Map<sectionId, scrollY>` in `src/nav/behavior.js` — `captureScroll()` on section leave, `restoreScroll()` on section entry (instant, not smooth). (4c) Hashchange routing via `installHashRouter` + `navTo()` + `syncHash()`: nav button clicks set `location.hash`, `hashchange` listener calls `showSection`, initial load reads hash, deep links work. (4d) Live-state nav dots — `.nav-dot` / `.nav-dot.live` (green pulse) / `.nav-dot.fresh` (orange) wired via `setNavDot`/`clearNavDot`/`refreshNavDots` on a 30s `installNavDotsRefresh` interval. (4e) Long-press shortcuts — `attachLongPress` (500ms, `navigator.vibrate(8)`) + `installNavLongPress`. (4f) `.settings-panel` becomes a bottom sheet on mobile (fixed bottom-0, `transform:translateY(100%)` → `translateY(0)` on `.open`).
+
+**v4.4.12** — Closed More sheet now fully hidden (`display:none`) so it doesn't peek through the hidden bottom-nav transform during the slide-down transition.
+
+**v4.4.11** — **Phase 4a: hide-on-scroll bottom nav.** `installHideOnScroll` in `src/nav/behavior.js`: rAF-throttled scroll listener; scroll-down past 40px adds `nav.nav-hidden` (`transform:translateY(110%)` — clears the bottom shadow); any negative delta restores. CSS transition 220ms `cubic-bezier(0.32, 0.72, 0, 1)` (iOS easing).
+
+**v4.4.10** — Yesterday section eyebrow renamed `◷ YESTERDAY` → `◷ HIGHLIGHTS` (the bar already shows the date in its scrubber, so "YESTERDAY" was redundant).
+
+**v4.4.9** — Yesterday date label kept on a single row in `#ydSectionBar` (was wrapping on narrow viewports).
+
+**v4.4.8** — **Phase 3b: shared `.section-bar` component + Yesterday bar restructure.** Extracted the cross-section-bar pattern from `#pulseTopBar` into a reusable `.section-bar` with named slots: `.section-bar-eyebrow` (left, kicker label), `.section-bar-context` (center, date scrubber / score / filter), `.section-bar-toggles` (right, stateful pills), `.section-bar-overflow` (right, `⋯` for launcher sheets). Migrated `#pulseTopBar` and `#ydSectionBar` to the new structure. Yesterday's bar primary control is now the date scrubber (was previously mirroring Pulse's 5-pill row).
+
+**v4.4.7** — **Phase 3a: stat / boxscore tabs scroll horizontally on mobile.** `.stat-tabs` and `.boxscore-tabs` switch from `flex-wrap:wrap` to `flex-wrap:nowrap` + `overflow-x:auto` + soft right-edge mask-image fade. `scrollTabIntoView` scrolls the active tab into view via `scrollIntoView({inline:'center'})` — scoped to the tabs container, **never** the document.
+
+**v4.4.6** — Fixed Sound sheet item not opening the Sound panel (handler was bound to old inline button before the Phase 2 refactor moved it into the overflow sheet).
+
+**v4.4.5** — Forced the `⋯` Pulse overflow button to render visible on mobile (CSS source-order fix — the `.ptb-launcher{display:none}` rule was matching `.ptb-overflow` due to ordering).
+
+**v4.4.4** — Fixed two regressions on tablet / Pulse: (1) closed sheet was peeking above the bottom-nav on tablet widths; (2) Pulse theme toggle was stuck in dark mode after `applyPulseMLBTheme` re-ran.
+
+**v4.4.3** — **Phase 2: `#pulseTopBar` refinement.** Reduced 5 right-side controls to 2 stateful toggles (My Team Lens, Radio) inline with class `.ptb-toggle`; Sound / Yesterday-jump / Theme moved to a `⋯` overflow sheet (`.ptb-overflow` — 26×26 squared, thin border — visually distinct from the pill toggles). Why Radio stays inline: it's a primary broadcast control with on/off state; users want its state visible at all times.
+
+**v4.4.2** — Header height made `border-box` so `env(safe-area-inset-top)` adds to the 42px content height instead of squeezing it (was clipping logo on notched iPhones in v4.4.1).
+
+**v4.4.1** — `<meta viewport content="…viewport-fit=cover">` so installed PWA fills the safe-area behind the iOS status bar (combined with v4.4.2's safe-area-inset-top padding).
+
+**v4.4** — **Mobile nav refactor (Direction A).** Main release for all `Mobile Nav.zip` design-handoff work in this branch. Phase 1 (sticky 42px header on mobile, 5-tab bottom nav + More sheet for News/Standings/Stats, 11px label floor, header-crumb span), Phase 2 (`#pulseTopBar` refined to 2 toggles + overflow), Phase 3 (`.section-bar` shared component, Yesterday bar restructured around date scrubber, horizontal-scroll stat tabs), Phase 4a (hide-on-scroll bottom nav). Phase 4b/c/d/e/f shipped over patches v4.4.11–v4.4.13. New module: `src/nav/` (behavior.js + sheet.js).
+
+**v4.3.3** — Dev-only visible top-nav fixes (squashed into v4.4 — no separate PR).
+
+**v4.3.2** — Hotfix: `More` button now toggles its sheet (was open-only). Carry-over from a missed v4.3.1 hotfix.
+
+**v4.3.1** — `More` button now toggles its sheet open/close (was open-only). Also fixed a CI build issue: preview workflow now builds `dist/` before publishing to GitHub Pages so the rendered site actually has the bundle.
+
+**v4.3** — Main release bump after Phase 1 of the mobile-nav refactor merged (sticky header, 5-tab + More sheet, safe-area).
+
+**v4.2.1** — **Mobile nav Phase 1.** First slice of the mobile-nav refactor: sticky header on mobile, bottom-nav 5-tab + More sheet, safe-area-inset-top respected, 11px nav labels.
+
+**v4.2** — Release rollup: changelog and dev-tools panel updates, README polish, settings panel cleanup, and `/bloat` slash command added (documentation/HTML bloat audit). Repo file `CLAUDE.md` had its inline version-history section removed and deferred to `CHANGELOG.md`.
 
 **v4.1** — **Repo hygiene: relocate root files, untrack `dist/`, rename `src/diag/`.** Three reviewer-driven cleanups bundled. (1) Moved the four runtime-dep files out of repo root: `focusCard.js`, `pulse-card-templates.js`, `collectionCard.js` → `assets/vendor/`; `daily-events.json` → `assets/`. Updated `index.html` script tags, `sw.js` SHELL cache, and the demo-mode fetch path. Window-global pattern preserved (no consumer-side refactor). (2) Stopped committing `dist/`. Vercel rebuilds the bundle on every prod push and the preview workflow rebuilds before publishing to Pages, so the committed copy was vestigial. Added `dist/` to `.gitignore`, deleted `.github/workflows/build.yml` (its only job was auto-committing the bundle). Net delta ~10,700 lines deleted; future diffs no longer carry bundle churn. (3) Renamed `src/diag/` → `src/devtools-feed/` to reflect that it holds runtime instrumentation feeding the Dev Tools panel (console wrap, fetch wrap), not dev-only scripts. Updated 13 import paths across 11 files. CLAUDE.md repo map updated.
 

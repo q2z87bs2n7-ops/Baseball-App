@@ -326,7 +326,8 @@ async function buildGameDetailPanel(g,gameNum){
     return html;
   }
   var responses=await Promise.all([fetch(MLB_BASE+'/game/'+g.gamePk+'/linescore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/content')]);
-  var ls=await responses[0].json(),bs=await responses[1].json(),content=await responses[2].json();
+  if(!responses[0].ok||!responses[1].ok) throw new Error('API '+responses[0].status);
+  var ls=await responses[0].json(),bs=await responses[1].json(),content=responses[2].ok?await responses[2].json():{};
   var highlight=content.highlights&&content.highlights.highlights&&content.highlights.highlights.items&&content.highlights.highlights.items[0]?content.highlights.highlights.items[0]:null;
   var highlightUrl=highlight?pickPlayback(highlight.playbacks):null;
   var thumbCuts=highlight&&highlight.image&&highlight.image.cuts?highlight.image.cuts:[];
@@ -453,7 +454,18 @@ function renderHomeStandings(divMap){
 // ── STATS/ROSTER SECTION ────────────────────────────────────────────────────
 export function selectLeaderPill(group,stat,btn){var selId=group==='hitting'?'hitLeaderStat':'pitLeaderStat';var sel=document.getElementById(selId);if(sel)sel.value=stat;var pillsId=group==='hitting'?'hitLeaderPills':'pitLeaderPills';document.getElementById(pillsId).querySelectorAll('.leader-pill').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');loadLeaders();}
 
-export function switchLeaderTab(tab,btn){state.currentLeaderTab=tab;document.querySelectorAll('.stat-tabs button').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.getElementById('hitLeaderStat').style.display=tab==='hitting'?'block':'none';document.getElementById('pitLeaderStat').style.display=tab==='pitching'?'block':'none';document.getElementById('hitLeaderPills').style.display=tab==='hitting'?'flex':'none';document.getElementById('pitLeaderPills').style.display=tab==='pitching'?'flex':'none';loadLeaders();}
+// Center an active tab inside its horizontally-scrolling container. Only scrolls
+// when the container actually overflows, so it's a no-op on desktop where tabs
+// fit on one row.
+function scrollTabIntoView(btn){
+  if(!btn||!btn.parentElement)return;
+  var p=btn.parentElement;
+  if(p.scrollWidth<=p.clientWidth)return;
+  var tgt=btn.offsetLeft-(p.clientWidth-btn.offsetWidth)/2;
+  p.scrollTo({left:Math.max(0,tgt),behavior:'smooth'});
+}
+
+export function switchLeaderTab(tab,btn){state.currentLeaderTab=tab;document.querySelectorAll('.stat-tabs button').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);document.getElementById('hitLeaderStat').style.display=tab==='hitting'?'block':'none';document.getElementById('pitLeaderStat').style.display=tab==='pitching'?'block':'none';document.getElementById('hitLeaderPills').style.display=tab==='hitting'?'flex':'none';document.getElementById('pitLeaderPills').style.display=tab==='pitching'?'flex':'none';loadLeaders();}
 
 export function loadLeaders(){
   var group=state.currentLeaderTab,stat=group==='hitting'?document.getElementById('hitLeaderStat').value:document.getElementById('pitLeaderStat').value,data=state.statsCache[group];
@@ -496,7 +508,7 @@ function renderPlayerList(){
   document.getElementById('playerList').innerHTML=html;
 }
 
-export function switchRosterTab(tab,btn){state.currentRosterTab=tab;state.selectedPlayer=null;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');var players=state.rosterData[tab]||[];if(players.length)selectPlayer(players[0].person.id,tab);else{renderPlayerList();document.getElementById('playerStatsTitle').textContent='Player Stats';document.getElementById('playerStats').innerHTML='<div class="empty-state">No players available</div>';}}
+export function switchRosterTab(tab,btn){state.currentRosterTab=tab;state.selectedPlayer=null;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);var players=state.rosterData[tab]||[];if(players.length)selectPlayer(players[0].person.id,tab);else{renderPlayerList();document.getElementById('playerStatsTitle').textContent='Player Stats';document.getElementById('playerStats').innerHTML='<div class="empty-state">No players available</div>';}}
 
 export async function selectPlayer(id,type){
   var playerObj=(state.rosterData[type]||[]).find(function(p){return p.person.id===id;})||{person:{id:id}};

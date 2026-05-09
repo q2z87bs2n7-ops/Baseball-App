@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v4.2 (full history in `CHANGELOG.md`)
+**Current version:** v4.4.16 (full history in `CHANGELOG.md`)
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
@@ -46,6 +46,7 @@ src/collection/         — book.js (tier system + binder UI + collectCard) + sy
 src/radio/              — stations.js (data) + engine.js (toggleRadio/loadRadioStream) + check.js (sweep tool).
 src/push/push.js        — Web Push lifecycle.
 src/auth/               — oauth.js (sign-in initiators) + session.js (signOut/updateSyncUI/showSignInCTA).
+src/nav/                — behavior.js (hide-on-scroll bottom nav, per-section scroll memory, hashchange routing, live-state nav dots, long-press shortcuts) + sheet.js (mobile More sheet open/close + overflow sheets for #pulseTopBar). Mobile-only behaviors gated by `matchMedia('(max-width: 480px)')`.
 src/sections/           — loaders.js (every section loader) + yesterday.js (Yesterday Recap overlay).
 src/demo/mode.js        — Demo Mode (replay engine, speed controls).
 src/dev/                — tuning.js (panel UI + click delegator), panels.js (Log/AppState/Net/Storage/SW/LiveControls/Snapshot inspectors), youtube-debug.js, video-debug.js, news-test.js.
@@ -149,6 +150,18 @@ export const state = {
 `showSection(id, btn)` — shows/hides sections by toggling `.active` class. Nav order: `pulse`, `home`, `schedule`, `league`, `news`, `standings`, `stats`. Pulse is first and the default-active section. Live game view is a separate overlay (`#liveView`), not a section. Calling `showSection` while live view is active automatically closes it first.
 
 `pulse` is lazy-initialised: `initLeaguePulse()` fires only on first nav via `pulseInitialized` guard.
+
+**Mobile nav (≤480px, v4.4 refactor — Direction A from `Mobile Nav.zip` design handoff).** Implementation lives in `src/nav/behavior.js` + `src/nav/sheet.js`; CSS in the `@media (max-width: 480px)` block of `styles.css`.
+
+- **Sticky header at 42px + `env(safe-area-inset-top)`** so it survives scroll and respects iOS notch (was `position:static`, 60px). `--header-h` is overridden to match so `#gameTicker` and `.section-bar` stick flush.
+- **Bottom nav: 5 visible tabs** (Pulse, My Team, Schedule, League, More). News/Standings/Stats are hidden inline and surface from a "More" sheet (`.more-sheet` + `.more-sheet-backdrop`, sibling of `<nav>`). Tapping a More item closes the sheet and switches section via the existing routing function.
+- **Hide-on-scroll bottom nav** (`installHideOnScroll`): scroll-down past 40px → `nav.classList.add('nav-hidden')` → `transform: translateY(110%)`; any negative delta restores within 220ms (iOS easing `cubic-bezier(0.32, 0.72, 0, 1)`).
+- **Hashchange routing** (`installHashRouter`): all `nav button` clicks go through `navTo(section)` which sets `location.hash`. Browser back/forward, refresh, and deep links (`#schedule`, `#stats`, etc.) all land on the right section. Initial load reads `location.hash` and routes; falls back to `pulse`.
+- **Per-section scroll memory** (`captureScroll`/`restoreScroll`): `Map<sectionId, scrollY>`. `main.js` captures on section leave and restores on entry (instant, not smooth) so switching tabs doesn't lose scroll position.
+- **Live-state nav dots** (`.nav-dot`, `.nav-dot.live` with 1.6s ease-in-out pulse): green pulse on Schedule when user's team is live; orange `.nav-dot.fresh` for new-card / breaking-news state. Refreshed by `installNavDotsRefresh()` on a 30s interval.
+- **Long-press shortcuts** (`attachLongPress`, 500ms): bound to nav buttons via `installNavLongPress`; calls `navigator.vibrate(8)` where supported.
+- **Settings panel as bottom sheet on mobile**: same `.settings-panel` markup, but mobile CSS converts it to `position:fixed; bottom:0; transform:translateY(100%)` and `.open` slides it up.
+- **`#pulseTopBar` and `#ydSectionBar`** share the `.section-bar` component (eyebrow + context + toggles + overflow slots). Pulse keeps Lens + Radio inline (`.ptb-toggle`); Sound/Yesterday-jump/Theme move to a `⋯` overflow sheet (`.ptb-overflow`, 26×26 squared). Yesterday's bar primary control is the date scrubber. Stat / boxscore tabs (`.stat-tabs`, `.boxscore-tabs`) horizontal-scroll on mobile with a soft mask-image fade; active tab uses `scrollIntoView({inline:'center'})` scoped to the tabs container, **never** the document.
 
 ### Team theming
 `applyTeamTheme(team)` sets nine CSS variables dynamically:
