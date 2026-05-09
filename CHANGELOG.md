@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.7.5
+**Current version:** v4.7.6
+
+**v4.7.6** — **Cleanup: drop `handoff/daybreak/` ahead of merge.** With the iOS PNG splash already gone (v4.7.4) and the canonical splash design living inline in `index.html`, the `handoff/daybreak/` folder (README, splash-template.html, sizes.json, generate.mjs, build.sh) was just dead source — only useful if we ever wanted PNGs back, which we don't. Removed entirely. Edits to the splash design now go directly to the inline `<style>` block + `#appSplash` markup in `index.html`. The Daybreak source template + Playwright-based generator are recoverable from git history if anyone resurrects PNGs later. Updated `CLAUDE.md` Repo structure + PWA section + `docs/pwa-push.md` to drop `handoff/` references. No app-content changes — version-string-only commit, no CACHE bump.
 
 **v4.7.5** — **Splash min-show 600ms → 1500ms.** UAT on v4.7.4 caught that on warm reload (cached SW + cached Pulse data) the splash flashed too quickly and the dismiss looked jumpy because there was no time to settle on the splash before the fade started. Bumped `MIN_SHOW` in the dismiss IIFE in `index.html` from 600ms to 1500ms — splash now always holds for at least 1.5s after first paint regardless of how fast Pulse resolves. `MAX_HOLD` (4000ms) and `FADE_TOTAL` (800ms) unchanged. Total cold-boot time on a fast load: ~250ms manifest bg + 1500ms splash hold + 750ms fade ≈ 2.5s. CACHE `mlb-v474` → `mlb-v475`.
 

@@ -28,7 +28,7 @@ Lifecycle (CSS animation + JS):
 3. **Dismiss phase 1 (0–400ms):** gradient + content fade out. Container stays opaque on `var(--dark, #0a0f1e)` so screen converges to uniform dark.
 4. **Dismiss phase 2 (400–750ms):** container fades — visually invisible since body underneath is the same color.
 
-Source design lives in `handoff/daybreak/` (renderable HTML template, README spec). To tweak the design: edit `handoff/daybreak/splash-template.html`, port the changes to the inline `<style>` block in `index.html`, bump versions per CLAUDE.md rule 7. The `handoff/daybreak/build.sh` + `generate.mjs` + `sizes.json` files exist for re-introducing PNGs if we ever change our mind.
+To tweak the design, edit the inline `<style>` block + `#appSplash` markup in `index.html` directly and bump versions per CLAUDE.md rule 7. The original Daybreak source template + Playwright-based PNG generator lived in `handoff/daybreak/` through v4.7.5 and were removed in v4.7.6 — recoverable from git history if anyone wants to ship `apple-touch-startup-image` PNGs again.
 
 ## Push Notifications
 

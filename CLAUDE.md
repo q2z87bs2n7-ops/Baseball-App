@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v4.7.5 (full history in `CHANGELOG.md`)
+**Current version:** v4.7.6 (full history in `CHANGELOG.md`)
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
@@ -244,9 +244,11 @@ Self-contained replay of April 27-28, 2026 from `assets/daily-events.json` (562K
 
 `manifest.json`: `display:standalone`, `start_url:"./"`, `scope:"./"` — all relative paths (GitHub Pages serves at `/Baseball-App/`). Push toggle hidden on desktop via CSS. `api/notify.js` fires for games starting within 10 min or started up to 2 min ago; deduplicates via `notified:{gamePk}` Redis key (24h TTL).
 
+**Splash screen** (Daybreak, v4.7.4+): inline `#appSplash` overlay in `index.html` `<head>`/`<body>` — no `apple-touch-startup-image` PNGs. iOS shows manifest `background_color` (`#0a0f1e`) for ~250ms during HTML parse, then the inline overlay takes over (gradient + Pulse mark + wordmark). Held until `window.dismissAppSplash()` fires from `src/main.js:275` after `pollLeaguePulse()` resolves (`MIN_SHOW=1500ms`, `MAX_HOLD=4000ms`). Two-phase fade-out so the splash → app handoff has no color/layout snap. Edits go to the inline `<style>` + `#appSplash` markup in `index.html` directly.
+
 On every content commit, bump three things: (1) `<title>` version, (2) settings panel version, (3) `CACHE` in `sw.js`.
 
-Icons, VAPID key storage, cron setup: `docs/pwa-push.md`.
+Icons, splash lifecycle, VAPID key storage, cron setup: `docs/pwa-push.md`.
 
 ---
 
