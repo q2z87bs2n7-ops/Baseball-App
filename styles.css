@@ -1636,6 +1636,19 @@ nav button.active {
   letter-spacing: .04em
 }
 .hero-panel-bar .pct-bar { height: 6px; background: rgba(255,255,255,.1) }
+/* Shown in place of rank/percentile when an unqualified player is selected on
+   a rate stat. Carries the explanation in a tooltip for users who want detail. */
+.hero-panel-unq {
+  font-size: .68rem;
+  letter-spacing: .04em;
+  color: var(--muted);
+  font-style: italic;
+  padding: 6px 10px;
+  background: rgba(255,255,255,.04);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  cursor: help
+}
 .hero-panel-trend {
   min-height: 44px;
   display: flex;

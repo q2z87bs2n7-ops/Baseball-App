@@ -607,21 +607,29 @@ export async function loadTeamStats(){
   if(formEl)formEl.innerHTML='';
   state.teamStatsInflight=(async function(){
     try{
+      // Last-25-day window for the L10-run-diff calc (v4.6.23 — the standings
+      // endpoint only returns season-aggregate runDifferential, which was being
+      // rendered next to "Last 10:" and read as a last-10 figure).
+      var todayStr=etDateStr();
+      var fromStr=etDatePlus(todayStr,-25);
+      var schedReq=fetch(MLB_BASE+'/schedule?teamId='+teamId+'&startDate='+fromStr+'&endDate='+todayStr+'&hydrate=linescore&sportId=1');
       var seasonReq=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching,fielding&stats=season&season='+SEASON);
       var l10Req=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching&stats=lastXGames&limitGames=10&season='+SEASON);
       var standingsReq=fetch(MLB_BASE+'/standings?leagueId=103,104&season='+SEASON);
       var rankReq=fetchTeamRanks();
-      var [seasonRes,l10Res,standingsRes]=await Promise.all([seasonReq,l10Req,standingsReq]);
+      var [seasonRes,l10Res,standingsRes,schedRes]=await Promise.all([seasonReq,l10Req,standingsReq,schedReq]);
       await rankReq;
       var seasonData=seasonRes&&seasonRes.ok?await seasonRes.json():null;
       var l10Data=l10Res&&l10Res.ok?await l10Res.json():null;
       var standingsData=standingsRes&&standingsRes.ok?await standingsRes.json():null;
+      var schedData=schedRes&&schedRes.ok?await schedRes.json():null;
       state.teamStats.hitting=extractTeamStat(seasonData,'hitting');
       state.teamStats.pitching=extractTeamStat(seasonData,'pitching');
       state.teamStats.fielding=extractTeamStat(seasonData,'fielding');
       state.teamStats.l10Hitting=extractTeamStat(l10Data,'hitting');
       state.teamStats.l10Pitching=extractTeamStat(l10Data,'pitching');
       state.teamStats.standingsRecord=extractTeamRecord(standingsData,teamId);
+      state.teamStats.last10RunDiff=computeLast10RunDiff(schedData,teamId);
       state.teamStats.teamId=teamId;
       state.teamStatsFetchedAt=Date.now();
       renderTeamStats();
@@ -639,6 +647,35 @@ function extractTeamStat(payload,group){
   var blk=payload.stats.find(function(s){return s.group&&s.group.displayName&&s.group.displayName.toLowerCase()===group;});
   if(!blk||!blk.splits||!blk.splits.length)return null;
   return blk.splits[0].stat;
+}
+
+// Aggregates run differential from the last 10 Final games for the active
+// team. Pulled from the schedule+linescore window fetched in loadTeamStats.
+// Returns null when there aren't enough completed games (e.g. early season,
+// April rainouts) — the form-line renderer omits the chip in that case rather
+// than misleading with a partial sum.
+function computeLast10RunDiff(schedPayload,teamId){
+  if(!schedPayload||!schedPayload.dates)return null;
+  var games=[];
+  schedPayload.dates.forEach(function(d){(d.games||[]).forEach(function(g){games.push(g);});});
+  // Final only, newest first
+  var finals=games.filter(function(g){
+    return g.status&&g.status.abstractGameState==='Final'
+      &&g.linescore&&g.linescore.teams
+      &&g.linescore.teams.home&&g.linescore.teams.away;
+  }).sort(function(a,b){return new Date(b.gameDate)-new Date(a.gameDate);});
+  if(!finals.length)return null;
+  var slice=finals.slice(0,10);
+  var diff=0,counted=0;
+  slice.forEach(function(g){
+    var home=g.teams&&g.teams.home,away=g.teams&&g.teams.away;
+    var ls=g.linescore.teams;
+    var homeR=parseInt(ls.home.runs,10),awayR=parseInt(ls.away.runs,10);
+    if(isNaN(homeR)||isNaN(awayR))return;
+    if(home&&home.team&&home.team.id===teamId){diff+=(homeR-awayR);counted++;}
+    else if(away&&away.team&&away.team.id===teamId){diff+=(awayR-homeR);counted++;}
+  });
+  return counted>0?diff:null;
 }
 
 function extractTeamRecord(standingsData,teamId){
@@ -734,7 +771,11 @@ function renderTeamStats(){
   var rec=ts.standingsRecord;
   if(rec&&rec.lastTen){
     var streakUp=rec.streak&&rec.streak.charAt(0)==='W';
-    var rd=rec.runDiff;
+    // Use last-10 run diff (computed from schedule+linescore) — the standings
+    // endpoint's runDifferential is season-aggregate and was misread next to
+    // "Last 10:". Fall back to omitting the chip when L10 diff isn't computable
+    // rather than mixing scopes.
+    var rd=ts.last10RunDiff;
     var rdStr=rd==null?'':' · run diff '+(rd>=0?'+':'')+rd;
     formEl.className='team-form-line'+(streakUp?'':' cold');
     formEl.innerHTML='<div><b style="color:#fff;">Last 10:</b> '+rec.lastTen+(rec.streak?' · '+(streakUp?'▲ ':'▼ ')+rec.streak:'')+rdStr+'</div><div class="form-meta">Form</div>';
@@ -1465,7 +1506,9 @@ function renderAdvancedHittingTab(playerId){
   }
   var note = '<div class="adv-source-note">Advanced metrics from MLB Stats API · sabermetrics + seasonAdvanced. Statcast (xBA / xwOBA / exit velo / barrel rate) lives on Baseball Savant and is not proxied here.</div>';
   var heatmap = renderHotZoneSection(playerId);
-  panelEl.innerHTML = hero + grid + heatmap + note;
+  // Source note sits with the metrics it describes — it disclaims the
+  // sabermetrics + seasonAdvanced data, not the hot/cold heat map below.
+  panelEl.innerHTML = hero + grid + note + heatmap;
 }
 
 function renderGameLogPlaceholder(){
@@ -2061,6 +2104,14 @@ function renderOverviewTab(s,group){
   var pid=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id;
   var jerseyOverlay=(state.selectedPlayer&&state.selectedPlayer.jerseyNumber)?'<div class="headshot-jersey-pill">#'+state.selectedPlayer.jerseyNumber+'</div>':'';
   var html=pid?'<div class="headshot-frame"><img src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current">'+jerseyOverlay+'</div>':'';
+  // v4.6.23: gate rank/percentile UI on qualification for rate stats. Counting
+  // stats (HR/RBI/K/SB) always show rank — Aaron Judge with 30 HR is genuinely
+  // #1 regardless of PA. Rate stats (AVG/OBP/SLG/OPS/ERA/WHIP) get the gate
+  // because the leaders cache pulls qualified-only entries from MLB API; an
+  // unqualified player with 1-for-2 .500 AVG would otherwise spuriously
+  // outrank everyone.
+  var playerQualified = group==='fielding' ? true : isQualified(group, s);
+  function shouldShowRank(entry){ return !entry || entry.decimals < 2 || playerQualified; }
   var boxes=[];
   if(group==='hitting')boxes=[
     {v:fmtRate(s.avg),         l:'AVG', k:'avg',          raw:s.avg},
@@ -2114,9 +2165,10 @@ function renderOverviewTab(s,group){
   // gameLog-fed trend line. Fielding skips the panel; the 3-col grid is enough.
   if(group!=='fielding' && boxes.length){
     var hb=boxes[0];
-    var hPInfo=hb.k?computePercentile(group,hb.k,hb.raw):null;
-    var hTier=hPInfo?tierFromPercentile(hPInfo.percentile):null;
     var hEntry=hb.k?leaderEntry(group,hb.k):null;
+    var hShowRank=shouldShowRank(hEntry);
+    var hPInfo=(hb.k && hShowRank)?computePercentile(group,hb.k,hb.raw):null;
+    var hTier=hPInfo?tierFromPercentile(hPInfo.percentile):null;
     var hDir=hEntry&&hEntry.lowerIsBetter?'lower-better':'higher-better';
     var hDec=hEntry?hEntry.decimals:0;
     var hBasisVal=hb.k?(basis==='mlb'?leagueAverage(group,hb.k):teamAverage(group,hb.k)):null;
@@ -2158,6 +2210,7 @@ function renderOverviewTab(s,group){
       '<div class="hero-panel-context">'+
         (hPInfo?'<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>':'')+
         (hPInfo?'<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>':'')+
+        (!hPInfo && hEntry && !hShowRank ? '<div class="hero-panel-unq" title="Below MLB qualification threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers). Rank suppressed for rate stats.">Below qualification · rank not shown</div>' : '')+
         heroSparkHtml+
       '</div>'+
     '</div>';
@@ -2166,7 +2219,9 @@ function renderOverviewTab(s,group){
 
   html+='<div class="stat-grid stat-grid--cols-'+cols+'">';
   boxes.forEach(function(b){
-    var pInfo=(b.k&&group!=='fielding')?computePercentile(group,b.k,b.raw):null;
+    var bEntry=b.k?leaderEntry(group,b.k):null;
+    var bShowRank=shouldShowRank(bEntry);
+    var pInfo=(b.k&&group!=='fielding'&&bShowRank)?computePercentile(group,b.k,b.raw):null;
     var tier=pInfo?tierFromPercentile(pInfo.percentile):null;
     // Hero panel above is the dominant stat now; supporting boxes are uniform
     // and only get a tier background at the extremes.
