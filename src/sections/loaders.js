@@ -2396,7 +2396,7 @@ function renderOverviewTab(s,group){
     var hBarHtml='';
     if(hPInfo){
       hRankHtml=hPInfo.outsideTop
-        ? '<div class="hero-panel-rank hero-panel-rank--outside">Outside MLB top '+hPInfo.total+'</div>'
+        ? '<div class="hero-panel-rank hero-panel-rank--outside">Outside MLB top 100</div>'
         : '<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>';
       if(!hPInfo.outsideTop) hBarHtml='<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>';
     }

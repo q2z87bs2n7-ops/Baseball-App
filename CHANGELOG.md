@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.8.9
+**Current version:** v4.8.10
+
+**v4.8.10** — **Fixed "Outside MLB top 100" phrasing instead of variable cache size.** v4.8.9 surfaced the actual cache size in the outside-top message — but `/stats/leaders` returns a different pool depth per category (134 for HR, 138 for 2B, 113 for RBI, 101 for OPS, etc.), so a UAT screenshot of Bregman's grid showed `OUTSIDE TOP 134 / 113 / 138 / 108 / 113`. Variable thresholds aren't meaningful — 134 isn't recognizable, 100 is. Hardcoded both renderers (hero panel + grid box via `rankCaption`) to render the fixed phrase `Outside MLB top 100` (or `Outside top 100` in the grid). Same `outsideTop` detection logic; only the surfaced denominator changed. CACHE `mlb-v489` → `mlb-v4810`.
 
 **v4.8.9** — **"Outside MLB top N" messaging instead of "#100 of 100".** UAT call: a qualified hitter just below the leader pool (whose value never beats nor ties any of the top 100 entries) was rendering as `#100 of 100 MLB` — accurate within the percentile loop's fallback semantics, but reads like a bug. New `outsideTop` flag on the `computePercentile()` return: tracks whether the loop ever actually located the player inside `arr` (via `foundInPool` set on either a beats-or-ties match), so the `rank === arr.length` fallback can be distinguished from a legitimate tie-for-last. `rankCaption(rank, total, outsideTop)` swaps the standard `#N` label for `<b>Outside top N</b>` when set, with new `.rank-caption--outside b` styling (muted, italic, weight 600 — clearly different tier from the white-bold normal caption). Hero panel renderer (`renderOverviewTab`) gets the same swap: `Outside MLB top 100` (italic muted) instead of `#100 of 100 MLB`. Both renderers also drop the percentile bar when `outsideTop` so a 0%-width sliver doesn't render. Tier shading on the box / hero (driven by `pInfo.percentile === 0` → `bad`) still applies — the player is genuinely in the bottom decile, just not "dead-last-in-pool". CACHE `mlb-v488` → `mlb-v489`.
 

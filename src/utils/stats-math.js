@@ -63,12 +63,13 @@ export function pctBar(percentile) {
 
 // "#9 · Top 6%" caption when in the top decile, "#41" otherwise. When
 // `outsideTop` is true the player is strictly below the leader pool — render
-// "Outside top N" instead of "#N of N" so the dead-last-in-pool fallback
-// doesn't read as a bug.
+// the fixed "Outside top 100" phrase so the user sees a consistent threshold
+// (the actual cache size varies by stat and isn't a meaningful "top X" cutoff
+// — 134 / 138 / 113 etc. read as bug-y, "top 100" is recognizable).
 export function rankCaption(rank, total, outsideTop) {
   if (rank == null || total == null) return '';
   if (outsideTop) {
-    return '<div class="rank-caption rank-caption--outside"><span>MLB</span><b>Outside top ' + total + '</b></div>';
+    return '<div class="rank-caption rank-caption--outside"><span>MLB</span><b>Outside top 100</b></div>';
   }
   var topPct = total ? Math.max(1, Math.round((rank / total) * 100)) : 100;
   var label = '#' + rank + (topPct <= 10 ? ' · Top ' + topPct + '%' : '');
