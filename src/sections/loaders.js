@@ -1034,6 +1034,30 @@ function renderPlayerStats(s,group){
     '<div class="player-tab-panel" data-tab="advanced"'+(activeTab!=='advanced'?' hidden':'')+'>'+renderAdvancedPlaceholder(group)+'</div>'+
     '</div>';
   document.getElementById('playerStats').innerHTML=html;
+  // If the active tab is a lazy-loaded one, kick off its fetch immediately so
+  // selecting a new player while sitting on Splits / Game Log / Advanced
+  // doesn't leave a stale "Loading..." in the panel.
+  if(activeTab!=='overview'){
+    var pid = state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id;
+    if(pid){
+      if(activeTab==='gamelog'){
+        var glk = pid + ':' + (group==='fielding'?'hitting':group);
+        if(state.gameLogCache[glk]) renderGameLogTab(pid, group);
+        else fetchGameLog(pid, group).then(function(){ onGameLogResolved(pid, group); });
+      } else if(activeTab==='splits'){
+        var slk = pid + ':' + (group==='fielding'?'hitting':group);
+        if(state.statSplitsCache[slk]) renderSplitsTab(pid, group);
+        else fetchStatSplits(pid, group).then(function(){
+          if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='splits') renderSplitsTab(pid, group);
+        });
+      } else if(activeTab==='advanced' && group==='pitching'){
+        if(state.pitchArsenalCache[pid]) renderArsenalTab(pid);
+        else fetchPitchArsenal(pid).then(function(){
+          if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderArsenalTab(pid);
+        });
+      }
+    }
+  }
 }
 
 // Switch the active Player Stats tab. Persisted to localStorage. Re-uses the
@@ -1055,19 +1079,231 @@ export function switchPlayerStatsTab(tab,btn){
   var group = state.selectedPlayerStat ? state.selectedPlayerStat.group : (state.currentRosterTab||'hitting');
   if(!pid) return;
   if(tab==='gamelog'){
-    // Trigger fetch if the cache is missing for this player+group
     var cacheKey = pid + ':' + (group==='fielding'?'hitting':group);
     if(!state.gameLogCache[cacheKey]){
       fetchGameLog(pid, group).then(function(){ onGameLogResolved(pid, group); });
     } else {
       renderGameLogTab(pid, group);
     }
+  } else if(tab==='splits'){
+    var splitKey = pid + ':' + (group==='fielding'?'hitting':group);
+    if(!state.statSplitsCache[splitKey]){
+      fetchStatSplits(pid, group).then(function(){
+        if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='splits'){
+          renderSplitsTab(pid, group);
+        }
+      });
+    } else {
+      renderSplitsTab(pid, group);
+    }
+  } else if(tab==='advanced'){
+    if(group==='pitching'){
+      if(!state.pitchArsenalCache[pid]){
+        fetchPitchArsenal(pid).then(function(){
+          if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced'){
+            renderArsenalTab(pid);
+          }
+        });
+      } else {
+        renderArsenalTab(pid);
+      }
+    }
   }
 }
 
 // Empty-state placeholders. Replaced by real renderers in subsequent sprint steps.
 function renderSplitsPlaceholder(){
-  return '<div class="tab-empty-state"><div class="tab-empty-icon">📊</div><h4>Splits panel</h4><p>vs LHP / vs RHP, Home / Away, RISP, late &amp; close, high leverage. Coming in Sprint 2 / Step 4.</p></div>';
+  return '<div class="tab-empty-state"><div class="tab-empty-icon">📊</div><h4>Splits panel</h4><p>Loading splits...</p></div>';
+}
+
+// ── Sprint 2 / Step 4: Splits panel ──────────────────────────────────────
+const STATSPLITS_TTL_MS = 24 * 60 * 60 * 1000;
+const SPLIT_LABELS = {
+  vl: 'vs LHP', vr: 'vs RHP',
+  h:  'Home',   a:  'Away',
+  risp: 'RISP', e: 'Bases Empty', r: 'Runners On', lc: 'Late & Close'
+};
+
+async function fetchStatSplits(playerId, group){
+  if(!playerId) return null;
+  if(group==='fielding') group='hitting';
+  var key = playerId+':'+group;
+  var cached = state.statSplitsCache[key];
+  if(cached && Date.now()-cached.ts < STATSPLITS_TTL_MS) return cached.splits;
+  try{
+    var codes = 'vl,vr,h,a,risp,e,r,lc';
+    var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=statSplits&sitCodes='+codes+'&season='+SEASON+'&group='+group);
+    var d = await r.json();
+    var splits = (d.stats && d.stats[0] && d.stats[0].splits) ? d.stats[0].splits : [];
+    state.statSplitsCache[key] = { splits: splits, ts: Date.now() };
+    return splits;
+  }catch(e){
+    return null;
+  }
+}
+
+function renderSplitsTab(playerId, group){
+  if(group==='fielding') group='hitting';
+  var key = playerId+':'+group;
+  var cached = state.statSplitsCache[key];
+  var panelEl = document.querySelector('.player-tab-panel[data-tab="splits"]');
+  if(!panelEl) return;
+  if(!cached){
+    panelEl.innerHTML = renderSplitsPlaceholder();
+    return;
+  }
+  var splits = cached.splits;
+  if(!splits.length){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">📊</div><h4>No split data</h4><p>This player has no '+SEASON+' splits recorded yet.</p></div>';
+    return;
+  }
+  var byCode = {};
+  splits.forEach(function(s){ if(s.split && s.split.code) byCode[s.split.code]=s; });
+  // Mini-bar denominator: relative position of OPS within this player's
+  // splits range, so the longest bar = best split, shortest = worst. For
+  // pitchers, OPS-against still works — longer = higher OPS allowed.
+  var opsValues = splits.map(function(s){ return parseFloat(s.stat && s.stat.ops); }).filter(function(v){ return !isNaN(v); });
+  var opsMin = opsValues.length ? Math.min.apply(null, opsValues) : 0;
+  var opsMax = opsValues.length ? Math.max.apply(null, opsValues) : 1;
+  if(opsMax === opsMin) opsMax = opsMin + 0.001;
+  function fmtR(n){ var s = n.toFixed(3); return s.charAt(0)==='0' ? s.slice(1) : s; }
+  function row(code){
+    var s = byCode[code];
+    if(!s || !s.stat) return '';
+    var st = s.stat;
+    var avg = parseFloat(st.avg)||0;
+    var obp = parseFloat(st.obp)||0;
+    var slg = parseFloat(st.slg)||0;
+    var ops = parseFloat(st.ops)||0;
+    var pct = (ops - opsMin)/(opsMax - opsMin);
+    var w = Math.max(8, Math.min(100, pct*100));
+    var label = SPLIT_LABELS[code] || code;
+    var pa = parseInt(st.plateAppearances,10) || parseInt(st.atBats,10) || 0;
+    return '<div class="split-row">'+
+      '<div class="split-row-head">'+
+        '<span class="split-row-label">'+label+'</span>'+
+        '<span class="split-row-line">'+fmtR(avg)+' / '+fmtR(obp)+' / '+fmtR(slg)+'</span>'+
+      '</div>'+
+      '<div class="split-row-bar"><i style="width:'+w.toFixed(1)+'%"></i></div>'+
+      '<div class="split-row-meta"><span>OPS '+fmtR(ops)+'</span>'+(pa?'<span>'+pa+' PA</span>':'')+'</div>'+
+    '</div>';
+  }
+  function section(label, codes){
+    var rows = codes.map(row).filter(Boolean).join('');
+    if(!rows) return '';
+    return '<div class="splits-section"><div class="splits-section-head">'+label+'</div>'+rows+'</div>';
+  }
+  var groupHint = group==='pitching' ? '<div class="splits-hint">Slash lines reflect <strong>opponents’</strong> AVG / OBP / SLG against this pitcher.</div>' : '';
+  var html = groupHint + '<div class="splits-grid">'+
+    '<div class="splits-col">'+
+      section('vs Handedness', ['vl','vr'])+
+      section('Home / Away', ['h','a'])+
+    '</div>'+
+    '<div class="splits-col">'+
+      section('Situations', ['risp','e','r','lc'])+
+    '</div>'+
+  '</div>';
+  panelEl.innerHTML = html;
+}
+
+// ── Sprint 2 / Step 5: Pitch arsenal donut ───────────────────────────────
+const PITCH_ARSENAL_TTL_MS = 24 * 60 * 60 * 1000;
+const PITCH_COLORS = {
+  FF:'#E04848', FA:'#E04848',
+  SI:'#F08C3C', FT:'#F08C3C',
+  FC:'#FF6FB5',
+  SL:'#F0D03C', ST:'#D9B83C',
+  CU:'#7060FF', KC:'#9078FF', CS:'#9078FF',
+  CH:'#3CBE64',
+  FS:'#3CB4B0', SC:'#3CB4B0',
+  KN:'#888888', EP:'#777777', PO:'#666666',
+  SV:'#9F7CFF'
+};
+const PITCH_LABELS = {
+  FF:'4-Seam', FA:'Fastball',
+  SI:'Sinker', FT:'2-Seam',
+  FC:'Cutter',
+  SL:'Slider', ST:'Sweeper',
+  CU:'Curveball', KC:'Knuckle-Curve', CS:'Slow Curve',
+  CH:'Changeup',
+  FS:'Splitter', SC:'Screwball',
+  KN:'Knuckleball', EP:'Eephus', PO:'Pitchout',
+  SV:'Slurve'
+};
+
+async function fetchPitchArsenal(playerId){
+  if(!playerId) return null;
+  var cached = state.pitchArsenalCache[playerId];
+  if(cached && Date.now()-cached.ts < PITCH_ARSENAL_TTL_MS) return cached.data;
+  try{
+    var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=pitchArsenal&season='+SEASON);
+    var d = await r.json();
+    var splits = (d.stats && d.stats[0] && d.stats[0].splits) ? d.stats[0].splits : [];
+    var arsenal = splits.map(function(s){
+      var st = s.stat || {};
+      return {
+        code: st.pitchTypeCode || (s.split && s.split.code) || '',
+        type: st.pitchType || st.description || (s.split && s.split.description) || '',
+        count: parseInt(st.count, 10) || parseInt(st.numP, 10) || 0,
+        pct: parseFloat(st.percentage) || parseFloat(st.pitchTypePercentage) || 0,
+        velo: parseFloat(st.averageSpeed) || parseFloat(st.averageVelocity) || 0
+      };
+    }).filter(function(p){ return p.pct > 0 || p.count > 0; });
+    state.pitchArsenalCache[playerId] = { data: arsenal, ts: Date.now() };
+    return arsenal;
+  }catch(e){
+    return null;
+  }
+}
+
+function renderArsenalTab(playerId){
+  var cached = state.pitchArsenalCache[playerId];
+  var panelEl = document.querySelector('.player-tab-panel[data-tab="advanced"]');
+  if(!panelEl) return;
+  if(!cached){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">🎯</div><h4>Pitch arsenal</h4><p>Loading pitch arsenal...</p></div>';
+    return;
+  }
+  var arsenal = cached.data.slice();
+  if(!arsenal.length){
+    panelEl.innerHTML = '<div class="tab-empty-state"><div class="tab-empty-icon">🎯</div><h4>No pitch data</h4><p>No '+SEASON+' pitch arsenal recorded yet.</p></div>';
+    return;
+  }
+  arsenal.sort(function(a,b){ return b.pct - a.pct; });
+  var total = arsenal.reduce(function(s,p){ return s + p.pct; }, 0) || 100;
+  var size = 140, stroke = 22, r = (size - stroke)/2, circ = 2 * Math.PI * r;
+  var offset = 0;
+  var segments = arsenal.map(function(p){
+    var portion = (p.pct / total) * circ;
+    var color = PITCH_COLORS[p.code] || '#888';
+    var seg = '<circle cx="'+(size/2)+'" cy="'+(size/2)+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+stroke+'"'+
+      ' stroke-dasharray="'+portion.toFixed(2)+' '+circ.toFixed(2)+'"'+
+      ' stroke-dashoffset="-'+offset.toFixed(2)+'"'+
+      ' transform="rotate(-90 '+(size/2)+' '+(size/2)+')"/>';
+    offset += portion;
+    return seg;
+  }).join('');
+  var top = arsenal[0];
+  var topLbl = top ? (PITCH_LABELS[top.code] || top.type || top.code || '—') : '—';
+  var donut = '<div class="arsenal-donut">'+
+    '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'">'+segments+'</svg>'+
+    '<div class="arsenal-donut-center">'+
+      '<div class="arsenal-donut-pct">'+(top?top.pct.toFixed(0):'—')+'%</div>'+
+      '<div class="arsenal-donut-lbl">'+topLbl+'</div>'+
+    '</div>'+
+  '</div>';
+  var list = '<div class="arsenal-list">'+arsenal.map(function(p){
+    var color = PITCH_COLORS[p.code] || '#888';
+    var label = PITCH_LABELS[p.code] || p.type || p.code || '?';
+    var velo = p.velo ? p.velo.toFixed(1)+' mph' : '';
+    return '<div class="arsenal-row">'+
+      '<span class="arsenal-dot" style="background:'+color+'"></span>'+
+      '<span class="arsenal-row-label">'+label+'</span>'+
+      '<span class="arsenal-row-pct">'+p.pct.toFixed(1)+'%</span>'+
+      '<span class="arsenal-row-velo">'+velo+'</span>'+
+    '</div>';
+  }).join('')+'</div>';
+  panelEl.innerHTML = '<div class="arsenal-grid">'+donut+list+'</div>';
 }
 function renderGameLogPlaceholder(){
   return '<div class="tab-empty-state"><div class="tab-empty-icon">📅</div><h4>Last-10 game log</h4><p>Loading game log...</p></div>';

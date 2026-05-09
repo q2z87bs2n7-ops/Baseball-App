@@ -1874,6 +1874,149 @@ nav button.active {
 .hero-spark-trend.down { color: #FF8A8A }
 .hero-spark-trend.flat { color: var(--muted) }
 
+/* ── Stats v2 / Sprint 2: Splits panel ───────────────────────────────────── */
+.splits-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 16px;
+  margin-top: 14px
+}
+@media (max-width: 767px) { .splits-grid { grid-template-columns: 1fr } }
+.splits-section { margin-bottom: 14px }
+.splits-section:last-child { margin-bottom: 0 }
+.splits-section-head {
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px
+}
+.splits-hint {
+  font-size: .72rem;
+  color: var(--muted);
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 14px
+}
+.splits-hint strong { color: var(--text); font-weight: 700 }
+.split-row {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px
+}
+.split-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px
+}
+.split-row-label {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--text)
+}
+.split-row-line {
+  font-size: .72rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap
+}
+.split-row-bar {
+  height: 4px;
+  background: rgba(255,255,255,.07);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px
+}
+.split-row-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width .3s ease
+}
+.split-row-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em
+}
+
+/* ── Stats v2 / Sprint 2: Pitch arsenal donut ────────────────────────────── */
+.arsenal-grid {
+  display: grid;
+  grid-template-columns: 160px minmax(0,1fr);
+  gap: 22px;
+  margin-top: 14px;
+  align-items: center
+}
+@media (max-width: 767px) { .arsenal-grid { grid-template-columns: 1fr; justify-items: center; gap: 14px } }
+.arsenal-donut {
+  position: relative;
+  width: 140px;
+  height: 140px
+}
+.arsenal-donut svg { display: block }
+.arsenal-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none
+}
+.arsenal-donut-pct {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -.02em;
+  line-height: 1
+}
+.arsenal-donut-lbl {
+  font-size: .6rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 4px
+}
+.arsenal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  font-variant-numeric: tabular-nums
+}
+.arsenal-row {
+  display: grid;
+  grid-template-columns: 14px minmax(0,1fr) 56px 70px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .76rem
+}
+.arsenal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block
+}
+.arsenal-row-label { color: var(--text); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.arsenal-row-pct { color: var(--accent); font-weight: 700; text-align: right }
+.arsenal-row-velo { color: var(--muted); text-align: right; font-size: .7rem }
+
 /* ── Stats v2: + more leader pill + extras row ───────────────────────────── */
 .leader-pill--more {
   border-style: dashed !important;
