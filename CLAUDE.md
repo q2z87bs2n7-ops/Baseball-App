@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v4.6.3 (full history in `CHANGELOG.md`)
+**Current version:** v4.6.6 (full history in `CHANGELOG.md`)
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)

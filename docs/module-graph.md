@@ -163,10 +163,10 @@ src/
                                      loadStandings, loadRoster, switchRosterTab,
                                      selectPlayer, loadLeaders, switchLeaderTab,
                                      selectLeaderPill, loadNews, switchNewsFeed,
-                                     selectNewsSource, loadLeagueView,
-                                     loadLeagueMatchups, switchMatchupDay,
-                                     switchLeagueLeaderTab, showLiveGame,
-                                     closeLiveView, fetchLiveGame.
+                                     toggleNewsTeamLens, selectNewsSource,
+                                     loadLeagueView, loadLeagueMatchups,
+                                     switchMatchupDay, switchLeagueLeaderTab,
+                                     showLiveGame, closeLiveView, fetchLiveGame.
     yesterday.js                    — Yesterday Recap overlay (open/close,
                                      date picker, hero player carousel,
                                      heroes strip, per-game tile grid,

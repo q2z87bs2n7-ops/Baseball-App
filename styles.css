@@ -4145,27 +4145,19 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 @media(max-width:480px) {
+  #mockBarBadge {
+    display: none;
+  }
   #mockBar {
-    height: auto;
-    flex-wrap: wrap;
-    padding: 5px 10px;
-    gap: 6px;
-    row-gap: 2px;
+    padding: 0 10px;
+    gap: 5px;
   }
   #mockBar .mock-btn {
-    padding: 0.2rem 0.5rem;
-  }
-  #demoExitBtn {
-    order: 4;
-    margin-left: auto;
+    padding: 0.15rem 0.42rem;
+    font-size: .7rem;
   }
   .mock-progress {
-    order: 5;
-    flex: 0 0 100%;
-    text-align: center;
-    padding-bottom: 3px;
-    font-size: .65rem;
-    white-space: normal;
+    font-size: .62rem;
   }
 }
 

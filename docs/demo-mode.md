@@ -74,7 +74,7 @@ Click **▶ Try Demo** in the Pulse empty-state hype block, the Dev Tools panel,
 ### `initDemo`
 
 1. Cancels live timers (`pulseTimer`, `pulseAbortCtrl`, `storyRotateTimer`).
-2. Sets `state.demoMode = true`, applies `.demo-active` class, shows `mockBar`.
+2. Sets `state.demoMode = true`, applies `.demo-active` class, shows `mockBar` via `mockBar.style.display = 'flex'` (must be `flex`, not `block` — `block` overrides the CSS `display:flex` and collapses the bar to inline-element flow; fixed v4.6.5).
 3. Hydrates `state.gameStates` from JSON.
 4. Hydrates all `caches.*` keys to top-level `state.*` (with backwards-compat fallback to legacy top-level shape).
 5. Hydrates recorder-v2 keys: `pitchTimeline`, `boxscoreSnapshots`, `contentCacheTimeline`, `focusStatsCache`, `focusTrack`, `lastVideoClip`.
@@ -225,5 +225,5 @@ let _hrSeekPriorSpeed    // ms — saved before HR seek, restored on HR fire
 | `src/feed/render.js` | `addFeedItem` recorder hook |
 | `src/pulse/poll.js` | `pollLeaguePulse`/`pollGamePlays` recorder hooks |
 | `index.html` | Demo control panel (`mockBar`), demo button labels, recorder UI block |
-| `styles.css` | `.alert-event`/`.alert-desc` wrap (no nowrap), demo-active styling |
+| `styles.css` | `.alert-event`/`.alert-desc` wrap (no nowrap), demo-active styling. Demo bar layout classes: `.mock-speed-seg` (merged pill border group for 1x/10x/30x), `.mock-action-group` (flex group for 🔥/⏸/▶), `.mock-exit-btn` (exit button danger colouring via class instead of inline style), `.mock-progress` (`flex:1; text-align:center; min-width:0` fills remaining space between action group and Exit on all breakpoints). On ≤480px: `#mockBarBadge` hidden, button padding tightened to keep all controls on one row. |
 | `sw.js` | Cache versioning |

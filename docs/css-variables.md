@@ -46,7 +46,9 @@ All CSS variables are **runtime-computed** — set dynamically by `applyTeamThem
                    Overridden in @media(max-width:480px) to `calc(42px + env(safe-area-inset-top))`
                    so #gameTicker / .section-bar stick flush below the slimmer mobile sticky header (v4.4). */
 --ticker-h      /* 50px — min-height of #gameTicker */
---mockbar-h     /* 48px — height of #mockBar */
+--mockbar-h     /* 48px — height of #mockBar. Consistent across all breakpoints.
+                   On mobile ≤480px the badge (.mock-badge) is hidden and button padding
+                   is tightened so all controls fit on a single row within the fixed height. */
 
 /* Feed tint layers */
 --scoring-bg / --scoring-border   /* green tint for scoring play feed items */
@@ -108,7 +110,11 @@ All CSS variables are **runtime-computed** — set dynamically by `applyTeamThem
 | `.linescore-scroll` | Horizontal-scroll wrapper for `.linescore-table` on narrow viewports. |
 | `.linescore-table .rhe-start` | 2px left-border separator before the R column (header + RHE row cells). |
 | `.settings-row` (+ `--block`) | Unified settings panel row pattern — flex row with consistent padding/border-top. Block variant stacks label above content. |
-| `.settings-row__label`, `.settings-section-label`, `.settings-select`, `.settings-action`, `.settings-toggle(/-knob)`, `.settings-version` | Settings panel primitives (added v3.30.11). |
+| `.settings-row__label`, `.settings-section-label`, `.settings-select`, `.settings-action`, `.settings-toggle(/-knob)`, `.settings-version` | Settings panel primitives (added v3.30.11). `.settings-toggle` elements are `<button role="switch">` (v4.6.4); `border:none; padding:0` reset applied in CSS so native button chrome doesn't affect toggle visual. |
+| `.mock-speed-seg` | Merged pill-border group for demo bar speed buttons (1x/10x/30x) — `display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden`. Child `.mock-btn`s have `border-radius:0; border:none; border-right:1px solid var(--border)`. |
+| `.mock-action-group` | Flex group for demo bar action buttons (🔥/⏸/▶) — `display:inline-flex; gap:4px; flex-shrink:0`. |
+| `.mock-exit-btn` | Demo bar Exit button colouring — `border-color:rgba(255,100,100,.5); color:var(--muted)`. Replaced inline style in v4.6.4. |
+| `.mock-progress` | Demo bar progress text — `flex:1; text-align:center; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap`. Gets smaller `font-size:.62rem` on ≤480px; otherwise unchanged — fills available width between action buttons and Exit on all breakpoints. |
 | `.matchup-status(.is-live)`, `.matchup-live-dot`, `.matchup-score-row`, `.matchup-team`, `.matchup-abbr`, `.matchup-record`, `.matchup-score(.is-dim)`, `.matchup-divider`, `.matchup-vs` | Around the League matchup grid card chrome (added v3.30.5). |
 | `.leader-stat-card`, `.leader-stat-label`, `.leader-row(/-row-left)`, `.leader-rank`, `.leader-name`, `.leader-val` | League / team stat-leader card chrome (added v3.30.5). |
 | `.detail-separator`, `.detail-game-label`, `.detail-team-header`, `.detail-highlight-*` (thumb/overlay/play/arrow/video/meta/kicker/title), `.detail-summary-note/-row/-label` | Schedule game-detail panel chrome (added v3.30.6). |
