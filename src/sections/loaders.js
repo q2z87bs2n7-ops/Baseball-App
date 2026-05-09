@@ -326,7 +326,8 @@ async function buildGameDetailPanel(g,gameNum){
     return html;
   }
   var responses=await Promise.all([fetch(MLB_BASE+'/game/'+g.gamePk+'/linescore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/boxscore'),fetch(MLB_BASE+'/game/'+g.gamePk+'/content')]);
-  var ls=await responses[0].json(),bs=await responses[1].json(),content=await responses[2].json();
+  if(!responses[0].ok||!responses[1].ok) throw new Error('API '+responses[0].status);
+  var ls=await responses[0].json(),bs=await responses[1].json(),content=responses[2].ok?await responses[2].json():{};
   var highlight=content.highlights&&content.highlights.highlights&&content.highlights.highlights.items&&content.highlights.highlights.items[0]?content.highlights.highlights.items[0]:null;
   var highlightUrl=highlight?pickPlayback(highlight.playbacks):null;
   var thumbCuts=highlight&&highlight.image&&highlight.image.cuts?highlight.image.cuts:[];
