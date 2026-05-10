@@ -10,6 +10,7 @@ import { SEASON, MLB_BASE } from '../../config/constants.js';
 import { fmt, fmtRate, tcLookup } from '../../utils/format.js';
 import { computePercentile, tierFromPercentile, pctBar, rankCaption, avgChip, leagueAverage, teamAverage, leaderEntry } from '../../utils/stats-math.js';
 import { scrollTabIntoView } from './_shared.js';
+import { isQualified } from './leaders.js';
 import { fetchLeagueLeaders } from '../../data/leaders.js';
 import { renderPlayerList } from './roster.js';
 

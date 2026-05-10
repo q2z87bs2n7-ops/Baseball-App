@@ -6,6 +6,7 @@
 
 import { state } from '../../state.js';
 import { SEASON, MLB_BASE } from '../../config/constants.js';
+import { fmt, fmtRate } from '../../utils/format.js';
 import { scrollTabIntoView, hotColdBadge, HOT_COLD_TTL_MS } from './_shared.js';
 import { loadLeaders } from './leaders.js';
 import { selectPlayer } from './player.js';

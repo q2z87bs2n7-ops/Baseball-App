@@ -46,7 +46,9 @@ function teamGamesFor(group){
   return isNaN(g)?0:g;
 }
 
-function isQualified(group, stat){
+// Also consumed by stats/player.js — renderOverviewTab gates rank/percentile
+// UI on qualification for rate stats.
+export function isQualified(group, stat){
   var g=teamGamesFor(group);
   if(!g)return true; // unknown → don't filter
   if(group==='hitting'){
