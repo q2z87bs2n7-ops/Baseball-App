@@ -115,7 +115,7 @@ function _stateContext(){
   var section='?';
   try{var s=document.querySelector('.section.active');if(s) section=s.id;}catch(e){}
   return {
-    version: (function(){try{return (document.title.match(/v[\d.]+/)||['?'])[0];}catch(e){return '?';}})(),
+    version: (typeof __APP_VERSION__ !== 'undefined' ? 'v' + __APP_VERSION__ : '?'),
     timestamp: new Date().toISOString(),
     activeTeam: t.id ? (t.short+' (id:'+t.id+')') : '?',
     section: section,

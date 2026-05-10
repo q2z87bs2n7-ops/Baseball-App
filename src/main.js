@@ -229,6 +229,9 @@ function initLeaguePulse() {
   initReal();
 }
 function initReal() {
+  // Populate runtime version slot (single source: package.json → __APP_VERSION__ via esbuild define)
+  var _verEl = document.querySelector('.settings-version[data-version]');
+  if (_verEl) _verEl.textContent = 'v' + (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '?');
   setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore, localDateStr: localDateStr, getEffectiveDate: getEffectiveDate, tcLookup: tcLookup });
   setRotationCallbacks({ refreshDebugPanel: refreshDebugPanel });
   setSyncCallbacks({ loadCollection: loadCollection, saveCollection: saveCollection, updateCollectionUI: updateCollectionUI });
