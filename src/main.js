@@ -133,8 +133,8 @@ import {
   selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
   selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
-  showLiveGame, closeLiveView, fetchLiveGame,
 } from './sections/loaders.js';
+import { showLiveGame, closeLiveView, fetchLiveGame } from './sections/live.js';
 import {
   setSyncCallbacks, syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval,
 } from './collection/sync.js';
