@@ -201,19 +201,6 @@ export async function pollGamePlays(gamePk) {
       var batterId = (play.matchup && play.matchup.batter && play.matchup.batter.id) || null;
       var batterName = (play.matchup && play.matchup.batter && play.matchup.batter.fullName) || '';
       var runners = play.runners || [];
-      if (event.indexOf('Stolen Base') !== -1) {
-        if (!isHistory) {
-          var sbRunner = runners.find(function(r) { return r.details && r.details.eventType && r.details.eventType.indexOf('stolen_base') !== -1; });
-          var sbRunnerId = (sbRunner && sbRunner.details && sbRunner.details.runner && sbRunner.details.runner.id) || batterId;
-          var sbRunnerName = (sbRunner && sbRunner.details && sbRunner.details.runner && sbRunner.details.runner.fullName) || batterName;
-          var sbBase = event.indexOf('Home') !== -1 ? 'home' : event.indexOf('3B') !== -1 ? '3B' : '2B';
-          var sbKey = gamePk + '_' + (play.about && play.about.atBatIndex != null ? play.about.atBatIndex : g.playCount + plays.indexOf(play));
-          if (!state.stolenBaseEvents.some(function(e) { return e.key === sbKey; })) {
-            state.stolenBaseEvents.push({ key: sbKey, gamePk: gamePk, runnerId: sbRunnerId, runnerName: sbRunnerName, base: sbBase, inning: inning, halfInning: halfInning, awayAbbr: g.awayAbbr, homeAbbr: g.homeAbbr, ts: playTime || new Date() });
-          }
-        }
-        return;
-      }
       var hasRISP = outs < 3 && runners.some(function(r) { return r.movement && !r.movement.isOut && (r.movement.end === '2B' || r.movement.end === '3B'); });
       var playClass = event === 'Home Run' ? 'homerun' : isScoringP ? 'scoring' : hasRISP ? 'risp' : 'normal';
       var playTime = null; if (play.about && play.about.startTime) { try { playTime = new Date(play.about.startTime); } catch (e) {} }
@@ -251,6 +238,52 @@ export async function pollGamePlays(gamePk) {
         if (outs === 3) { var _rk = gamePk + '_' + inning + '_' + halfInning.toLowerCase(); if (!state.inningRecapsFired.has(_rk)) state.inningRecapsPending[_rk] = { gamePk: gamePk, inning: inning, halfInning: halfInning.toLowerCase() }; }
       }
     });
+    if (!isHistory) {
+      var allPlaysForActions = data.allPlays || [];
+      allPlaysForActions.forEach(function(play) {
+        var pe = play.playEvents || [];
+        var about = play.about || {};
+        pe.forEach(function(ev) {
+          if (ev.type !== 'action' && ev.type !== 'pickoff') return;
+          var det = ev.details || {};
+          var evId = ev.playId || (gamePk + '_' + about.atBatIndex + '_' + (ev.index != null ? ev.index : 'na'));
+          if (state.seenActionEventIds.has(evId)) return;
+          var evType = (det.eventType || '').toLowerCase();
+          var desc = det.description || '';
+          var ts = ev.startTime ? new Date(ev.startTime) : new Date();
+          var ctx = { key: evId, gamePk: gamePk, awayAbbr: g.awayAbbr, homeAbbr: g.homeAbbr,
+            inning: about.inning || g.inning, halfInning: about.halfInning || g.halfInning, ts: ts, desc: desc };
+          var actionRunners = play.runners || [];
+          var findRunner = function(et) { var rr = actionRunners.find(function(r) { return r.details && r.details.eventType === et; }); return (rr && rr.details) || {}; };
+          if (evType.indexOf('stolen_base') === 0) {
+            var sbBase = evType === 'stolen_base_home' ? 'home' : evType === 'stolen_base_3b' ? '3B' : '2B';
+            var sbR = findRunner(evType);
+            state.stolenBaseEvents.push(Object.assign({}, ctx, { runnerId: sbR.runner ? sbR.runner.id : null, runnerName: sbR.runner ? sbR.runner.fullName : '', base: sbBase, caught: false }));
+          } else if (evType.indexOf('caught_stealing') === 0) {
+            var csBase = evType === 'caught_stealing_home' ? 'home' : evType === 'caught_stealing_3b' ? '3B' : '2B';
+            var csR = findRunner(evType);
+            state.stolenBaseEvents.push(Object.assign({}, ctx, { runnerId: csR.runner ? csR.runner.id : null, runnerName: csR.runner ? csR.runner.fullName : '', base: csBase, caught: true }));
+          } else if (evType.indexOf('pickoff_caught_stealing') === 0) {
+            var poBase = evType.indexOf('home') !== -1 ? 'home' : evType.indexOf('3b') !== -1 ? '3B' : evType.indexOf('2b') !== -1 ? '2B' : '1B';
+            var poR = findRunner(evType);
+            state.actionEvents.push(Object.assign({}, ctx, { kind: 'pickoff_out', base: poBase, runnerId: poR.runner ? poR.runner.id : null, runnerName: poR.runner ? poR.runner.fullName : '' }));
+          } else if (evType === 'pitching_substitution') {
+            var newP = (play.matchup && play.matchup.pitcher) || {};
+            state.actionEvents.push(Object.assign({}, ctx, { kind: 'pitching_change', pitcherId: newP.id || null, pitcherName: newP.fullName || '' }));
+          } else if (evType === 'offensive_substitution') {
+            var isPH = desc.indexOf('Pinch-hitter') !== -1;
+            var isPR = desc.indexOf('Pinch-runner') !== -1;
+            if (!isPH && !isPR) return;
+            state.actionEvents.push(Object.assign({}, ctx, { kind: isPH ? 'pinch_hitter' : 'pinch_runner' }));
+          } else if (evType === 'game_advisory') {
+            var isReview = desc.indexOf('Manager challenged') !== -1 || desc.indexOf('Crew chief review') !== -1 || desc.indexOf('Replay Review') !== -1;
+            if (!isReview) return;
+            state.actionEvents.push(Object.assign({}, ctx, { kind: 'replay_review' }));
+          } else { return; }
+          state.seenActionEventIds.add(evId);
+        });
+      });
+    }
     plays.forEach(function(play) {
       if (play.result && play.result.event === 'Home Run') {
         var newDesc = (play.result.description) || '';

@@ -107,6 +107,8 @@ export const state = {
   dailyHitsTracker: {},
   dailyPitcherKs: {},
   stolenBaseEvents: [],
+  actionEvents: [],
+  seenActionEventIds: new Set(),
   storyCarouselRawGameData: {},
   probablePitcherStatsCache: {},
   hrBatterStatsCache: {},
