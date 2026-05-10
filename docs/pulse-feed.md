@@ -5,7 +5,7 @@ Details for the ⚡ Pulse section's feed, ticker, overlays, and HR/RBI card logi
 ## HTML structure (`#pulse` section)
 
 - `#soundPanel` — `position:fixed` floating overlay, hidden by default; triggered by `🔊` button. **Top-level in DOM** (sibling of `#devToolsPanel`, outside `#pulse`) — if nested inside `#pulse` it would be hidden with the section when navigating away. Click-outside handler (`onSoundPanelClickOutside`) is always-on via `document.addEventListener('click',...)` — handles both `#soundPanel` and `#devToolsPanel` dismiss.
-- `#alertStack` — `position:fixed` toast stack for run/triple-play alerts (HR events do NOT fire a toast — the player card replaces it)
+- `#alertStack` — `position:fixed` toast stack for triple-play and other non-run alerts (HR events fire a player card instead; routine runs fire no toast as of v4.10.4)
 - `#playerCardOverlay` — `position:fixed` full-screen semi-transparent overlay; contains `#playerCard`; shown on HR events. **Must remain top-level DOM** (z-index 600). See Critical DOM placement note below.
 - `#pulseTopBar` — brand strip above `#gameTicker`. Contains: ⚡ MLB PULSE wordmark + `#ptbYestBtn` + `#myTeamLensBtn` + `#ptbSoundBtn` (🔊) + `#ptbRadioBtn` (📻) + `#ptbSchemeBtn` (☀️/🌙).
 - `#yesterday` — `class="section"` inside `.main` (sibling to `#pulse`) — normal section, not an overlay. Opened via `openYesterdayRecap()`; closed via `closeYesterdayRecap()` which restores `ydPrevSection` (defaults `'pulse'`). Contains `#ydSectionBar` (sticky, same CSS as `#pulseTopBar`) + `#yesterdayCard`.
