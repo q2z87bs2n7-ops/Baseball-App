@@ -13,7 +13,7 @@ import { rollClassicOnSwitch, isClassicActive } from '../radio/classic.js';
 export function calcFocusScore(g) {
   if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
   var diff=Math.abs(g.awayScore-g.homeScore);
-  var closeness=diff===0?60:diff===1?45:diff===2?25:5;
+  var closeness=diff===0?60:diff===1?45:diff===2?28:diff===3?15:diff===4?8:3;
   var runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
   var isRISP=g.onSecond||g.onThird;
   var isBL=g.onFirst&&g.onSecond&&g.onThird;
@@ -21,14 +21,15 @@ export function calcFocusScore(g) {
   var isNoHit=g.inning>=6&&(g.awayHits===0||g.homeHits===0);
   var situation=isBL?40:isRISP?25:runners>0?15:0;
   if(isWalkoff) situation+=50;
-  if(isNoHit) situation+=30;
+  if(isNoHit) situation+=Math.min((g.inning-4)*18,120);
   var countBonus=0;
   if(g.gamePk===state.focusGamePk){
     if(state.focusState.balls===3&&state.focusState.strikes===2) countBonus=20;
     else if(state.focusState.strikes===2) countBonus=12;
     if(state.focusState.outs===2) countBonus+=8;
   }
-  var innMult=g.inning<=5?0.6:g.inning<=8?1.0:g.inning===9?1.5:2.0;
+  var innMult=g.inning<=3?0.5:g.inning<=5?0.75:g.inning<=8?1.0:g.inning===9?1.5:1.8;
+  if(g.inning>=9&&diff>runners+2) innMult=Math.min(innMult,1.0);
   return (closeness+situation+countBonus)*innMult;
 }
 
