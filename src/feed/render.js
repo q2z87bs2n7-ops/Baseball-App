@@ -308,14 +308,17 @@ function renderTicker() {
       +'</div>';
     return;
   }
-  states.sort(function(a,b){
-    var aP=a.inning*2+(a.halfInning==='bottom'?1:0),bP=b.inning*2+(b.halfInning==='bottom'?1:0);
-    if(bP!==aP)return bP-aP;
-    var aMs=a.gameDateMs||0,bMs=b.gameDateMs||0; if(aMs!==bMs)return aMs-bMs;
-    return a.awayAbbr.localeCompare(b.awayAbbr);
+  // POC: sort by focus score descending so hottest game is leftmost
+  states.sort(function(a,b){ return calcFocusScore(b)-calcFocusScore(a); });
+
+  // FLIP phase 1 — snapshot left offsets before any DOM change
+  var oldLeft={};
+  ticker.querySelectorAll('.ticker-game[data-gamepk]').forEach(function(el){
+    oldLeft[el.dataset.gamepk]=el.offsetLeft;
   });
-  var html='';
-  states.forEach(function(g) {
+
+  // Update or create each chip in-place (preserves elements for FLIP)
+  states.forEach(function(g){
     var isLive=g.status==='Live', isFinal=g.status==='Final';
     var sc=isLive?'status-live':isFinal?'status-final':'status-preview';
     var half=g.halfInning==='top'?'▲':'▼';
@@ -331,23 +334,61 @@ function renderTicker() {
     var tc=band?' tb-'+band:'';
     var outsHtml='';
     if(isLive){outsHtml='<span class="ticker-outs">'+[0,1,2].map(function(i){return '<span class="out-dot'+(i<g.outs?' out-on':'')+'"></span>';}).join('')+'</span>';}
-    if (hasRunners) {
-      html+='<div class="ticker-game '+sc+fc+rc+tc+'" onclick="toggleGame('+g.gamePk+')">'
-        +'<div class="ticker-top">'+dot
+    var inner;
+    if(hasRunners){
+      inner='<div class="ticker-top">'+dot
         +'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span>'
         +'<span class="ticker-divider">·</span>'
         +'<span class="ticker-score"><strong>'+g.homeScore+'</strong>&nbsp;'+g.homeAbbr+'</span>'
         +'</div><div class="ticker-bottom">'+baseDiamondSvg(g.onFirst,g.onSecond,g.onThird)
-        +'<span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div></div>';
+        +'<span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div>';
     } else {
       var spacer=isLive?'<div class="ticker-dot-spacer"></div>':'';
-      html+='<div class="ticker-game '+sc+fc+tc+'" onclick="toggleGame('+g.gamePk+')">'
-        +'<div class="ticker-row">'+dot+'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span></div>'
+      inner='<div class="ticker-row">'+dot+'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span></div>'
         +'<div class="ticker-row">'+spacer+'<span class="ticker-score">'+g.homeAbbr+'&nbsp;<strong>'+g.homeScore+'</strong></span></div>'
-        +'<div class="ticker-row"><span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div></div>';
+        +'<div class="ticker-row"><span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div>';
+    }
+    var el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
+    if(el){
+      el.className='ticker-game '+sc+fc+rc+tc;
+      el.innerHTML=inner;
+    } else {
+      el=document.createElement('div');
+      el.className='ticker-game '+sc+fc+rc+tc;
+      el.dataset.gamepk=g.gamePk;
+      el.setAttribute('onclick','toggleGame('+g.gamePk+')');
+      el.innerHTML=inner;
+      ticker.appendChild(el);
     }
   });
-  ticker.innerHTML=html;
+
+  // Remove chips for games no longer live
+  ticker.querySelectorAll('.ticker-game[data-gamepk]').forEach(function(el){
+    var pk=+el.dataset.gamepk;
+    if(!states.some(function(g){return g.gamePk===pk;})) ticker.removeChild(el);
+  });
+
+  // Reorder: appendChild moves existing elements to the end in score order
+  states.forEach(function(g){
+    var el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
+    if(el) ticker.appendChild(el);
+  });
+
+  // FLIP phase 2 — animate chips that moved from their old position
+  states.forEach(function(g){
+    var el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
+    if(!el||oldLeft[g.gamePk]==null) return;
+    var delta=oldLeft[g.gamePk]-el.offsetLeft;
+    if(Math.abs(delta)<1) return;
+    el.style.transition='none';
+    el.style.transform='translateX('+delta+'px)';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        el.style.transition='transform 0.35s cubic-bezier(0.4,0,0.2,1)';
+        el.style.transform='';
+      });
+    });
+  });
 }
 
 function renderSideRailGames() {
