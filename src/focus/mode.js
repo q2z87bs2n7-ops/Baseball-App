@@ -28,7 +28,7 @@ export function calcFocusScore(g) {
     if(state.focusState.outs===2) countBonus+=8;
   }
   var innMult=g.inning<=3?0.5:g.inning<=5?0.75:g.inning<=8?1.0:g.inning===9?1.5:1.8;
-  if(g.inning>=9&&diff>runners+2) innMult=Math.min(innMult,1.0);
+  if(g.inning>=9&&diff>runners+2&&!isNoHit) innMult=Math.min(innMult,1.0);
   return (closeness+situation+countBonus)*innMult;
 }
 
