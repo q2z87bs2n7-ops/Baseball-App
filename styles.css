@@ -4126,6 +4126,17 @@ select {
   white-space: normal;
 }
 
+.ticker-game.tb-1  { border-top-color: #16a34a; }
+.ticker-game.tb-2  { border-top-color: #22c55e; }
+.ticker-game.tb-3  { border-top-color: #84cc16; }
+.ticker-game.tb-4  { border-top-color: #a3e635; }
+.ticker-game.tb-5  { border-top-color: #eab308; }
+.ticker-game.tb-6  { border-top-color: #f59e0b; }
+.ticker-game.tb-7  { border-top-color: #f97316; }
+.ticker-game.tb-8  { border-top-color: #ea580c; }
+.ticker-game.tb-9  { border-top-color: #dc2626; }
+.ticker-game.tb-10 { border-top-color: #b91c1c; }
+
 .ticker-row {
   display: flex;
   align-items: center;
