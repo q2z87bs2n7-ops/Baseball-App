@@ -128,13 +128,13 @@ import {
 import {
   setSectionCallbacks, clearHomeTimer, clearLeagueTimer,
   loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
-  loadStandings,
   selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
   selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
 } from './sections/loaders.js';
 import { showLiveGame, closeLiveView, fetchLiveGame } from './sections/live.js';
 import { loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo } from './sections/schedule.js';
+import { loadStandings } from './sections/standings.js';
 import {
   setSyncCallbacks, syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval,
 } from './collection/sync.js';
