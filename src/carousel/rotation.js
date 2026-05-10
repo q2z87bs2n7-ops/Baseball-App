@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import {
-  genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genBigInning,
+  genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genActionEventStories, genBigInning,
   genFinalScoreStories, genStreakStories, genMultiHitDay, genDailyLeaders,
   genPitcherGem, genOnThisDay, genYesterdayHighlights, genProbablePitchers, genInningRecapStories,
   genRosterMoveStories, genWinProbabilityStories, genSeasonHighStories,
@@ -24,7 +24,7 @@ async function buildStoryPool(){
   var multiHitStories=await genMultiHitDay();
   var wpStories=await genWinProbabilityStories();
   var fresh=[].concat(
-    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genBigInning(),
+    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genActionEventStories(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
     wpStories,genRosterMoveStories(),genSeasonHighStories(),

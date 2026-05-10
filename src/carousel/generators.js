@@ -122,14 +122,63 @@ function genBasesLoaded(){
 
 function genStolenBaseStories(){
   var out=[];
+  var now=Date.now();
   state.stolenBaseEvents.forEach(function(sb){
     var isHome=sb.base==='home';
     var baseLabel=isHome?'home plate':sb.base;
     var halfInd=sb.halfInning==='top'?'▲':'▼';
     var sub=sb.awayAbbr+' @ '+sb.homeAbbr+' · '+halfInd+sb.inning;
-    var sbId='sb_'+sb.key;
-    out.push(makeStory(sbId,'realtime',isHome?1:2,isHome?85:55,'🏃',
-      sb.runnerName+' steals '+baseLabel,sub,liveOrHighlight(sbId,sb.ts),sb.gamePk,sb.ts,5*60000,0.7));
+    if(sb.caught){
+      if(now - sb.ts.getTime() > 90000) return;
+      var csId='cs_'+sb.key;
+      out.push(makeStory(csId,'realtime',1,92,'🚫',
+        (sb.runnerName||'Runner')+' caught stealing '+baseLabel,sub,liveOrHighlight(csId,sb.ts),sb.gamePk,sb.ts,90000,0.9));
+    } else {
+      var sbId='sb_'+sb.key;
+      out.push(makeStory(sbId,'realtime',isHome?1:2,isHome?85:55,'🏃',
+        (sb.runnerName||'Runner')+' steals '+baseLabel,sub,liveOrHighlight(sbId,sb.ts),sb.gamePk,sb.ts,5*60000,0.7));
+    }
+  });
+  return out;
+}
+
+function genActionEventStories(){
+  var out=[];
+  var now=Date.now();
+  state.actionEvents.forEach(function(ae){
+    var ageMs=now - ae.ts.getTime();
+    var halfInd=ae.halfInning==='top'?'▲':'▼';
+    var sub=ae.awayAbbr+' @ '+ae.homeAbbr+' · '+halfInd+ae.inning;
+    var id, headline, icon, priority, ttl;
+    if(ae.kind==='pickoff_out'){
+      ttl=90000; if(ageMs>ttl) return;
+      id='po_'+ae.key;
+      headline=(ae.runnerName||'Runner')+' picked off at '+(ae.base==='home'?'home':ae.base);
+      icon='🎯'; priority=95;
+    } else if(ae.kind==='pitching_change'){
+      ttl=90000; if(ageMs>ttl) return;
+      id='pc_'+ae.key;
+      headline=(ae.pitcherName||'New pitcher')+' takes the mound';
+      icon='🔄'; priority=92;
+    } else if(ae.kind==='pinch_hitter'){
+      ttl=90000; if(ageMs>ttl) return;
+      id='ph_'+ae.key;
+      var phMatch=(ae.desc||'').match(/Pinch-hitter\s+([^.]+?)\s+replaces\s+([^.]+?)\.?$/);
+      headline=phMatch?(phMatch[1]+' pinch-hits for '+phMatch[2]):'Pinch hitter announced';
+      icon='🪄'; priority=92;
+    } else if(ae.kind==='pinch_runner'){
+      ttl=90000; if(ageMs>ttl) return;
+      id='pr_'+ae.key;
+      var prMatch=(ae.desc||'').match(/Pinch-runner\s+([^.]+?)\s+replaces\s+([^.]+?)\.?$/);
+      headline=prMatch?(prMatch[1]+' pinch-runs for '+prMatch[2]):'Pinch runner announced';
+      icon='👟'; priority=92;
+    } else if(ae.kind==='replay_review'){
+      ttl=60000; if(ageMs>ttl) return;
+      id='rr_'+ae.key;
+      headline='Replay review under way';
+      icon='📺'; priority=95;
+    } else { return; }
+    out.push(makeStory(id,'realtime',1,priority,icon,headline,sub,liveOrHighlight(id,ae.ts),ae.gamePk,ae.ts,ttl,0.9));
   });
   return out;
 }
@@ -848,4 +897,4 @@ function genDailyIntro(){
   return [makeStory('dailyintro_'+todayStr,'editorial',4,50,'📰',headline,sub,'today',gamePk,new Date(),4*60*60000,0.4)];
 }
 
-export { setCarouselCallbacks, ordinal, makeStory, genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genBigInning, genFinalScoreStories, genStreakStories, genMultiHitDay, genDailyLeaders, genPitcherGem, genOnThisDay, genYesterdayHighlights, fetchMissingHRBatterStats, loadProbablePitcherStats, genProbablePitchers, genInningRecapStories, loadTransactionsCache, loadHighLowCache, loadDailyLeaders, genRosterMoveStories, genWinProbabilityStories, genSeasonHighStories, loadLiveWPCache, genLiveWinProbStories, genDailyIntro, loadOnThisDayCache, loadYesterdayCache, loadYdForDate };
+export { setCarouselCallbacks, ordinal, makeStory, genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genActionEventStories, genBigInning, genFinalScoreStories, genStreakStories, genMultiHitDay, genDailyLeaders, genPitcherGem, genOnThisDay, genYesterdayHighlights, fetchMissingHRBatterStats, loadProbablePitcherStats, genProbablePitchers, genInningRecapStories, loadTransactionsCache, loadHighLowCache, loadDailyLeaders, genRosterMoveStories, genWinProbabilityStories, genSeasonHighStories, loadLiveWPCache, genLiveWinProbStories, genDailyIntro, loadOnThisDayCache, loadYesterdayCache, loadYdForDate };
