@@ -26,9 +26,10 @@ async function buildStoryPool(){
   fetchMissingHRBatterStats();
   var multiHitStories=await genMultiHitDay();
   var wpStories=await genWinProbabilityStories();
+  var streakStories=await genStreakStories();
   var fresh=[].concat(
     genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genActionEventStories(),genBigInning(),
-    genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
+    genFinalScoreStories(),streakStories,multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
     wpStories,genRosterMoveStories(),genSeasonHighStories(),
     genLiveWinProbStories(),genDailyIntro()
