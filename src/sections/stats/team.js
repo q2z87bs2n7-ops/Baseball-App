@@ -126,7 +126,7 @@ async function fetchTeamRanks(){
   state.teamStats.ranks={};
   await Promise.all(groups.map(async function(g){
     try{
-      var url=MLB_BASE+'/stats/leaders?leaderCategories='+g.cats.join(',')+'&statGroup='+g.group+'&statsType=byTeam&season='+SEASON+'&limit=30';
+      var url=MLB_BASE+'/stats/leaders?leaderCategories='+g.cats.join(',')+'&statGroup='+g.group+'&statsType=byTeam&season='+SEASON+'&sportId=1&limit=30';
       var r=await fetch(url);
       if(!r.ok)return;
       var d=await r.json();
