@@ -120,24 +120,32 @@ function pulseGreeting() {
   return            {kicker:'Late night',  headline:'West coast finals shaking out.', tagline:'West coast finals shaking out.'};
 }
 
+function renderAllHiddenState() {
+  var el=document.getElementById('feedEmpty');
+  el.className='';
+  el.innerHTML='<span class="empty-icon">👁</span><div class="empty-title">Feed hidden</div><div class="empty-sub">Tap a game chip above to follow its live feed.</div>';
+}
+
 function updateFeedEmpty() {
   var feed=document.getElementById('feed');
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
   var hasAnyGames=Object.keys(state.gameStates).length>0;
   var hasLiveInProgress=Object.values(state.gameStates).some(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var allUserHidden=hasAnyGames&&!hasVisible&&state.enabledGames.size===0&&!state.myTeamLens;
   var postSlate=isPostSlate();
   var intermission=!postSlate&&isIntermission();
-  var showHype=(!hasVisible&&!(state.myTeamLens&&hasLiveInProgress))||(!hasAnyGames)||postSlate||intermission;
+  var showHype=(!hasVisible&&!allUserHidden&&!(state.myTeamLens&&hasLiveInProgress))||(!hasAnyGames)||postSlate||intermission;
   if (showHype) renderEmptyState(postSlate, intermission);
-  document.getElementById('feedEmpty').style.display=showHype?'':'none';
+  else if (allUserHidden) renderAllHiddenState();
+  document.getElementById('feedEmpty').style.display=(showHype||allUserHidden)?'':'none';
   var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames','myTeamLensBtn'];
   document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || showHype);
   hideWhenEmpty.forEach(function(id){
     var el=document.getElementById(id);
-    if(el) el.style.display=showHype?'none':'';
+    if(el) el.style.display=(showHype&&!allUserHidden)?'none':'';
   });
   var ybtn=document.getElementById('ptbYestBtn');
-  if(ybtn) ybtn.style.display=(state.yesterdayCache&&state.yesterdayCache.length&&!showHype)?'':'none';
+  if(ybtn) ybtn.style.display=(state.yesterdayCache&&state.yesterdayCache.length&&!showHype&&!allUserHidden)?'':'none';
 }
 
 function renderEmptyState(postSlate, intermission) {
