@@ -571,6 +571,8 @@ function renderNextGame(g,label){
 
 // ── Boot IIFE ────────────────────────────────────────────────────────────────
 (async function(){
+  // iPad viewport fix — remove user-scalable/shrink-to-fit that can cause layout blowout on iPad
+  (function(){try{var ua=navigator.userAgent||'';var isIPad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);if(isIPad){var m=document.querySelector('meta[name=viewport]');if(m)m.setAttribute('content','width=device-width, initial-scale=1.0');}}catch(e){}}());
   var sv=function(k){return localStorage.getItem(k);};
   // soundSettings is hydrated from localStorage inside ./ui/sound.js on import.
   // Restore session token

@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>MLB Pulse — Live Scores &amp; Stats</title>
 <script>(function(){try{var v=JSON.parse(localStorage.getItem('mlb_theme_vars')||'null');if(v&&typeof v==='object'){for(var k in v){document.documentElement.style.setProperty(k,v[k]);}}}catch(e){}})();</script>
-<script>(function(){try{var ua=navigator.userAgent||'';var isIPad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);if(isIPad){var m=document.querySelector('meta[name=viewport]');if(m)m.setAttribute('content','width=device-width, initial-scale=1.0');}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,8 +16,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.12"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.12">
+<script defer src="dist/app.bundle.js?v=4.12.1"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.12.1">
 <style>
 /* In-app Daybreak splash — full lifecycle is ours. iOS shows manifest background_color (#0a0f1e, matches body) until HTML parses to #appSplash, then this overlay takes over.
    Entry (0-300ms): gradient + content fade IN from the matching dark bg → no snap-in jump from manifest bg.
@@ -60,7 +59,6 @@
 <header>
   <div class="logo"><img src="https://www.mlbstatic.com/team-logos/121.svg" style="height:32px;width:32px"> <span>METS</span><span class="header-crumb" id="headerCrumb">PULSE</span></div>
   <div class="team-chip" id="teamChip">NEW YORK METS</div>
-  <script>(function(){try{var id=parseInt(localStorage.getItem('mlb_team')||'0');if(!id||id===121)return;var T={108:['Angels','Los Angeles Angels'],109:['D-backs','Arizona Diamondbacks'],110:['Orioles','Baltimore Orioles'],111:['Red Sox','Boston Red Sox'],112:['Cubs','Chicago Cubs'],113:['Reds','Cincinnati Reds'],114:['Guardians','Cleveland Guardians'],115:['Rockies','Colorado Rockies'],116:['Tigers','Detroit Tigers'],117:['Astros','Houston Astros'],118:['Royals','Kansas City Royals'],119:['Dodgers','Los Angeles Dodgers'],120:['Nationals','Washington Nationals'],133:['Athletics','Oakland Athletics'],134:['Pirates','Pittsburgh Pirates'],135:['Padres','San Diego Padres'],136:['Mariners','Seattle Mariners'],137:['Giants','San Francisco Giants'],138:['Cardinals','St. Louis Cardinals'],139:['Rays','Tampa Bay Rays'],140:['Rangers','Texas Rangers'],141:['Blue Jays','Toronto Blue Jays'],142:['Twins','Minnesota Twins'],143:['Phillies','Philadelphia Phillies'],144:['Braves','Atlanta Braves'],145:['White Sox','Chicago White Sox'],146:['Marlins','Miami Marlins'],147:['Yankees','New York Yankees'],158:['Brewers','Milwaukee Brewers']};var t=T[id];if(!t)return;var logo=document.querySelector('.logo');if(logo)logo.innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+id+'.svg" style="height:32px;width:32px"> <span>'+t[0].toUpperCase()+'</span><span class="header-crumb" id="headerCrumb">PULSE</span>';var chip=document.getElementById('teamChip');if(chip)chip.textContent=t[1].toUpperCase();}catch(e){}})();</script>
   <nav>
     <button class="active" data-section="pulse" onclick="showSection('pulse',this)">⚡<span class="nav-label"> Pulse</span></button>
     <button data-section="home" onclick="showSection('home',this)">🏠<span class="nav-label"> My Team</span></button>
@@ -118,7 +116,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.12</div>
+        <div class="settings-version">v4.12.1</div>
       </div>
     </div>
   </div>
