@@ -30,9 +30,9 @@ function _closeCtx(ctx, dur) {
   }, (dur + 0.6) * 1000);
 }
 
-function _osc(ctx, freq, t0, dur, vol, wave, attack) {
+function _osc(ctx, freq, t0, dur, vol, wave, attack, dest) {
   var osc = ctx.createOscillator(), g = ctx.createGain();
-  osc.connect(g); g.connect(ctx.destination);
+  osc.connect(g); g.connect(dest || ctx.destination);
   osc.type = wave || 'sine';
   osc.frequency.value = freq;
   var at = ctx.currentTime + t0, att = attack || 0.005;
@@ -42,7 +42,7 @@ function _osc(ctx, freq, t0, dur, vol, wave, attack) {
   osc.start(at); osc.stop(at + dur + 0.05);
 }
 
-function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ) {
+function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ, dest) {
   var len = Math.ceil(ctx.sampleRate * (dur + 0.1));
   var buf = ctx.createBuffer(1, len, ctx.sampleRate);
   var d = buf.getChannelData(0);
@@ -54,7 +54,7 @@ function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ) {
   filt.frequency.value = filterFreq || 1000;
   filt.Q.value = filterQ !== undefined ? filterQ : 1;
   var g = ctx.createGain();
-  src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+  src.connect(filt); filt.connect(g); g.connect(dest || ctx.destination);
   var at = ctx.currentTime + t0, att = attack || 0.003;
   g.gain.setValueAtTime(0.0001, at);
   g.gain.exponentialRampToValueAtTime(vol, at + att);
@@ -62,19 +62,145 @@ function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ) {
   src.start(at); src.stop(at + dur + 0.05);
 }
 
+// ── Glue compressor (prevents inter-layer clipping, adds punch) ───────────────
+function _comp(ctx) {
+  var c = ctx.createDynamicsCompressor();
+  c.threshold.value = -12; c.knee.value = 6; c.ratio.value = 4;
+  c.attack.value = 0.003; c.release.value = 0.15;
+  c.connect(ctx.destination);
+  return c;
+}
+
 // ── Per-event sounds ─────────────────────────────────────────────────────────
-function playHrSound() { try { var ctx = _makeCtx(); _ns(ctx, 0, 0.07, 0.32, 0.001, 'highpass', 2200, 0.8); _ns(ctx, 0, 0.05, 0.22, 0.001, 'bandpass', 900, 3.0); _osc(ctx, 140, 0, 0.06, 0.18, 'sine', 0.001); _ns(ctx, 0.05, 0.90, 0.09, 0.08, 'lowpass', 300, 1.0); _closeCtx(ctx, 1.2); } catch (e) {} }
-function playRunSound() { try { var ctx = _makeCtx(); _osc(ctx, 523, 0, 0.55, 0.18, 'sine'); _osc(ctx, 659, 0.15, 0.50, 0.18, 'sine'); _osc(ctx, 784, 0.30, 0.60, 0.18, 'sine'); _closeCtx(ctx, 1.0); } catch (e) {} }
-function playRispSound() { try { var ctx = _makeCtx(); _ns(ctx, 0, 0.10, 0.20, 0.003, 'lowpass', 180, 2.0); _ns(ctx, 0.13, 0.14, 0.16, 0.004, 'lowpass', 220, 1.5); _closeCtx(ctx, 0.4); } catch (e) {} }
-function playDpSound() { try { var ctx = _makeCtx(); _ns(ctx, 0, 0.06, 0.28, 0.001, 'bandpass', 750, 5); _ns(ctx, 0.10, 0.06, 0.28, 0.001, 'bandpass', 750, 5); _closeCtx(ctx, 0.4); } catch (e) {} }
-function playTpSound() { try { var ctx = _makeCtx(); _osc(ctx, 392, 0, 0.12, 0.17, 'triangle'); _osc(ctx, 523, 0.11, 0.12, 0.17, 'triangle'); _osc(ctx, 659, 0.22, 0.12, 0.17, 'triangle'); _osc(ctx, 784, 0.33, 0.32, 0.17, 'triangle'); _closeCtx(ctx, 0.8); } catch (e) {} }
-function playGameStartSound() { try { var ctx = _makeCtx(); _osc(ctx, 523, 0, 0.14, 0.16, 'triangle'); _osc(ctx, 587, 0.13, 0.14, 0.16, 'triangle'); _osc(ctx, 659, 0.26, 0.14, 0.16, 'triangle'); _osc(ctx, 784, 0.39, 0.38, 0.16, 'triangle'); _closeCtx(ctx, 1.0); } catch (e) {} }
-function playGameEndSound() { try { var ctx = _makeCtx(); _osc(ctx, 784, 0, 0.65, 0.15, 'sine'); _osc(ctx, 659, 0.38, 0.65, 0.15, 'sine'); _osc(ctx, 523, 0.76, 0.80, 0.15, 'sine'); _closeCtx(ctx, 1.8); } catch (e) {} }
-function playErrorSound() { try { var ctx = _makeCtx(); _ns(ctx, 0, 0.18, 0.22, 0.003, 'lowpass', 160, 1.5); _osc(ctx, 130, 0.02, 0.16, 0.10, 'sine'); _closeCtx(ctx, 0.5); } catch (e) {} }
+function playHrSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // Crack of the bat (sharp broadband + body thud + bass)
+    _ns(ctx, 0,    0.05, 0.95, 0.0005, 'highpass', 2800, 0.8, d);
+    _ns(ctx, 0,    0.12, 0.80, 0.001,  'bandpass', 1000, 2.0, d);
+    _osc(ctx, 75,  0,    0.25, 0.75, 'sine', 0.002, d);
+    // Rising excitement tones
+    _osc(ctx, 392, 0.15, 0.40, 0.50, 'sine', 0.02, d);
+    _osc(ctx, 523, 0.40, 0.40, 0.50, 'sine', 0.02, d);
+    _osc(ctx, 784, 0.65, 0.75, 0.45, 'sine', 0.02, d);
+    // Crowd swell fading in
+    _ns(ctx, 0.12, 1.85, 0.22, 0.22, 'lowpass', 650, 0.5, d);
+    _closeCtx(ctx, 2.3);
+  } catch (e) {}
+}
+function playRunSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // G4→B4→D5→G5 bright arpeggio (G major — distinct from C-major game-start)
+    _osc(ctx, 392, 0,    0.24, 0.55, 'sine', 0.01, d);
+    _osc(ctx, 494, 0.20, 0.24, 0.55, 'sine', 0.01, d);
+    _osc(ctx, 587, 0.40, 0.24, 0.55, 'sine', 0.01, d);
+    _osc(ctx, 784, 0.60, 0.55, 0.55, 'sine', 0.01, d);
+    // Sub-octave sine layer for warmth
+    _osc(ctx, 196, 0,    0.28, 0.38, 'sine', 0.02, d);
+    _osc(ctx, 247, 0.20, 0.28, 0.38, 'sine', 0.02, d);
+    _osc(ctx, 294, 0.40, 0.28, 0.38, 'sine', 0.02, d);
+    _osc(ctx, 392, 0.60, 0.58, 0.38, 'sine', 0.02, d);
+    _closeCtx(ctx, 1.4);
+  } catch (e) {}
+}
+function playRispSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // Two kick-drum pulses (tension — runners are in scoring position)
+    _osc(ctx, 100, 0,    0.32, 0.80, 'sine', 0.003, d);
+    _ns(ctx,  0,   0.13, 0.65, 0.002, 'lowpass', 200, 1.5, d);
+    _osc(ctx, 120, 0.42, 0.32, 0.65, 'sine', 0.003, d);
+    _ns(ctx,  0.42,0.13, 0.55, 0.002, 'lowpass', 220, 1.5, d);
+    // Tense sustained high tone
+    _osc(ctx, 880, 0.08, 0.60, 0.13, 'sine', 0.06, d);
+    _closeCtx(ctx, 1.0);
+  } catch (e) {}
+}
+function playDpSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // Two crisp snaps + quick up-note (1-2-done feel)
+    _ns(ctx, 0,    0.07, 0.95, 0.001, 'bandpass', 1100, 5, d);
+    _osc(ctx, 200, 0,    0.10, 0.65, 'sine', 0.001, d);
+    _ns(ctx, 0.20, 0.07, 0.95, 0.001, 'bandpass', 1400, 5, d);
+    _osc(ctx, 260, 0.20, 0.10, 0.65, 'sine', 0.001, d);
+    _osc(ctx, 660, 0.33, 0.32, 0.50, 'sine', 0.01, d);
+    _closeCtx(ctx, 0.8);
+  } catch (e) {}
+}
+function playTpSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // Three rapid snaps (one per out)
+    _ns(ctx, 0,    0.07, 0.90, 0.001, 'bandpass', 1000, 4, d);
+    _osc(ctx, 180, 0,    0.10, 0.60, 'sine', 0.001, d);
+    _ns(ctx, 0.16, 0.07, 0.90, 0.001, 'bandpass', 1200, 4, d);
+    _osc(ctx, 220, 0.16, 0.10, 0.60, 'sine', 0.001, d);
+    _ns(ctx, 0.32, 0.07, 0.90, 0.001, 'bandpass', 1500, 4, d);
+    _osc(ctx, 280, 0.32, 0.10, 0.60, 'sine', 0.001, d);
+    // Triumphant ascending flourish
+    _osc(ctx, 392, 0.46, 0.20, 0.55, 'triangle', 0.01, d);
+    _osc(ctx, 523, 0.60, 0.20, 0.55, 'triangle', 0.01, d);
+    _osc(ctx, 659, 0.74, 0.20, 0.55, 'triangle', 0.01, d);
+    _osc(ctx, 784, 0.88, 0.65, 0.55, 'triangle', 0.01, d);
+    _closeCtx(ctx, 1.75);
+  } catch (e) {}
+}
+function playGameStartSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // C5→E5→G5→C6 stately fanfare (triangle = warm, brass-like)
+    _osc(ctx, 523,  0,    0.26, 0.55, 'triangle', 0.01, d);
+    _osc(ctx, 659,  0.24, 0.26, 0.55, 'triangle', 0.01, d);
+    _osc(ctx, 784,  0.48, 0.26, 0.55, 'triangle', 0.01, d);
+    _osc(ctx, 1047, 0.72, 0.75, 0.55, 'triangle', 0.01, d);
+    // Sine sub-layer one octave down for richness
+    _osc(ctx, 262, 0,    0.30, 0.40, 'sine', 0.02, d);
+    _osc(ctx, 330, 0.24, 0.30, 0.40, 'sine', 0.02, d);
+    _osc(ctx, 392, 0.48, 0.30, 0.40, 'sine', 0.02, d);
+    _osc(ctx, 523, 0.72, 0.80, 0.40, 'sine', 0.02, d);
+    _closeCtx(ctx, 1.7);
+  } catch (e) {}
+}
+function playGameEndSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // G5→E5→C5 descending farewell
+    _osc(ctx, 784, 0,    0.70, 0.55, 'sine', 0.01, d);
+    _osc(ctx, 659, 0.58, 0.70, 0.55, 'sine', 0.01, d);
+    _osc(ctx, 523, 1.16, 1.10, 0.55, 'sine', 0.01, d);
+    // Triangle harmonic layer
+    _osc(ctx, 392, 0,    0.75, 0.38, 'triangle', 0.02, d);
+    _osc(ctx, 330, 0.58, 0.75, 0.38, 'triangle', 0.02, d);
+    _osc(ctx, 262, 1.16, 1.15, 0.38, 'triangle', 0.02, d);
+    // Final murmur fade
+    _ns(ctx, 1.16, 1.05, 0.12, 0.22, 'lowpass', 450, 0.5, d);
+    _closeCtx(ctx, 2.6);
+  } catch (e) {}
+}
+function playErrorSound() {
+  try {
+    var ctx = _makeCtx(), d = _comp(ctx);
+    // Descending dissonant sawtooth buzz
+    _osc(ctx, 220, 0,    0.50, 0.70, 'sawtooth', 0.005, d);
+    _osc(ctx, 165, 0.10, 0.50, 0.60, 'sawtooth', 0.005, d);
+    _ns(ctx,  0,   0.58, 0.50, 0.005, 'lowpass', 160, 1.5, d);
+    _closeCtx(ctx, 0.9);
+  } catch (e) {}
+}
 
 // ── Public API ───────────────────────────────────────────────────────────────
 export function playSound(type) {
   if (!soundSettings.master || !soundSettings[type]) return;
+  _playSoundRaw(type);
+}
+
+export function previewSound(type) {
+  _playSoundRaw(type);
+}
+
+function _playSoundRaw(type) {
   if (type === 'hr') playHrSound();
   else if (type === 'run') playRunSound();
   else if (type === 'risp') playRispSound();

@@ -17,8 +17,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.9.1"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.9.1">
+<script defer src="dist/app.bundle.js?v=4.9.3"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.9.3">
 <style>
 /* In-app Daybreak splash — full lifecycle is ours. iOS shows manifest background_color (#0a0f1e, matches body) until HTML parses to #appSplash, then this overlay takes over.
    Entry (0-300ms): gradient + content fade IN from the matching dark bg → no snap-in jump from manifest bg.
@@ -118,7 +118,7 @@
           <div class="settings-section-label">🔐 Sync Collection</div>
           <div id="syncStatus" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
-        <div class="settings-version">v4.9.1</div>
+        <div class="settings-version">v4.9.3</div>
       </div>
     </div>
   </div>
@@ -566,6 +566,22 @@
     <details id="demoFeedsDetails" style="cursor:pointer">
       <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">📽️ Demo Feeds QC</summary>
       <div id="demoFeedsBody" style="margin-top:0.625rem;display:flex;flex-direction:column;gap:6px;font-size:.65rem;max-height:400px;overflow-y:auto"></div>
+    </details>
+  </div>
+  <div style="padding:12px 15px;border-top:1px solid var(--border)">
+    <details id="soundPreviewDetails" style="cursor:pointer">
+      <summary style="font-size:.75rem;font-weight:700;color:var(--text);user-select:none">🔊 Sound Preview</summary>
+      <div style="margin-top:0.625rem;display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <button data-dt-action="previewSound" data-sound-type="hr" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">💥 HR</button>
+        <button data-dt-action="previewSound" data-sound-type="run" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">🏃 Run</button>
+        <button data-dt-action="previewSound" data-sound-type="risp" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">🔥 RISP</button>
+        <button data-dt-action="previewSound" data-sound-type="dp" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">⚡ DP</button>
+        <button data-dt-action="previewSound" data-sound-type="tp" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">⚡⚡ TP</button>
+        <button data-dt-action="previewSound" data-sound-type="gameStart" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">▶ Start</button>
+        <button data-dt-action="previewSound" data-sound-type="gameEnd" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">🏁 End</button>
+        <button data-dt-action="previewSound" data-sound-type="error" style="background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:.65rem;padding:7px 4px;border-radius:6px;cursor:pointer;font-weight:600;text-align:center">❌ Error</button>
+      </div>
+      <div style="margin-top:6px;font-size:.58rem;color:var(--muted)">Plays raw sound regardless of master toggle state.</div>
     </details>
   </div>
   <div class="dt-group-hd">Inspectors</div>
