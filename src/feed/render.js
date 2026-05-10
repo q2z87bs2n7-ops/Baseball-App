@@ -3,6 +3,7 @@ import { MLB_BASE, MLB_THEME } from '../config/constants.js';
 import { ordinal } from '../carousel/generators.js';
 import { devTrace } from '../devtools-feed/devLog.js';
 import { etDateStr, etDatePlus, etHour } from '../utils/format.js';
+import { calcFocusScore } from '../focus/mode.js';
 
 const DEBUG = false;
 
@@ -21,6 +22,20 @@ function baseDiamondSvg(on1,on2,on3) {
     +'<circle cx="14" cy="3"  r="3" style="'+(on2?litStyle:dimStyle)+'"/>'
     +'<circle cx="4"  cy="12" r="3" style="'+(on3?litStyle:dimStyle)+'"/>'
     +'</svg>';
+}
+
+function tensionBand(score) {
+  if (score<=0)   return 0;
+  if (score<=18)  return 1;
+  if (score<=36)  return 2;
+  if (score<=54)  return 3;
+  if (score<=72)  return 4;
+  if (score<=90)  return 5;
+  if (score<=108) return 6;
+  if (score<=126) return 7;
+  if (score<=162) return 8;
+  if (score<=200) return 9;
+  return 10;
 }
 
 function startCountdown(targetMs) {
@@ -302,10 +317,12 @@ function renderTicker() {
     var hasRunners=isLive&&(g.onFirst||g.onSecond||g.onThird);
     var fc=state.enabledGames.has(g.gamePk)?' feed-enabled':' feed-disabled';
     var rc=hasRunners?' has-risp':'';
+    var band=tensionBand(calcFocusScore(g));
+    var tc=band?' tb-'+band:'';
     var outsHtml='';
     if(isLive){outsHtml='<span class="ticker-outs">'+[0,1,2].map(function(i){return '<span class="out-dot'+(i<g.outs?' out-on':'')+'"></span>';}).join('')+'</span>';}
     if (hasRunners) {
-      html+='<div class="ticker-game '+sc+fc+rc+'" onclick="toggleGame('+g.gamePk+')">'
+      html+='<div class="ticker-game '+sc+fc+rc+tc+'" onclick="toggleGame('+g.gamePk+')">'
         +'<div class="ticker-top">'+dot
         +'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span>'
         +'<span class="ticker-divider">·</span>'
@@ -314,7 +331,7 @@ function renderTicker() {
         +'<span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div></div>';
     } else {
       var spacer=isLive?'<div class="ticker-dot-spacer"></div>':'';
-      html+='<div class="ticker-game '+sc+fc+'" onclick="toggleGame('+g.gamePk+')">'
+      html+='<div class="ticker-game '+sc+fc+tc+'" onclick="toggleGame('+g.gamePk+')">'
         +'<div class="ticker-row">'+dot+'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span></div>'
         +'<div class="ticker-row">'+spacer+'<span class="ticker-score">'+g.homeAbbr+'&nbsp;<strong>'+g.homeScore+'</strong></span></div>'
         +'<div class="ticker-row"><span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div></div>';
