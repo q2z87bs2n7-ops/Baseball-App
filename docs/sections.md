@@ -29,7 +29,7 @@ Four-card layout (Stats Tab Revamp Sprints 1+2+3 shipped under v4.7; mobile-poli
 
 Today's Leaders module was removed in v4.8.6 — it duplicated ~95% of the League → Stat Leaders card (same `state.leagueLeaders` source, near-identical category list).
 
-A sticky 4-chip quick-nav (`#statsQuickNav` / `installStatsQuickNav()` in `src/sections/loaders.js`) appears at the top of `#stats` on mobile only (≤480px, gated by media query). Tapping a chip smooth-scrolls to the matching card; an IntersectionObserver lights the active chip. Hidden at ≥481px so iPad/desktop layout is unchanged.
+A sticky 4-chip quick-nav (`#statsQuickNav` / `installStatsQuickNav()` in `src/sections/stats/player.js`) appears at the top of `#stats` on mobile only (≤480px, gated by media query). Tapping a chip smooth-scrolls to the matching card; an IntersectionObserver lights the active chip. Hidden at ≥481px so iPad/desktop layout is unchanged.
 
 ### Team Stats card (`#teamStats`, `loadTeamStats()`)
 Full-width card showing team-wide hitting + pitching tiles (HR / RBI / AVG / OPS / ERA / WHIP / K / SV) + a record / last-10 / run-diff form line. Each tile shows the stat value alongside a `#N MLB` rank chip in `var(--accent)` (chip text uses `--accent` not `--primary` so dark-primary teams stay readable).

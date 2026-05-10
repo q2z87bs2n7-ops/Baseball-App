@@ -125,16 +125,17 @@ import {
   setRotationCallbacks, buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots,
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
-import {
-  setSectionCallbacks, clearHomeTimer, clearLeagueTimer,
-  loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
-  loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo,
-  loadStandings,
-  selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
-  selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens,
-  loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
-  showLiveGame, closeLiveView, fetchLiveGame,
-} from './sections/loaders.js';
+import { openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup } from './sections/stats/compare.js';
+import { loadRoster, switchRosterTab } from './sections/stats/roster.js';
+import { selectPlayer, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, switchVsBasis } from './sections/stats/player.js';
+import { selectLeaderPill, switchLeaderTab, loadLeaders, toggleLeaderMore, toggleQualifiedOnly } from './sections/stats/leaders.js';
+import { loadTeamStats } from './sections/stats/team.js';
+import { setLeagueCallbacks, clearLeagueTimer, loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab } from './sections/league.js';
+import { selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens } from './sections/news.js';
+import { showLiveGame, closeLiveView, fetchLiveGame } from './sections/live.js';
+import { loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo } from './sections/schedule.js';
+import { loadStandings } from './sections/standings.js';
+import { setHomeCallbacks, clearHomeTimer, loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo } from './sections/home.js';
 import {
   setSyncCallbacks, syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval,
 } from './collection/sync.js';
@@ -229,12 +230,16 @@ function initLeaguePulse() {
   initReal();
 }
 function initReal() {
+  // Populate runtime version slot (single source: package.json → __APP_VERSION__ via esbuild define)
+  var _verEl = document.querySelector('.settings-version[data-version]');
+  if (_verEl) _verEl.textContent = 'v' + (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '?');
   setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore, localDateStr: localDateStr, getEffectiveDate: getEffectiveDate, tcLookup: tcLookup });
   setRotationCallbacks({ refreshDebugPanel: refreshDebugPanel });
   setSyncCallbacks({ loadCollection: loadCollection, saveCollection: saveCollection, updateCollectionUI: updateCollectionUI });
   setThemeCallbacks({ loadTodayGame: loadTodayGame, loadNextGame: loadNextGame, loadNews: loadNews, loadStandings: loadStandings, loadRoster: loadRoster, loadTeamStats: loadTeamStats, loadHomeYoutubeWidget: loadHomeYoutubeWidget, applyMyTeamLens: applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
   setFeedCallbacks({ localDateStr: localDateStr });
-  setSectionCallbacks({ renderNextGame: renderNextGame, getSeriesInfo: getSeriesInfo, localDateStr: localDateStr, teamCapImg: teamCapImg, capImgError: capImgError });
+  setHomeCallbacks({ renderNextGame: renderNextGame, teamCapImg: teamCapImg });
+  setLeagueCallbacks({ teamCapImg: teamCapImg });
   setRadioCheckCallbacks({ toggleSettings: toggleSettings });
   setYoutubeDebugCallbacks({ loadHomeYoutubeWidget: loadHomeYoutubeWidget });
   setPanelsCallbacks({ buildStoryPool: buildStoryPool });

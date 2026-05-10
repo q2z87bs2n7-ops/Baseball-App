@@ -3,7 +3,7 @@
 ## What This Is
 An MLB sports tracker, defaulting to the New York Mets. All data is pulled live from public APIs. Source lives under `src/` as ES6 modules, bundled with esbuild into `dist/app.bundle.js`; CSS in `styles.css`; HTML skeleton in `index.html`.
 
-**Current version:** v4.13 (full history in `CHANGELOG.md`)
+**Current version:** see `package.json` (full history in `CHANGELOG.md`)
 
 **File:** `index.html` (renamed from `mets-app.html` at v1.40 for GitHub Pages)
 **Default team:** New York Mets (id: 121)
@@ -18,7 +18,7 @@ An MLB sports tracker, defaulting to the New York Mets. All data is pulled live 
 4. **Break changes into small steps** — confirm each works before proceeding
 5. **Git branching** — all changes go to a `claude/` branch first; only merge to `main` when explicitly asked
 6. **Debug code** — wrap temporary logging in `// DEBUG START` / `// DEBUG END` for easy removal
-7. **Version every change** — bump `<title>` tag + settings panel version string on every commit. Use `vX.Y.Z` format. On a `claude/` branch, increment the patch `Z` per commit (e.g. `v3.49.3` → `v3.49.4`). On merge to main, bump the minor `Y` and drop the patch in a separate commit (e.g. branch ships `v3.49.4` → main becomes `v3.50`); the next branch then starts adding patches against `v3.50`. **Also bump `CACHE` in `sw.js`** on every commit that changes app content (CSS / JS / HTML body); version-string-only release commits do not need a CACHE bump.
+7. **Version every change** — bump `package.json` `"version"` only. The build (`npm run build`) propagates to settings panel, cache-bust query strings on `dist/*`, and `sw.js` `CACHE` constant via the esbuild `__APP_VERSION__` define in `build.mjs`. Use `X.Y.Z` format. On a `claude/` branch, increment the patch `Z` per commit (e.g. `4.13.3` → `4.13.4`). On merge to main, bump the minor `Y` and drop the patch in a separate commit (e.g. branch ships `4.13.4` → main becomes `4.14.0`); the next branch then starts adding patches against `4.14.0`. The `<title>` tag is intentionally version-free — do not add the version back.
 8. **No rewrites** — never rewrite large sections. Targeted edits only.
 
 ---
@@ -49,7 +49,7 @@ Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: Gi
 | Change how something looks (colours, layout, spacing, animations) | `styles.css` |
 | Add/fix a JS function, API call, game logic | `src/<subsystem>/*.js` (find module via `docs/module-graph.md`) |
 | New cross-cutting state | `src/state.js` |
-| New section loader / overlay | `src/sections/loaders.js` or new `src/sections/<name>.js` |
+| New section loader / overlay | `src/sections/<name>.js` (or `src/sections/stats/<name>.js` for stats sub-modules) |
 | New feature with HTML + CSS + JS aspects | `index.html` + `styles.css` + relevant `src/` modules |
 | PWA caching behaviour or push notification handler | `sw.js` |
 | Version bump | `index.html` (title + settings-version + bundle/CSS cache-bust `?v=`) |

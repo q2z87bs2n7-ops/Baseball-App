@@ -8,7 +8,7 @@
 import { state } from '../state.js';
 import { TEAMS, MLB_BASE } from '../config/constants.js';
 import { stopAllMedia } from '../radio/engine.js';
-import { showLiveGame } from '../sections/loaders.js';
+import { showLiveGame } from './live.js';
 import { pickPlayback, pickHeroImage, fetchGameContent } from '../data/clips.js';
 import { loadYdForDate } from '../carousel/generators.js';
 import { loadCollection, tierRank, fetchCareerStats } from '../collection/book.js';

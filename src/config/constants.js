@@ -53,7 +53,7 @@ export const NEWS_SOURCE_ICONS = {mlb:'⚾',espn:'📺',mlbtr:'💼',fangraphs:'
 // /stats/leaders leaderCategories enum, plus polarity (lowerIsBetter flips the
 // rank comparator for ERA/WHIP/etc.) and decimals for delta-chip formatting.
 // Consumed by src/utils/stats-math.js (computePercentile / leaderEntry) and
-// fetchLeagueLeaders in src/sections/loaders.js.
+// fetchLeagueLeaders in src/data/leaders.js.
 export const LEADER_CATS_FOR_PERCENTILE = [
   // Hitting (higher-is-better unless noted)
   {group:'hitting',  key:'avg',                 leaderCategory:'battingAverage',                  lowerIsBetter:false, decimals:3},
