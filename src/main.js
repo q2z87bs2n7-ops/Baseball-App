@@ -126,8 +126,7 @@ import {
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
 import {
-  setSectionCallbacks, clearHomeTimer, clearLeagueTimer,
-  loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo,
+  setSectionCallbacks, clearLeagueTimer,
   selectLeaderPill, switchLeaderTab, loadLeaders, loadRoster, switchRosterTab, selectPlayer, loadTeamStats, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
   loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab,
 } from './sections/loaders.js';
@@ -135,6 +134,7 @@ import { selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens } from '
 import { showLiveGame, closeLiveView, fetchLiveGame } from './sections/live.js';
 import { loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo } from './sections/schedule.js';
 import { loadStandings } from './sections/standings.js';
+import { setHomeCallbacks, clearHomeTimer, loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo } from './sections/home.js';
 import {
   setSyncCallbacks, syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval,
 } from './collection/sync.js';
@@ -238,6 +238,7 @@ function initReal() {
   setThemeCallbacks({ loadTodayGame: loadTodayGame, loadNextGame: loadNextGame, loadNews: loadNews, loadStandings: loadStandings, loadRoster: loadRoster, loadTeamStats: loadTeamStats, loadHomeYoutubeWidget: loadHomeYoutubeWidget, applyMyTeamLens: applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
   setFeedCallbacks({ localDateStr: localDateStr });
   setSectionCallbacks({ renderNextGame: renderNextGame, getSeriesInfo: getSeriesInfo, localDateStr: localDateStr, teamCapImg: teamCapImg, capImgError: capImgError });
+  setHomeCallbacks({ renderNextGame: renderNextGame, teamCapImg: teamCapImg });
   setRadioCheckCallbacks({ toggleSettings: toggleSettings });
   setYoutubeDebugCallbacks({ loadHomeYoutubeWidget: loadHomeYoutubeWidget });
   setPanelsCallbacks({ buildStoryPool: buildStoryPool });
