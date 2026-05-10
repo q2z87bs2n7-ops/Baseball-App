@@ -77,11 +77,186 @@ const BAND_COLORS = [
 
 // ── PASTE SCENARIOS HERE ─────────────────────────────────────────────
 const SCENARIOS = [
-  // { desc: 'Tied, bases loaded, bottom 9th',
-  //   gut: 10,
-  //   g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'bottom',
-  //        awayScore:3, homeScore:3, onFirst:true, onSecond:true, onThird:true,
-  //        awayHits:7, homeHits:8 } },
+  {
+    desc: 'Blowout in the 2nd — home up 9-0, no drama',
+    gut: 1,
+    gutReason: 'Game is effectively over before it started, nothing on the line',
+    g: { status:'Live', detailedState:'In Progress', inning:2, halfInning:'top', awayScore:0, homeScore:9, onFirst:false, onSecond:false, onThird:false, awayHits:1, homeHits:8 }
+  },
+  {
+    desc: 'Tie game, inning 2, bases empty — way too early to matter',
+    gut: 2,
+    gutReason: 'Tie sounds exciting but its inning 2 with 7+ innings of low-stakes play ahead',
+    g: { status:'Live', detailedState:'In Progress', inning:2, halfInning:'bottom', awayScore:1, homeScore:1, onFirst:false, onSecond:false, onThird:false, awayHits:3, homeHits:2 }
+  },
+  {
+    desc: 'Early game, home up 3-0 in the 3rd, no baserunners',
+    gut: 2,
+    gutReason: 'Small lead early, plenty of game left but nothing urgent happening',
+    g: { status:'Live', detailedState:'In Progress', inning:3, halfInning:'top', awayScore:0, homeScore:3, onFirst:false, onSecond:false, onThird:false, awayHits:2, homeHits:5 }
+  },
+  {
+    desc: 'Mid-game, 5-1 lead for away team, 5th inning, bases empty',
+    gut: 3,
+    gutReason: 'Four-run lead in the 5th is comfortable but not quite a laugher yet',
+    g: { status:'Live', detailedState:'In Progress', inning:5, halfInning:'top', awayScore:5, homeScore:1, onFirst:false, onSecond:false, onThird:false, awayHits:7, homeHits:3 }
+  },
+  {
+    desc: 'Perfect game bid — away pitcher through 6, no hits no runs',
+    gut: 8,
+    gutReason: 'Perfect game bids are rare and electrifying even though the score is lopsided',
+    g: { status:'Live', detailedState:'In Progress', inning:6, halfInning:'top', awayScore:2, homeScore:0, onFirst:false, onSecond:false, onThird:false, awayHits:6, homeHits:0 }
+  },
+  {
+    desc: 'No-hitter bid in the 8th, home pitcher, away has zero hits',
+    gut: 9,
+    gutReason: 'No-hitter through 8 is extraordinarily rare, entire stadium on edge every pitch',
+    g: { status:'Live', detailedState:'In Progress', inning:8, halfInning:'top', awayScore:0, homeScore:1, onFirst:false, onSecond:false, onThird:false, awayHits:0, homeHits:4 }
+  },
+  {
+    desc: 'Walk-off situation — home down 1, bottom 9, bases loaded',
+    gut: 10,
+    gutReason: 'Maximum drama: bases loaded, one swing ends it, last at-bat of the game',
+    g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'bottom', awayScore:4, homeScore:3, onFirst:true, onSecond:true, onThird:true, awayHits:8, homeHits:7 }
+  },
+  {
+    desc: 'Tie game, bottom 9, runner on second — walk-off hit wins it',
+    gut: 10,
+    gutReason: 'Tie game, home team in scoring position in the 9th is pure walk-off tension',
+    g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'bottom', awayScore:5, homeScore:5, onFirst:false, onSecond:true, onThird:false, awayHits:9, homeHits:8 }
+  },
+  {
+    desc: 'Extra innings, tied in the 11th, ghost runner on second',
+    gut: 10,
+    gutReason: 'Extra innings with automatic runner is volatile and high-stakes every pitch',
+    g: { status:'Live', detailedState:'In Progress', inning:11, halfInning:'bottom', awayScore:3, homeScore:3, onFirst:false, onSecond:true, onThird:false, awayHits:10, homeHits:9 }
+  },
+  {
+    desc: 'Extra innings blowout — away up 8-0 in the 10th',
+    gut: 2,
+    gutReason: 'Eight-run lead even in extras means the game is a formality',
+    g: { status:'Live', detailedState:'In Progress', inning:10, halfInning:'top', awayScore:8, homeScore:0, onFirst:false, onSecond:false, onThird:false, awayHits:14, homeHits:2 }
+  },
+  {
+    desc: 'Home trailing by 5 in the 8th, runner on first — big deficit late',
+    gut: 4,
+    gutReason: 'Five runs is a lot to overcome in two innings but rally potential gives faint hope',
+    g: { status:'Live', detailedState:'In Progress', inning:8, halfInning:'bottom', awayScore:7, homeScore:2, onFirst:true, onSecond:false, onThird:false, awayHits:11, homeHits:5 }
+  },
+  {
+    desc: 'Home trailing by 5 in the 9th, bases loaded — miracle still possible',
+    gut: 6,
+    gutReason: 'Grand slam cuts it to one and any hit scores; unlikely but bases loaded keeps hope alive',
+    g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'bottom', awayScore:8, homeScore:3, onFirst:true, onSecond:true, onThird:true, awayHits:13, homeHits:6 }
+  },
+  {
+    desc: 'One-run game in the 7th, top half, bases empty',
+    gut: 6,
+    gutReason: 'Close game in the 7th has real stakes but lacks immediate base-state urgency',
+    g: { status:'Live', detailedState:'In Progress', inning:7, halfInning:'top', awayScore:4, homeScore:3, onFirst:false, onSecond:false, onThird:false, awayHits:7, homeHits:6 }
+  },
+  {
+    desc: 'Tie game top 8th, bases loaded — go-ahead run every base',
+    gut: 9,
+    gutReason: 'Loaded bases in a tie game late means any contact changes the entire complexion',
+    g: { status:'Live', detailedState:'In Progress', inning:8, halfInning:'top', awayScore:2, homeScore:2, onFirst:true, onSecond:true, onThird:true, awayHits:5, homeHits:6 }
+  },
+  {
+    desc: 'Rain delay restart — resumed in the 5th, tied 0-0, runners on corners',
+    gut: 5,
+    gutReason: 'Weird energy after rain delay, scoreless tie with runners on corners is interesting but still mid-game',
+    g: { status:'Live', detailedState:'In Progress', inning:5, halfInning:'bottom', awayScore:0, homeScore:0, onFirst:true, onSecond:false, onThird:true, awayHits:2, homeHits:1 }
+  },
+  {
+    desc: 'Away team chasing 3-run deficit in the 9th, runner on first',
+    gut: 5,
+    gutReason: 'Three-run deficit with one out to give is a long shot; possible but not likely',
+    g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'top', awayScore:1, homeScore:4, onFirst:true, onSecond:false, onThird:false, awayHits:4, homeHits:8 }
+  },
+  {
+    desc: 'Pitcher duel — 0-0 through 7, bases empty top 8th',
+    gut: 7,
+    gutReason: 'Scoreless pitcher duel late means the first run could decide it all',
+    g: { status:'Live', detailedState:'In Progress', inning:8, halfInning:'top', awayScore:0, homeScore:0, onFirst:false, onSecond:false, onThird:false, awayHits:4, homeHits:3 }
+  },
+  {
+    desc: 'Home up 2-1 in bottom 9, runner on 2nd, adding insurance',
+    gut: 6,
+    gutReason: 'Home team padding a 1-run lead late keeps things interesting on both sides',
+    g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'bottom', awayScore:1, homeScore:2, onFirst:false, onSecond:true, onThird:false, awayHits:5, homeHits:6 }
+  },
+  {
+    desc: 'Inning 12 tie game, bases empty — deep extra innings grind',
+    gut: 8,
+    gutReason: 'Both bullpens exhausted, any mistake ends it; sheer length adds existential tension',
+    g: { status:'Live', detailedState:'In Progress', inning:12, halfInning:'top', awayScore:4, homeScore:4, onFirst:false, onSecond:false, onThird:false, awayHits:11, homeHits:12 }
+  },
+  {
+    desc: 'Blowout 12-2 in the 6th, away leading — mop-up territory',
+    gut: 1,
+    gutReason: 'Ten-run margin is mathematically over; no scenario makes this watchable',
+    g: { status:'Live', detailedState:'In Progress', inning:6, halfInning:'top', awayScore:12, homeScore:2, onFirst:false, onSecond:false, onThird:false, awayHits:16, homeHits:4 }
+  },
+  {
+    desc: 'One-run game inning 6, runners on first and second',
+    gut: 7,
+    gutReason: 'Baserunners in a tight game mid-contest give genuine scoring threat and defensive pressure',
+    g: { status:'Live', detailedState:'In Progress', inning:6, halfInning:'bottom', awayScore:3, homeScore:2, onFirst:true, onSecond:true, onThird:false, awayHits:6, homeHits:5 }
+  },
+  {
+    desc: 'Away no-hitter bid through 7 but away trailing 1-0',
+    gut: 9,
+    gutReason: 'No-hit stuff through 7 AND trailing means both historic achievement and comeback drama collide',
+    g: { status:'Live', detailedState:'In Progress', inning:7, halfInning:'bottom', awayScore:1, homeScore:0, onFirst:false, onSecond:false, onThird:false, awayHits:8, homeHits:0 }
+  },
+  {
+    desc: 'Tie game inning 4, runners on corners',
+    gut: 5,
+    gutReason: 'Runners in scoring position in a tie game is spicy but we are still in the early middle innings',
+    g: { status:'Live', detailedState:'In Progress', inning:4, halfInning:'top', awayScore:2, homeScore:2, onFirst:true, onSecond:false, onThird:true, awayHits:4, homeHits:5 }
+  },
+  {
+    desc: 'Home down 1 in the 9th, runner on third — sacrifice fly wins it',
+    gut: 10,
+    gutReason: 'Tying run 90 feet away in the last inning is as elemental as baseball tension gets',
+    g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'bottom', awayScore:3, homeScore:2, onFirst:false, onSecond:false, onThird:true, awayHits:7, homeHits:5 }
+  },
+  {
+    desc: 'Away leading 6-4 in the 8th, nobody on',
+    gut: 5,
+    gutReason: 'Two-run lead in the 8th is real but without baserunners the immediate danger is contained',
+    g: { status:'Live', detailedState:'In Progress', inning:8, halfInning:'top', awayScore:6, homeScore:4, onFirst:false, onSecond:false, onThird:false, awayHits:9, homeHits:8 }
+  },
+  {
+    desc: 'Scoreless duel inning 1, runner on second early',
+    gut: 2,
+    gutReason: 'First inning threat is interesting but there are 8+ innings left so stakes are minimal',
+    g: { status:'Live', detailedState:'In Progress', inning:1, halfInning:'bottom', awayScore:0, homeScore:0, onFirst:false, onSecond:true, onThird:false, awayHits:0, homeHits:1 }
+  },
+  {
+    desc: 'Away up 2-1 entering the 9th, bases loaded for the home team',
+    gut: 10,
+    gutReason: 'Loaded bases, one-run game, last inning — home team can win with a single; it does not get tighter',
+    g: { status:'Live', detailedState:'In Progress', inning:9, halfInning:'bottom', awayScore:2, homeScore:1, onFirst:true, onSecond:true, onThird:true, awayHits:6, homeHits:7 }
+  },
+  {
+    desc: 'Big comeback attempt — home down 5 in the 8th, bases loaded',
+    gut: 7,
+    gutReason: 'Grand slam ties it and there is still an inning left; improbable but the drama is real with bags full',
+    g: { status:'Live', detailedState:'In Progress', inning:8, halfInning:'bottom', awayScore:7, homeScore:2, onFirst:true, onSecond:true, onThird:true, awayHits:12, homeHits:5 }
+  },
+  {
+    desc: 'Tie game, 13th inning, runners on first and third',
+    gut: 10,
+    gutReason: 'Deep extra innings with runners in scoring position is peak chaos and exhaustion drama',
+    g: { status:'Live', detailedState:'In Progress', inning:13, halfInning:'bottom', awayScore:5, homeScore:5, onFirst:true, onSecond:false, onThird:true, awayHits:13, homeHits:14 }
+  },
+  {
+    desc: 'Dominant home pitcher through 7, 8-0 lead, one hit allowed — shutout bid',
+    gut: 3,
+    gutReason: 'No-hitter is gone, lead is massive — the only remaining subplot is historic shutout but score kills tension',
+    g: { status:'Live', detailedState:'In Progress', inning:7, halfInning:'top', awayScore:0, homeScore:8, onFirst:false, onSecond:false, onThird:false, awayHits:1, homeHits:12 }
+  },
 ];
 // ─────────────────────────────────────────────────────────────────────
 
