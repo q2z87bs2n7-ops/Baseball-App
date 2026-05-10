@@ -9,8 +9,14 @@ flag wiring in place.
 
 In v4.14 (the loaders.js split) `package.json` `"version"` became the single
 source of truth for the user-facing version, the cache-bust query strings,
-and the SW `CACHE` constant — `build.mjs` injects `__APP_VERSION__` via
-esbuild's `define`. Bumping any of those manually is no longer required.
+and the SW `CACHE` constant. `build.mjs` reads `package.json` and injects
+`__APP_VERSION__` via esbuild's `define` for the JS bundle (consumed by
+`src/main.js` for the settings panel slot and by `src/dev/panels.js` for
+the diagnostic snapshot). For `sw.js` and `index.html`, `build.mjs` does a
+post-build regex replacement (the `define` approach failed for sw.js because
+the source file is also the build output — after the first substitution
+the identifier was gone and subsequent builds were no-ops; v4.14.0 fix).
+Bumping any of those manually is no longer required.
 
 ---
 
