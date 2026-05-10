@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.14.6
+**Current version:** v4.15.0
+
+**v4.15.0** — **Post-merge minor bump for the mid-AB action events + carousel priority overhaul branch (PR #38).** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.14.1 → v4.14.7 covering: mid-AB action event capture from `playEvents[]` (stolen base, caught stealing, pickoff out, pitching change, pinch hitter/runner, replay review), new `genActionEventStories` carousel generator with hard 60–90s TTL, lifecycle pruning of event arrays + daily counters, grand-slam HR/bases-loaded dedup, 6-band priority re-ranking, and tightened decay rates on tier 3/4 evergreen stories. Full per-commit notes above.
 
 **v4.14.6** — **P4 of carousel review: tighten decay rates on tier 3/4 evergreen stories.** Stale slow-decay stories were outranking recent mid-game moments in the score formula `priority × (1 − decayRate)^(ageMin/30)`. Bumps decayRate so evergreen content drops out faster: Daily leaders 0.05 → 0.4, Streak 0.1 → 0.4, Multi-hit 0.1 → 0.3, Probables 0.05 → 0.3, Live WP 0.1 → 0.4, Season high 0.1 → 0.3, Yesterday 0.3 → 0.5, On this day 0.5 → 0.6. After P3 + P4 a 1-hour-old daily leader scores ~13 (was ~59), safely beneath any mid-game tier 1–2 story.
 
