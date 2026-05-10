@@ -311,6 +311,11 @@ function renderTicker() {
   // POC: sort by focus score descending so hottest game is leftmost
   states.sort(function(a,b){ return calcFocusScore(b)-calcFocusScore(a); });
 
+  // Clear placeholder content (e.g. "No Live Games" div) — it has no data-gamepk
+  Array.from(ticker.children).forEach(function(child){
+    if(!child.dataset||!child.dataset.gamepk) ticker.removeChild(child);
+  });
+
   // FLIP phase 1 — snapshot left offsets before any DOM change
   var oldLeft={};
   ticker.querySelectorAll('.ticker-game[data-gamepk]').forEach(function(el){
