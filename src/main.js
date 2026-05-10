@@ -765,7 +765,7 @@ Object.assign(window, {
   togglePush, toggleRadio, toggleDevTools, toggleMyTeamLens, toggleSoundPanel,
   setPulseColorScheme, togglePulseColorScheme, setSoundPref,
   // Collection + Yesterday Recap + Radio Check overlays
-  openCollection, closeCollection, openRadioCheck, closeRadioCheck,
+  openCollection, closeCollection, filterCollection, sortCollection, goCollectionPage, openCardFromCollection, openRadioCheck, closeRadioCheck,
   openYesterdayRecap, closeYesterdayRecap,
   // Section loaders (refresh buttons, day toggles)
   loadSchedule, loadNews, loadLeaders, loadLeagueMatchups, changeMonth,
