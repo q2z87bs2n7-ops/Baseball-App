@@ -125,7 +125,6 @@ import {
   setRotationCallbacks, buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots,
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
-import { setSectionCallbacks } from './sections/loaders.js';
 import { openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup } from './sections/stats/compare.js';
 import { loadRoster, switchRosterTab } from './sections/stats/roster.js';
 import { selectPlayer, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, switchVsBasis } from './sections/stats/player.js';
@@ -239,7 +238,6 @@ function initReal() {
   setSyncCallbacks({ loadCollection: loadCollection, saveCollection: saveCollection, updateCollectionUI: updateCollectionUI });
   setThemeCallbacks({ loadTodayGame: loadTodayGame, loadNextGame: loadNextGame, loadNews: loadNews, loadStandings: loadStandings, loadRoster: loadRoster, loadTeamStats: loadTeamStats, loadHomeYoutubeWidget: loadHomeYoutubeWidget, applyMyTeamLens: applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
   setFeedCallbacks({ localDateStr: localDateStr });
-  setSectionCallbacks({ renderNextGame: renderNextGame, getSeriesInfo: getSeriesInfo, localDateStr: localDateStr, teamCapImg: teamCapImg, capImgError: capImgError });
   setHomeCallbacks({ renderNextGame: renderNextGame, teamCapImg: teamCapImg });
   setLeagueCallbacks({ teamCapImg: teamCapImg });
   setRadioCheckCallbacks({ toggleSettings: toggleSettings });

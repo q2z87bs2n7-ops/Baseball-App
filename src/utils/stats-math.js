@@ -1,6 +1,6 @@
 // Stat math + decoration helpers for the Stats tab. Pure functions; no DOM
 // access, no fetches. Source-of-truth for percentile lookups is
-// state.leagueLeaders, populated by fetchLeagueLeaders() in src/sections/loaders.js.
+// state.leagueLeaders, populated by fetchLeagueLeaders() in src/data/leaders.js.
 
 import { state } from '../state.js';
 import { LEADER_CATS_FOR_PERCENTILE } from '../config/constants.js';
