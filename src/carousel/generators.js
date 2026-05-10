@@ -35,7 +35,7 @@ function genHRStories(){
   var multiWords=['','','second','third','fourth','fifth'];
   Object.keys(hrsByBatter).forEach(function(bid){
     var entries=hrsByBatter[bid];
-    var latest=entries[entries.length-1];
+    var latest=entries[0]; // feedItems is newest-first, so entries[0] is the most recent HR
     var item=latest.item, g=latest.g;
     var count=entries.length;
     var bname=item.data.batterName||'Player';
