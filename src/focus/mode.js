@@ -342,6 +342,7 @@ export function renderFocusCard() {
   var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
   var cardData=Object.assign({},state.focusState,{
     isManual: state.focusIsManual,
+    gamePk: state.focusGamePk,
     allLiveGames: liveGames.map(function(g){
       return {gamePk:g.gamePk,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,
               awayPrimary:g.awayPrimary,homePrimary:g.homePrimary,
@@ -400,6 +401,7 @@ export function renderFocusOverlay() {
   var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
   var data=Object.assign({},state.focusState,{
     pitchSequence: state.focusPitchSequence,
+    gamePk: state.focusGamePk,
     allLiveGames: liveGames.map(function(g){
       return {gamePk:g.gamePk,awayAbbr:g.awayAbbr,homeAbbr:g.homeAbbr,
               awayScore:g.awayScore,homeScore:g.homeScore,inning:g.inning,

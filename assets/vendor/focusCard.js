@@ -308,7 +308,7 @@
             '<span>OPEN FOCUS</span>' +
             '<span style="color:var(--p-muted,#9aa0a8);">→</span>' +
           '</button>' +
-          '<a href="javascript:void(0)" onclick="showLiveGame&&showLiveGame(focusGamePk)" style="' +
+          '<a href="javascript:void(0)" onclick="showLiveGame&&showLiveGame(' + (d.gamePk || 0) + ')" style="' +
               'display:flex;align-items:center;justify-content:center;gap:6px;' +
               'padding:9px 12px;text-decoration:none;cursor:pointer;background:transparent;' +
               'color:var(--p-muted,#9aa0a8);font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;' +
@@ -561,7 +561,7 @@
 
         // Box Score shortcut link
         '<div style="padding:12px 18px;border-top:1px solid var(--p-border,#1e2d4a);text-align:center;">' +
-          '<a href="javascript:void(0)" onclick="closeFocusOverlay&&closeFocusOverlay();showLiveGame&&showLiveGame(focusGamePk)" style="' +
+          '<a href="javascript:void(0)" onclick="closeFocusOverlay&&closeFocusOverlay();showLiveGame&&showLiveGame(' + (d.gamePk || 0) + ')" style="' +
               'color:var(--p-muted,#9aa0a8);text-decoration:none;' +
               'font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0.12em;' +
             '">Box Score →</a>' +
