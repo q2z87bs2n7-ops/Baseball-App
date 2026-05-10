@@ -13,13 +13,12 @@ import { rollClassicOnSwitch, isClassicActive } from '../radio/classic.js';
 export function calcFocusScore(g) {
   if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
   var diff=Math.abs(g.awayScore-g.homeScore);
-  var closeness=diff===0?60:diff===1?45:diff===2?28:diff===3?15:diff===4?8:3;
+  var closeness=diff===0?60:diff===1?45:diff===2?28:diff===3?20:diff===4?8:3;
   var runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
-  var isRISP=g.onSecond||g.onThird;
   var isBL=g.onFirst&&g.onSecond&&g.onThird;
   var isWalkoff=g.halfInning==='bottom'&&g.inning>=9&&(g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
   var isNoHit=g.inning>=6&&(g.awayHits===0||g.homeHits===0);
-  var situation=isBL?40:isRISP?25:runners>0?15:0;
+  var situation=isBL?40:(g.onThird&&(g.onSecond||g.onFirst))?35:g.onThird?28:(g.onSecond&&g.onFirst)?22:g.onSecond?20:runners>0?12:0;
   if(isWalkoff) situation+=50;
   if(isNoHit) situation+=Math.min((g.inning-4)*18,120);
   var countBonus=0;
