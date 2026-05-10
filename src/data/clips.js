@@ -122,7 +122,12 @@ export async function pollPendingVideoClips() {
       }
     } else {
       var cached = state.liveContentCache[gpk];
-      if (!cached || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {
+      // Also bust cache when a pending HR happened after the last content snapshot — a
+      // multi-HR batter's second clip won't be in the old cache yet.
+      var hasNewerHR = cached && byGame[pk].some(function(item) {
+        return item.data.event === 'Home Run' && item.ts.getTime() > cached.fetchedAt;
+      });
+      if (!cached || hasNewerHR || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {
         try {
           var r = await fetch(MLB_BASE + '/game/' + gpk + '/content');
           if (!r.ok) continue;

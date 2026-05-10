@@ -35,7 +35,7 @@ function genHRStories(){
   var multiWords=['','','second','third','fourth','fifth'];
   Object.keys(hrsByBatter).forEach(function(bid){
     var entries=hrsByBatter[bid];
-    var latest=entries[entries.length-1];
+    var latest=entries[0]; // feedItems is newest-first, so entries[0] is the most recent HR
     var item=latest.item, g=latest.g;
     var count=entries.length;
     var bname=item.data.batterName||'Player';
@@ -222,32 +222,28 @@ function genFinalScoreStories(){
   return out;
 }
 
-function genStreakStories(){
+async function genStreakStories(){
   var out=[];
-  if(!state.scheduleData||!state.scheduleData.length) return out;
-  var streaksByTeam={};
-  state.scheduleData.filter(function(g){return g.status.abstractGameState==='Final';}).forEach(function(g){
-    var away=g.teams.away, home=g.teams.home;
-    [away,home].forEach(function(side){
-      var teamId=side.team.id;
-      if(!streaksByTeam[teamId]) streaksByTeam[teamId]={id:teamId,name:side.team.name,games:[]};
-      var isHome=(side===home);
-      var myScore=isHome?home.score:away.score;
-      var oppScore=isHome?away.score:home.score;
-      if(myScore!=null&&oppScore!=null) streaksByTeam[teamId].games.push({win:myScore>oppScore,date:new Date(g.gameDate)});
-    });
-  });
-  Object.values(streaksByTeam).forEach(function(team){
-    team.games.sort(function(a,b){return b.date-a.date;});
-    var streak=0, isWin=null;
-    for(var i=0;i<team.games.length;i++){
-      var g=team.games[i];
-      if(i===0){isWin=g.win;streak=1;} else if(g.win===isWin){streak++;} else break;
-    }
-    if(streak<3) return;
-    var id='streak_'+team.id+'_'+streak+'_'+(isWin?'W':'L');
-    var headline=team.name+(isWin?' on a '+streak+'-game winning streak':' on a '+streak+'-game losing streak');
-    out.push(makeStory(id,'streak',2,40,isWin?'🔥':'❄️',headline,'',isWin?'hot':'cold',null,new Date(),20*60000,0.4));
+  var now=Date.now();
+  if(now-state.streakCache.fetchedAt>10*60000){
+    try{
+      var r=await fetch(MLB_BASE+'/standings?leagueId=103,104&standingsTypes=regularSeason&hydrate=team,league');
+      if(!r.ok) throw new Error(r.status);
+      var d=await r.json();
+      var teams=[];
+      (d.records||[]).forEach(function(rec){(rec.teamRecords||[]).forEach(function(t){teams.push(t);});});
+      state.streakCache={data:teams,fetchedAt:now};
+    }catch(e){return out;}
+  }
+  var floor=state.devTuning.hitstreak_floor||3;
+  var priority=state.devTuning.hitstreak_priority||40;
+  state.streakCache.data.forEach(function(t){
+    if(!t.streak||t.streak.streakNumber<floor) return;
+    var isWin=t.streak.streakType==='wins';
+    var n=t.streak.streakNumber;
+    var id='streak_'+t.team.id+'_'+n+'_'+(isWin?'W':'L');
+    var headline=t.team.teamName+(isWin?' on a '+n+'-game winning streak':' on a '+n+'-game losing streak');
+    out.push(makeStory(id,'streak',2,priority,isWin?'🔥':'❄️',headline,'',isWin?'hot':'cold',null,new Date(),20*60000,0.4));
   });
   return out;
 }

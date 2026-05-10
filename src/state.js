@@ -123,6 +123,7 @@ export const state = {
   highLowLastFetch: 0,
   liveWPCache: {},
   liveWPLastFetch: 0,
+  streakCache: { data: [], fetchedAt: 0 },
   perfectGameTracker: {},
 
   // ── Dev Tuning State ─────────────────────────────────────────────────────
