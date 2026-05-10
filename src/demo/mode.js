@@ -508,8 +508,6 @@ async function advanceDemoPlay(play) {
       if(_showRBICard&&rbiScore>=state.devTuning.rbiThreshold&&play.batterId&&rbiOk){
         state.rbiCardCooldowns[play.gamePk]=Date.now();
         _showRBICard(play.batterId,play.batterName||'',g.awayId,g.homeId,play.halfInning,rbi,play.event,play.awayScore,play.homeScore,play.inning,play.gamePk);
-      }else{
-        _showAlert({icon:'🟢',event:'RUN SCORES · '+g.awayAbbr+' '+play.awayScore+', '+g.homeAbbr+' '+play.homeScore,desc:play.desc,color:g.homePrimary,duration:4000});
       }
       _playSound('run');
     }
