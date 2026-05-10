@@ -122,12 +122,12 @@ export async function pollPendingVideoClips() {
       }
     } else {
       var cached = state.liveContentCache[gpk];
-      // Also bust cache when a pending HR happened after the last content snapshot — a
-      // multi-HR batter's second clip won't be in the old cache yet.
-      var hasNewerHR = cached && byGame[pk].some(function(item) {
-        return item.data.event === 'Home Run' && item.ts.getTime() > cached.fetchedAt;
+      // Bust cache when any new feed item for this game arrived after the last
+      // content snapshot — covers HRs, stolen bases, great catches, etc.
+      var hasNewerEvent = cached && byGame[pk].some(function(item) {
+        return item.ts.getTime() > cached.fetchedAt;
       });
-      if (!cached || hasNewerHR || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {
+      if (!cached || hasNewerEvent || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {
         try {
           var r = await fetch(MLB_BASE + '/game/' + gpk + '/content');
           if (!r.ok) continue;
@@ -203,7 +203,11 @@ export async function pollPendingVideoClips() {
         var diff = Math.abs(clipTs - playTs);
         if (diff < bestDiff) { bestDiff = diff; best = clip; }
       });
-      if (best) {
+      // Only patch if the clip is within 20 min of the play — a stolen base or
+      // catch clip from earlier in the game should never lock in on an HR/RBI
+      // card. Leaving it unpatched lets the next 30s poll retry once the right
+      // clip is published.
+      if (best && bestDiff <= 20 * 60 * 1000) {
         state.lastVideoClip = best;
         patchFeedItemWithClip(playTs, gpk, best);
       }
