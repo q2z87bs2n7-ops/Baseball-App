@@ -2,10 +2,15 @@
 
 Final layout of the bundled JS introduced over v3.39, completed in v3.40.0,
 and decommissioned-from-fallback in v3.42.0. Source-of-truth lives under `src/`;
-`build.mjs` runs esbuild → `dist/app.bundle.js` (IIFE, ~464KB). `index.html`
+`build.mjs` runs esbuild → `dist/app.bundle.js` (IIFE, ~620KB). `index.html`
 loads the bundle via a static `<script defer>`. Emergency revert path: the
 `pre-bundle-cleanup-v3.41` git tag still has the legacy `app.js` + `USE_BUNDLE`
 flag wiring in place.
+
+In v4.14 (the loaders.js split) `package.json` `"version"` became the single
+source of truth for the user-facing version, the cache-bust query strings,
+and the SW `CACHE` constant — `build.mjs` injects `__APP_VERSION__` via
+esbuild's `define`. Bumping any of those manually is no longer required.
 
 ---
 
@@ -41,23 +46,34 @@ src/
 
   utils/
     format.js                       — tcLookup, fmt, fmtRate, fmtDateTime,
-                                     fmtNewsDate, pickOppColor (all pure).
-    news.js                         — NEWS_IMAGE_HOSTS allowlist + isSafeNewsImage.
+                                     fmtNewsDate, pickOppColor, etDateStr,
+                                     etDatePlus, etHour (all pure).
+    news.js                         — NEWS_IMAGE_HOSTS allowlist +
+                                     isSafeNewsImage + escapeNewsHtml,
+                                     forceHttps, decodeNewsHtml (HTML helpers
+                                     hoisted from sections/loaders.js in v4.14).
+    boxscore.js                     — buildBoxscore (batting + pitching tables
+                                     for Schedule + Live; hoisted in v4.14).
     stats-math.js                   — Stats Tab v2 (Sprints 1+2):
                                      LEADER_CATS_FOR_PERCENTILE catalog,
-                                     fetchLeagueLeaders, computePercentile,
-                                     tierFromPercentile, pctBar, rankCaption,
-                                     avgChip, leagueAverage, teamAverage,
-                                     leaderEntry. Backs Team Stats / Leaders
-                                     percentile bars + Player Stats Overview
-                                     hero panel + grid Avg-chip rendering.
+                                     computePercentile, tierFromPercentile,
+                                     pctBar, rankCaption, avgChip, leagueAverage,
+                                     teamAverage, leaderEntry. Backs Team Stats /
+                                     Leaders percentile bars + Player Stats
+                                     Overview hero panel + grid Avg-chip
+                                     rendering. (fetchLeagueLeaders moved to
+                                     src/data/leaders.js in v4.14.)
 
   data/
-    boxscore.js                     — fetchBoxscore + boxscore cache.
     clips.js                        — pickPlayback, pickHeroImage, fetchGameContent,
                                      patchFeedItemWithClip, pollPendingVideoClips,
                                      devTestVideoClip — single source of truth
                                      for video clip discovery + DOM patching.
+    leaders.js                      — fetchLeagueLeaders (TTL-cached league-wide
+                                     leader rankings in state.leagueLeaders;
+                                     used by stats/leaders.js + stats/player.js
+                                     percentile chips + sections/league.js).
+                                     Hoisted from loaders.js in v4.14.
 
   ui/
     overlays.js                     — openVideoOverlay, closeVideoOverlay,
@@ -181,22 +197,71 @@ src/
                                      scrollIntoView({inline:'center'}) scoped to
                                      the tabs container, never the document.
 
-  sections/
-    loaders.js                      — All section loaders: loadTodayGame,
-                                     loadNextGame, loadHomeYoutubeWidget,
-                                     loadSchedule, changeMonth, selectCalGame,
-                                     switchBoxTab, playHighlightVideo,
-                                     loadStandings, loadRoster, switchRosterTab,
-                                     selectPlayer, loadLeaders, switchLeaderTab,
-                                     selectLeaderPill, loadNews, switchNewsFeed,
-                                     toggleNewsTeamLens, selectNewsSource,
-                                     loadLeagueView, loadLeagueMatchups,
+  sections/                         — Per-section loaders. Split from a single
+                                     loaders.js (~2,750 LOC) in v4.14 across
+                                     7 sibling files + a 6-module stats/
+                                     subtree. Each file owns its own private
+                                     state (timers, calendar nav state, etc.)
+                                     and per-module callback setter where
+                                     main.js needs to inject helpers.
+    home.js                         — loadTodayGame, loadNextGame,
+                                     loadHomeYoutubeWidget, selectMediaVideo,
+                                     clearHomeTimer + setHomeCallbacks
+                                     (renderNextGame, teamCapImg).
+    schedule.js                     — loadSchedule, changeMonth, selectCalGame,
+                                     switchBoxTab, playHighlightVideo. Owns
+                                     calMonth/calYear/selectedGamePk state.
+                                     Local pickPlayback intentionally distinct
+                                     from data/clips.js#pickPlayback (different
+                                     return types).
+    standings.js                    — loadStandings (also writes the Home
+                                     page's Division Snapshot card). One
+                                     /standings call hydrates 5 renderers.
+    news.js                         — selectNewsSource, loadNews,
+                                     switchNewsFeed, toggleNewsTeamLens.
+                                     Exports mkEspnRow for League's news pane.
+    league.js                       — loadLeagueView, loadLeagueMatchups,
                                      switchMatchupDay, switchLeagueLeaderTab,
-                                     showLiveGame, closeLiveView, fetchLiveGame.
+                                     clearLeagueTimer + setLeagueCallbacks
+                                     (teamCapImg). Reads state.leagueLeaders.
+    live.js                         — showLiveGame, closeLiveView, fetchLiveGame
+                                     (full-screen overlay; linescore + boxscore
+                                     + matchup + play log; polls every
+                                     TIMING.LIVE_REFRESH_MS).
     yesterday.js                    — Yesterday Recap overlay (open/close,
                                      date picker, hero player carousel,
                                      heroes strip, per-game tile grid,
                                      collected-cards strip).
+    stats/
+      _shared.js                    — HOT_COLD_THRESHOLD, HOT_COLD_TTL_MS;
+                                     scrollTabIntoView (used by 3 tab
+                                     switchers); hotColdBadge (used by
+                                     leaders + roster). Avoids cycles
+                                     between leaders/roster/player.
+      leaders.js                    — selectLeaderPill, switchLeaderTab,
+                                     loadLeaders, toggleLeaderMore,
+                                     toggleQualifiedOnly. Exports
+                                     isQualified for player.js.
+      team.js                       — loadTeamStats (Team Stats strip + L10
+                                     form line). Private: extractTeamStat,
+                                     computeLast10RunDiff, extractTeamRecord,
+                                     fetchTeamRanks, renderTeamStats.
+      roster.js                     — loadRoster, switchRosterTab,
+                                     renderPlayerList (exported for player.js
+                                     circular). Private: fetchAllPlayerStats,
+                                     fetchLastN, fetchLastNForRoster,
+                                     rosterBucketKey/InlineStatFor/TeamBest.
+      player.js                     — Player detail card (~1,230 LOC, the
+                                     biggest module): selectPlayer,
+                                     switchPlayerStatsTab, dismissCareerSwipeHint,
+                                     installStatsQuickNav, switchVsBasis +
+                                     all 6 tab renderers (overview / splits /
+                                     gamelog / arsenal / advanced / career),
+                                     sparkline SVG, hot-zone heat map,
+                                     6 TTL caches.
+      compare.js                    — openCompareOverlay, closeCompareOverlay,
+                                     setCompareSlot, setCompareGroup
+                                     (head-to-head player comparison overlay).
 
   demo/
     mode.js                         — toggleDemoMode, setDemoSpeed,
@@ -229,9 +294,10 @@ build.mjs                           — esbuild driver. `npm run build` →
                                      `npm run watch` for dev.
 ```
 
-**Total:** ~32 modules, ~6,800 LOC distributed across `src/`. `main.js` is now
-~770 lines of orchestration glue (grew with v4.4 nav wiring). Original monolith
-was 7,127 lines.
+**Total:** ~45 modules, ~7,800 LOC distributed across `src/`. `main.js` is
+~795 lines of orchestration glue. Original monolith was 7,127 lines. The v4.14
+loaders.js split (12 commits across 13 modules) is the most recent extraction
+wave.
 
 ---
 
@@ -357,9 +423,12 @@ comm -23 /tmp/handlers.txt /tmp/exposed.txt
 | `npm run watch` | esbuild watch mode for local development |
 | `python3 -m http.server 8080` | Local dev server (Service Worker requires non-`file://`) |
 
-Service worker cache: bump `CACHE` in `sw.js` whenever `dist/app.bundle.js`
-ships behavior change. Index.html cache-bust querystring (`?v=3.X.Y`) and the
-settings panel version both bumped on each commit.
+Version: bump `package.json` `"version"` only. From v4.14, `build.mjs` reads
+that field at build time, injects it as `__APP_VERSION__` via esbuild's
+`define` (consumed by `sw.js` for `CACHE` and `src/main.js` for the settings
+panel slot), and rewrites the `?v=X.Y.Z` cache-bust query strings on
+`dist/app.bundle.js` + `dist/styles.min.css` in `index.html`. The `<title>`
+tag is intentionally version-free (pre-v4 design call).
 
 Vercel rebuilds the bundle on every prod push. The preview workflow rebuilds
 before publishing `claude/*` branches to GitHub Pages. `build.yml` was

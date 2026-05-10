@@ -49,7 +49,7 @@ Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: Gi
 | Change how something looks (colours, layout, spacing, animations) | `styles.css` |
 | Add/fix a JS function, API call, game logic | `src/<subsystem>/*.js` (find module via `docs/module-graph.md`) |
 | New cross-cutting state | `src/state.js` |
-| New section loader / overlay | `src/sections/loaders.js` or new `src/sections/<name>.js` |
+| New section loader / overlay | `src/sections/<name>.js` (or `src/sections/stats/<name>.js` for stats sub-modules) |
 | New feature with HTML + CSS + JS aspects | `index.html` + `styles.css` + relevant `src/` modules |
 | PWA caching behaviour or push notification handler | `sw.js` |
 | Version bump | `index.html` (title + settings-version + bundle/CSS cache-bust `?v=`) |

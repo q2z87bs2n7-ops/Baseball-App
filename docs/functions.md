@@ -11,7 +11,7 @@ Functions are split across ~30 ES6 modules under `src/` (full file map: `docs/mo
 | Radio | `src/radio/stations.js`, `src/radio/engine.js`, `src/radio/check.js` | `docs/radio-system.md` |
 | Demo Mode | `src/demo/mode.js` | `docs/demo-mode.md` |
 | Theme + UI primitives | `src/ui/theme.js`, `src/ui/sound.js`, `src/ui/overlays.js`, `src/ui/lens.js`, `src/ui/wakelock.js` | `docs/css-variables.md` |
-| Section loaders + Yesterday Recap | `src/sections/loaders.js`, `src/sections/yesterday.js` | (this file) |
+| Section loaders + Yesterday Recap | `src/sections/{home,schedule,standings,news,league,live,yesterday}.js` + `src/sections/stats/{leaders,team,roster,player,compare,_shared}.js` | (this file) |
 | Dev Tools | `src/dev/tuning.js`, `src/dev/panels.js`, `src/dev/{youtube,video,news}-debug.js` | `docs/dev-tools.md` |
 | Auth + push | `src/auth/oauth.js`, `src/auth/session.js`, `src/push/push.js` | `docs/pwa-push.md` |
 
@@ -80,7 +80,7 @@ The signatures listed in the rest of this file are organised by topic, not by mo
 
 ## Stats Tab
 
-The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card, percentile / tier visualizations, vs-MLB / vs-team comparison chips, HOT/COLD badges, position-grouped Roster, and a 4-tab Player Stats card (Overview / Splits / Game Log / Advanced). Math + caching helpers live in `src/utils/stats-math.js`; UI wiring in `src/sections/loaders.js`.
+The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card, percentile / tier visualizations, vs-MLB / vs-team comparison chips, HOT/COLD badges, position-grouped Roster, and a 4-tab Player Stats card (Overview / Splits / Game Log / Advanced). Math + caching helpers live in `src/utils/stats-math.js`; UI wiring spread across `src/sections/stats/{leaders,team,roster,player,compare}.js` (split from a single `loaders.js` in v4.14). `fetchLeagueLeaders` lives in `src/data/leaders.js`.
 
 ### Section loaders
 
