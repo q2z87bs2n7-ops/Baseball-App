@@ -247,7 +247,7 @@ function genStreakStories(){
     if(streak<3) return;
     var id='streak_'+team.id+'_'+streak+'_'+(isWin?'W':'L');
     var headline=team.name+(isWin?' on a '+streak+'-game winning streak':' on a '+streak+'-game losing streak');
-    out.push(makeStory(id,'streak',2,40,isWin?'🔥':'❄️',headline,'',isWin?'hot':'cold',null,new Date(),20*60000,0.1));
+    out.push(makeStory(id,'streak',2,40,isWin?'🔥':'❄️',headline,'',isWin?'hot':'cold',null,new Date(),20*60000,0.4));
   });
   return out;
 }
@@ -274,7 +274,7 @@ async function genMultiHitDay(){
     var headline=state.demoMode?(entry.name+' goes '+h+'-for-today'+hrStr):(entry.name+' goes '+h+' for '+ab+hrStr);
     var g=state.gameStates[entry.gamePk]||{};
     var sub=g.awayAbbr&&g.homeAbbr?g.awayAbbr+' @ '+g.homeAbbr:'';
-    out.push(makeStory(id,'daily_stat',2,45,'🏏',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),15*60000,0.1));
+    out.push(makeStory(id,'daily_stat',2,45,'🏏',headline,sub,g.status==='Live'?'live':'today',entry.gamePk,new Date(),15*60000,0.3));
   }
   return out;
 }
@@ -301,7 +301,7 @@ function genDailyLeaders(){
       return (i+1)+'. '+lastName+' '+val;
     }).filter(Boolean).join(' · ');
     var id='leader_'+cat.key+'_'+today;
-    out.push(makeStory(id,'daily_stat',3,35,cat.icon,'MLB '+cat.label,sub,'leaders',null,new Date(),30*60000,0.05));
+    out.push(makeStory(id,'daily_stat',3,35,cat.icon,'MLB '+cat.label,sub,'leaders',null,new Date(),30*60000,0.4));
   });
   return out;
 }
@@ -323,14 +323,14 @@ function genPitcherGem(){
 function genOnThisDay(){
   if(!state.onThisDayCache||!state.onThisDayCache.length) return [];
   return state.onThisDayCache.map(function(item){
-    return makeStory(item.id,'historical',4,25,item.icon,item.headline,item.sub,'onthisday',item.gamePk,item.ts,60*60000,0.5);
+    return makeStory(item.id,'historical',4,25,item.icon,item.headline,item.sub,'onthisday',item.gamePk,item.ts,60*60000,0.6);
   });
 }
 
 function genYesterdayHighlights(){
   if(!state.yesterdayCache||!state.yesterdayCache.length) return [];
   return state.yesterdayCache.map(function(item){
-    return makeStory(item.id,'yesterday',4,30,item.icon,item.headline,item.sub,'yesterday',item.gamePk,item.ts,30*60000,0.3);
+    return makeStory(item.id,'yesterday',4,30,item.icon,item.headline,item.sub,'yesterday',item.gamePk,item.ts,30*60000,0.5);
   });
 }
 
@@ -412,7 +412,7 @@ function genProbablePitchers(){
     var rawG2=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
     var timeTBD=rawG2&&rawG2.status&&rawG2.status.startTimeTBD;
     var timeStr=timeTBD?'TBD':(g.gameTime||'TBD');
-    out.push(makeStory('probable_'+g.gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'probables',g.gamePk,new Date(g.gameDateMs),60*60000,0.05));
+    out.push(makeStory('probable_'+g.gamePk,'contextual',4,40,'⚾',headline,'Today · '+timeStr,'probables',g.gamePk,new Date(g.gameDateMs),60*60000,0.3));
   });
   return out;
 }
@@ -632,7 +632,7 @@ function genSeasonHighStories(){
     var id='highlow_'+cfg.stat+'_'+top.person.id+'_'+SEASON_STR;
     var headline=SEASON_STR+' season high: '+lastName+' — '+val+' '+cfg.label;
     var sub=teamAbbr+(oppAbbr?' vs '+oppAbbr:'')+(dateStr?' · '+dateStr:'');
-    out.push(makeStory(id,'contextual',4,state.devTuning.highlow_priority||25,'🎖️',headline,sub,'record',null,dateStr?new Date(dateStr):new Date(),24*60*60000,0.1));
+    out.push(makeStory(id,'contextual',4,state.devTuning.highlow_priority||25,'🎖️',headline,sub,'record',null,dateStr?new Date(dateStr):new Date(),24*60*60000,0.3));
   });
   return out;
 }
@@ -856,7 +856,7 @@ function genLiveWinProbStories(){
     var halfArrow=g.halfInning==='top'?'▲':'▼';
     var headline=favAbbr+' '+Math.round(favWP)+'% to win vs '+dogAbbr;
     var sub=g.awayAbbr+' @ '+g.homeAbbr+' · '+halfArrow+ordinal(g.inning)+' · '+g.awayScore+'–'+g.homeScore;
-    out.push(makeStory(id,'contextual',4,state.devTuning.livewp_priority||30,'📈',headline,sub,'live',+pk,new Date(),15*60000,0.10));
+    out.push(makeStory(id,'contextual',4,state.devTuning.livewp_priority||30,'📈',headline,sub,'live',+pk,new Date(),15*60000,0.4));
   });
   return out;
 }
