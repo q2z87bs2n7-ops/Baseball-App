@@ -127,8 +127,10 @@ import {
 } from './carousel/rotation.js';
 import {
   setSectionCallbacks,
-  loadRoster, switchRosterTab, selectPlayer, switchVsBasis, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
+  openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
 } from './sections/loaders.js';
+import { loadRoster, switchRosterTab } from './sections/stats/roster.js';
+import { selectPlayer, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, switchVsBasis } from './sections/stats/player.js';
 import { selectLeaderPill, switchLeaderTab, loadLeaders, toggleLeaderMore, toggleQualifiedOnly } from './sections/stats/leaders.js';
 import { loadTeamStats } from './sections/stats/team.js';
 import { setLeagueCallbacks, clearLeagueTimer, loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab } from './sections/league.js';
