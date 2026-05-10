@@ -40,6 +40,8 @@ Newest plays at top. Each item shows: coloured team dots + score (meta row), inn
 
 **`feedItems` cap:** 600 entries — oldest trimmed to prevent DOM growth.
 
+**Mid-AB action events (v4.14.1):** `pollGamePlays` also scans `playEvents[]` on every play (including the in-progress play that the `isComplete` filter excludes from `feedItems`) for `type === 'action' | 'pickoff'` entries. Detected `details.eventType` codes populate `state.stolenBaseEvents` (`stolen_base_*`, `caught_stealing_*`) and `state.actionEvents` (`pickoff_caught_stealing_*`, `pitching_substitution`, `offensive_substitution` matching `Pinch-hitter` / `Pinch-runner`, `game_advisory` matching replay-review descriptions). These feed the carousel only — not the play-by-play feed. Dedup by `playEvent.playId` UUID via `seenActionEventIds`. See `docs/story-carousel.md` for the action-event story generator.
+
 ## HR/RBI player card logic
 
 ### HR badge logic (`getHRBadge`)

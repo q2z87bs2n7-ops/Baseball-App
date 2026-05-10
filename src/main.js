@@ -441,6 +441,12 @@ function pruneStaleGames(beforeDateStr) {
     }
   });
   state.feedItems=state.feedItems.filter(function(fi){return state.gameStates[fi.gamePk]!==undefined;});
+  state.stolenBaseEvents=state.stolenBaseEvents.filter(function(sb){return state.gameStates[sb.gamePk]!==undefined;});
+  state.actionEvents=state.actionEvents.filter(function(ae){return state.gameStates[ae.gamePk]!==undefined;});
+  state.dailyHitsTracker={};
+  state.dailyPitcherKs={};
+  state.inningRecapsFired=new Set();
+  state.seenActionEventIds=new Set();
   renderFeed();
 }
 

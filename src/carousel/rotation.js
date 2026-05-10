@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import {
-  genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genBigInning,
+  genHRStories, genNoHitterWatch, genWalkOffThreat, genBasesLoaded, genStolenBaseStories, genActionEventStories, genBigInning,
   genFinalScoreStories, genStreakStories, genMultiHitDay, genDailyLeaders,
   genPitcherGem, genOnThisDay, genYesterdayHighlights, genProbablePitchers, genInningRecapStories,
   genRosterMoveStories, genWinProbabilityStories, genSeasonHighStories,
@@ -15,6 +15,9 @@ function setRotationCallbacks(callbacks) {
 
 async function buildStoryPool(){
   var now=Date.now();
+  var staleCutoff=now-30*60000;
+  state.stolenBaseEvents=state.stolenBaseEvents.filter(function(sb){return sb.ts&&sb.ts.getTime()>staleCutoff;});
+  state.actionEvents=state.actionEvents.filter(function(ae){return ae.ts&&ae.ts.getTime()>staleCutoff;});
   if(now-state.dailyLeadersLastFetch>5*60000){loadDailyLeaders();state.dailyLeadersLastFetch=now;}
   if(now-state.transactionsLastFetch>120*60000){loadTransactionsCache();}
   if(now-state.highLowLastFetch>6*60*60000){loadHighLowCache();}
@@ -24,7 +27,7 @@ async function buildStoryPool(){
   var multiHitStories=await genMultiHitDay();
   var wpStories=await genWinProbabilityStories();
   var fresh=[].concat(
-    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genBigInning(),
+    genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genActionEventStories(),genBigInning(),
     genFinalScoreStories(),genStreakStories(),multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
     wpStories,genRosterMoveStories(),genSeasonHighStories(),
@@ -35,6 +38,18 @@ async function buildStoryPool(){
     var dupId='probable_'+introMarquee.gamePk;
     fresh=fresh.filter(function(s){return s.id!==dupId;});
   }
+  var hrInnings={};
+  state.feedItems.forEach(function(item){
+    if(!item.data||item.data.event!=='Home Run')return;
+    if(!item.ts||now-item.ts.getTime()>5*60000)return;
+    hrInnings[item.gamePk+'_'+item.data.inning+'_'+item.data.halfInning]=true;
+  });
+  fresh=fresh.filter(function(s){
+    if(s.id.indexOf('basesloaded_')!==0)return true;
+    var parts=s.id.split('_');
+    if(parts.length<4)return true;
+    return !hrInnings[parts[1]+'_'+parts[2]+'_'+parts[3]];
+  });
   state.storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
   if(!carousel) return;
