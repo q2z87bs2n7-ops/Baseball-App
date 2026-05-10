@@ -38,6 +38,18 @@ async function buildStoryPool(){
     var dupId='probable_'+introMarquee.gamePk;
     fresh=fresh.filter(function(s){return s.id!==dupId;});
   }
+  var hrInnings={};
+  state.feedItems.forEach(function(item){
+    if(!item.data||item.data.event!=='Home Run')return;
+    if(!item.ts||now-item.ts.getTime()>5*60000)return;
+    hrInnings[item.gamePk+'_'+item.data.inning+'_'+item.data.halfInning]=true;
+  });
+  fresh=fresh.filter(function(s){
+    if(s.id.indexOf('basesloaded_')!==0)return true;
+    var parts=s.id.split('_');
+    if(parts.length<4)return true;
+    return !hrInnings[parts[1]+'_'+parts[2]+'_'+parts[3]];
+  });
   state.storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
   var carousel=document.getElementById('storyCarousel');
   if(!carousel) return;
