@@ -2,14 +2,15 @@
 import { state } from '../state.js';
 import {
   SEASON, WC_SPOTS, MLB_BASE, API_BASE, TEAMS, TIMING,
-  LEADER_CATS_FOR_PERCENTILE,
 } from '../config/constants.js';
 import {
   tcLookup, fmt, fmtRate, fmtDateTime, fmtNewsDate, pickOppColor,
   etDateStr, etDatePlus,
 } from '../utils/format.js';
 import { computePercentile, tierFromPercentile, pctBar, rankCaption, avgChip, leagueAverage, teamAverage, leaderEntry } from '../utils/stats-math.js';
-import { NEWS_IMAGE_HOSTS, isSafeNewsImage } from '../utils/news.js';
+import { NEWS_IMAGE_HOSTS, isSafeNewsImage, escapeNewsHtml, forceHttps, decodeNewsHtml } from '../utils/news.js';
+import { buildBoxscore } from '../utils/boxscore.js';
+import { fetchLeagueLeaders } from '../data/leaders.js';
 
 // ── Callbacks (injected by main.js) ──────────────────────────────────────────
 let sectionCallbacks={
@@ -262,21 +263,6 @@ export function switchBoxTab(bsId,side){
   document.getElementById(bsId+'_'+side).style.display='block';document.getElementById(bsId+'_'+other).style.display='none';
   document.getElementById(bsId+'_'+side+'_btn').classList.add('is-active');
   document.getElementById(bsId+'_'+other+'_btn').classList.remove('is-active');
-}
-
-function buildBoxscore(players){
-  var hitters=[],pitchers=[];
-  Object.values(players).forEach(function(p){var bat=p.stats&&p.stats.batting,pit=p.stats&&p.stats.pitching;if(bat&&bat.atBats>0)hitters.push({name:p.person.fullName,order:p.battingOrder||999,ab:bat.atBats,h:bat.hits,r:bat.runs,rbi:bat.rbi,bb:bat.baseOnBalls,k:bat.strikeOuts,hr:bat.homeRuns});if(pit&&(parseFloat(pit.inningsPitched||0)>0||pit.outs>0))pitchers.push({name:p.person.fullName,ip:pit.inningsPitched||'0.0',h:pit.hits,r:pit.runs,er:pit.earnedRuns,bb:pit.baseOnBalls,k:pit.strikeOuts,hr:pit.homeRuns,pc:pit.numberOfPitches||'—'});});
-  hitters.sort(function(a,b){return a.order-b.order;});
-  var t='<div style="margin-bottom:12px"><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--accent);margin-bottom:6px">Batting</div>';
-  t+='<div style="overflow-x:auto"><table class="linescore-table"><thead><tr><th style="text-align:left;min-width:130px">Player</th><th>AB</th><th>H</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>HR</th></tr></thead><tbody>';
-  if(!hitters.length)t+='<tr><td colspan="8" style="color:var(--muted)">No data</td></tr>';
-  hitters.forEach(function(p){t+='<tr><td style="text-align:left">'+p.name+'</td><td>'+p.ab+'</td><td>'+p.h+'</td><td>'+p.r+'</td><td>'+p.rbi+'</td><td>'+p.bb+'</td><td>'+p.k+'</td><td>'+p.hr+'</td></tr>';});
-  t+='</tbody></table></div><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--accent);margin:10px 0 6px">Pitching</div>';
-  t+='<div style="overflow-x:auto"><table class="linescore-table"><thead><tr><th style="text-align:left;min-width:130px">Player</th><th>IP</th><th>H</th><th>R</th><th>ER</th><th>BB</th><th>K</th><th>HR</th><th>PC</th></tr></thead><tbody>';
-  if(!pitchers.length)t+='<tr><td colspan="9" style="color:var(--muted)">No data</td></tr>';
-  pitchers.forEach(function(p){t+='<tr><td style="text-align:left">'+p.name+'</td><td>'+p.ip+'</td><td>'+p.h+'</td><td>'+p.r+'</td><td>'+p.er+'</td><td>'+p.bb+'</td><td>'+p.k+'</td><td>'+p.hr+'</td><td>'+p.pc+'</td></tr>';});
-  return t+'</tbody></table></div></div>';
 }
 
 function pickPlayback(playbacks){return playbacks&&playbacks.length?playbacks.find(function(p){return p.name==='mp4'})||playbacks[0]:null;}
@@ -788,62 +774,6 @@ function renderTeamStats(){
     formEl.className='team-form-line empty';
     formEl.innerHTML='<div>L10 form not yet available</div><div class="form-meta">Form</div>';
   }
-}
-
-// Fetch and cache league-wide leader rankings for one stat group (hitting or
-// pitching). All categories registered for that group in
-// LEADER_CATS_FOR_PERCENTILE are pulled in a single MLB API call. Result is
-// stored sorted (best→worst polarity-aware) in state.leagueLeaders, then read
-// by computePercentile() in src/utils/stats-math.js. 5-minute TTL per group;
-// in-flight Promise dedupe protects against double-fetch on rapid nav.
-export async function fetchLeagueLeaders(group){
-  if(!group)return;
-  var FRESH_MS=300000;
-  if(state.leagueLeadersInflight[group])return state.leagueLeadersInflight[group];
-  if(state.leagueLeadersFetchedAt[group]&&Date.now()-state.leagueLeadersFetchedAt[group]<FRESH_MS)return;
-  var entries=LEADER_CATS_FOR_PERCENTILE.filter(function(e){return e.group===group;});
-  if(!entries.length)return;
-  // v4.8.8: reverted to /stats/leaders. v4.8.4 attempted /stats?stats=season
-  // with playerPool=Qualifier to bypass the leader-board ~100 cap, but the
-  // endpoint silently returned empty splits in production (param naming /
-  // schema mismatch suspected — `group` vs `statGroup`, `Qualifier` vs
-  // `Qualified`). Effect was that state.leagueLeaders never populated, which
-  // broke both the percentile UI in Stats and the League → Stat Leaders
-  // display. Restored the v4.7.6-era query; the per-category pool is again
-  // capped at ~100, accepted as the trade-off until we can verify a working
-  // alternative endpoint shape.
-  var seen={},cats=[];
-  entries.forEach(function(e){if(!seen[e.leaderCategory]){seen[e.leaderCategory]=true;cats.push(e.leaderCategory);}});
-  var url=MLB_BASE+'/stats/leaders?leaderCategories='+cats.join(',')+'&statGroup='+group+'&season='+SEASON+'&limit=300';
-  var p=(async function(){
-    try{
-      var r=await fetch(url);
-      var d=await r.json();
-      var blocks=d.leagueLeaders||[];
-      blocks.forEach(function(blk){
-        var entry=entries.find(function(e){return e.leaderCategory===blk.leaderCategory;});
-        if(!entry)return;
-        var leaders=(blk.leaders||[]).map(function(l){
-          var v=parseFloat(l.value);
-          if(isNaN(v))return null;
-          return{
-            playerId:l.person&&l.person.id,
-            playerName:l.person&&l.person.fullName,
-            teamId:l.team&&l.team.id,
-            teamAbbr:l.team&&(l.team.abbreviation||l.team.name),
-            value:v,
-            rank:parseInt(l.rank,10)||null
-          };
-        }).filter(function(x){return x!==null;});
-        leaders.sort(function(a,b){return entry.lowerIsBetter?a.value-b.value:b.value-a.value;});
-        state.leagueLeaders[group+':'+blk.leaderCategory]=leaders;
-      });
-      state.leagueLeadersFetchedAt[group]=Date.now();
-    }catch(e){/* silent: percentile UI will simply not render */}
-    finally{delete state.leagueLeadersInflight[group];}
-  })();
-  state.leagueLeadersInflight[group]=p;
-  return p;
 }
 
 async function fetchAllPlayerStats(){
@@ -2464,9 +2394,6 @@ export function switchVsBasis(basis){
 }
 
 // ── NEWS SECTION ────────────────────────────────────────────────────────────
-function escapeNewsHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function forceHttps(url){return url?url.replace(/^http:/,'https:'):url;}
-function decodeNewsHtml(s){var map={'&quot;':'"','&amp;':'&','&lt;':'<','&gt;':'>','&#39;':"'",'&apos;':"'"};return String(s||'').replace(/&(?:#\d+|#x[0-9a-f]+|quot|amp|lt|gt|apos?);/gi,function(e){return map[e.toLowerCase()]||e;}).replace(/&#(\d+);/g,function(m,code){return String.fromCharCode(parseInt(code,10));}).replace(/&#x([0-9a-f]+);/gi,function(m,code){return String.fromCharCode(parseInt(code,16));}); }
 function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var headline=escapeNewsHtml(decodeNewsHtml(a.headline||''));return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
 
 function mkProxyNewsRow(item){
