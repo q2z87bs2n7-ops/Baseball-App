@@ -42,29 +42,42 @@ setFocusGame(pk)
 
 ## Focus Score Formula (`calcFocusScore`)
 
+Updated v4.11.1 with higher-fidelity runner quality tiers, inning-scaled no-hitter bonus, late-tight bonus, and reachability gate for extras blowouts.
+
 ```javascript
-function calcFocusScore(g) {
-  var diff = Math.abs(g.awayScore - g.homeScore);
-  var closeness = diff===0?60:diff===1?45:diff===2?25:5;
-  var runners = (g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
-  var isRISP = g.onSecond||g.onThird;
-  var isBL = g.onFirst&&g.onSecond&&g.onThird;
-  var isWalkoff = g.halfInning==='bottom'&&g.inning>=9&&
-                  (g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
-  var isNoHit = g.inning>=6&&(g.awayHits===0||g.homeHits===0);
-  var situation = isBL?40:isRISP?25:runners>0?15:0;
+export function calcFocusScore(g) {
+  if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
+  var diff=Math.abs(g.awayScore-g.homeScore);
+  var closeness=diff===0?60:diff===1?45:diff===2?28:diff===3?20:diff===4?8:3;
+  var runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
+  var isBL=g.onFirst&&g.onSecond&&g.onThird;
+  var isWalkoff=g.halfInning==='bottom'&&g.inning>=9&&(g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
+  var isNoHit=g.inning>=6&&(g.awayHits===0||g.homeHits===0);
+  var situation=isBL?40:(g.onThird&&(g.onSecond||g.onFirst))?35:g.onThird?28:(g.onSecond&&g.onFirst)?22:g.onSecond?20:runners>0?12:0;
   if(isWalkoff) situation+=50;
-  if(isNoHit) situation+=30;
+  if(isNoHit) situation+=Math.min((g.inning-4)*18,120);           // scales 36→120 over innings 6→10+
+  if(g.inning>=6&&diff<=2&&runners===0) situation+=Math.min((g.inning-5)*6,24); // late-tight pitcher duel bonus
   var countBonus=0;
-  if(g.gamePk===focusGamePk){
-    if(focusState.balls===3&&focusState.strikes===2) countBonus=20;
-    else if(focusState.strikes===2) countBonus=12;
+  if(g.gamePk===state.focusGamePk){
+    if(state.focusState.balls===3&&state.focusState.strikes===2) countBonus=20;
+    else if(state.focusState.strikes===2) countBonus=12;
+    if(state.focusState.outs===2) countBonus+=8;
   }
-  if(g.outs===2) countBonus+=8;
-  var innMult = g.inning<=5?0.6:g.inning<=8?1.0:g.inning===9?1.5:2.0;
+  var innMult=g.inning<=3?0.5:g.inning<=5?0.75:g.inning<=8?1.0:g.inning===9?1.5:1.8;
+  if(g.inning>=9&&diff>runners+2&&!isNoHit) innMult=Math.min(innMult,1.0); // reachability gate: no extras inflation on blowouts
   return (closeness+situation+countBonus)*innMult;
 }
 ```
+
+**Key formula components:**
+- **Closeness** — tied (60), 1-run (45), 2-run (28), 3-run (20), 4-run (8), blowout (3)
+- **Situation** — 6-tier runner quality: bases loaded (40), 2nd+3rd or 1st+3rd (35), 3rd only (28), 1st+2nd (22), 2nd only (20), 1st only (12)
+- **Walkoff bonus** — +50 when home team trails by ≤ runners + 1 in bottom 9+
+- **No-hitter bonus** — scales `min((inning−4)×18, 120)` from inning 6 onward
+- **Late-tight bonus** — `min((inning−5)×6, 24)` for scoreless/1–2-run games with empty bases in late innings (pitcher duel)
+- **Count bonus** — full-count +20, 2-strike +12, 2-out +8 (focused game only)
+- **Inning multiplier** — 0.5× (1–3), 0.75× (4–5), 1.0× (6–8), 1.5× (9th), 1.8× (extras)
+- **Reachability gate** — caps extras multiplier at 1.0× when lead > runners+2 and no no-hitter, preventing blowout inflation
 
 ## Tension labels
 
@@ -73,6 +86,25 @@ function calcFocusScore(g) {
 | ≥ 120 (configurable via `devTuning.focus_critical`) | CRITICAL | `#e03030` (red) |
 | 70–119 (configurable via `devTuning.focus_high`) | HIGH | `#f59e0b` (amber) |
 | < 70 | NORMAL | `#9aa0a8` (muted) |
+
+## Pulse ticker tension accent (v4.11.2+)
+
+`calcFocusScore()` is also used to color-accent every live `.ticker-game` chip in `#gameTicker`. `tensionBand(score)` in `src/feed/render.js` maps the raw score to one of 10 CSS classes (`.tb-1`–`.tb-10`) applied to the chip. The class drives `border-top-color` — a subtle green→red gradient that lets users spot the hottest game at a glance without any new chrome.
+
+| Class | Score range | Color | Meaning |
+|---|---|---|---|
+| `.tb-1` | 1–15 | `#16a34a` dark green | Early-inning, uneventful |
+| `.tb-2` | 16–40 | `#22c55e` green | Mild interest |
+| `.tb-3` | 41–55 | `#84cc16` yellow-green | Moderate |
+| `.tb-4` | 56–72 | `#a3e635` lime | Getting interesting |
+| `.tb-5` | 73–84 | `#eab308` yellow | Elevated (close late, pitcher duel) |
+| `.tb-6` | 85–100 | `#f59e0b` amber | High tension |
+| `.tb-7` | 101–115 | `#f97316` orange | Very tense |
+| `.tb-8` | 116–145 | `#ea580c` deep orange | Clutch situation |
+| `.tb-9` | 146–210 | `#dc2626` red | Near-critical |
+| `.tb-10` | > 210 | `#b91c1c` dark red | Maximum (no-hitter late / extras walkoff) |
+
+Non-live games (score = 0) receive no `.tb-*` class — border-top falls back to the default chip style.
 
 ## window.FocusCard API (`focusCard.js`)
 
