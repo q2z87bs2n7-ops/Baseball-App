@@ -93,7 +93,7 @@ Each `demoSpeedMs` interval, `pollDemoFeeds` calls `advanceDemoPlay(play)`:
 
 - Sets `state.demoCurrentTime = play.ts`.
 - For status plays: sets `g.status` to Live or Final per label.
-- For play plays: infers Live for still-Preview games (recovery for Game-underway entries pushed off the baseline cap), captures pre-update score deltas, advances `gameState` (inning/halfInning/outs/score). Fires HR card via `_showPlayerCard` for Home Runs; for other scoring plays, infers `rbi` from score delta + runs `calcRBICardScore` against `devTuning.rbiThreshold` + cooldown — fires `_showRBICard` if it qualifies, falls back to a green RUN SCORES toast otherwise.
+- For play plays: infers Live for still-Preview games (recovery for Game-underway entries pushed off the baseline cap), captures pre-update score deltas, advances `gameState` (inning/halfInning/outs/score). Fires HR card via `_showPlayerCard` for Home Runs; for other scoring plays, infers `rbi` from score delta + runs `calcRBICardScore` against `devTuning.rbiThreshold` + cooldown — fires `_showRBICard` if it qualifies; otherwise no toast (v4.10.5 dropped the green RUN SCORES toast for parity with live).
 - Calls `_addFeedItem(play.gamePk, feedData)` to render the item.
 - Re-renders ticker + side-rail.
 - Calls `_selectFocusGame()` (walks `focusTrack[]`) + `_pollFocusLinescore()` (rebuilds `focusState` from `pitchTimeline` envelope at `demoCurrentTime`) + `_pollPendingVideoClips()` (walks `contentCacheTimeline` and patches feed items with ▶ tiles).
