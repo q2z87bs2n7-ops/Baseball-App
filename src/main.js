@@ -125,10 +125,8 @@ import {
   setRotationCallbacks, buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots,
   prevStory, nextStory, onStoryVisibilityChange,
 } from './carousel/rotation.js';
-import {
-  setSectionCallbacks,
-  openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup,
-} from './sections/loaders.js';
+import { setSectionCallbacks } from './sections/loaders.js';
+import { openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup } from './sections/stats/compare.js';
 import { loadRoster, switchRosterTab } from './sections/stats/roster.js';
 import { selectPlayer, switchPlayerStatsTab, dismissCareerSwipeHint, installStatsQuickNav, switchVsBasis } from './sections/stats/player.js';
 import { selectLeaderPill, switchLeaderTab, loadLeaders, toggleLeaderMore, toggleQualifiedOnly } from './sections/stats/leaders.js';
