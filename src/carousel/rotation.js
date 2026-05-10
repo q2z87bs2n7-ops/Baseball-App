@@ -15,6 +15,9 @@ function setRotationCallbacks(callbacks) {
 
 async function buildStoryPool(){
   var now=Date.now();
+  var staleCutoff=now-30*60000;
+  state.stolenBaseEvents=state.stolenBaseEvents.filter(function(sb){return sb.ts&&sb.ts.getTime()>staleCutoff;});
+  state.actionEvents=state.actionEvents.filter(function(ae){return ae.ts&&ae.ts.getTime()>staleCutoff;});
   if(now-state.dailyLeadersLastFetch>5*60000){loadDailyLeaders();state.dailyLeadersLastFetch=now;}
   if(now-state.transactionsLastFetch>120*60000){loadTransactionsCache();}
   if(now-state.highLowLastFetch>6*60*60000){loadHighLowCache();}
