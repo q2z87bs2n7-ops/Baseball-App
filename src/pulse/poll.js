@@ -232,7 +232,6 @@ export async function pollGamePlays(gamePk) {
       if (isHitEvt && batterId) { var dh = state.dailyHitsTracker[batterId] || { name: batterName, hits: 0, hrs: 0, gamePk: gamePk }; dh.hits++; if (event === 'Home Run') dh.hrs++; dh.name = batterName || dh.name; dh.gamePk = gamePk; state.dailyHitsTracker[batterId] = dh; }
       if (event === 'Strikeout' && pitcherId) { var kkey = gamePk + '_' + pitcherId; var ke = state.dailyPitcherKs[kkey] || { name: pitcherName, ks: 0, gamePk: gamePk }; ke.ks++; ke.name = pitcherName || ke.name; state.dailyPitcherKs[kkey] = ke; }
       if (!isHistory) {
-        var teamColor = halfInning === 'top' ? g.awayPrimary : g.homePrimary;
         var gameVisible = state.enabledGames.has(gamePk);
         if (event === 'Home Run') { playSound('hr'); if (batterId && gameVisible) { var _hrRbi = (play.result && play.result.rbi != null) ? play.result.rbi : 1; var _badge = getHRBadge(_hrRbi, halfInning, inning, aScore, hScore); showPlayerCard(batterId, batterName, g.awayId, g.homeId, halfInning, null, desc, _badge, gamePk); } }
         else if (isScoringP) {
@@ -242,8 +241,6 @@ export async function pollGamePlays(gamePk) {
           if (_rbi > 0 && _rs >= state.devTuning.rbiThreshold && gameVisible && batterId && _rbiOk) {
             state.rbiCardCooldowns[gamePk] = Date.now();
             showRBICard(batterId, batterName, g.awayId, g.homeId, halfInning, _rbi, event, aScore, hScore, inning, gamePk);
-          } else {
-            if (gameVisible) showAlert({ icon: '🟢', event: 'RUN SCORES · ' + g.awayAbbr + ' ' + aScore + ', ' + g.homeAbbr + ' ' + hScore, desc: desc, color: teamColor, duration: 4000 });
           }
           playSound('run');
         }

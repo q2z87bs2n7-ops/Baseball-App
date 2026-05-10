@@ -19,6 +19,10 @@ try {
   if (stored) Object.assign(soundSettings, JSON.parse(stored));
 } catch (e) { /* ignore corrupt JSON */ }
 
+// Mix with other audio (Spotify/podcasts/etc) instead of interrupting on iOS.
+// iOS 16.4+ only; no-op elsewhere where AudioContext already mixes by default.
+try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) {}
+
 // ── Audio primitives ─────────────────────────────────────────────────────────
 function _makeCtx() {
   return new (window.AudioContext || window.webkitAudioContext)();
