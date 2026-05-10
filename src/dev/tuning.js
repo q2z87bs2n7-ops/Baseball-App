@@ -26,6 +26,7 @@ import { openNewsSourceTest } from './news-test.js';
 import { generateTestCard, resetCollection } from '../collection/book.js';
 import { replayHRCard, replayRBICard } from '../cards/playerCard.js';
 import { openRadioCheck } from '../radio/check.js';
+import { previewSound } from '../ui/sound.js';
 import { devTestClassicRadio } from '../radio/classic.js';
 import { Recorder } from './recorder.js';
 
@@ -232,6 +233,7 @@ export function initDevToolsClickDelegator() {
       else if (action === 'forceFocusGo')      { forceFocusGo(); }
       else if (action === 'forceRecapGo')      { forceRecapGo(); }
       else if (action === 'copySnapshot')      { copyDiagnosticSnapshot(); }
+      else if (action === 'previewSound')       { previewSound(btn.dataset.soundType); }
       else if (action === 'recorderToggle')    { Recorder.toggle(); }
       else if (action === 'recorderDownload')  { Recorder.download(); }
       else if (action === 'recorderCopy')      { Recorder.copy(); }

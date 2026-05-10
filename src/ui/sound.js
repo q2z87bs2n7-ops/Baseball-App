@@ -75,6 +75,14 @@ function playErrorSound() { try { var ctx = _makeCtx(); _ns(ctx, 0, 0.18, 0.22, 
 // ── Public API ───────────────────────────────────────────────────────────────
 export function playSound(type) {
   if (!soundSettings.master || !soundSettings[type]) return;
+  _playSoundRaw(type);
+}
+
+export function previewSound(type) {
+  _playSoundRaw(type);
+}
+
+function _playSoundRaw(type) {
   if (type === 'hr') playHrSound();
   else if (type === 'run') playRunSound();
   else if (type === 'risp') playRispSound();
