@@ -14,7 +14,7 @@ import { isQualified } from './leaders.js';
 import { fetchLeagueLeaders } from '../../data/leaders.js';
 import { renderPlayerList } from './roster.js';
 
-export async function selectPlayer(id,type){
+export async function selectPlayer(id,type,noScroll){
   var playerObj=(state.rosterData[type]||[]).find(function(p){return p.person.id===id;})||{person:{id:id}};
   state.selectedPlayer=playerObj;renderPlayerList();
   document.getElementById('playerStatsTitle').textContent=playerObj.person&&playerObj.person.fullName?playerObj.person.fullName:'Player Stats';
@@ -36,11 +36,11 @@ export async function selectPlayer(id,type){
     var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;
     if(!stats){
       document.getElementById('playerStats').innerHTML='<div class="empty-state">No '+SEASON+' stats available yet</div>';
-      if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}
+      if(!noScroll&&(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches))){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}
       return;
     }
     renderPlayerStats(stats,group);
-    if(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches)){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}
+    if(!noScroll&&(window.innerWidth<=767||(window.innerWidth<=1024&&window.matchMedia('(orientation:portrait)').matches))){document.getElementById('playerStats').scrollIntoView({behavior:'smooth',block:'end'});}
   }catch(e){
     document.getElementById('playerStats').innerHTML='<div class="error">Could not load stats</div>';
   }
