@@ -148,20 +148,38 @@ src/
     oauth.js                        — signInWithGitHub, signInWithEmail.
     session.js                      — signOut, updateSyncUI, showSignInCTA.
 
-  nav/                              — Mobile nav behavioral helpers (v4.4).
-                                     All behaviors are mobile-only, gated by
-                                     matchMedia('(max-width: 480px)').
-    behavior.js                     — installHideOnScroll (bottom nav hides on
-                                     scroll-down), captureScroll/restoreScroll
-                                     (per-section scroll memory), installHashRouter
-                                     + navTo + syncHash (hashchange routing,
-                                     deep links), setNavDot/clearNavDot/
-                                     refreshNavDots/installNavDotsRefresh
-                                     (live-state dots), attachLongPress +
-                                     installNavLongPress (long-press shortcuts).
+  nav/                              — Mobile nav behavioral helpers (v4.4,
+                                     Direction A). All behaviors are mobile-only,
+                                     gated by matchMedia('(max-width: 480px)').
+                                     CSS in `@media (max-width: 480px)` block of
+                                     styles.css.
+    behavior.js                     — installHideOnScroll: scroll-down >40px adds
+                                     'nav-hidden' (translateY 110%); any negative
+                                     delta restores within 220ms (iOS cubic-bezier).
+                                     captureScroll/restoreScroll: Map<sectionId,
+                                     scrollY> per-section memory, instant restore.
+                                     installHashRouter + navTo + syncHash: all nav
+                                     clicks set location.hash; back/forward/refresh/
+                                     deep links all route correctly; falls back to
+                                     'pulse'. setNavDot/clearNavDot/refreshNavDots/
+                                     installNavDotsRefresh: green pulse (.nav-dot.live)
+                                     on Schedule when team is live; orange
+                                     (.nav-dot.fresh) for new-card / breaking-news;
+                                     refreshed on 30s interval. attachLongPress +
+                                     installNavLongPress: 500ms hold, vibrate(8).
     sheet.js                        — openMoreSheet/closeMoreSheet/toggleMoreSheet
-                                     (mobile More sheet for News/Standings/Stats),
-                                     plus #pulseTopBar overflow sheet open/close.
+                                     (mobile More sheet — News/Standings/Stats tabs
+                                     hidden from bottom nav, surface here via
+                                     .more-sheet + .more-sheet-backdrop sibling of
+                                     <nav>), plus #pulseTopBar overflow sheet
+                                     open/close (.ptb-overflow, 26×26 squared;
+                                     Sound/Yesterday-jump/Theme move here on mobile).
+                                     #pulseTopBar and #ydSectionBar share the
+                                     .section-bar component. Stat/boxscore tabs
+                                     (.stat-tabs, .boxscore-tabs) horizontal-scroll
+                                     with mask-image fade; active tab uses
+                                     scrollIntoView({inline:'center'}) scoped to
+                                     the tabs container, never the document.
 
   sections/
     loaders.js                      — All section loaders: loadTodayGame,
@@ -214,6 +232,30 @@ build.mjs                           — esbuild driver. `npm run build` →
 **Total:** ~32 modules, ~6,800 LOC distributed across `src/`. `main.js` is now
 ~770 lines of orchestration glue (grew with v4.4 nav wiring). Original monolith
 was 7,127 lines.
+
+---
+
+## Runtime dependencies
+
+Files that are NOT part of the bundle but must be present in the repo / served at runtime. Before deleting any file in repo root or `icons/`, grep `index.html`, `src/`, `sw.js`, and `manifest.json` for references first.
+
+| File | Loaded by | Purpose |
+|---|---|---|
+| `dist/styles.min.css` | `index.html` `<link rel="stylesheet">` + `sw.js` SHELL | Minified CSS (built from `styles.css`; not committed — Vercel rebuilds) |
+| `dist/app.bundle.js` | `index.html` `<script defer>` | Bundled modular JS |
+| `assets/vendor/pulse-card-templates.js` | `index.html` `<script defer>` | HR/RBI player card overlays |
+| `assets/vendor/focusCard.js` | `index.html` `<script defer>` | At-Bat Focus Mode visuals |
+| `assets/vendor/collectionCard.js` | `index.html` `<script defer>` | Card Collection binder visuals |
+| `assets/daily-events.json` | `src/demo/mode.js` `fetch(...)` | Demo Mode replay data (562KB) |
+| `manifest.json` | `index.html` `<link rel="manifest">` | PWA install metadata |
+| `icons/favicon.svg` | `index.html` `<link rel="icon">` | Browser tab icon |
+| `icons/icon-180.png` | `index.html` `<link rel="apple-touch-icon">` | iOS home screen icon |
+| `icons/icon-192.png` | `sw.js` SHELL + `manifest.json` | PWA icon |
+| `icons/icon-512.png` | `sw.js` SHELL + `manifest.json` | PWA icon (splash) |
+| `icons/icon-maskable-512.png` | `manifest.json` | PWA maskable icon |
+| `icons/icon-mono.svg` | `manifest.json` | iOS 16.4+ monochrome icon |
+
+**Script load chain (all `<script defer>`):** `pulse-card-templates.js` → `focusCard.js` → `collectionCard.js` → `app.bundle.js` — executed in DOM order after document parses. The theme-flash prevention snippet at `index.html:7` is the only inline-and-synchronous script.
 
 ---
 
