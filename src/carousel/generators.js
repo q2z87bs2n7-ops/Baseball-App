@@ -421,11 +421,11 @@ function genInningRecapStories(){
       return item.gamePk===g.gamePk&&item.data&&item.data.inning===recapInning&&item.data.halfInning===recapHalf&&item.data.type==='play';
     });
     if(!inningPlays.length) return;
-    var lastPlayInInning=inningPlays[inningPlays.length-1];
+    var lastPlayInInning=inningPlays[0];
     var finalAwayScore=lastPlayInInning.data.awayScore;
     var finalHomeScore=lastPlayInInning.data.homeScore;
     var startAwayScore=0,startHomeScore=0;
-    for(var i=state.feedItems.length-1;i>=0;i--){
+    for(var i=0;i<state.feedItems.length;i++){
       if(state.feedItems[i].data&&state.feedItems[i].data.type==='play'&&state.feedItems[i].gamePk===g.gamePk){
         if(state.feedItems[i].data.inning<recapInning||(state.feedItems[i].data.inning===recapInning&&state.feedItems[i].data.halfInning!==recapHalf)){
           startAwayScore=state.feedItems[i].data.awayScore;
