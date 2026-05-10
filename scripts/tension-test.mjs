@@ -50,6 +50,7 @@ function calcFocusScore(g) {
     : runners > 0 ? 12 : 0;
   if (isWalkoff) situation += 50;
   if (isNoHit)   situation += Math.min((g.inning - 4) * 18, 120);
+  if (g.inning >= 6 && diff <= 2 && runners === 0) situation += Math.min((g.inning - 5) * 6, 24);
   let innMult = g.inning<=3?0.5:g.inning<=5?0.75:g.inning<=8?1.0:g.inning===9?1.5:1.8;
   if (g.inning >= 9 && diff > runners + 2 && !isNoHit) innMult = Math.min(innMult, 1.0);
   return (closeness + situation) * innMult;

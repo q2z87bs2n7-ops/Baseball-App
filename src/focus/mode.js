@@ -21,6 +21,7 @@ export function calcFocusScore(g) {
   var situation=isBL?40:(g.onThird&&(g.onSecond||g.onFirst))?35:g.onThird?28:(g.onSecond&&g.onFirst)?22:g.onSecond?20:runners>0?12:0;
   if(isWalkoff) situation+=50;
   if(isNoHit) situation+=Math.min((g.inning-4)*18,120);
+  if(g.inning>=6&&diff<=2&&runners===0) situation+=Math.min((g.inning-5)*6,24);
   var countBonus=0;
   if(g.gamePk===state.focusGamePk){
     if(state.focusState.balls===3&&state.focusState.strikes===2) countBonus=20;
