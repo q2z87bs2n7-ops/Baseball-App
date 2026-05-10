@@ -27,14 +27,14 @@ function baseDiamondSvg(on1,on2,on3) {
 function tensionBand(score) {
   if (score<=0)   return 0;
   if (score<=15)  return 1;
-  if (score<=40)  return 2;
-  if (score<=55)  return 3;
-  if (score<=72)  return 4;
-  if (score<=84)  return 5;
-  if (score<=100) return 6;
-  if (score<=115) return 7;
-  if (score<=145) return 8;
-  if (score<=210) return 9;
+  if (score<=30)  return 2;
+  if (score<=44)  return 3;
+  if (score<=59)  return 4;
+  if (score<=76)  return 5;
+  if (score<=93)  return 6;
+  if (score<=109) return 7;
+  if (score<=129) return 8;
+  if (score<=179) return 9;
   return 10;
 }
 
