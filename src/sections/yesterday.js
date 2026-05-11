@@ -25,9 +25,9 @@ export function setYesterdayCallbacks(cbs) {}
 
 function getYdActiveCache(){return state.ydDisplayCache!==null?state.ydDisplayCache:(state.yesterdayCache||[]);}
 
-export function openYesterdayRecap() {
+export function openYesterdayRecap(offset) {
   state.yesterdayOverlayOpen=true;
-  state.ydDateOffset=-1;
+  state.ydDateOffset=(typeof offset==='number')?offset:-1;
   state.ydDisplayCache=null;
   var active=document.querySelector('.section.active');
   ydPrevSection=active?active.id:null;
@@ -37,12 +37,13 @@ export function openYesterdayRecap() {
   var lbl=document.getElementById('ydDateLabel');
   if(lbl) lbl.textContent=getYesterdayDisplayStr();
   var nextBtn=document.getElementById('ydNextDateBtn');
-  if(nextBtn) nextBtn.disabled=false;
+  if(nextBtn) nextBtn.disabled=(state.ydDateOffset>=0);
   // In demo, the cached state.yesterdayCache reflects the recording's
   // real wall-clock yesterday, which doesn't necessarily match the demo
   // anchor date (demoDate - 1). Always fetch fresh data via loadYdForDate
   // for the demo's anchor day so the page shows the right date's games.
-  if(state.demoMode&&loadYdForDate){
+  // Also fetch fresh when opening at today (offset 0) since there's no pre-loaded cache.
+  if((state.demoMode||state.ydDateOffset===0)&&loadYdForDate){
     var card=document.getElementById('yesterdayCard');
     if(card) card.innerHTML='<div style="padding:48px;text-align:center;color:var(--muted);font-size:.88rem">Loading…</div>';
     loadYdForDate(getYesterdayDateStr()).then(function(data){
