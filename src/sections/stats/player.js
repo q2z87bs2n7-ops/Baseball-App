@@ -1172,7 +1172,7 @@ function renderOverviewTab(s,group){
     var hRankHtml='';
     var hBarHtml='';
     if(hPInfo && !hPInfo.outsideTop){
-      hRankHtml='<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>';
+      hRankHtml='<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' qualified players</div>';
       hBarHtml='<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>';
     }
     html+='<div class="hero-panel'+(hTier?' hero-panel--'+hTier:'')+'">'+
