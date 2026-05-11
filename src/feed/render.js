@@ -109,7 +109,7 @@ async function fetchTomorrowPreview() {
 }
 
 function hypeHeadline(diffMs) {
-  if (diffMs > 4*3600000) return 'Nothing live yet.';
+  if (diffMs > 4*3600000) return 'Catch up on all the latest action.';
   if (diffMs > 3600000)   return 'Starters warming up.';
   return 'First pitch soon.';
 }
