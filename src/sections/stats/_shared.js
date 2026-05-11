@@ -5,9 +5,9 @@ import { state } from '../../state.js';
 
 // HOT / COLD thresholds: last-15 OPS absolute values.
 // Only badge players who have played >= 7 of last 10 games (strong recency requirement).
-// HOT if last-15 OPS >= .900, COLD if < .600.
+// HOT if last-15 OPS >= .900, COLD if < .500.
 export const HOT_COLD_OPS_HOT = 0.900;
-export const HOT_COLD_OPS_COLD = 0.600;
+export const HOT_COLD_OPS_COLD = 0.500;
 export const HOT_COLD_MIN_GAMES_IN_10 = 7;
 export const HOT_COLD_TTL_MS = 12 * 60 * 60 * 1000;
 
