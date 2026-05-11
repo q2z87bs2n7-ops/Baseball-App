@@ -24,7 +24,7 @@ async function fetchAllPlayerStats(){
   fetchLastNForRoster();
 }
 
-// Pulls last-15-games hitting stats for a single player. 12h TTL on
+// Pulls last-N games hitting stats for a single player. 12h TTL on
 // state.lastNCache so we don't re-fetch within a session. Pitchers are
 // excluded — HOT/COLD is an offensive concept tied to OPS.
 async function fetchLastN(playerId, n){
@@ -32,10 +32,15 @@ async function fetchLastN(playerId, n){
   var existing = state.lastNCache[playerId];
   if(existing && Date.now() - existing.ts < HOT_COLD_TTL_MS) return existing;
   try{
-    var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=lastXGames&group=hitting&season='+SEASON+'&gameNumber='+n);
-    var d = await r.json();
-    var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
-    if(stat){ state.lastNCache[playerId] = { last15: stat, ts: Date.now() }; return state.lastNCache[playerId]; }
+    var responses = await Promise.all([
+      fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=lastXGames&group=hitting&season='+SEASON+'&gameNumber=10'),
+      fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=lastXGames&group=hitting&season='+SEASON+'&gameNumber=15')
+    ]);
+    var d10 = await responses[0].json();
+    var d15 = await responses[1].json();
+    var stat10 = d10.stats && d10.stats[0] && d10.stats[0].splits && d10.stats[0].splits[0] && d10.stats[0].splits[0].stat;
+    var stat15 = d15.stats && d15.stats[0] && d15.stats[0].splits && d15.stats[0].splits[0] && d15.stats[0].splits[0].stat;
+    if(stat10 && stat15){ state.lastNCache[playerId] = { last10: stat10, last15: stat15, ts: Date.now() }; return state.lastNCache[playerId]; }
   }catch(e){}
   return null;
 }
@@ -45,7 +50,7 @@ async function fetchLastN(playerId, n){
 async function fetchLastNForRoster(){
   var hitters = state.rosterData.hitting || [];
   if(!hitters.length) return;
-  await Promise.all(hitters.map(function(p){ return fetchLastN(p.person.id, 15); }));
+  await Promise.all(hitters.map(function(p){ return fetchLastN(p.person.id); }));
   if(state.currentLeaderTab === 'hitting') loadLeaders();
   if(state.currentRosterTab === 'hitting') renderPlayerList();
 }

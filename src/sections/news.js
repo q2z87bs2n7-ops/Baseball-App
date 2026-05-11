@@ -10,7 +10,7 @@
 import { state } from '../state.js';
 import { API_BASE } from '../config/constants.js';
 import { fmtNewsDate } from '../utils/format.js';
-import { isSafeNewsImage, escapeNewsHtml, forceHttps, decodeNewsHtml } from '../utils/news.js';
+import { isSafeNewsImage, escapeNewsHtml, forceHttps, decodeNewsHtml, isBettingPromo } from '../utils/news.js';
 
 function mkEspnRow(a){var pub=a.published?new Date(a.published).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';var link=(a.links&&a.links.web&&a.links.web.href)?a.links.web.href:'#';var headline=escapeNewsHtml(decodeNewsHtml(a.headline||''));return '<div class="news-item"><div class="news-dot"></div><div class="news-body"><div class="news-title"><a href="'+link+'" target="_blank">'+headline+'</a></div><div class="news-meta">'+pub+(a.byline?' · '+a.byline:'')+'</div></div></div>';}
 
@@ -32,6 +32,7 @@ function mkProxyNewsRow(item){
 function renderNewsList(){
   var el=document.getElementById('newsFull');if(!el)return;
   var items=state.newsSourceFilter==='all'?state.newsArticlesCache:state.newsArticlesCache.filter(function(a){return a.source===state.newsSourceFilter;});
+  items=items.filter(function(a){return !isBettingPromo(a);});
   if(!items.length){el.innerHTML='<div class="loading">No articles for this source.</div>';return;}
   el.innerHTML=items.map(mkProxyNewsRow).join('');
 }
