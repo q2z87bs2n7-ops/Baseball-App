@@ -1069,7 +1069,16 @@ function renderOverviewTab(s,group){
   // unqualified player with 1-for-2 .500 AVG would otherwise spuriously
   // outrank everyone.
   var playerQualified = group==='fielding' ? true : isQualified(group, s);
-  function shouldShowRank(entry){ return !entry || (!entry.lowerIsBetter && entry.decimals < 2) || playerQualified; }
+  function shouldShowRank(entry){
+    if(!entry) return true;
+    // Counting-stat leaderboards (decimals<2) come back from /stats/leaders as
+    // "most X first" regardless of polarity. For lowerIsBetter counting stats
+    // (hitter K, pitcher BB/H/HR allowed) the pool contains the WORST players,
+    // so rank computed from it is meaningless — suppress.
+    if(entry.lowerIsBetter && entry.decimals < 2) return false;
+    if(!entry.lowerIsBetter && entry.decimals < 2) return true;
+    return playerQualified;
+  }
   var boxes=[];
   if(group==='hitting')boxes=[
     {v:fmtRate(s.avg),         l:'AVG', k:'avg',          raw:s.avg},
