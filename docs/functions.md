@@ -103,7 +103,7 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 | `renderPlayerList()` | Roster card renderer. Buckets players by position (C / IF / OF / DH for hitting/fielding; SP / RP for pitching), emits sticky section headers, inline stat line, mini-bar vs team-best. Adds HOT/COLD badge for hitters. |
 | `selectPlayer(id, type)` | Looks up the full player object from `rosterData`, updates card title, fetches season stats, kicks off `fetchGameLog()` in parallel (so the Overview sparkline and Game Log tab have data ready). |
 | `renderPlayerStats(s, group)` | **Tab orchestrator** (Sprint 2). Caches `state.selectedPlayerStat`, syncs `#playerTabs` UI, emits all four tab panels (only the active one visible). Re-triggers lazy loaders for whichever non-Overview tab is active when the user changes player. Fielding view auto-collapses to Overview only. |
-| `renderOverviewTab(s, group)` | Returns the Overview HTML: headshot · `Compare [VS MLB] [VS TEAM]` basis pills · hero panel (4rem stat + rank + percentile bar + Avg chip + tier pill + sparkline) · 4-col supporting grid (each box: stat / label / percentile bar / `MLB · #N` rank caption / Avg chip). |
+| `renderOverviewTab(s, group)` | Returns the Overview HTML: headshot · `Compare [VS MLB] [VS TEAM]` basis pills · hero panel (4rem stat + rank + percentile bar + Avg chip + tier pill + sparkline) · 4-col supporting grid (each box: stat / label / percentile bar / `MLB #N` rank caption / Avg chip). Rank caption + percentile bar suppressed for `lowerIsBetter` counting stats (v4.17.9 — see `shouldShowRank`). |
 | `switchPlayerStatsTab(tab, btn)` | Switches Player Stats tab. Persists to `localStorage('mlb_stats_tab')`. Fires the lazy renderer for the target tab if its cache is empty (`fetchGameLog` / `fetchStatSplits` / `fetchPitchArsenal`); class-flip if cached. |
 | `switchVsBasis(basis)` | Toggles `state.vsLeagueBasis` between `'mlb'` and `'team'`. Re-renders Overview using the cached `state.statsCache` entry — no `/people` refetch. Persisted. |
 
@@ -179,7 +179,7 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 | `computePercentile(group, statKey, raw)` | Binary-search rank → `{ percentile (0–99), rank, total, outsideTop }` against the cached leaderboard. Polarity-aware via `lowerIsBetter`. `outsideTop=true` when the player's value never beats nor ties any entry — caller (`renderOverviewTab`) skips the rank caption + bar in that case so `#100 of 100` doesn't render misleadingly (v4.8.11). |
 | `tierFromPercentile(p)` | `'elite'` ≥ 90, `'good'` 70–89, `'mid'` 30–69, `'bad'` < 30. |
 | `pctBar(p)` | Returns `<div class="pct-bar"><i style="width:N%"></i></div>` HTML — the thin colored bar beneath each stat box. |
-| `rankCaption(rank, total)` | Returns `<div class="pct-rank">MLB · #N</div>` HTML. |
+| `rankCaption(rank, total)` | Returns `<div class="rank-caption"><span>MLB</span><b>#N</b></div>` HTML. |
 | `avgChip(playerVal, basisVal, decimals, lowerIsBetter)` | Returns `<span class="delta-chip avg-chip pos|neg">Avg: X</span>` — basis average shown directly, color-coded by polarity (green = player beats basis, red = worse). Replaced `+/−Δ` rendering in v4.6.12. |
 | `leagueAverage(group, statKey)` | Mean across the league-leaders cache for the requested stat. |
 | `teamAverage(group, statKey)` | Mean across `state.statsCache[group]` for the requested stat. |
