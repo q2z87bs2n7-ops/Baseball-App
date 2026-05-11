@@ -127,15 +127,9 @@ async function renderYesterdayRecap() {
   if(!card) return;
   var activeCache=getYdActiveCache();
   if(!activeCache||!activeCache.length){
-    if(state.ydDateOffset===0){
-      card.innerHTML='<div style="padding:48px 24px">'
-        +'<div style="font-size:.88rem;color:var(--text);font-weight:600;line-height:1.45">No completed games yet today.</div>'
-        +'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Check back as games get underway.</div>'
-        +'</div>';
-    } else {
-      var noGamesMsg=state.ydDateOffset===-1?'No games yesterday.':'No games played on '+getYesterdayDisplayStr()+'.';
-      card.innerHTML='<div class="empty-state" style="padding:48px 24px">'+noGamesMsg+'</div>';
-    }
+    var noGamesMsg=state.ydDateOffset===0?'No completed games yet today. Check back as games get underway.'
+      :state.ydDateOffset===-1?'No games yesterday.':'No games played on '+getYesterdayDisplayStr()+'.';
+    card.innerHTML='<div class="empty-state" style="padding:48px 24px">'+noGamesMsg+'</div>';
     return;
   }
 
