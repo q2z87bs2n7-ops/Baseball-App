@@ -100,7 +100,7 @@ src/
                                      addFeedItem, buildFeedEl, renderFeed,
                                      renderEmptyState, updateFeedEmpty,
                                      isPostSlate, isIntermission,
-                                     pulseGreeting, baseDiamondSvg,
+                                     hypeHeadline, baseDiamondSvg,
                                      startCountdown, showAlert, dismissAlert,
                                      fetchTomorrowPreview.
 

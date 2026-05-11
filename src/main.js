@@ -27,7 +27,7 @@ import {
 } from './ui/theme.js';
 import {
   setFeedCallbacks, baseDiamondSvg, startCountdown, isPostSlate, isIntermission,
-  fetchTomorrowPreview, pulseGreeting, updateFeedEmpty, renderEmptyState,
+  fetchTomorrowPreview, hypeHeadline, updateFeedEmpty, renderEmptyState,
   addFeedItem, buildFeedEl, renderFeed, renderTicker, renderSideRailGames,
   showAlert, dismissAlert,
 } from './feed/render.js';

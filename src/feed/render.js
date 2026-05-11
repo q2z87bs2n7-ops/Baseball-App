@@ -2,7 +2,7 @@ import { state } from '../state.js';
 import { MLB_BASE, MLB_THEME } from '../config/constants.js';
 import { ordinal } from '../carousel/generators.js';
 import { devTrace } from '../devtools-feed/devLog.js';
-import { etDateStr, etDatePlus, etHour } from '../utils/format.js';
+import { etDateStr, etDatePlus } from '../utils/format.js';
 import { calcFocusScore } from '../focus/mode.js';
 
 const DEBUG = false;
@@ -108,16 +108,10 @@ async function fetchTomorrowPreview() {
   finally{state.tomorrowPreview.inFlight=false;}
 }
 
-function pulseGreeting() {
-  // ET-anchored so the greeting reflects MLB context, not the user's local clock —
-  // a Sydney user at 11pm = 9am ET should see "Good morning" (slate hasn't started).
-  var h=etHour();
-  if (h<6)  return {kicker:'Late innings', headline:'West coast still in play.',     tagline:'West coast still on the wire.'};
-  if (h<11) return {kicker:'Good morning', headline:"Here's what you missed.",      tagline:"Last night's wrap, today's slate."};
-  if (h<14) return {kicker:'Midday slate', headline:'First pitches roll in soon.',  tagline:'Lineups going up. First pitch soon.'};
-  if (h<17) return {kicker:'Pre-game',     headline:'Lineups locked.',              tagline:"Lineups locked. We're close."};
-  if (h<22) return {kicker:'Game on',      headline:'Action across the league.',    tagline:'Every game, one feed.'};
-  return            {kicker:'Late night',  headline:'West coast finals shaking out.', tagline:'West coast finals shaking out.'};
+function hypeHeadline(diffMs) {
+  if (diffMs > 4*3600000) return 'Nothing live yet.';
+  if (diffMs > 3600000)   return 'Starters warming up.';
+  return 'First pitch soon.';
 }
 
 function renderAllHiddenState() {
@@ -179,21 +173,21 @@ function renderEmptyState(postSlate, intermission) {
       el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+slateRecapCta;
       if (state.tomorrowPreview.firstPitchMs) startCountdown(state.tomorrowPreview.firstPitchMs);
     } else {
-      var g0=pulseGreeting();
-      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">'+g0.kicker+'</div><div class="empty-sub">'+g0.headline+'</div>';
+      el.innerHTML='<span class="empty-icon">⚾</span><div class="empty-title">Up next</div><div class="empty-sub">Check back for today\'s slate.</div>';
     }
     return;
   }
   el.className='has-upcoming';
   var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
   var heroGrad=state.themeOverride===MLB_THEME?'linear-gradient(90deg,'+MLB_THEME.primary+' 0%,#111827 45%,'+MLB_THEME.primary+' 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
-  var greeting=pulseGreeting();
+  var headline=hypeHeadline(hero.gameDateMs?hero.gameDateMs-Date.now():0);
   var labelText=intermission
     ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
     : n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
   var hypeRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;margin:8px 0 14px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
-  var hypeBlock=intermission?'':
-    '<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(state.demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">'+greeting.headline+'</div>'
+  var hypeBlock=intermission
+    ?'<div class="empty-hype-block"><div class="empty-hype-headline">'+headline+'</div></div>'
+    :'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(state.demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">'+headline+'</div>'
     +hypeRecapCta
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
@@ -461,7 +455,7 @@ function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing'
 
 export {
   setFeedCallbacks, baseDiamondSvg, startCountdown, isPostSlate, isIntermission,
-  fetchTomorrowPreview, pulseGreeting, updateFeedEmpty, renderEmptyState,
+  fetchTomorrowPreview, hypeHeadline, updateFeedEmpty, renderEmptyState,
   addFeedItem, buildFeedEl, renderFeed, renderTicker, renderSideRailGames,
   showAlert, dismissAlert,
 };
