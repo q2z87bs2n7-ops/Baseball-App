@@ -66,8 +66,7 @@ export function pctBar(percentile) {
 // leader pool (see renderOverviewTab in loaders.js).
 export function rankCaption(rank, total) {
   if (rank == null || total == null) return '';
-  var topPct = total ? Math.max(1, Math.round((rank / total) * 100)) : 100;
-  var label = '#' + rank + (topPct <= 10 ? ' · Top ' + topPct + '%' : '');
+  var label = '#' + rank;
   return '<div class="rank-caption"><span>MLB</span><b>' + label + '</b></div>';
 }
 

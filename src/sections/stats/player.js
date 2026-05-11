@@ -1136,8 +1136,7 @@ function renderOverviewTab(s,group){
     var heroMeta=SEASON+' '+(group.charAt(0).toUpperCase()+group.slice(1));
     var tierPill='';
     if(hTier==='elite' && hPInfo){
-      var topPct=Math.max(1,Math.round(hPInfo.rank/hPInfo.total*100));
-      tierPill='<span class="hero-tier-pill">★ Elite · Top '+topPct+'%</span>';
+      tierPill='<span class="hero-tier-pill">★ Elite</span>';
     }
     // Sparkline — pulled from gameLog cache populated in selectPlayer. Falls
     // back to a "still loading" hint when the fetch hasn't resolved yet;
