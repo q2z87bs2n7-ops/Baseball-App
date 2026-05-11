@@ -1069,7 +1069,16 @@ function renderOverviewTab(s,group){
   // unqualified player with 1-for-2 .500 AVG would otherwise spuriously
   // outrank everyone.
   var playerQualified = group==='fielding' ? true : isQualified(group, s);
-  function shouldShowRank(entry){ return !entry || (!entry.lowerIsBetter && entry.decimals < 2) || playerQualified; }
+  function shouldShowRank(entry){
+    if(!entry) return true;
+    // Counting-stat leaderboards (decimals<2) come back from /stats/leaders as
+    // "most X first" regardless of polarity. For lowerIsBetter counting stats
+    // (hitter K, pitcher BB/H/HR allowed) the pool contains the WORST players,
+    // so rank computed from it is meaningless — suppress.
+    if(entry.lowerIsBetter && entry.decimals < 2) return false;
+    if(!entry.lowerIsBetter && entry.decimals < 2) return true;
+    return playerQualified;
+  }
   var boxes=[];
   if(group==='hitting')boxes=[
     {v:fmtRate(s.avg),         l:'AVG', k:'avg',          raw:s.avg},
@@ -1136,8 +1145,7 @@ function renderOverviewTab(s,group){
     var heroMeta=SEASON+' '+(group.charAt(0).toUpperCase()+group.slice(1));
     var tierPill='';
     if(hTier==='elite' && hPInfo){
-      var topPct=Math.max(1,Math.round(hPInfo.rank/hPInfo.total*100));
-      tierPill='<span class="hero-tier-pill">★ Elite · Top '+topPct+'%</span>';
+      tierPill='<span class="hero-tier-pill">★ Elite</span>';
     }
     // Sparkline — pulled from gameLog cache populated in selectPlayer. Falls
     // back to a "still loading" hint when the fetch hasn't resolved yet;
@@ -1164,7 +1172,7 @@ function renderOverviewTab(s,group){
     var hRankHtml='';
     var hBarHtml='';
     if(hPInfo && !hPInfo.outsideTop){
-      hRankHtml='<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' MLB</div>';
+      hRankHtml='<div class="hero-panel-rank">#'+hPInfo.rank+' of '+hPInfo.total+' Qualified Players</div>';
       hBarHtml='<div class="hero-panel-bar">'+pctBar(hPInfo.percentile)+'</div>';
     }
     html+='<div class="hero-panel'+(hTier?' hero-panel--'+hTier:'')+'">'+
