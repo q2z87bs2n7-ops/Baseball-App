@@ -347,9 +347,10 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 
 | Function | Purpose |
 |---|---|
+| `openYesterdayRecap(offset?)` | Opens the Yesterday Recap overlay. Optional `offset` (default `-1`) sets the initial `ydDateOffset`; pass `0` to open directly at today. Next-button disabled state and data fetch both respect the initial offset. |
 | `getYdActiveCache()` | Returns `ydDisplayCache` when non-null (date navigation active), otherwise `yesterdayCache`. |
 | `loadYdForDate(dateStr)` | Async — fetches schedule + boxscore + playByPlay for `dateStr`. Used by both `loadYesterdayCache()` and `ydChangeDate()`. |
-| `ydChangeDate(dir)` | Increments/decrements `ydDateOffset`. Guards: blocks today/future and >365 days back. Calls `loadYdForDate()` into `ydDisplayCache`. |
+| `ydChangeDate(dir)` | Increments/decrements `ydDateOffset`. Guards: blocks future (offset > 0) and >365 days back. Today (offset 0) is reachable via `›`. Calls `loadYdForDate()` into `ydDisplayCache`. |
 
 ## Formatting Utilities
 

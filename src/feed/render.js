@@ -175,7 +175,7 @@ function renderEmptyState(postSlate, intermission) {
       } else if (state.tomorrowPreview.fetchedAt && state.tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      var slateRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="margin-top:20px;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:.06em;padding:9px 18px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
+      var slateRecapCta=(Object.values(state.gameStates).length)?'<button onclick="openYesterdayRecap(0)" style="margin-top:20px;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:.06em;padding:9px 18px;border-radius:7px;cursor:pointer">📺 Today\'s Highlights →</button>':'';
       el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+slateRecapCta;
       if (state.tomorrowPreview.firstPitchMs) startCountdown(state.tomorrowPreview.firstPitchMs);
     } else {
