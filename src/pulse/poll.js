@@ -68,7 +68,7 @@ export async function pollLeaguePulse() {
 
     var hasLiveInFetch = games.some(function(g) { return g.status.abstractGameState === 'Live'; });
     if ((!games.length || (isMidnightWindow && !hasLiveInFetch)) && !hasLive) {
-      var yDateStr = etDatePlus(state.pollDateStr || etDateStr(), -1);
+      var yDateStr = etDatePlus(etDateStr(), -1);
       var yr = await fetch(MLB_BASE + '/schedule?sportId=1&date=' + yDateStr + '&hydrate=linescore,team,probablePitcher', { signal: sig });
       if (!yr.ok) throw new Error(yr.status);
       var yd = await yr.json();

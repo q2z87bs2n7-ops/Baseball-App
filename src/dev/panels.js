@@ -12,7 +12,7 @@
 import { state } from '../state.js';
 import { devLog, pushDevLog } from '../devtools-feed/devLog.js';
 import { devNetLog, DEV_NET_CAP } from '../devtools-feed/devNet.js';
-import { pulseGreeting } from '../feed/render.js';
+import { hypeHeadline } from '../feed/render.js';
 import { getCurrentTeamId } from '../radio/engine.js';
 import { setFocusGameManual } from '../focus/mode.js';
 import { playClassicRandom, playArchiveUrl } from '../radio/classic.js';
@@ -254,7 +254,6 @@ export function renderAppState(){
   var focusBody='<div style="font-size:.65rem">'+_kvList(_stateFocusObj())+'</div>';
 
   var now=new Date();
-  var greeting=pulseGreeting();
   var upcoming=Object.values(state.gameStates).filter(function(g){
     if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
     var rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
@@ -263,10 +262,12 @@ export function renderAppState(){
     }
     return true;
   });
+  upcoming.sort(function(a,b){return (a.gameDateMs||0)-(b.gameDateMs||0);});
   var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var nextDiffMs=upcoming.length&&upcoming[0].gameDateMs?upcoming[0].gameDateMs-Date.now():0;
   var pulseInfo={
     now: now.toISOString().split('T')[1].split('.')[0],
-    greeting: greeting.kicker+': '+greeting.headline,
+    headline: hypeHeadline(nextDiffMs),
     liveGames: liveGames.length,
     upcomingGames: upcoming.length,
     enabledGames: state.enabledGames.size,
@@ -330,7 +331,6 @@ export function _stateAsMarkdownFocus(){
 export function _stateAsMarkdownPulse(){
   var now=new Date();
   var hour=now.getHours();
-  var greeting=pulseGreeting();
   var upcoming=Object.values(state.gameStates).filter(function(g){
     if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
     var rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
@@ -339,12 +339,14 @@ export function _stateAsMarkdownPulse(){
     }
     return true;
   });
+  upcoming.sort(function(a,b){return (a.gameDateMs||0)-(b.gameDateMs||0);});
   var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
   var finalGames=Object.values(state.gameStates).filter(function(g){return g.status==='Final';});
-  var lines=['## Pulse Empty State Diagnostics','','### Current Time & Greeting','| Field | Value |','|---|---|',
+  var nextDiffMs=upcoming.length&&upcoming[0].gameDateMs?upcoming[0].gameDateMs-Date.now():0;
+  var lines=['## Pulse Empty State Diagnostics','','### Current Time & Headline','| Field | Value |','|---|---|',
     '| Now | '+now.toISOString()+' |',
-    '| Hour | '+hour+' ('+greeting.kicker+') |',
-    '| Greeting | '+greeting.headline+' |',
+    '| Hour | '+hour+' |',
+    '| Headline | '+hypeHeadline(nextDiffMs)+' |',
     '','### Game Counts','| State | Count |','|---|---|',
     '| Total state.gameStates | '+Object.keys(state.gameStates).length+' |',
     '| Enabled Games | '+state.enabledGames.size+' |',

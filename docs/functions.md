@@ -227,7 +227,7 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 | `addFeedItem(gamePk, data)` | Inserts item into `feedItems` array and DOM in correct newest-first position via `data-ts` |
 | `buildFeedEl(item)` | Builds DOM element for a feed item — status-change or play items |
 | `updateFeedEmpty()` | Checks for visible feed items; calls `renderEmptyState()` if none. Controls `#ptbYestBtn` visibility. `hideWhenEmpty` array: `['gameTicker','sideRailNews','sideRailGames','myTeamLensBtn']`. |
-| `renderEmptyState()` | Renders hype block + hero upcoming-game card + 2-col grid, or plain placeholder if no upcoming games |
+| `renderEmptyState()` | Renders hype block + hero upcoming-game card + 2-col grid, or plain placeholder if no upcoming games. Headline driven by `hypeHeadline(diffMs)` — time-to-first-pitch buckets: >4h → "Nothing live yet." / 1–4h → "Starters warming up." / <1h → "First pitch soon." Intermission shows headline only (no Demo button/pills). |
 | `fetchBoxscore(gamePk)` | Async cache helper — returns `boxscoreCache[gamePk]` or fetches `/game/{pk}/boxscore`. Returns `null` on error. |
 | `resolvePlayerCardData(...)` | Async — resolves stats, jersey number, position for HR player card. Returns plain data object. |
 | `showPlayerCard(...)` | Shows HR player card overlay. Awaits `resolvePlayerCardData()`, renders via `window.PulseCard.render()`. Auto-dismisses after 5.5s. |
