@@ -148,7 +148,7 @@ async function renderYesterdayRecap() {
       return cardHtml.replace('<article ','<article onclick="openCardFromKey(\''+key+'\')" style="cursor:pointer" ');
     }).join('');
     var cardsLabel='🎴 CARDS — '+getYesterdayDisplayStr().toUpperCase();
-    cardsHtml='<div style="padding:16px 20px;border-top:1px solid var(--border)">'
+    cardsHtml='<div style="max-width:1100px;margin:0 auto;padding:16px 1.25rem;border-top:1px solid var(--border)">'
       +'<div style="font-size:.7rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px">'+cardsLabel+'</div>'
       +'<div class="yd-clip-strip" style="display:flex;gap:0.75rem;overflow-x:auto;padding-bottom:8px">'+miniCards+'</div>'
       +'</div>';
@@ -413,7 +413,7 @@ function buildAndRenderYesterdayHeroes() {
       +'</div>';
   }).join('');
   var heroesLabel=state.ydDateOffset===-1?'YESTERDAY\'S HEROES':'HEROES · '+getYesterdayDisplayStr().toUpperCase();
-  stripEl.innerHTML='<div style="padding:10px 16px 0;border-top:1px solid var(--border)">'
+  stripEl.innerHTML='<div style="max-width:1100px;margin:0 auto;padding:10px 1.25rem 0;border-top:1px solid var(--border)">'
     +'<div style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">'+heroesLabel+'</div>'
     +'<div class="yd-clip-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px">'+tiles+'</div>'
     +'</div>';
