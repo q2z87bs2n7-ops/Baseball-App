@@ -37,7 +37,7 @@ export function openYesterdayRecap() {
   var lbl=document.getElementById('ydDateLabel');
   if(lbl) lbl.textContent=getYesterdayDisplayStr();
   var nextBtn=document.getElementById('ydNextDateBtn');
-  if(nextBtn) nextBtn.disabled=true;
+  if(nextBtn) nextBtn.disabled=false;
   // In demo, the cached state.yesterdayCache reflects the recording's
   // real wall-clock yesterday, which doesn't necessarily match the demo
   // anchor date (demoDate - 1). Always fetch fresh data via loadYdForDate
@@ -58,13 +58,13 @@ export async function ydChangeDate(dir){
   var newOffset=state.ydDateOffset+dir;
   // Cap forward navigation — in demo, "yesterday" is demoDate-1 and
   // there's no real future to navigate into. In live, same cap applies.
-  if(newOffset>=0) return;
+  if(newOffset>0) return;
   if(newOffset<-365) return;
   state.ydDateOffset=newOffset;
   var lbl=document.getElementById('ydDateLabel');
   if(lbl) lbl.textContent=getYesterdayDisplayStr();
   var nextBtn=document.getElementById('ydNextDateBtn');
-  if(nextBtn) nextBtn.disabled=(state.ydDateOffset>=-1);
+  if(nextBtn) nextBtn.disabled=(state.ydDateOffset>=0);
   var card=document.getElementById('yesterdayCard');
   if(card) card.innerHTML='<div style="padding:48px;text-align:center;color:var(--muted);font-size:.88rem">Loading…</div>';
   var heroRegion=document.getElementById('ydHeroRegion');
