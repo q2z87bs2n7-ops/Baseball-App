@@ -413,9 +413,9 @@ function buildAndRenderYesterdayHeroes() {
       +'</div>';
   }).join('');
   var heroesLabel=state.ydDateOffset===-1?'YESTERDAY\'S HEROES':'HEROES · '+getYesterdayDisplayStr().toUpperCase();
-  stripEl.innerHTML='<div style="padding:10px 16px 0;border-top:1px solid var(--border)">'
-    +'<div style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">'+heroesLabel+'</div>'
-    +'<div class="yd-clip-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px">'+tiles+'</div>'
+  stripEl.innerHTML='<div style="padding:10px 0 0;border-top:1px solid var(--border)">'
+    +'<div style="font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:8px;padding:0 18px">'+heroesLabel+'</div>'
+    +'<div class="yd-clip-strip" style="display:flex;gap:8px;overflow-x:auto;padding:0 18px 8px">'+tiles+'</div>'
     +'</div>';
 }
 
