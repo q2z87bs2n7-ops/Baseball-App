@@ -6,6 +6,12 @@ Extracted from `CLAUDE.md` — tracks completed and pending features. Active blo
 
 ---
 
+### 📊 Stats Tab — Team Rank (pending)
+
+- [ ] **Team Stats tile MLB rank chips** — `fetchTeamRanks()` removed in v4.16.9 pending investigation. The `/stats/leaders?statsType=byTeam` endpoint behaviour is unverified: if `statsType=byTeam` is silently ignored the API returns player leaders, making `findIndex(l.team.id === teamId)` find the first player from that team rather than a true team rank. Needs: (1) confirm correct endpoint/params for team-vs-team ranks, (2) verify response shape has `l.team.id`, (3) confirm API sort direction matches polarity (ERA lower = better → rank 1 = best), (4) re-implement with `sportId=1` to restrict pool to 30 MLB teams.
+
+---
+
 ### 📊 Stats Tab Revamp — Sprints 1 + 2 (v4.7)
 
 - [x] Stats v2 — Team Stats card with team-wide hitting+pitching tiles + record/last-10/run-diff form line; rank chip uses `--accent` (Sprint 1 / Step 2, v4.6.9)

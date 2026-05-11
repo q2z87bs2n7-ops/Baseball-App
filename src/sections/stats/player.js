@@ -1069,7 +1069,7 @@ function renderOverviewTab(s,group){
   // unqualified player with 1-for-2 .500 AVG would otherwise spuriously
   // outrank everyone.
   var playerQualified = group==='fielding' ? true : isQualified(group, s);
-  function shouldShowRank(entry){ return !entry || entry.decimals < 2 || playerQualified; }
+  function shouldShowRank(entry){ return !entry || (!entry.lowerIsBetter && entry.decimals < 2) || playerQualified; }
   var boxes=[];
   if(group==='hitting')boxes=[
     {v:fmtRate(s.avg),         l:'AVG', k:'avg',          raw:s.avg},
@@ -1192,7 +1192,7 @@ function renderOverviewTab(s,group){
     var tier=pInfo?tierFromPercentile(pInfo.percentile):null;
     // Hero panel above is the dominant stat now; supporting boxes are uniform
     // and only get a tier background at the extremes.
-    var tierCls=tier&&(pInfo.percentile>=90||pInfo.percentile<=10)?' stat-box--'+tier:'';
+    var tierCls=tier&&!pInfo.outsideTop&&(pInfo.percentile>=90||pInfo.percentile<=10)?' stat-box--'+tier:'';
     var chip='';
     if(b.k&&group!=='fielding'){
       var entry=leaderEntry(group,b.k);
