@@ -32,9 +32,7 @@ export async function loadTeamStats(){
       var seasonReq=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching,fielding&stats=season&season='+SEASON);
       var l10Req=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching&stats=lastXGames&limitGames=10&season='+SEASON);
       var standingsReq=fetch(MLB_BASE+'/standings?leagueId=103,104&season='+SEASON);
-      var rankReq=fetchTeamRanks();
       var [seasonRes,l10Res,standingsRes,schedRes]=await Promise.all([seasonReq,l10Req,standingsReq,schedReq]);
-      await rankReq;
       var seasonData=seasonRes&&seasonRes.ok?await seasonRes.json():null;
       var l10Data=l10Res&&l10Res.ok?await l10Res.json():null;
       var standingsData=standingsRes&&standingsRes.ok?await standingsRes.json():null;
@@ -114,69 +112,39 @@ function extractTeamRecord(standingsData,teamId){
   return null;
 }
 
-// Fetch byTeam league ranks for the headline categories shown in the Team Stats
-// tiles. Stores in state.teamStats.ranks keyed `${group}:${leaderCategory}`.
-async function fetchTeamRanks(){
-  var groups=[
-    {group:'hitting', cats:['battingAverage','homeRuns','onBasePlusSlugging','runs']},
-    {group:'pitching',cats:['earnedRunAverage','walksAndHitsPerInningPitched','strikeouts','saves']},
-    {group:'fielding',cats:['fieldingPercentage','errors']}
-  ];
-  var teamId=state.activeTeam.id;
-  state.teamStats.ranks={};
-  await Promise.all(groups.map(async function(g){
-    try{
-      var url=MLB_BASE+'/stats/leaders?leaderCategories='+g.cats.join(',')+'&statGroup='+g.group+'&statsType=byTeam&season='+SEASON+'&limit=30';
-      var r=await fetch(url);
-      if(!r.ok)return;
-      var d=await r.json();
-      (d.leagueLeaders||[]).forEach(function(blk){
-        var leaders=blk.leaders||[];
-        var idx=leaders.findIndex(function(l){return l.team&&l.team.id===teamId;});
-        state.teamStats.ranks[g.group+':'+blk.leaderCategory]={
-          rank:idx>=0?(idx+1):null,
-          total:leaders.length||30
-        };
-      });
-    }catch(e){/* silent — tile renders without rank */}
-  }));
-}
 
 function renderTeamStats(){
   var stripEl=document.getElementById('teamStatsStrip');
   var formEl=document.getElementById('teamFormLine');
   if(!stripEl)return;
   var ts=state.teamStats;
-  var ranks=ts.ranks||{};
-  function rk(group,cat){var r=ranks[group+':'+cat];return (r&&r.rank)?' <span class="rk">#'+r.rank+'</span>':'';}
-  function headRk(group,cat){var r=ranks[group+':'+cat];return (r&&r.rank)?'<span class="team-stat-tile-rank">#'+r.rank+' MLB</span>':'';}
   var html='';
   if(ts.hitting){
     var h=ts.hitting;
-    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>⚾ Hitting</span>'+headRk('hitting','onBasePlusSlugging')+'</div>'+
+    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>⚾ Hitting</span></div>'+
       '<div class="team-stat-tile-grid">'+
-      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(h.avg)+'</div><div class="l">AVG'+rk('hitting','battingAverage')+'</div></div>'+
-      '<div class="team-stat-tile-stat"><div class="v">'+(h.homeRuns||0)+'</div><div class="l">HR'+rk('hitting','homeRuns')+'</div></div>'+
-      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(h.ops)+'</div><div class="l">OPS'+rk('hitting','onBasePlusSlugging')+'</div></div>'+
-      '<div class="team-stat-tile-stat"><div class="v">'+(h.runs||0)+'</div><div class="l">R'+rk('hitting','runs')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(h.avg)+'</div><div class="l">AVG</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(h.homeRuns||0)+'</div><div class="l">HR</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(h.ops)+'</div><div class="l">OPS</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(h.runs||0)+'</div><div class="l">R</div></div>'+
       '</div></div>';
   }
   if(ts.pitching){
     var p=ts.pitching;
-    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🥎 Pitching</span>'+headRk('pitching','earnedRunAverage')+'</div>'+
+    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🥎 Pitching</span></div>'+
       '<div class="team-stat-tile-grid">'+
-      '<div class="team-stat-tile-stat"><div class="v">'+fmt(p.era,2)+'</div><div class="l">ERA'+rk('pitching','earnedRunAverage')+'</div></div>'+
-      '<div class="team-stat-tile-stat"><div class="v">'+fmt(p.whip,2)+'</div><div class="l">WHIP'+rk('pitching','walksAndHitsPerInningPitched')+'</div></div>'+
-      '<div class="team-stat-tile-stat"><div class="v">'+(p.strikeOuts||0)+'</div><div class="l">K'+rk('pitching','strikeouts')+'</div></div>'+
-      '<div class="team-stat-tile-stat"><div class="v">'+(p.saves||0)+'</div><div class="l">SV'+rk('pitching','saves')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmt(p.era,2)+'</div><div class="l">ERA</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmt(p.whip,2)+'</div><div class="l">WHIP</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(p.strikeOuts||0)+'</div><div class="l">K</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(p.saves||0)+'</div><div class="l">SV</div></div>'+
       '</div></div>';
   }
   if(ts.fielding){
     var f=ts.fielding;
-    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🧤 Fielding</span>'+headRk('fielding','fieldingPercentage')+'</div>'+
+    html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🧤 Fielding</span></div>'+
       '<div class="team-stat-tile-grid">'+
-      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(f.fielding)+'</div><div class="l">FPCT'+rk('fielding','fieldingPercentage')+'</div></div>'+
-      '<div class="team-stat-tile-stat"><div class="v">'+(f.errors||0)+'</div><div class="l">E'+rk('fielding','errors')+'</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(f.fielding)+'</div><div class="l">FPCT</div></div>'+
+      '<div class="team-stat-tile-stat"><div class="v">'+(f.errors||0)+'</div><div class="l">E</div></div>'+
       '<div class="team-stat-tile-stat"><div class="v">'+(f.doublePlays||0)+'</div><div class="l">DP</div></div>'+
       '<div class="team-stat-tile-stat"><div class="v">'+(f.assists||0)+'</div><div class="l">A</div></div>'+
       '</div></div>';
