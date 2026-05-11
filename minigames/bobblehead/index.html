@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Bobblehead Baseball — Sandbox</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="cabinet">
+    <header id="marquee">
+      <span class="logo">BOBBLEHEAD</span>
+      <span class="logo small">BASEBALL</span>
+    </header>
+
+    <section id="scoreboard">
+      <div class="sb-cell"><label>SCORE</label><span id="hud-score">0</span></div>
+      <div class="sb-cell"><label>OUTS</label><span id="hud-outs">0</span></div>
+      <div class="sb-cell"><label>STRIKES</label><span id="hud-strikes">0</span></div>
+      <div class="sb-cell"><label>AT-BAT</label><span id="hud-atbat">1</span></div>
+    </section>
+
+    <div id="fieldWrap">
+      <canvas id="field" width="600" height="800"></canvas>
+      <div id="fence"></div>
+      <div id="resultBanner" hidden></div>
+    </div>
+
+    <section id="controls">
+      <div id="timingMeter">
+        <div id="timingFill"></div>
+        <div id="timingPerfectZone"></div>
+        <div id="timingCursor"></div>
+      </div>
+      <button id="swingBtn" type="button">SWING</button>
+      <p class="hint">Press <kbd>Space</kbd> to pitch / swing</p>
+    </section>
+
+    <section id="gameOver" hidden>
+      <h2>Game Over</h2>
+      <p>Final score: <span id="finalScore">0</span></p>
+      <h3>Leaderboard</h3>
+      <ol id="leaderboard"></ol>
+      <button id="resetBtn" type="button">Play Again</button>
+    </section>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
