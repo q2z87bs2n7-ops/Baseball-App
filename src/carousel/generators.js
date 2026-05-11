@@ -448,7 +448,24 @@ function genInningRecapStories(){
       if(play.data.pitcherName) pitcherNames.add(play.data.pitcherName);
     });
     var lastPlay=inningPlays[inningPlays.length-1];
-    runnersLeftOn=lastPlay.data.risp||lastPlay.data.onFirst||lastPlay.data.onSecond||lastPlay.data.onThird;
+    // Pick the strand phrase from per-base flags when available (recorderV2.x+).
+    // Legacy feedItems only carried `risp` — fall back to a generic
+    // "in scoring position" headline so we don't claim "at the corners" blind.
+    var b1=!!lastPlay.data.onFirst, b2=!!lastPlay.data.onSecond, b3=!!lastPlay.data.onThird;
+    var hasPerBaseInfo=lastPlay.data.onFirst!=null||lastPlay.data.onSecond!=null||lastPlay.data.onThird!=null;
+    runnersLeftOn=hasPerBaseInfo?(b1||b2||b3):!!lastPlay.data.risp;
+    var strandPhrase='strand runners';
+    if(hasPerBaseInfo){
+      if(b1&&b2&&b3) strandPhrase='strand the bases loaded';
+      else if(b1&&b3) strandPhrase='strand runners at the corners';
+      else if(b2&&b3) strandPhrase='strand runners on 2nd and 3rd';
+      else if(b1&&b2) strandPhrase='strand runners on 1st and 2nd';
+      else if(b3) strandPhrase='strand a runner on 3rd';
+      else if(b2) strandPhrase='strand a runner on 2nd';
+      else if(b1) strandPhrase='strand a runner on 1st';
+    }else if(lastPlay.data.risp){
+      strandPhrase='strand runners in scoring position';
+    }
     var pitcher=pitcherNames.size===1?Array.from(pitcherNames)[0]:null;
     var battingTeam=recapHalf==='top'?g.awayName:g.homeName;
     var pittchingTeam=recapHalf==='top'?g.homeName:g.awayName;
@@ -459,7 +476,7 @@ function genInningRecapStories(){
     else if(strikeouts===3&&inningPlays.length===3){priority=95;headline=pitcher?pitcher+' strikes out the side in the '+innStr:'Perfect strikeout inning in the '+innStr;}
     else if(runs>=2&&hrs===0){priority=90;headline=battingTeam+' score '+runs+' runs in the '+halfLabel+' of the '+innStr;}
     else if(runs>0&&hadRisp){var battingScore=recapHalf==='top'?g.awayScore:g.homeScore;var pitchingScore=recapHalf==='top'?g.homeScore:g.awayScore;if(battingScore<=pitchingScore){priority=85;headline=battingTeam+' claw back in the '+innStr;}}
-    else if(runnersLeftOn&&runs===0&&inningPlays.length===3){priority=80;headline=battingTeam+' strand runners at the corners, '+runs+' runs in the '+halfLabel+' of the '+innStr;}
+    else if(runnersLeftOn&&runs===0&&inningPlays.length===3){priority=80;headline=battingTeam+' '+strandPhrase+' in the '+halfLabel+' of the '+innStr;}
     else if(strikeouts>=2&&runs===0&&isClean123){priority=75;headline=pitcher?pitcher+' keeps '+pittchingTeam+' off the board with '+strikeouts+' Ks in the '+innStr:'Clean '+strikeouts+'-strikeout inning in the '+innStr;}
     else if(dps>0){priority=70;headline=dpBatter?dpBatter+' hits into a double play in the '+innStr:pittchingTeam+' turn a double play to escape the '+innStr;}
     else if(walks>=3){priority=65;headline=walks+' walks load the bases for '+battingTeam+' in the '+innStr;}
