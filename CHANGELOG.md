@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.15.0
+**Current version:** v4.17.0
+
+**v4.17.0** — **Post-merge minor bump for the today-date-toggle branch.** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.16.10 → v4.16.11 covering: (v4.16.10) date toggle in Yesterday Recap now allows navigating forward to today — entry still defaults to yesterday (offset -1), but the `›` button is enabled so users can step to offset 0 to watch today's games populate during the day; button disables again at offset 0; (v4.16.11) `openYesterdayRecap()` accepts an optional `offset` param (default -1), allowing callers to open the recap at a specific date — used by the post-slate CTA which now reads "Today's Highlights" and opens at offset 0 (today's completed games) instead of yesterday. Condition updated to check `state.gameStates` rather than `yesterdayCache` for semantic correctness. `docs/functions.md` updated: `ydChangeDate` guard description corrected, `openYesterdayRecap` entry added.
 
 **v4.15.0** — **Post-merge minor bump for the mid-AB action events + carousel priority overhaul branch (PR #38).** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.14.1 → v4.14.7 covering: mid-AB action event capture from `playEvents[]` (stolen base, caught stealing, pickoff out, pitching change, pinch hitter/runner, replay review), new `genActionEventStories` carousel generator with hard 60–90s TTL, lifecycle pruning of event arrays + daily counters, grand-slam HR/bases-loaded dedup, 6-band priority re-ranking, and tightened decay rates on tier 3/4 evergreen stories. Full per-commit notes above.
 
