@@ -146,7 +146,16 @@ Full name lives in `details.type.description` in GUMBO → stored as `typeName` 
 
 ## Demo Mode compatibility
 
-Focus Mode globals are not populated during Demo Mode — `pollFocusLinescore` and `pollFocusRich` both guard on `demoMode` and return early. `#focusCard` and `#focusMiniBar` remain hidden during demo playback.
+**v4.19.3+**: Focus Mode is fully functional in demo. `pollFocusLinescore` short-circuits to `hydrateFocusFromDemo` (rebuilds `focusState` from the matching `pitchTimeline[focusGamePk]` envelope at `demoCurrentTime`); `pollFocusRich` still early-returns (its sequence is already populated by hydrate). The focus card animates pitch-by-pitch:
+
+1. `advanceDemoPlay` calls `_animateFocusPitches(play)` for `play.type === 'play'` plays in the focused game.
+2. The animator walks the matching atBat envelope and ticks `state.demoCurrentTime` to each pitch's `eventTs` (sub-tick), calling `pollFocusLinescore → hydrateFocusFromDemo` between pitches.
+3. `hydrateFocusFromDemo` slices `envelope.pitches` to those with `eventTs ≤ demoCurrentTime`, and uses the latest revealed pitch's `ballsAfter/strikesAfter/outsAfter` for the displayed B/S/O.
+4. Total animation budget capped at `min(demoSpeedMs × 0.5, 4000ms)`; at 100x speed the animation compresses to near-zero.
+
+`#focusCard` and `#focusMiniBar` are visible during demo. Stats panels read from `state.focusStatsCache` (recorded during the source session).
+
+**Legacy recordings** without per-pitch `ballsAfter/strikesAfter/outsAfter` fall back to the envelope's end-of-AB B/S/O — sub-tick still animates pitch entries through `focusPitchSequence` but the count display jumps once at AB end instead of ticking mid-AB.
 
 ## Auto-switch logic
 
