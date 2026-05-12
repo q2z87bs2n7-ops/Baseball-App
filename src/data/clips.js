@@ -84,7 +84,9 @@ export async function pollPendingVideoClips() {
   // baseline-captured from a previous day have ts values far older than
   // real Date.now(), so a real-clock cutoff filters them all out.
   var anchorMs = state.demoMode ? (state.demoCurrentTime || 0) : Date.now();
-  var cutoff = anchorMs - 2 * 60 * 60 * 1000;
+  var cutoff = state.demoMode
+    ? anchorMs - 2 * 60 * 60 * 1000
+    : anchorMs - 16 * 60 * 60 * 1000;
   var feed = document.getElementById('feed');
   if (!feed) return;
   var pending = state.feedItems.filter(function(item) {
