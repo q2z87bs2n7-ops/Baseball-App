@@ -96,6 +96,9 @@ export async function pollPendingVideoClips() {
     var el = feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
     return el && !el.dataset.clipPatched;
   });
+  if (state.demoMode && window.__demoClipDebug) {
+    console.log('[clipDebug] pollPendingVideoClips: demoCurrentTime='+anchorMs+' pending='+pending.length+' feedItems='+state.feedItems.length);
+  }
   if (!pending.length) return;
   var byGame = {};
   pending.forEach(function(item) { (byGame[item.gamePk] = byGame[item.gamePk] || []).push(item); });
@@ -203,9 +206,15 @@ export async function pollPendingVideoClips() {
       // snapshot which mixes early and late clips, and clip.date can drift
       // significantly from the play for early-inning events.
       var matchCapMs = state.demoMode ? 60 * 60 * 1000 : 20 * 60 * 1000;
+      if (state.demoMode && window.__demoClipDebug) {
+        console.log('[clipDebug] match attempt: gamePk='+gpk+' batterId='+bid+' poolSize='+pool.length+' bestDiff(min)='+(bestDiff/60000).toFixed(1)+' best='+(best&&best.id));
+      }
       if (best && bestDiff <= matchCapMs) {
         state.lastVideoClip = best;
-        patchFeedItemWithClip(playTs, gpk, best);
+        var patched = patchFeedItemWithClip(playTs, gpk, best);
+        if (state.demoMode && window.__demoClipDebug) {
+          console.log('[clipDebug] patched? playTs='+playTs+' gpk='+gpk+' url='+pickPlayback(best.playbacks)+' DOMfound='+!!document.querySelector('#feed [data-ts="'+playTs+'"][data-gamepk="'+gpk+'"]'));
+        }
       }
     });
   }
