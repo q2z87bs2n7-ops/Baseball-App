@@ -674,6 +674,39 @@ export function exitDemo() {
   if(state.storyRotateTimer) clearInterval(state.storyRotateTimer);
   if(state.pulseAbortCtrl){state.pulseAbortCtrl.abort();state.pulseAbortCtrl=null;}
   if(state.focusAbortCtrl){state.focusAbortCtrl.abort();state.focusAbortCtrl=null;}
+  // Tear down demo focus state so live pulse opens clean — without this,
+  // demo's last focusGamePk persists into resumeLivePulse which re-runs
+  // setFocusGame against that stale pk, and demo's focusFastTimer keeps
+  // calling pollFocusLinescore (now in live branch) against it. focusIsManual
+  // left=true blocks live auto-pick; focusState shows demo's last B/S/O
+  // until first live poll lands.
+  if (state.focusFastTimer) { clearInterval(state.focusFastTimer); state.focusFastTimer = null; }
+  state.focusGamePk = null;
+  state.focusIsManual = false;
+  state.focusCurrentAbIdx = null;
+  state.focusLastTimecode = null;
+  state.focusPitchSequence = [];
+  state.focusAlertShown = {};
+  state.focusState = {
+    balls: 0, strikes: 0, outs: 0, inning: 1, halfInning: 'top',
+    currentBatterId: null, currentBatterName: '',
+    currentPitcherId: null, currentPitcherName: '',
+    onFirst: false, onSecond: false, onThird: false,
+    awayAbbr: '', homeAbbr: '', awayScore: 0, homeScore: 0,
+    awayPrimary: '#444', homePrimary: '#444',
+    tensionLabel: 'NORMAL', tensionColor: '#9aa0a8',
+    lastPitch: null, batterStats: null, pitcherStats: null
+  };
+  // Demo's action events + RBI cooldowns would otherwise leak into live
+  // (yesterday's stolen base still in carousel; recent demo RBI suppressing
+  // a live RBI card cooldown window).
+  state.actionEvents = [];
+  state.seenActionEventIds = new Set();
+  state.rbiCardCooldowns = {};
+  // Dismiss any demo-driven overlays (focus overlay, HR/RBI player card).
+  state.focusOverlayOpen = false;
+  var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
+  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.style.display = 'none';
   var overlay=document.querySelector('.demo-end-screen');
   if(overlay) overlay.remove();
   document.body.classList.remove('demo-active');
