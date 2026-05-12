@@ -350,7 +350,7 @@ async function initDemo() {
   _updateFeedEmpty();
   _showAlert({
     icon:'▶',
-    event:'Demo Mode · '+state.enabledGames.size+' games · '+state.feedItems.length+' plays loaded',
+    event:'Demo Mode',
     desc:'This is a limited playback of a May 11th 2026. Not all items can be simulated in demo mode, During game times Pulse has live match radio, an increased amount of real time carousel events and Focus mode can switch to any game and obtain audio and full pitch by data. Demo is best experienced at 30x and Toggle 📻 for Classic Radio: The vintage broadcasts are for atmosphere only, not synced to plays.',
     color:'#7dd89e',
     duration:12000
