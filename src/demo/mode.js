@@ -8,6 +8,7 @@ import { devTrace } from '../devtools-feed/devLog.js';
 import { MLB_BASE } from '../config/constants.js';
 import { calcRBICardScore } from '../cards/playerCard.js';
 import { stopClassic } from '../radio/classic.js';
+import { stopRadio } from '../radio/engine.js';
 import { etDateStr, etDatePlus } from '../utils/format.js';
 
 // Encapsulated demo-only state
@@ -109,6 +110,40 @@ async function initDemo() {
   if (state.pulseTimer) { clearInterval(state.pulseTimer); state.pulseTimer = null; }
   if (state.pulseAbortCtrl) { state.pulseAbortCtrl.abort(); state.pulseAbortCtrl = null; }
   if (state.storyRotateTimer) { clearInterval(state.storyRotateTimer); state.storyRotateTimer = null; }
+  // Tear down live focus state so demo opens clean — without this, a live
+  // focusGamePk / focusIsManual / focusState bleeds into the first demo
+  // ticks (stale B/S/O on focus card, focusIsManual=true blocking auto-
+  // select, late-landing live linescore fetch clobbering hydrate output).
+  if (state.focusFastTimer) { clearInterval(state.focusFastTimer); state.focusFastTimer = null; }
+  if (state.focusAbortCtrl) { state.focusAbortCtrl.abort(); state.focusAbortCtrl = null; }
+  state.focusGamePk = null;
+  state.focusIsManual = false;
+  state.focusCurrentAbIdx = null;
+  state.focusLastTimecode = null;
+  state.focusPitchSequence = [];
+  state.focusAlertShown = {};
+  state.focusState = {
+    balls: 0, strikes: 0, outs: 0, inning: 1, halfInning: 'top',
+    currentBatterId: null, currentBatterName: '',
+    currentPitcherId: null, currentPitcherName: '',
+    onFirst: false, onSecond: false, onThird: false,
+    awayAbbr: '', homeAbbr: '', awayScore: 0, homeScore: 0,
+    awayPrimary: '#444', homePrimary: '#444',
+    tensionLabel: 'NORMAL', tensionColor: '#9aa0a8',
+    lastPitch: null, batterStats: null, pitcherStats: null
+  };
+  // Live action events + RBI cooldowns + action-event dedup set would
+  // otherwise leak into the demo carousel + suppress early demo RBI cards.
+  state.actionEvents = [];
+  state.seenActionEventIds = new Set();
+  state.rbiCardCooldowns = {};
+  // Stop live radio so classic radio doesn't overlap when demo's
+  // first setFocusGame triggers rollClassicOnSwitch.
+  stopRadio();
+  // Dismiss live-driven overlays so they don't sit over the demo.
+  state.focusOverlayOpen = false;
+  var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
+  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.style.display = 'none';
   state.demoMode=true;
   document.body.classList.add('demo-active');
   var pulseSection=document.getElementById('pulse');
