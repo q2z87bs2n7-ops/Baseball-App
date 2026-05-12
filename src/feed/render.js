@@ -69,7 +69,7 @@ function isIntermission() {
   var games=Object.values(state.gameStates);
   if (!games.length) return false;
   if (!games.some(function(g){return g.status==='Final';})) return false;
-  if (games.some(function(g){return g.status==='Live'&&g.detailedState==='In Progress';})) return false;
+  if (games.some(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';})) return false;
   if (!games.some(function(g){return g.status!=='Final';})) return false;
   var lastTerminalMs=0;
   state.feedItems.forEach(function(fi){
@@ -125,7 +125,7 @@ function updateFeedEmpty() {
   var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
   var hasHiddenItems=!!feed.querySelector('.feed-item.feed-hidden');
   var hasAnyGames=Object.keys(state.gameStates).length>0;
-  var hasLiveInProgress=Object.values(state.gameStates).some(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var hasLiveInProgress=Object.values(state.gameStates).some(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   var postSlate=isPostSlate();
   var intermission=!postSlate&&isIntermission();
   // User manually hid all games via ticker chips — distinct from "no games exist"
@@ -147,7 +147,7 @@ function updateFeedEmpty() {
 function renderEmptyState(postSlate, intermission) {
   var el=document.getElementById('feedEmpty');
   var upcoming=Object.values(state.gameStates).filter(function(g){
-    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
+    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')))) return false;
     var rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
     if(rawG&&rawG.doubleHeader==='Y'&&rawG.gameNumber==2){
       if(Object.values(state.gameStates).some(function(s){return s.status==='Live'&&s.awayId===g.awayId&&s.homeId===g.homeId;})) return false;

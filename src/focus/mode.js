@@ -11,7 +11,7 @@ import { updateRadioForFocus } from '../radio/engine.js';
 import { rollClassicOnSwitch, isClassicActive } from '../radio/classic.js';
 
 export function calcFocusScore(g) {
-  if(g.status!=='Live'||g.detailedState!=='In Progress') return 0;
+  if(g.status!=='Live'||(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')) return 0;
   var diff=Math.abs(g.awayScore-g.homeScore);
   var runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
   var battingScore=g.halfInning==='top'?g.awayScore:g.homeScore;
@@ -78,7 +78,7 @@ export function selectFocusGame() {
       return;
     }
   }
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   if(!liveGames.length) return;
   var scored=liveGames.map(function(g){return {g:g,score:calcFocusScore(g)};});
   scored.sort(function(a,b){return b.score-a.score;});
@@ -133,7 +133,7 @@ export function setFocusGameManual(pk) {
 
 export function resetFocusAuto() {
   state.focusIsManual=false;
-  var live=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var live=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   if(!live.length) return;
   var scored=live.map(function(g){return {g:g,score:calcFocusScore(g)};});
   scored.sort(function(a,b){return b.score-a.score;});
@@ -344,7 +344,7 @@ export function renderFocusCard() {
   var el=document.getElementById('focusCard'); if(!el) return;
   if(!state.focusGamePk||(!state.focusState.awayAbbr&&!state.demoMode)){el.style.display='none';return;}
   el.style.display='';
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   var cardData=Object.assign({},state.focusState,{
     isManual: state.focusIsManual,
     gamePk: state.focusGamePk,
@@ -361,7 +361,7 @@ export function renderFocusMiniBar() {
   var el=document.getElementById('focusMiniBar'); if(!el) return;
   if(!state.focusGamePk||!state.focusState.awayAbbr){el.style.display='none';return;}
   var half=state.focusState.halfInning==='bottom'?'▼':'▲';
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   var showStrip=liveGames.length>1||state.focusIsManual;
   var stripHtml='';
   if(showStrip){
@@ -403,7 +403,7 @@ export function closeFocusOverlay() {
 
 export function renderFocusOverlay() {
   var card=document.getElementById('focusOverlayCard'); if(!card) return;
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   var data=Object.assign({},state.focusState,{
     pitchSequence: state.focusPitchSequence,
     gamePk: state.focusGamePk,

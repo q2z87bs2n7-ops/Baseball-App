@@ -69,7 +69,7 @@ function genHRStories(){
 function genNoHitterWatch(){
   var out=[];
   Object.values(state.gameStates).forEach(function(g){
-    if(g.status!=='Live'||g.detailedState!=='In Progress') return;
+    if(g.status!=='Live'||(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')) return;
     if(g.inning<state.devTuning.nohitter_inning_floor) return;
     var nohitAway=g.awayHits===0, nohitHome=g.homeHits===0;
     if(!nohitAway&&!nohitHome) return;
@@ -572,7 +572,7 @@ async function genWinProbabilityStories(){
   // below reads from state.liveWPCache (hydrated from the recording) instead.
   if(state.demoMode) return out;
   var g=state.gameStates[state.focusGamePk];
-  if(!g||g.status!=='Live'||g.detailedState!=='In Progress') return out;
+  if(!g||g.status!=='Live'||(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')) return out;
   try{
     var r=await fetch(MLB_BASE+'/game/'+state.focusGamePk+'/contextMetrics');
     if(!r.ok) throw new Error(r.status);
@@ -825,7 +825,7 @@ async function loadYesterdayCache(){
 
 async function loadLiveWPCache(){
   var livePks=Object.keys(state.gameStates).filter(function(pk){
-    var g=state.gameStates[pk];return g&&g.status==='Live'&&g.detailedState==='In Progress';
+    var g=state.gameStates[pk];return g&&g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';
   });
   if(!livePks.length){state.liveWPCache={};state.liveWPLastFetch=Date.now();return;}
   await Promise.all(livePks.map(function(pk){
@@ -841,7 +841,7 @@ function genLiveWinProbStories(){
   var out=[];
   Object.keys(state.liveWPCache).forEach(function(pk){
     var g=state.gameStates[pk];
-    if(!g||g.status!=='Live'||g.detailedState!=='In Progress') return;
+    if(!g||g.status!=='Live'||(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')) return;
     var c=state.liveWPCache[pk];
     var homeWP=c.homeWP;
     var favAbbr=homeWP>=50?g.homeAbbr:g.awayAbbr;
@@ -863,7 +863,7 @@ function genDailyIntro(){
     return g.gameDateMs && carouselCallbacks.localDateStr(new Date(g.gameDateMs))===todayStr;
   });
   if(!todayGames.length) return [];
-  var liveCount =todayGames.filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';}).length;
+  var liveCount =todayGames.filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';}).length;
   var finalCount=todayGames.filter(function(g){return g.status==='Final';}).length;
   if(liveCount>=2 || finalCount>=Math.ceil(todayGames.length/2)) return [];
   var marquee=null;

@@ -635,6 +635,7 @@ async function ensureCareerLoaded(playerId, group){
       cR.stats.forEach(function(block){
         var g = block.group && block.group.displayName;
         (block.splits || []).forEach(function(sp){
+          if(!sp.team) return;
           var row = {
             season: sp.season,
             teamId: sp.team && sp.team.id,

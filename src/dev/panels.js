@@ -255,7 +255,7 @@ export function renderAppState(){
 
   var now=new Date();
   var upcoming=Object.values(state.gameStates).filter(function(g){
-    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
+    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')))) return false;
     var rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
     if(rawG&&rawG.doubleHeader==='Y'&&rawG.gameNumber==2){
       if(Object.values(state.gameStates).some(function(s){return s.status==='Live'&&s.awayId===g.awayId&&s.homeId===g.homeId;})) return false;
@@ -263,7 +263,7 @@ export function renderAppState(){
     return true;
   });
   upcoming.sort(function(a,b){return (a.gameDateMs||0)-(b.gameDateMs||0);});
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   var nextDiffMs=upcoming.length&&upcoming[0].gameDateMs?upcoming[0].gameDateMs-Date.now():0;
   var pulseInfo={
     now: now.toISOString().split('T')[1].split('.')[0],
@@ -332,7 +332,7 @@ export function _stateAsMarkdownPulse(){
   var now=new Date();
   var hour=now.getHours();
   var upcoming=Object.values(state.gameStates).filter(function(g){
-    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&g.detailedState!=='In Progress'))) return false;
+    if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')))) return false;
     var rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
     if(rawG&&rawG.doubleHeader==='Y'&&rawG.gameNumber==2){
       if(Object.values(state.gameStates).some(function(s){return s.status==='Live'&&s.awayId===g.awayId&&s.homeId===g.homeId;})) return false;
@@ -340,7 +340,7 @@ export function _stateAsMarkdownPulse(){
     return true;
   });
   upcoming.sort(function(a,b){return (a.gameDateMs||0)-(b.gameDateMs||0);});
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState==='In Progress';});
+  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   var finalGames=Object.values(state.gameStates).filter(function(g){return g.status==='Final';});
   var nextDiffMs=upcoming.length&&upcoming[0].gameDateMs?upcoming[0].gameDateMs-Date.now():0;
   var lines=['## Pulse Empty State Diagnostics','','### Current Time & Headline','| Field | Value |','|---|---|',
