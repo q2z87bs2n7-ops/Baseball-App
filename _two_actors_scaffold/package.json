@@ -1,0 +1,16 @@
+{
+  "name": "actor-link-game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Two-player PWA for the actor-linking game (Six Degrees of Kevin Bacon).",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0"
+  }
+}
