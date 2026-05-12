@@ -582,6 +582,16 @@ async function advanceDemoPlay(play) {
     feedData.homeScore=play.homeScore;
     feedData.risp=play.risp;
     feedData.playClass=play.playClass;
+    // Thread batter/pitcher/rbi into feedData so downstream consumers
+    // (pollPendingVideoClips clip-matching by batterId, story carousel
+    // pitcher attribution, RBI card lookups) see the same data live mode
+    // would. Without these the demo replay's feedItems are missing the
+    // fields and clip attachment silently fails.
+    feedData.batterId=play.batterId;
+    feedData.batterName=play.batterName;
+    feedData.pitcherId=play.pitcherId;
+    feedData.pitcherName=play.pitcherName;
+    if(play.rbi!=null) feedData.rbi=play.rbi;
     if(play.distance!=null) feedData.distance=play.distance;
     if(play.speed!=null) feedData.speed=play.speed;
     if(play.onFirst!=null) feedData.onFirst=play.onFirst;
