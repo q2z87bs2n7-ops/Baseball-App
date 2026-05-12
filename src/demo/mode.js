@@ -142,8 +142,11 @@ async function initDemo() {
   stopRadio();
   // Dismiss live-driven overlays so they don't sit over the demo.
   state.focusOverlayOpen = false;
+  // Dismiss via the same paths each overlay's own open/close uses — inline
+  // display:none would stick around and block subsequent showPlayerCard
+  // (which opens via classList.add('open') and relies on the CSS rule).
   var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
-  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.style.display = 'none';
+  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
   state.demoMode=true;
   document.body.classList.add('demo-active');
   var pulseSection=document.getElementById('pulse');
@@ -725,8 +728,11 @@ export function exitDemo() {
   state.rbiCardCooldowns = {};
   // Dismiss any demo-driven overlays (focus overlay, HR/RBI player card).
   state.focusOverlayOpen = false;
+  // Dismiss via the same paths each overlay's own open/close uses — inline
+  // display:none would stick around and block subsequent showPlayerCard
+  // (which opens via classList.add('open') and relies on the CSS rule).
   var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
-  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.style.display = 'none';
+  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
   var overlay=document.querySelector('.demo-end-screen');
   if(overlay) overlay.remove();
   document.body.classList.remove('demo-active');
