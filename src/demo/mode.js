@@ -348,7 +348,7 @@ async function initDemo() {
   _showAlert({
     icon:'▶',
     event:'Demo Mode · '+state.enabledGames.size+' games · '+state.feedItems.length+' plays loaded',
-    desc:'Heads up — this is a replay of a recorded session. Focus mode pitch data is limited to games that were captured live. Toggle 📻 for Classic Radio: random vintage broadcast (Vin Scully, Mantle’s final game, WS69, Seaver 19K) re-rolls on focus switch — atmosphere only, not synced to plays.',
+    desc:'This is a limited playback of a May 11th 2026. Not all items can be simulated in demo mode, During game times Pulse has live match radio, an increased amount of real time carousel events and Focus mode can switch to any game and obtain audio and full pitch by data. Demo is best experienced at 30x and Toggle 📻 for Classic Radio: The vintage broadcasts are for atmosphere only, not synced to plays.',
     color:'#7dd89e',
     duration:12000
   });
