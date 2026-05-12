@@ -3834,6 +3834,21 @@ select {
   animation: progress-drain var(--toast-duration, 5s) linear forwards;
 }
 
+.alert-dismiss {
+  flex-shrink: 0;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: .8rem;
+  cursor: pointer;
+  padding: 0 0 0 6px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.alert-dismiss:hover { opacity: 1; }
+
 .section-bar,
 #pulseTopBar, #ydSectionBar {
   display: flex;

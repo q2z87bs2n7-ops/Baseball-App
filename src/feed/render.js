@@ -448,12 +448,17 @@ function renderSideRailGames() {
 }
 
 function showAlert(opts) {
-  var icon=opts.icon||'🔔', evtLabel=opts.event||'', desc=opts.desc||'', color=opts.color||'#e03030', duration=opts.duration||5000;
+  var icon=opts.icon||'🔔', evtLabel=opts.event||'', desc=opts.desc||'', color=opts.color||'#e03030', duration=opts.duration||5000, persistent=!!opts.persistent;
   var stack=document.getElementById('alertStack'), el=document.createElement('div');
-  el.className='alert-toast'; el.style.borderLeftColor=color; el.style.setProperty('--toast-duration',duration+'ms');
-  el.innerHTML='<span class="alert-icon">'+icon+'</span><div class="alert-body"><div class="alert-event">'+evtLabel+'</div><div class="alert-desc">'+desc+'</div></div><div class="alert-progress"></div>';
-  el.addEventListener('click',function(){dismissAlert(el);}); stack.appendChild(el);
-  setTimeout(function(){dismissAlert(el);},duration);
+  el.className='alert-toast'; el.style.borderLeftColor=color;
+  if(!persistent) el.style.setProperty('--toast-duration',duration+'ms');
+  var closeBtn=persistent?'<button class="alert-dismiss" onclick="event.stopPropagation()" aria-label="Dismiss">✕</button>':'';
+  var progressBar=persistent?'':'<div class="alert-progress"></div>';
+  el.innerHTML='<span class="alert-icon">'+icon+'</span><div class="alert-body"><div class="alert-event">'+evtLabel+'</div><div class="alert-desc">'+desc+'</div></div>'+closeBtn+progressBar;
+  el.addEventListener('click',function(){dismissAlert(el);});
+  if(persistent){var btn=el.querySelector('.alert-dismiss');if(btn)btn.addEventListener('click',function(){dismissAlert(el);});}
+  stack.appendChild(el);
+  if(!persistent) setTimeout(function(){dismissAlert(el);},duration);
 }
 
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}
