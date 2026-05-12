@@ -65,6 +65,12 @@ Extracted from `CLAUDE.md` — tracks completed and pending features. Active blo
 - [ ] **MLB News card consolidation** (deferred). Single-source ESPN news on the League tab partially duplicates the multi-source News tab. Either match the source picker here or replace with a link to `#news`.
 - [ ] **Open: bigger qualified pool than `/stats/leaders` ~100 cap.** v4.8.4 attempted `/stats?stats=season&group=<g>&playerPool=Qualifier&limit=2000` to bypass the cap, but the response was empty — likely param-naming mismatch (`group` vs `statGroup`, `Qualifier` vs `Qualified`, or `playerPool` not accepted by `/stats`). Reverted in v4.8.8. Future investigation: probe the exact accepted param shape on a live API call before re-attempting; fall back to v4.8.11's renderer-suppression if the cap is unavoidable.
 
+### ⚡ Pulse — Rain delay handling (deferred)
+
+- [ ] **Rain delay: focus strip shows frozen count** — After the v4.19.2 fix that treats any `Live` game not in Warmup/Pre-Game as active, the focus mini-bar and game strip remain visible during a rain delay (correct) but the balls/strikes/outs count is frozen at whatever the linescore returned when play stopped. Improvement: detect `detailedState` containing `"Delay"` and suppress the count display (or replace with a "DELAYED" label) while keeping the score/inning visible.
+
+---
+
 ### 🛠️ Tech debt
 
 - [ ] **Inline styles in `index.html`** — 253 `style="…"` attributes pre-existing across the markup (calendar, news, schedule, settings sections). Some I added in Sprint 3 are already cleaned up (Today's Leaders card head, v4.6.26). A broader cleanup sprint could move all layout-only inline styles to CSS classes for maintainability + smaller HTML payload.
