@@ -4358,7 +4358,6 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 
 .empty-hype-block {
   margin-bottom: 18px;
-  position: relative;
 }
 
 .empty-hype-headline {
@@ -4469,23 +4468,34 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   text-align: right;
 }
 
+.hype-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+
 .demo-cta {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
   background: none;
-  border: none;
+  border: 1px solid var(--border);
   color: var(--muted);
-  font-size: .75rem;
-  font-weight: 600;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .06em;
   cursor: pointer;
-  padding: 0.25rem 0.625rem;
-  border-radius: 4px;
-  transition: color 0.2s;
+  padding: 7px 16px;
+  border-radius: 7px;
+  font-family: inherit;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
 }
 
 .demo-cta:hover {
   color: var(--text);
+  border-color: var(--text);
 }
 
 .upcoming-grid {

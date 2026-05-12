@@ -186,11 +186,14 @@ function renderEmptyState(postSlate, intermission) {
   var labelText=intermission
     ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
     : n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
-  var hypeRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;margin:8px 0 14px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
+  var hypeRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
   var hypeBlock=intermission
     ?'<div class="empty-hype-block"><div class="empty-hype-headline">'+headline+'</div></div>'
-    :'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(state.demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">'+headline+'</div>'
+    :'<div class="empty-hype-block"><div class="empty-hype-headline">'+headline+'</div>'
+    +'<div class="hype-cta-row">'
     +hypeRecapCta
+    +'<button class="demo-cta" onclick="toggleDemoMode()">'+(state.demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button>'
+    +'</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
   var html='<div class="empty-upcoming-label">'+labelText+'</div>'
