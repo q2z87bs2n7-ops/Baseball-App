@@ -91,7 +91,7 @@ export async function pollPendingVideoClips() {
   if (!feed) return;
   var pending = state.feedItems.filter(function(item) {
     if (!item.data || !item.data.batterId) return false;
-    if (item.data.event !== 'Home Run' && !item.data.scoring) return false;
+    if (item.data.event !== 'Home Run' && !item.data.scoring && !(state.demoMode && item.data.event === 'Caught Stealing')) return false;
     if (!item.ts || item.ts.getTime() < cutoff) return false;
     var el = feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
     return el && !el.dataset.clipPatched;
@@ -209,6 +209,7 @@ export async function pollPendingVideoClips() {
       }
     });
   }
+
 }
 
 // Dev Tools: play a video clip without waiting for a live HR.

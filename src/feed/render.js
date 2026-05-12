@@ -169,7 +169,9 @@ function renderEmptyState(postSlate, intermission) {
       } else if (state.tomorrowPreview.fetchedAt && state.tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      var slateRecapCta=(Object.values(state.gameStates).length)?'<button onclick="openYesterdayRecap(0)" style="margin-top:20px;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:.06em;padding:9px 18px;border-radius:7px;cursor:pointer">📺 Today\'s Highlights →</button>':'';
+      var _etH=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).getHours();
+      var _pastMidnight=_etH<6;
+      var slateRecapCta=(Object.values(state.gameStates).length)?'<button onclick="openYesterdayRecap('+(_pastMidnight?'-1':'0')+')" style="margin-top:20px;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:.06em;padding:9px 18px;border-radius:7px;cursor:pointer">📺 '+(_pastMidnight?"Yesterday's":"Today's")+' Highlights →</button>':'';
       el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+slateRecapCta;
       if (state.tomorrowPreview.firstPitchMs) startCountdown(state.tomorrowPreview.firstPitchMs);
     } else {
@@ -184,11 +186,14 @@ function renderEmptyState(postSlate, intermission) {
   var labelText=intermission
     ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
     : n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
-  var hypeRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;margin:8px 0 14px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
+  var hypeRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
   var hypeBlock=intermission
     ?'<div class="empty-hype-block"><div class="empty-hype-headline">'+headline+'</div></div>'
-    :'<div class="empty-hype-block"><button class="demo-cta" onclick="toggleDemoMode()">'+(state.demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button><div class="empty-hype-headline">'+headline+'</div>'
+    :'<div class="empty-hype-block"><div class="empty-hype-headline">'+headline+'</div>'
+    +'<div class="hype-cta-row">'
     +hypeRecapCta
+    +'<button class="demo-cta" onclick="toggleDemoMode()">'+(state.demoMode?'⏹ Exit Demo':'▶ Try Demo')+'</button>'
+    +'</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
   var html='<div class="empty-upcoming-label">'+labelText+'</div>'
@@ -443,12 +448,17 @@ function renderSideRailGames() {
 }
 
 function showAlert(opts) {
-  var icon=opts.icon||'🔔', evtLabel=opts.event||'', desc=opts.desc||'', color=opts.color||'#e03030', duration=opts.duration||5000;
+  var icon=opts.icon||'🔔', evtLabel=opts.event||'', desc=opts.desc||'', color=opts.color||'#e03030', duration=opts.duration||5000, persistent=!!opts.persistent;
   var stack=document.getElementById('alertStack'), el=document.createElement('div');
-  el.className='alert-toast'; el.style.borderLeftColor=color; el.style.setProperty('--toast-duration',duration+'ms');
-  el.innerHTML='<span class="alert-icon">'+icon+'</span><div class="alert-body"><div class="alert-event">'+evtLabel+'</div><div class="alert-desc">'+desc+'</div></div><div class="alert-progress"></div>';
-  el.addEventListener('click',function(){dismissAlert(el);}); stack.appendChild(el);
-  setTimeout(function(){dismissAlert(el);},duration);
+  el.className='alert-toast'; el.style.borderLeftColor=color;
+  if(!persistent) el.style.setProperty('--toast-duration',duration+'ms');
+  var closeBtn=persistent?'<button class="alert-dismiss" onclick="event.stopPropagation()" aria-label="Dismiss">✕</button>':'';
+  var progressBar=persistent?'':'<div class="alert-progress"></div>';
+  el.innerHTML='<span class="alert-icon">'+icon+'</span><div class="alert-body"><div class="alert-event">'+evtLabel+'</div><div class="alert-desc">'+desc+'</div></div>'+closeBtn+progressBar;
+  el.addEventListener('click',function(){dismissAlert(el);});
+  if(persistent){var btn=el.querySelector('.alert-dismiss');if(btn)btn.addEventListener('click',function(){dismissAlert(el);});}
+  stack.appendChild(el);
+  if(!persistent) setTimeout(function(){dismissAlert(el);},duration);
 }
 
 function dismissAlert(el){if(!el.parentNode)return;el.classList.add('dismissing');setTimeout(function(){el.remove();},300);}

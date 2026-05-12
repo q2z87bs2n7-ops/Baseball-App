@@ -3834,6 +3834,21 @@ select {
   animation: progress-drain var(--toast-duration, 5s) linear forwards;
 }
 
+.alert-dismiss {
+  flex-shrink: 0;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: .8rem;
+  cursor: pointer;
+  padding: 0 0 0 6px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.alert-dismiss:hover { opacity: 1; }
+
 .section-bar,
 #pulseTopBar, #ydSectionBar {
   display: flex;
@@ -4358,7 +4373,6 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 
 .empty-hype-block {
   margin-bottom: 18px;
-  position: relative;
 }
 
 .empty-hype-headline {
@@ -4469,23 +4483,34 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   text-align: right;
 }
 
+.hype-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+
 .demo-cta {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
   background: none;
-  border: none;
+  border: 1px solid var(--border);
   color: var(--muted);
-  font-size: .75rem;
-  font-weight: 600;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .06em;
   cursor: pointer;
-  padding: 0.25rem 0.625rem;
-  border-radius: 4px;
-  transition: color 0.2s;
+  padding: 7px 16px;
+  border-radius: 7px;
+  font-family: inherit;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
 }
 
 .demo-cta:hover {
   color: var(--text);
+  border-color: var(--text);
 }
 
 .upcoming-grid {
@@ -5264,22 +5289,81 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 #mockBar {
-  height: var(--mockbar-h);
-  background: var(--dark);
-  border-top: 1px solid var(--border);
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+}
+#mockBar > * { pointer-events: auto; }
+
+.demo-fab-toggle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--card2);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--text);
+  font-size: 1.35rem;
+  cursor: pointer;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 14px;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  transition: transform .15s, background .15s;
+}
+.demo-fab-toggle:hover { background: var(--border); transform: translateY(-1px); }
+#mockBar.open .demo-fab-toggle {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+}
+.demo-fab-icon { line-height: 1; }
+.demo-fab-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -6px;
+  background: var(--accent);
+  color: var(--accent-text, #000);
+  font-size: .56rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  border-radius: 9px;
+  padding: 1px 6px;
+  min-width: 22px;
+  text-align: center;
+  border: 1px solid var(--dark);
 }
 
-.mock-bar-label {
-  font-size: .69rem;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  flex-shrink: 0;
+.demo-fab-panel {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  min-width: 230px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+#mockBar.open .demo-fab-panel { display: flex; }
+.demo-fab-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 2px;
+}
+
+.mock-badge {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .04em;
 }
 
 .mock-btn {
@@ -5287,18 +5371,15 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
-  padding: 0.25rem 0.625rem;
+  padding: 0.35rem 0.7rem;
   font-size: .75rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  flex-shrink: 0;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.mock-btn:hover {
-  background: var(--border);
-}
+.mock-btn:hover { background: var(--border); }
 
 .mock-btn.active {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
@@ -5307,30 +5388,31 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 .mock-progress {
-  flex: 1;
-  text-align: center;
-  font-size: .69rem;
+  text-align: right;
+  font-size: .66rem;
   color: var(--muted);
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .mock-exit-btn {
-  flex-shrink: 0;
   border-color: rgba(255,100,100,.5);
   color: var(--muted);
 }
+.mock-exit-btn:hover {
+  background: rgba(255,100,100,.12);
+  color: #ffb3b3;
+}
 
 .mock-speed-seg {
-  display: inline-flex;
+  display: flex;
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
-  flex-shrink: 0;
 }
 .mock-speed-seg .mock-btn {
+  flex: 1;
   border-radius: 0;
   border: none;
   border-right: 1px solid var(--border);
@@ -5338,25 +5420,17 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .mock-speed-seg .mock-btn:last-child { border-right: none; }
 
 .mock-action-group {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 4px;
-  flex-shrink: 0;
 }
 
 @media(max-width:480px) {
-  #mockBarBadge {
-    display: none;
-  }
   #mockBar {
-    padding: 0 10px;
-    gap: 5px;
-  }
-  #mockBar .mock-btn {
-    padding: 0.15rem 0.42rem;
-    font-size: .7rem;
-  }
-  .mock-progress {
-    font-size: .62rem;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: auto;
+    align-items: flex-start;
   }
 }
 

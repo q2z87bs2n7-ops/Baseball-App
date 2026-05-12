@@ -318,7 +318,7 @@ Files that are NOT part of the bundle but must be present in the repo / served a
 | `assets/vendor/pulse-card-templates.js` | `index.html` `<script defer>` | HR/RBI player card overlays |
 | `assets/vendor/focusCard.js` | `index.html` `<script defer>` | At-Bat Focus Mode visuals |
 | `assets/vendor/collectionCard.js` | `index.html` `<script defer>` | Card Collection binder visuals |
-| `assets/daily-events.json` | `src/demo/mode.js` `fetch(...)` | Demo Mode replay data (562KB) |
+| `assets/daily-events.json` | `src/demo/mode.js` `fetch(...)` | Demo Mode replay data (~2.5MB) |
 | `manifest.json` | `index.html` `<link rel="manifest">` | PWA install metadata |
 | `icons/favicon.svg` | `index.html` `<link rel="icon">` | Browser tab icon |
 | `icons/icon-180.png` | `index.html` `<link rel="apple-touch-icon">` | iOS home screen icon |
