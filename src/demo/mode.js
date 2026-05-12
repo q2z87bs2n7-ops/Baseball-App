@@ -172,6 +172,11 @@ async function initDemo() {
   }
   state.gameStates={};
   state.feedItems=[];
+  // Wipe the feed DOM too — addFeedItem appends to feed.children rather
+  // than re-rendering from state, so live-session plays would otherwise
+  // stay on screen behind the demo backlog walk.
+  var _feed=document.getElementById('feed');
+  if(_feed) _feed.innerHTML='';
   state.scheduleData=[];
   state.enabledGames=new Set();
   state.storyPool=[];
