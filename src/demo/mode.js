@@ -216,8 +216,8 @@ async function initDemo() {
   state.yesterdayCache=c.yesterdayCache||jsonData.yesterdayCache||[];
   state.hrBatterStatsCache=c.hrBatterStatsCache||jsonData.hrBatterStatsCache||{};
   state.probablePitcherStatsCache=c.probablePitcherStatsCache||jsonData.probablePitcherStatsCache||{};
-  state.dailyHitsTracker=c.dailyHitsTracker||jsonData.dailyHitsTracker||{};
-  state.dailyPitcherKs=c.dailyPitcherKs||jsonData.dailyPitcherKs||{};
+  state.dailyHitsTracker={};
+  state.dailyPitcherKs={};
   state.storyCarouselRawGameData=c.storyCarouselRawGameData||jsonData.storyCarouselRawGameData||{};
   // ts is serialised to ISO string by JSON.stringify; buildStoryPool's
   // staleness filter calls .getTime() so we normalise back to Date here.
@@ -738,6 +738,7 @@ export function exitDemo() {
   // display:none would stick around and block subsequent showPlayerCard
   // (which opens via classList.add('open') and relies on the CSS rule).
   var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
+  var _focusMini = document.getElementById('focusMiniBar'); if (_focusMini) _focusMini.style.display = 'none';
   var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
   var overlay=document.querySelector('.demo-end-screen');
   if(overlay) overlay.remove();
