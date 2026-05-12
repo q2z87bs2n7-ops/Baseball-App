@@ -67,6 +67,12 @@ export function selectFocusGame() {
       // game the recording user was watching, which has the richest pitch
       // data. Normal ts-based lookup resumes once demoCurrentTime catches up.
       if(!entry) entry=ft[0];
+      // If the matched entry has focusGamePk=null (recorder was started
+      // before any game went live), look forward for the first non-null
+      // entry so the focus card isn't empty for the first few demo ticks.
+      if(entry&&!entry.focusGamePk){
+        for(var fi=0;fi<ft.length;fi++){ if(ft[fi].focusGamePk){ entry=ft[fi]; break; } }
+      }
       if(entry&&entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
         // Don't write entry.isManual into state.focusIsManual — that's
         // the recorder user's flag, not the demo viewer's. The viewer's
@@ -188,15 +194,29 @@ function hydrateFocusFromDemo() {
     return;
   }
   state.focusCurrentAbIdx=envelope.atBatIndex;
-  state.focusPitchSequence=(envelope.pitches||[]).map(function(p) {
+  // Slice pitches to those whose eventTs has been reached — drives the
+  // pitch-by-pitch reveal in demo. The animator in advanceDemoPlay advances
+  // demoCurrentTime to each pitch's eventTs before re-hydrating, so each
+  // tick adds one pitch. Pitches without eventTs (e.g. legacy recordings
+  // pre-recorderV2.x) fall back to the full envelope so demo doesn't regress.
+  var revealedPitches=(envelope.pitches||[]).filter(function(p){
+    return p.eventTs==null||p.eventTs<=nowMs;
+  });
+  state.focusPitchSequence=revealedPitches.map(function(p) {
     return {
       typeCode:p.typeCode,typeName:p.typeName,speed:p.speed,
       resultCode:p.resultCode,resultDesc:p.resultDesc,sequenceIndex:p.sequenceIndex
     };
   });
   var lastPitch=state.focusPitchSequence.length?state.focusPitchSequence[state.focusPitchSequence.length-1]:null;
+  // Prefer the post-pitch count from the most recently revealed pitch over
+  // the envelope's end-of-AB count, so B/S/O animate as pitches arrive.
+  var lastRaw=revealedPitches.length?revealedPitches[revealedPitches.length-1]:null;
+  var displayBalls=(lastRaw&&lastRaw.ballsAfter!=null)?lastRaw.ballsAfter:(envelope.balls||0);
+  var displayStrikes=(lastRaw&&lastRaw.strikesAfter!=null)?lastRaw.strikesAfter:(envelope.strikes||0);
+  var displayOuts=(lastRaw&&lastRaw.outsAfter!=null)?lastRaw.outsAfter:(envelope.outs||0);
   state.focusState={
-    balls:envelope.balls||0,strikes:envelope.strikes||0,outs:envelope.outs||0,
+    balls:displayBalls,strikes:displayStrikes,outs:displayOuts,
     inning:envelope.inning||g.inning||1,halfInning:envelope.halfInning||g.halfInning||'top',
     currentBatterId:envelope.batterId||null,currentBatterName:envelope.batterName||'',
     currentPitcherId:envelope.pitcherId||null,currentPitcherName:envelope.pitcherName||'',

@@ -202,13 +202,25 @@ export async function pollGamePlays(gamePk) {
       var batterName = (play.matchup && play.matchup.batter && play.matchup.batter.fullName) || '';
       var runners = play.runners || [];
       var hasRISP = outs < 3 && runners.some(function(r) { return r.movement && !r.movement.isOut && (r.movement.end === '2B' || r.movement.end === '3B'); });
+      // Post-play base occupancy — derived from runner movement endings so demo
+      // mode can populate g.onFirst/onSecond/onThird per play (drives ticker
+      // chip RISP expansion + focus card diamond without an extra linescore call).
+      var postOnFirst = false, postOnSecond = false, postOnThird = false;
+      runners.forEach(function(rn) {
+        var m = rn.movement || {};
+        if (!m.end || m.isOut) return;
+        if (m.end === '1B') postOnFirst = true;
+        else if (m.end === '2B') postOnSecond = true;
+        else if (m.end === '3B') postOnThird = true;
+      });
       var playClass = event === 'Home Run' ? 'homerun' : isScoringP ? 'scoring' : hasRISP ? 'risp' : 'normal';
       var playTime = null; if (play.about && play.about.startTime) { try { playTime = new Date(play.about.startTime); } catch (e) {} }
       var pitcherId = (play.matchup && play.matchup.pitcher && play.matchup.pitcher.id) || null;
       var pitcherName = (play.matchup && play.matchup.pitcher && play.matchup.pitcher.fullName) || '';
       var hrDistance = (event === 'Home Run' && play.hitData && play.hitData.totalDistance > 0) ? Math.round(play.hitData.totalDistance) : null;
       var hrSpeed = (event === 'Home Run' && play.hitData && play.hitData.launchSpeed > 0) ? Math.round(play.hitData.launchSpeed) : null;
-      addFeedItem(gamePk, { type: 'play', event: event, desc: desc, scoring: isScoringP, awayScore: aScore, homeScore: hScore, inning: inning, halfInning: halfInning, outs: outs, risp: hasRISP, playClass: playClass, playTime: playTime, batterId: batterId, batterName: batterName, pitcherName: pitcherName, distance: hrDistance, speed: hrSpeed });
+      var playRbi = (play.result && play.result.rbi != null) ? play.result.rbi : null;
+      addFeedItem(gamePk, { type: 'play', event: event, desc: desc, scoring: isScoringP, awayScore: aScore, homeScore: hScore, inning: inning, halfInning: halfInning, outs: outs, risp: hasRISP, playClass: playClass, playTime: playTime, batterId: batterId, batterName: batterName, pitcherId: pitcherId, pitcherName: pitcherName, distance: hrDistance, speed: hrSpeed, rbi: playRbi, onFirst: postOnFirst, onSecond: postOnSecond, onThird: postOnThird, awayHits: g.awayHits, homeHits: g.homeHits });
       if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
         window.Recorder._capturePlayPitches(play, gamePk, g);
       }

@@ -307,6 +307,12 @@ const Recorder = {
           resultDesc: (e.details && e.details.description) || '',
           sequenceIndex: e.pitchNumber || 0,
           eventTs: e.startTime ? new Date(e.startTime).getTime() : null,
+          // Per-pitch count from MLB's playEvents[i].count. Demo's pitch
+          // sub-tick uses these to animate balls/strikes mid-AB instead of
+          // re-deriving from resultCode (which gets hairy for fouls on 2 strikes).
+          ballsAfter: (e.count && e.count.balls != null) ? e.count.balls : null,
+          strikesAfter: (e.count && e.count.strikes != null) ? e.count.strikes : null,
+          outsAfter: (e.count && e.count.outs != null) ? e.count.outs : null,
         };
       }),
     };

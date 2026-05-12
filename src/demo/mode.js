@@ -8,6 +8,7 @@ import { devTrace } from '../devtools-feed/devLog.js';
 import { MLB_BASE } from '../config/constants.js';
 import { calcRBICardScore } from '../cards/playerCard.js';
 import { stopClassic } from '../radio/classic.js';
+import { stopRadio } from '../radio/engine.js';
 import { etDateStr, etDatePlus } from '../utils/format.js';
 
 // Encapsulated demo-only state
@@ -109,6 +110,43 @@ async function initDemo() {
   if (state.pulseTimer) { clearInterval(state.pulseTimer); state.pulseTimer = null; }
   if (state.pulseAbortCtrl) { state.pulseAbortCtrl.abort(); state.pulseAbortCtrl = null; }
   if (state.storyRotateTimer) { clearInterval(state.storyRotateTimer); state.storyRotateTimer = null; }
+  // Tear down live focus state so demo opens clean — without this, a live
+  // focusGamePk / focusIsManual / focusState bleeds into the first demo
+  // ticks (stale B/S/O on focus card, focusIsManual=true blocking auto-
+  // select, late-landing live linescore fetch clobbering hydrate output).
+  if (state.focusFastTimer) { clearInterval(state.focusFastTimer); state.focusFastTimer = null; }
+  if (state.focusAbortCtrl) { state.focusAbortCtrl.abort(); state.focusAbortCtrl = null; }
+  state.focusGamePk = null;
+  state.focusIsManual = false;
+  state.focusCurrentAbIdx = null;
+  state.focusLastTimecode = null;
+  state.focusPitchSequence = [];
+  state.focusAlertShown = {};
+  state.focusState = {
+    balls: 0, strikes: 0, outs: 0, inning: 1, halfInning: 'top',
+    currentBatterId: null, currentBatterName: '',
+    currentPitcherId: null, currentPitcherName: '',
+    onFirst: false, onSecond: false, onThird: false,
+    awayAbbr: '', homeAbbr: '', awayScore: 0, homeScore: 0,
+    awayPrimary: '#444', homePrimary: '#444',
+    tensionLabel: 'NORMAL', tensionColor: '#9aa0a8',
+    lastPitch: null, batterStats: null, pitcherStats: null
+  };
+  // Live action events + RBI cooldowns + action-event dedup set would
+  // otherwise leak into the demo carousel + suppress early demo RBI cards.
+  state.actionEvents = [];
+  state.seenActionEventIds = new Set();
+  state.rbiCardCooldowns = {};
+  // Stop live radio so classic radio doesn't overlap when demo's
+  // first setFocusGame triggers rollClassicOnSwitch.
+  stopRadio();
+  // Dismiss live-driven overlays so they don't sit over the demo.
+  state.focusOverlayOpen = false;
+  // Dismiss via the same paths each overlay's own open/close uses — inline
+  // display:none would stick around and block subsequent showPlayerCard
+  // (which opens via classList.add('open') and relies on the CSS rule).
+  var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
+  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
   state.demoMode=true;
   document.body.classList.add('demo-active');
   var pulseSection=document.getElementById('pulse');
@@ -137,6 +175,11 @@ async function initDemo() {
   }
   state.gameStates={};
   state.feedItems=[];
+  // Wipe the feed DOM too — addFeedItem appends to feed.children rather
+  // than re-rendering from state, so live-session plays would otherwise
+  // stay on screen behind the demo backlog walk.
+  var _feed=document.getElementById('feed');
+  if(_feed) _feed.innerHTML='';
   state.scheduleData=[];
   state.enabledGames=new Set();
   state.storyPool=[];
@@ -172,7 +215,12 @@ async function initDemo() {
   state.dailyHitsTracker=c.dailyHitsTracker||jsonData.dailyHitsTracker||{};
   state.dailyPitcherKs=c.dailyPitcherKs||jsonData.dailyPitcherKs||{};
   state.storyCarouselRawGameData=c.storyCarouselRawGameData||jsonData.storyCarouselRawGameData||{};
-  state.stolenBaseEvents=c.stolenBaseEvents||jsonData.stolenBaseEvents||[];
+  // ts is serialised to ISO string by JSON.stringify; buildStoryPool's
+  // staleness filter calls .getTime() so we normalise back to Date here.
+  state.stolenBaseEvents=(c.stolenBaseEvents||jsonData.stolenBaseEvents||[]).map(function(sb){
+    if(sb && sb.ts && typeof sb.ts==='string') sb.ts=new Date(sb.ts);
+    return sb;
+  });
   state.transactionsCache=c.transactionsCache||jsonData.transactionsCache||[];
   state.liveWPCache=c.liveWPCache||jsonData.liveWPCache||{};
   state.perfectGameTracker=c.perfectGameTracker||jsonData.perfectGameTracker||{};
@@ -257,9 +305,16 @@ async function initDemo() {
         if(d.outs!=null) g.outs=d.outs;
         if(d.awayScore!=null) g.awayScore=d.awayScore;
         if(d.homeScore!=null) g.homeScore=d.homeScore;
+        if(d.onFirst!=null) g.onFirst=!!d.onFirst;
+        if(d.onSecond!=null) g.onSecond=!!d.onSecond;
+        if(d.onThird!=null) g.onThird=!!d.onThird;
+        if(d.awayHits!=null) g.awayHits=d.awayHits;
+        if(d.homeHits!=null) g.homeHits=d.homeHits;
       }else if(d.type==='status'){
         if(d.label==='Game underway!'){ g.status='Live'; g.detailedState='In Progress'; }
         else if(d.label==='Game Final'){ g.status='Final'; }
+        else if(d.label==='Game Postponed'){ g.status='Final'; g.detailedState='Postponed'; }
+        else if(d.label==='Game Delayed'){ g.detailedState='Delayed'; }
       }
     }
     _addFeedItem(item.gamePk,d);
@@ -274,7 +329,10 @@ async function initDemo() {
       gamePk:item.gamePk,ts:ts,
       event:d.event,desc:d.desc,type:d.type||'play',inning:d.inning,halfInning:d.halfInning,outs:d.outs,
       awayScore:d.awayScore,homeScore:d.homeScore,scoring:d.scoring,risp:d.risp,playClass:d.playClass,
-      playTime:new Date(ts),batterId:d.batterId,batterName:d.batterName,pitcherName:d.pitcherName,distance:d.distance,
+      playTime:new Date(ts),batterId:d.batterId,batterName:d.batterName,pitcherId:d.pitcherId,pitcherName:d.pitcherName,
+      distance:d.distance,speed:d.speed,rbi:d.rbi,
+      onFirst:d.onFirst,onSecond:d.onSecond,onThird:d.onThird,
+      awayHits:d.awayHits,homeHits:d.homeHits,
       icon:d.icon,label:d.label,sub:d.sub
     });
   });
@@ -293,7 +351,7 @@ async function initDemo() {
   _showAlert({
     icon:'▶',
     event:'Demo Mode · '+state.enabledGames.size+' games · '+state.feedItems.length+' plays loaded',
-    desc:'Heads up — this is a replay of a recorded session. Focus mode pitch data is limited to games that were captured live. Toggle 📻 for Classic Radio: random vintage broadcast (Vin Scully, Mantle’s final game, WS69, Seaver 19K) re-rolls on focus switch — atmosphere only, not synced to plays.',
+    desc:'This is a limited playback of a May 11th 2026. Not all items can be simulated in demo mode, During game times Pulse has live match radio, an increased amount of real time carousel events and Focus mode can switch to any game and obtain audio and full pitch by data. Demo is best experienced at 30x and Toggle 📻 for Classic Radio: The vintage broadcasts are for atmosphere only, not synced to plays.',
     color:'#7dd89e',
     duration:12000
   });
@@ -374,10 +432,14 @@ async function pollDemoFeeds(){
     return;
   }
   var play=state.demoPlayQueue[state.demoPlayIdx];
+  var tickStart=Date.now();
   await advanceDemoPlay(play);
   state.demoPlayIdx++;
+  // Subtract elapsed (mostly pitch sub-ticks) so each cycle still totals
+  // ~demoSpeedMs regardless of how long the at-bat's pitches took to animate.
+  var nextDelay=Math.max(40,demoSpeedMs-(Date.now()-tickStart));
   clearTimeout(state.demoTimer);
-  state.demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
+  state.demoTimer=setTimeout(pollDemoFeeds,nextDelay);
 }
 
 export function setDemoSpeed(ms,btn){
@@ -435,9 +497,16 @@ export function demoNextHR(){
 }
 
 async function advanceDemoPlay(play) {
-  state.demoCurrentTime=play.ts;
   var g=state.gameStates[play.gamePk];
-  if(!g) return;
+  if(!g){ state.demoCurrentTime=play.ts; return; }
+  // Pitch sub-tick: when the focused game is the one this play belongs to,
+  // reveal the at-bat's pitches one-by-one *before* the outcome lands so the
+  // focus card animates B/S/O like live mode (5s linescore polls).
+  // Non-focused games skip this and snap straight to the play outcome.
+  if(play.type==='play'&&state.focusGamePk===play.gamePk){
+    await _animateFocusPitches(play);
+  }
+  state.demoCurrentTime=play.ts;
   var feedData={playTime:new Date(play.ts)};
   if(play.type==='status'){
     feedData.type='status';
@@ -449,6 +518,10 @@ async function advanceDemoPlay(play) {
       g.detailedState='In Progress';
     }else if(play.label==='Game Final'){
       g.status='Final';
+    }else if(play.label==='Game Postponed'){
+      g.status='Final'; g.detailedState='Postponed';
+    }else if(play.label==='Game Delayed'){
+      g.detailedState='Delayed';
     }
   }else{
     // Infer Game underway! status when a play arrives for a still-Preview
@@ -462,13 +535,39 @@ async function advanceDemoPlay(play) {
       g.detailedState='In Progress';
     }
     // Capture pre-update score so we can infer RBI count from the delta —
-    // recorded feedItems don't carry play.result.rbi from /playByPlay.
+    // fallback path for legacy recordings that don't carry play.rbi.
     var prevAway=g.awayScore||0, prevHome=g.homeScore||0;
     g.inning=play.inning;
     g.halfInning=play.halfInning;
     g.outs=play.outs;
     g.awayScore=play.awayScore;
     g.homeScore=play.homeScore;
+    if(play.onFirst!=null) g.onFirst=!!play.onFirst;
+    if(play.onSecond!=null) g.onSecond=!!play.onSecond;
+    if(play.onThird!=null) g.onThird=!!play.onThird;
+    if(play.awayHits!=null) g.awayHits=play.awayHits;
+    if(play.homeHits!=null) g.homeHits=play.homeHits;
+    // Live trackers — mirror pollGamePlays bookkeeping so demo's story
+    // carousel + perfect-game tracker stay live with the play stream.
+    var isHitEvt=['Single','Double','Triple','Home Run'].indexOf(play.event)!==-1;
+    if(state.perfectGameTracker[play.gamePk]===undefined) state.perfectGameTracker[play.gamePk]=true;
+    if(['Walk','Hit By Pitch','Intentional Walk','Error','Fielders Choice','Catcher Interference'].indexOf(play.event)!==-1) state.perfectGameTracker[play.gamePk]=false;
+    if(isHitEvt) state.perfectGameTracker[play.gamePk]=false;
+    if(isHitEvt&&play.batterId){
+      var dh=state.dailyHitsTracker[play.batterId]||{name:play.batterName,hits:0,hrs:0,gamePk:play.gamePk};
+      dh.hits++; if(play.event==='Home Run') dh.hrs++; dh.name=play.batterName||dh.name; dh.gamePk=play.gamePk;
+      state.dailyHitsTracker[play.batterId]=dh;
+    }
+    if(play.event==='Strikeout'&&play.pitcherId){
+      var kkey=play.gamePk+'_'+play.pitcherId;
+      var ke=state.dailyPitcherKs[kkey]||{name:play.pitcherName,ks:0,gamePk:play.gamePk};
+      ke.ks++; ke.name=play.pitcherName||ke.name; state.dailyPitcherKs[kkey]=ke;
+    }
+    // Inning recap firing — mirror src/pulse/poll.js:238
+    if(play.outs===3){
+      var _rk=play.gamePk+'_'+play.inning+'_'+(play.halfInning||'top').toLowerCase();
+      if(!state.inningRecapsFired.has(_rk)) state.inningRecapsPending[_rk]={gamePk:play.gamePk,inning:play.inning,halfInning:(play.halfInning||'top').toLowerCase()};
+    }
     var badge='';
     if(play.event==='Home Run') badge='HR';
     else if(play.event==='Double') badge='2B';
@@ -486,6 +585,23 @@ async function advanceDemoPlay(play) {
     feedData.homeScore=play.homeScore;
     feedData.risp=play.risp;
     feedData.playClass=play.playClass;
+    // Thread batter/pitcher/rbi into feedData so downstream consumers
+    // (pollPendingVideoClips clip-matching by batterId, story carousel
+    // pitcher attribution, RBI card lookups) see the same data live mode
+    // would. Without these the demo replay's feedItems are missing the
+    // fields and clip attachment silently fails.
+    feedData.batterId=play.batterId;
+    feedData.batterName=play.batterName;
+    feedData.pitcherId=play.pitcherId;
+    feedData.pitcherName=play.pitcherName;
+    if(play.rbi!=null) feedData.rbi=play.rbi;
+    if(play.distance!=null) feedData.distance=play.distance;
+    if(play.speed!=null) feedData.speed=play.speed;
+    if(play.onFirst!=null) feedData.onFirst=play.onFirst;
+    if(play.onSecond!=null) feedData.onSecond=play.onSecond;
+    if(play.onThird!=null) feedData.onThird=play.onThird;
+    if(play.awayHits!=null) feedData.awayHits=play.awayHits;
+    if(play.homeHits!=null) feedData.homeHits=play.homeHits;
     if(play.event==='Home Run'){
       _playSound('hr');
       if(play.batterId) _showPlayerCard(play.batterId,play.batterName||'',g.awayId,g.homeId,play.halfInning,null,play.desc,null,play.gamePk);
@@ -499,9 +615,9 @@ async function advanceDemoPlay(play) {
         if(pauseBtn) pauseBtn.textContent='▶ Resume';
       }
     }else if(play.scoring){
-      // Infer RBI from the score delta we captured before mutating g.
-      // Negative deltas (defensive corrections, rare) fall back to 1.
-      var rbi=Math.max(0,(play.awayScore-prevAway)+(play.homeScore-prevHome));
+      // Prefer the captured RBI; fall back to score-delta inference for
+      // legacy recordings whose feedItems predate play.rbi capture.
+      var rbi=(play.rbi!=null)?play.rbi:Math.max(0,(play.awayScore-prevAway)+(play.homeScore-prevHome));
       if(!rbi) rbi=1;
       var rbiOk=(Date.now()-(state.rbiCardCooldowns[play.gamePk]||0))>=state.devTuning.rbiCooldown;
       var rbiScore=calcRBICardScore(rbi,play.event,play.awayScore,play.homeScore,play.inning,play.halfInning);
@@ -525,6 +641,33 @@ async function advanceDemoPlay(play) {
   // demoCurrentTime; existing match-by-batterId + DOM patch logic runs unchanged.
   if(_pollPendingVideoClips) _pollPendingVideoClips();
   await _buildStoryPool();
+}
+
+// Find the pitch envelope corresponding to this play (batterId + ts proximity),
+// then advance demoCurrentTime to each pitch's eventTs and re-hydrate the focus
+// card. Budgets ~50% of demoSpeedMs across pitches so the cycle still feels 1x.
+async function _animateFocusPitches(play){
+  var timeline=(state.pitchTimeline&&state.pitchTimeline[play.gamePk])||[];
+  if(!timeline.length||!play.batterId) return;
+  var envelope=null;
+  for(var ei=timeline.length-1;ei>=0;ei--){
+    var ev=timeline[ei];
+    if(ev.batterId===play.batterId&&Math.abs((ev.ts||0)-play.ts)<60000){ envelope=ev; break; }
+  }
+  if(!envelope) return;
+  var pitches=(envelope.pitches||[]).filter(function(p){ return p.eventTs!=null; });
+  if(!pitches.length) return;
+  // Total pitch-animation budget — capped at half a play tick so the
+  // outer pollDemoFeeds rhythm survives.
+  var budget=Math.max(100,Math.min(demoSpeedMs*0.5,4000));
+  var perPitchMs=Math.max(40,Math.floor(budget/pitches.length));
+  for(var i=0;i<pitches.length;i++){
+    if(!state.demoMode) return;
+    var p=pitches[i];
+    state.demoCurrentTime=p.eventTs;
+    if(_pollFocusLinescore&&state.focusGamePk===play.gamePk) _pollFocusLinescore();
+    await new Promise(function(res){ setTimeout(res,perPitchMs); });
+  }
 }
 
 function renderDemoEndScreen() {
@@ -554,6 +697,42 @@ export function exitDemo() {
   if(state.storyRotateTimer) clearInterval(state.storyRotateTimer);
   if(state.pulseAbortCtrl){state.pulseAbortCtrl.abort();state.pulseAbortCtrl=null;}
   if(state.focusAbortCtrl){state.focusAbortCtrl.abort();state.focusAbortCtrl=null;}
+  // Tear down demo focus state so live pulse opens clean — without this,
+  // demo's last focusGamePk persists into resumeLivePulse which re-runs
+  // setFocusGame against that stale pk, and demo's focusFastTimer keeps
+  // calling pollFocusLinescore (now in live branch) against it. focusIsManual
+  // left=true blocks live auto-pick; focusState shows demo's last B/S/O
+  // until first live poll lands.
+  if (state.focusFastTimer) { clearInterval(state.focusFastTimer); state.focusFastTimer = null; }
+  state.focusGamePk = null;
+  state.focusIsManual = false;
+  state.focusCurrentAbIdx = null;
+  state.focusLastTimecode = null;
+  state.focusPitchSequence = [];
+  state.focusAlertShown = {};
+  state.focusState = {
+    balls: 0, strikes: 0, outs: 0, inning: 1, halfInning: 'top',
+    currentBatterId: null, currentBatterName: '',
+    currentPitcherId: null, currentPitcherName: '',
+    onFirst: false, onSecond: false, onThird: false,
+    awayAbbr: '', homeAbbr: '', awayScore: 0, homeScore: 0,
+    awayPrimary: '#444', homePrimary: '#444',
+    tensionLabel: 'NORMAL', tensionColor: '#9aa0a8',
+    lastPitch: null, batterStats: null, pitcherStats: null
+  };
+  // Demo's action events + RBI cooldowns would otherwise leak into live
+  // (yesterday's stolen base still in carousel; recent demo RBI suppressing
+  // a live RBI card cooldown window).
+  state.actionEvents = [];
+  state.seenActionEventIds = new Set();
+  state.rbiCardCooldowns = {};
+  // Dismiss any demo-driven overlays (focus overlay, HR/RBI player card).
+  state.focusOverlayOpen = false;
+  // Dismiss via the same paths each overlay's own open/close uses — inline
+  // display:none would stick around and block subsequent showPlayerCard
+  // (which opens via classList.add('open') and relies on the CSS rule).
+  var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
+  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
   var overlay=document.querySelector('.demo-end-screen');
   if(overlay) overlay.remove();
   document.body.classList.remove('demo-active');
