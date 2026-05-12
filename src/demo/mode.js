@@ -160,11 +160,15 @@ async function initDemo() {
   var mockBar=document.getElementById('mockBar');
   if(mockBar){
     mockBar.style.display='flex';
+    mockBar.classList.add('open');
     var badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='📽️ Demo';
+    var fabBadge=document.getElementById('demoFabBadge');
+    if(fabBadge) fabBadge.textContent='1x';
     document.getElementById('demoSpeed1x').style.display='';
     document.getElementById('demoSpeed10x').style.display='';
     document.getElementById('demoSpeed30x').style.display='';
+    document.querySelectorAll('#demoSpeed1x,#demoSpeed10x,#demoSpeed30x').forEach(b=>b.classList.remove('active'));
     document.getElementById('demoSpeed1x').classList.add('active');
     document.getElementById('demoNextHRBtn').style.display='';
     document.getElementById('demoPauseBtn').style.display='';
@@ -448,6 +452,8 @@ export function setDemoSpeed(ms,btn){
     document.querySelectorAll('#demoSpeed1x,#demoSpeed10x,#demoSpeed30x').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   }
+  var fabBadge=document.getElementById('demoFabBadge');
+  if(fabBadge) fabBadge.textContent = ms>=10000?'1x':ms>=1000?'10x':'30x';
   if(state.demoMode&&!demoPaused&&state.demoTimer){
     clearTimeout(state.demoTimer);
     state.demoTimer=setTimeout(pollDemoFeeds,demoSpeedMs);
@@ -784,6 +790,7 @@ export function exitDemo() {
   var mockBar=document.getElementById('mockBar');
   if(mockBar){
     mockBar.style.display='none';
+    mockBar.classList.remove('open');
     var btnNormal=document.getElementById('btnNormal');
     if(btnNormal) btnNormal.style.display='';
     var btnFast=document.getElementById('btnFast');
