@@ -102,25 +102,16 @@ export async function pollPendingVideoClips() {
   for (var pk in byGame) {
     var gpk = +pk;
     if (state.demoMode) {
-      // Demo replay: walk hydrated contentCacheTimeline for the newest
-      // snapshot whose ts <= demoCurrentTime. Clips were already trimmed
-      // by the recorder, so the existing match/filter logic below works
-      // unchanged. No network call.
+      // Demo replay: use the LATEST contentCacheTimeline snapshot — clips
+      // are typically published 1-20+ min after the play they correspond
+      // to, so a ts<=demoCurrentTime walk grabs a snapshot that doesn't
+      // yet contain the play's clip. We're replaying, so we already know
+      // the full set of clips for the game; player_id + closest-clip
+      // matching below sorts out which clip belongs to which play.
       var timeline = state.contentCacheTimeline[gpk] || [];
-      var nowMs = state.demoCurrentTime || 0;
-      var snap = null;
-      for (var ti = timeline.length - 1; ti >= 0; ti--) {
-        if (timeline[ti].ts <= nowMs) { snap = timeline[ti]; break; }
-      }
-      // Bootstrap fallback: contentCacheTimeline entries are captured
-      // during the recording window (ts >= metadata.startedAt), but
-      // demoCurrentTime starts at the earliest baselined play. Without
-      // this fallback no clips ever attach during the early demo window.
-      // Use the latest available snapshot so clips appear immediately;
-      // ts-based lookup takes over once demoCurrentTime catches up.
-      if (!snap && timeline.length) snap = timeline[timeline.length - 1];
+      var snap = timeline.length ? timeline[timeline.length - 1] : null;
       if (snap && snap.items && snap.items.length) {
-        state.liveContentCache[gpk] = { items: snap.items, fetchedAt: nowMs };
+        state.liveContentCache[gpk] = { items: snap.items, fetchedAt: state.demoCurrentTime || 0 };
       }
     } else {
       var cached = state.liveContentCache[gpk];
@@ -205,11 +196,14 @@ export async function pollPendingVideoClips() {
         var diff = Math.abs(clipTs - playTs);
         if (diff < bestDiff) { bestDiff = diff; best = clip; }
       });
-      // Only patch if the clip is within 20 min of the play — a stolen base or
-      // catch clip from earlier in the game should never lock in on an HR/RBI
-      // card. Leaving it unpatched lets the next 30s poll retry once the right
-      // clip is published.
-      if (best && bestDiff <= 20 * 60 * 1000) {
+      // Only patch if the clip is within the time cap of the play — a stolen
+      // base or catch clip from earlier in the game should never lock in on
+      // an HR/RBI card. Live uses 20 min (next 30s poll retries when newer
+      // clips publish); demo uses 60 min because we use the recording's final
+      // snapshot which mixes early and late clips, and clip.date can drift
+      // significantly from the play for early-inning events.
+      var matchCapMs = state.demoMode ? 60 * 60 * 1000 : 20 * 60 * 1000;
+      if (best && bestDiff <= matchCapMs) {
         state.lastVideoClip = best;
         patchFeedItemWithClip(playTs, gpk, best);
       }
