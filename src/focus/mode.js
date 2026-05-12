@@ -67,6 +67,12 @@ export function selectFocusGame() {
       // game the recording user was watching, which has the richest pitch
       // data. Normal ts-based lookup resumes once demoCurrentTime catches up.
       if(!entry) entry=ft[0];
+      // If the matched entry has focusGamePk=null (recorder was started
+      // before any game went live), look forward for the first non-null
+      // entry so the focus card isn't empty for the first few demo ticks.
+      if(entry&&!entry.focusGamePk){
+        for(var fi=0;fi<ft.length;fi++){ if(ft[fi].focusGamePk){ entry=ft[fi]; break; } }
+      }
       if(entry&&entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
         // Don't write entry.isManual into state.focusIsManual — that's
         // the recorder user's flag, not the demo viewer's. The viewer's
