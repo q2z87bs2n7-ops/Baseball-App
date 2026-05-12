@@ -131,7 +131,7 @@ Enabled teams, disabled teams, Radio Check tool, Hls.js routing: `docs/radio-sys
 
 ## 📽️ Demo Mode
 
-Self-contained replay of April 27-28, 2026 from `assets/daily-events.json` (562KB, 619 plays, 23 games). No API calls. Speeds: 1x (10s/play), 10x (1s/play), 100x (100ms/play). Toggle via `Shift+M` or "▶ Try Demo" button.
+Self-contained replay of May 11-12, 2026 from `assets/daily-events.json` (~2.5MB, 456 plays, 6 games). No API calls. Speeds: 1x (10s/play), 10x (1s/play), 30x (333ms/play). Toggle via `Shift+M` or "▶ Try Demo" button.
 
 `devTuning` object, all demo globals, key functions: `docs/demo-mode.md`.
 
