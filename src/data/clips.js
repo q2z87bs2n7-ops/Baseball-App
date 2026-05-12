@@ -209,6 +209,44 @@ export async function pollPendingVideoClips() {
       }
     });
   }
+
+  // DEBUG START — demo-only: match video for baserunning plays (batterId=null, e.g. caught stealing)
+  // These are skipped by the main loop; fetch fresh from the real API since the recording
+  // may not have captured the clip. Match by runner's last name in the clip headline.
+  if (state.demoMode) {
+    var baserunPending = state.feedItems.filter(function(item) {
+      if (!item.data || item.data.type !== 'play') return false;
+      if (item.data.batterId) return false;
+      if (!item.data.batterName) return false;
+      if (!item.ts || item.ts.getTime() < cutoff) return false;
+      var bel = feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
+      return bel && !bel.dataset.clipPatched;
+    });
+    for (var bi = 0; bi < baserunPending.length; bi++) {
+      var bitem = baserunPending[bi];
+      try {
+        var br = await fetch(MLB_BASE + '/game/' + bitem.gamePk + '/content');
+        if (!br.ok) continue;
+        var bd = await br.json();
+        var bclips = ((bd.highlights && bd.highlights.highlights && bd.highlights.highlights.items) || []).filter(function(it) {
+          if (it.type !== 'video' || !pickPlayback(it.playbacks)) return false;
+          return !(it.keywordsAll || []).some(function(kw) {
+            var v = (kw.value || kw.slug || '').toLowerCase();
+            return v === 'data-visualization' || v === 'data_visualization';
+          });
+        });
+        var lastName = (bitem.data.batterName || '').split(' ').pop().toLowerCase();
+        var bmatched = bclips.find(function(clip) {
+          return (clip.headline || clip.blurb || '').toLowerCase().indexOf(lastName) !== -1;
+        });
+        if (bmatched) {
+          state.lastVideoClip = bmatched;
+          patchFeedItemWithClip(bitem.ts.getTime(), bitem.gamePk, bmatched);
+        }
+      } catch(e) {}
+    }
+  }
+  // DEBUG END
 }
 
 // Dev Tools: play a video clip without waiting for a live HR.
