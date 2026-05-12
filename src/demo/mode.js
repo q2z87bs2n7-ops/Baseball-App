@@ -175,7 +175,7 @@ async function initDemo() {
     document.getElementById('demoForwardBtn').style.display='';
     var _exitBtn=document.getElementById('demoExitBtn');
     if(_exitBtn) _exitBtn.style.display='';
-    document.getElementById('demoPauseBtn').textContent='⏸ Pause';
+    document.getElementById('demoPauseBtn').textContent='⏸';
   }
   state.gameStates={};
   state.feedItems=[];
@@ -463,7 +463,7 @@ export function setDemoSpeed(ms,btn){
 export function toggleDemoPause(){
   demoPaused=!demoPaused;
   var btn=document.getElementById('demoPauseBtn');
-  if(btn) btn.textContent=demoPaused?'▶ Resume':'⏸ Pause';
+  if(btn) btn.textContent=demoPaused?'▶':'⏸';
   if(!demoPaused&&state.demoMode) pollDemoFeeds();
 }
 
@@ -618,7 +618,7 @@ async function advanceDemoPlay(play) {
         demoSpeedMs=_hrSeekPriorSpeed||10000;
         demoPaused=true;
         var pauseBtn=document.getElementById('demoPauseBtn');
-        if(pauseBtn) pauseBtn.textContent='▶ Resume';
+        if(pauseBtn) pauseBtn.textContent='▶';
       }
     }else if(play.scoring){
       // Prefer the captured RBI; fall back to score-delta inference for

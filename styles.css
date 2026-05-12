@@ -5317,7 +5317,7 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .demo-fab-panel {
   display: none;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
   background: var(--dark);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -5403,9 +5403,9 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 @media(max-width:480px) {
   #mockBar {
     bottom: calc(76px + env(safe-area-inset-bottom));
-    left: auto;
-    right: 12px;
-    align-items: flex-end;
+    left: 12px;
+    right: auto;
+    align-items: flex-start;
   }
 }
 
