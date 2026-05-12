@@ -1,5 +1,5 @@
 /*! sw.js is mutated by build.mjs — the CACHE literal is regex-replaced from package.json on every build. Edit package.json to bump the version, not this constant. */
-const CACHE = "mlb-v4.19.8";
+const CACHE = "mlb-v4.19.9";
 const SHELL = ["./", "./manifest.json", "./dist/styles.min.css", "./dist/app.bundle.js", "./assets/vendor/pulse-card-templates.js", "./assets/vendor/focusCard.js", "./assets/vendor/collectionCard.js", "./icons/icon-192.png", "./icons/icon-512.png"];
 const ICON = new URL("./icons/icon-192.png", self.location).href;
 const START = new URL("./", self.location).href;

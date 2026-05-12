@@ -207,7 +207,12 @@ async function initDemo() {
   state.dailyHitsTracker=c.dailyHitsTracker||jsonData.dailyHitsTracker||{};
   state.dailyPitcherKs=c.dailyPitcherKs||jsonData.dailyPitcherKs||{};
   state.storyCarouselRawGameData=c.storyCarouselRawGameData||jsonData.storyCarouselRawGameData||{};
-  state.stolenBaseEvents=c.stolenBaseEvents||jsonData.stolenBaseEvents||[];
+  // ts is serialised to ISO string by JSON.stringify; buildStoryPool's
+  // staleness filter calls .getTime() so we normalise back to Date here.
+  state.stolenBaseEvents=(c.stolenBaseEvents||jsonData.stolenBaseEvents||[]).map(function(sb){
+    if(sb && sb.ts && typeof sb.ts==='string') sb.ts=new Date(sb.ts);
+    return sb;
+  });
   state.transactionsCache=c.transactionsCache||jsonData.transactionsCache||[];
   state.liveWPCache=c.liveWPCache||jsonData.liveWPCache||{};
   state.perfectGameTracker=c.perfectGameTracker||jsonData.perfectGameTracker||{};
