@@ -186,6 +186,11 @@ export const state = {
   focusOverlayOpen: false,
   tabHiddenAt: null,
 
+  // ── Scorecard Overlay State ──────────────────────────────────────────────
+  scorecardOverlayOpen: false,
+  scorecardGamePk: null,
+  scorecardModel: null,
+
   // ── Collection State ─────────────────────────────────────────────────────
   collectionFilter: 'all',
   collectionSort: 'newest',

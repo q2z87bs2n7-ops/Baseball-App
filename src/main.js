@@ -121,6 +121,7 @@ import {
   pollFocusLinescore, renderFocusCard, renderFocusMiniBar,
   openFocusOverlay, closeFocusOverlay, renderFocusOverlay, dismissFocusAlert,
 } from './focus/mode.js';
+import { openScorecardOverlay, closeScorecardOverlay } from './overlay/scorecard.js';
 import {
   setRotationCallbacks, buildStoryPool, rotateStory, showStoryCard, renderStoryCard, updateStoryDots,
   prevStory, nextStory, onStoryVisibilityChange,
@@ -132,7 +133,7 @@ import { selectLeaderPill, switchLeaderTab, loadLeaders, toggleLeaderMore, toggl
 import { loadTeamStats } from './sections/stats/team.js';
 import { setLeagueCallbacks, clearLeagueTimer, loadLeagueView, loadLeagueMatchups, switchMatchupDay, switchLeagueLeaderTab } from './sections/league.js';
 import { selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens } from './sections/news.js';
-import { showLiveGame, closeLiveView, fetchLiveGame } from './sections/live.js';
+import { showLiveGame, closeLiveView, fetchLiveGame, liveScorecard } from './sections/live.js';
 import { loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo } from './sections/schedule.js';
 import { loadStandings } from './sections/standings.js';
 import { setHomeCallbacks, clearHomeTimer, loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo } from './sections/home.js';
@@ -708,6 +709,7 @@ installNavLongPress({
 });
 
 document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&state.scorecardOverlayOpen) { closeScorecardOverlay(); return; }
   if(e.key==='Escape'&&state.focusOverlayOpen) { closeFocusOverlay(); return; }
   // Mnemonics: M=deMo, H=Home run, B=rBi, V=Variants, D=Dev tools, F=Focus,
   // G=Generate test card, C=Collection demo, P=Play clip, N=News, L=Log,
@@ -772,7 +774,7 @@ Object.assign(window, {
   switchLeaderTab, selectLeaderPill, switchRosterTab, switchVsBasis, toggleQualifiedOnly, toggleLeaderMore, switchPlayerStatsTab, dismissCareerSwipeHint, openCompareOverlay, closeCompareOverlay, setCompareSlot, setCompareGroup, switchNewsFeed, toggleNewsTeamLens,
   switchLeagueLeaderTab, switchMatchupDay, selectNewsSource,
   // Live game view + matchup grid
-  showLiveGame, closeLiveView, fetchLiveGame, switchBoxTab, selectCalGame,
+  showLiveGame, closeLiveView, fetchLiveGame, liveScorecard, switchBoxTab, selectCalGame,
   // Carousel nav
   prevStory, nextStory, nextNewsCard, prevNewsCard,
   // Demo Mode controls
@@ -796,6 +798,8 @@ Object.assign(window, {
   dismissPlayerCard, closeSignInCTA, closeVideoOverlay,
   openCardFromKey, playHighlightVideo, playYesterdayClip, scrollToYdTile,
   selectYdClip, selectMediaVideo, selectPlayer, ydChangeDate,
+  // Scorecard
+  openScorecardOverlay, closeScorecardOverlay,
   // Focus Mode
   openFocusOverlay, closeFocusOverlay, dismissFocusAlert,
   setFocusGame, setFocusGameManual, resetFocusAuto, toggleGame,

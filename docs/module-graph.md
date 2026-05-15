@@ -131,6 +131,15 @@ src/
                                      openFocusOverlay, closeFocusOverlay,
                                      dismissFocusAlert.
 
+  overlay/
+    scorecard.js                    — Old-school scoring-book overlay
+                                     (openScorecardOverlay, closeScorecardOverlay).
+                                     Fetches feed/live (v1.1), builds a
+                                     diamond-per-PA model with fielder notation
+                                     (6-3/F8/K/ꓘ), traced base paths, per-inning
+                                     R/H/E + pitching lines. Self-refreshes on
+                                     LIVE_REFRESH_MS while a live game is open.
+
   cards/
     playerCard.js                   — resolvePlayerCardData, showPlayerCard,
                                      showRBICard, getHRBadge, getRBIBadge,

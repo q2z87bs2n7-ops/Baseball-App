@@ -16,8 +16,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.20.10"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.20.10">
+<script defer src="dist/app.bundle.js?v=4.20.11"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.20.11">
 <style>
 /* In-app Daybreak splash — full lifecycle is ours. iOS shows manifest background_color (#0a0f1e, matches body) until HTML parses to #appSplash, then this overlay takes over.
    Entry (0-300ms): gradient + content fade IN from the matching dark bg → no snap-in jump from manifest bg.
@@ -432,6 +432,10 @@
 </div>
 <div id="collectionOverlay" onclick="if(event.target===this)closeCollection()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
   <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
+</div>
+
+<div id="scorecardOverlay" onclick="if(event.target===this)closeScorecardOverlay()" style="display:none;position:fixed;inset:0;z-index:650;background:rgba(0,0,0,.85);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px">
+  <div id="scorecardCard" style="width:100%;max-width:1280px;border-radius:12px;background:var(--card);border:1px solid var(--border);margin:auto"></div>
 </div>
 
 <div id="compareOverlay" class="compare-overlay" onclick="if(event.target===this)closeCompareOverlay()" hidden>
@@ -950,6 +954,7 @@
   <div style="max-width:1360px;margin:0 auto;padding:20px">
     <button class="back-btn" onclick="closeLiveView()">← Back to Home</button>
     <button class="refresh-btn" onclick="fetchLiveGame()" style="float:right;margin-bottom:16px">↻ Refresh</button>
+    <button class="refresh-btn" onclick="liveScorecard()" style="float:right;margin:0 8px 16px 0">📋 Scorecard</button>
     <div style="clear:both"></div>
     <div class="live-header" id="liveHeader"><div class="loading">Loading live game...</div></div>
     <div class="live-grid">
