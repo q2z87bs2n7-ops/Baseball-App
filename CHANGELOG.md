@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.27.0
+**Current version:** v4.27.1
+
+**v4.27.1** — **New Pulse side-rail feature: Baseball Buzz.** Curated baseball Bluesky accounts (`src/config/buzz.js` — core analytics/insiders + one beat writer per club) rendered as a recent-posts feed in the Pulse side rail (`#sideRailBuzz`, between MLB News and the games list). Pulled keyless/no-account from the public AT-Protocol API client-side (`app.bsky.feed.getAuthorFeed`, no Vercel function), original posts only (no replies/reposts), last-month freshness filter, newest-first, capped 40, `localStorage`-cached 10 min. Text-only v1, links out to bsky.app. Curated handles are unverified — re-verify offseason.
 
 **v4.27.0** — Merge to main: fix podcast/YouTube not halting live-game radio (branch `claude/research-podcast-apis-JzN1O`).
 
