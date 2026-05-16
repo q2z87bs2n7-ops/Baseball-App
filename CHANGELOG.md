@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.26.1
+**Current version:** v4.27.0
+
+**v4.27.0** — Merge to main: fix podcast/YouTube not halting live-game radio (branch `claude/research-podcast-apis-JzN1O`).
 
 **v4.26.1** — Fix: podcast (and YouTube / schedule highlight) playback did not halt the live-game radio. `stopAllMedia` was imported into `main.js` but never added to the `Object.assign(window, …)` export block, so the `window.stopAllMedia(...)` calls in `playPodcast` / `selectMediaVideo` / schedule silently no-op'd. Exported it on `window`. (The radio→podcast direction already worked since `stopPodcast` was exported.)
 
