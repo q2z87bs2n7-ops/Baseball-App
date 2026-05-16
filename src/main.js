@@ -797,7 +797,7 @@ Object.assign(window, {
   // Card overlays + dismissals
   dismissPlayerCard, closeSignInCTA, closeVideoOverlay,
   openCardFromKey, playHighlightVideo, playYesterdayClip, scrollToYdTile,
-  selectYdClip, selectMediaVideo, playPodcast, stopPodcast, selectPlayer, ydChangeDate,
+  selectYdClip, selectMediaVideo, playPodcast, stopPodcast, stopAllMedia, selectPlayer, ydChangeDate,
   // Scorecard
   openScorecardOverlay, closeScorecardOverlay,
   // Focus Mode
