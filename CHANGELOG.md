@@ -5,7 +5,7 @@
 
 ---
 
-**Current version:** v4.21.1
+**Current version:** v4.21.2
 
 **v4.21.2** — **Scorecard review-feedback pass.** Eight improvements from an external code review: (1) live re-render now preserves the overlay's scroll position + each grid's horizontal pan; (2) a failed *refresh* no longer wipes a good scorecard — only the first load shows an error; (4) `@media print` stylesheet + 🖨 button → clean black-on-white landscape printout; (5) final games session-cached in `state.scorecardCache` (instant reopen, no refetch); (6) accessibility — `role="dialog"`/`aria-modal`/`aria-labelledby`, per-cell `aria-label` summaries with `aria-hidden` SVGs, Tab focus-trap; (7) PH/PR `subRoles` keyed by resolved player id instead of name (same-name collision); (8) half-inning key style tidy; (10) per-inning "Left on base" footer row from the base map. Items 3 (sticky name column — already implemented) and 9 (file split — deliberate future refactor) intentionally deferred. Shipped on branch v4.21.2.
 
