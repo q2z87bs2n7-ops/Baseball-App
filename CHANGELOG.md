@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.12
+**Current version:** v4.21.13
+
+**v4.21.13** — Docs: refreshed `docs/scorecard.md` (Paper visual treatment, responsive batting-grid section, non-blocking font load, single inning-end slash, subtle launch button) and the CLAUDE.md scorecard summary to match the v4.21.5 → v4.21.12 work.
 
 **v4.21.12** — **Fix double inning-ending diagonal.** Two diagonals were rendering on the half-inning-ending cell: the bold red slash inside the diamond SVG (the spec renderer's mark, the traditional scorebook convention) *and* a faint 135° cell-background gradient stripe added from the handoff README's checklist item 5. The spec only ever drew one; the README's cell-overlay note was an alternative, not an addition. Removed the cell-background gradient (and the now-unused `.inning-end` class plumbing) — a single in-diamond slash remains.
 
