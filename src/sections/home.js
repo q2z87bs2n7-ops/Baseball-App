@@ -109,9 +109,13 @@ export async function loadHomeInjuries(){
   var el=document.getElementById('homeInjuries');if(!el)return;
   el.innerHTML='<div class="loading">Loading injuries...</div>';
   try{
-    var r=await fetch(MLB_BASE+'/teams/'+state.activeTeam.id+'/roster?rosterType=40Man');
+    var r=await fetch(MLB_BASE+'/teams/'+state.activeTeam.id+'/roster?rosterType=40Man&date='+etDateStr());
     var d=await r.json(),roster=d.roster||[];
-    var il=roster.filter(function(p){return p.status&&/injured list|disabled list/i.test(p.status.description||'');});
+    var il=roster.filter(function(p){
+      if(!p.status)return false;
+      var code=p.status.code||'',desc=p.status.description||'';
+      return /^D\d/i.test(code)||/injured list|disabled list|\bil\b/i.test(desc);
+    });
     if(!il.length){el.innerHTML='<div class="empty-state">No players on the IL</div>';return;}
     il.sort(function(a,b){return ((a.person&&a.person.fullName)||'').localeCompare((b.person&&b.person.fullName)||'');});
     var html='<div class="home-roster-list">';
