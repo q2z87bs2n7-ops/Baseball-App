@@ -310,7 +310,7 @@ function initReal() {
   if(state.newsRefreshTimer){clearInterval(state.newsRefreshTimer);state.newsRefreshTimer=null;}
   state.newsRefreshTimer=setInterval(loadPulseNews,TIMING.NEWS_REFRESH_MS);
   if(state.buzzRefreshTimer){clearInterval(state.buzzRefreshTimer);state.buzzRefreshTimer=null;}
-  state.buzzRefreshTimer=setInterval(loadBaseballBuzz,TIMING.NEWS_REFRESH_MS);
+  state.buzzRefreshTimer=setInterval(function(){loadBaseballBuzz(true);},TIMING.BUZZ_REFRESH_MS);
   if(state.yesterdayRefreshTimer){clearInterval(state.yesterdayRefreshTimer);state.yesterdayRefreshTimer=null;}
   state.yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){

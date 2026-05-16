@@ -21,7 +21,8 @@ const FRESH_MS = 31 * 24 * 60 * 60 * 1000;   // "last month"
 const MAX_POSTS = 10;
 const PER_ACCOUNT = 6;
 const CACHE_KEY = 'mlb_buzz_cache_v2';        // bumped: shape gained avatar/category/embedImage
-const CACHE_TTL_MS = 600000;                  // 10 min (== TIMING.NEWS_REFRESH_MS)
+const CACHE_TTL_MS = 120000;                  // 2 min — reopen/reload guard only; the
+                                              // scheduled timer force-fetches (see loadBaseballBuzz)
 const FILTER_KEY = 'mlb_buzz_filter_v1';
 
 var chipHandlerAttached = false;
@@ -146,7 +147,10 @@ function applyFilter(posts) {
   return posts;
 }
 
-export async function loadBaseballBuzz() {
+// force=true (the scheduled 2-min timer) always hits the network so the
+// timer is the true refresh cadence. force=false (first Pulse nav / reopen)
+// uses the localStorage cache so a reload within CACHE_TTL_MS is free.
+export async function loadBaseballBuzz(force) {
   var el = document.getElementById('sideRailBuzz');
   if (!el) return;
   currentFilter();
@@ -165,11 +169,13 @@ export async function loadBaseballBuzz() {
     chipHandlerAttached = true;
   }
 
-  var cached = readCache();
-  if (cached && cached.length) {
-    state.baseballBuzzPosts = cached;
-    renderBaseballBuzz();
-    return;
+  if (!force) {
+    var cached = readCache();
+    if (cached && cached.length) {
+      state.baseballBuzzPosts = cached;
+      renderBaseballBuzz();
+      return;
+    }
   }
 
   if (!state.baseballBuzzPosts || !state.baseballBuzzPosts.length) {

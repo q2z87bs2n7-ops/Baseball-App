@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.28.3
+**Current version:** v4.28.4
+
+**v4.28.4** — Baseball Buzz: refresh cadence 10 min → **2 min** (new `TIMING.BUZZ_REFRESH_MS`); cache decoupled from the timer (scheduled tick force-fetches, `CACHE_TTL_MS` 10→2 min now only guards reopen/reload) so the interval is the true cadence — fixes the prior ~20-min effective rate. Text clamp expanded 3→8 lines (5 with an image embed) so the majority of a post is readable in the rail; very long posts still truncate.
 
 **v4.28.3** — Baseball Buzz v2 (design handoff): 28px author avatars (Bluesky CDN, initials fallback), larger type, category-coloured tag pills, hover ↗ affordance, image-embed slot (text clamp 3→2 lines when present), All/My-team/Insiders filter chips (localStorage-persisted), "via Bluesky" footer; section count-badge removed. Cache key → `mlb_buzz_cache_v2`. Discretionary deviations from spec: avatars/embeds gated through `isSafeNewsImage()` with `bsky.app` added to `NEWS_IMAGE_HOSTS` (firewall-safety invariant); layered avatar markup instead of inline-JS `onerror`; branch patch version per CLAUDE.md rule #7 (becomes v4.29.0 on merge to main); CHANGELOG-not-CLAUDE.md for history. Placement (below games) unchanged.
 

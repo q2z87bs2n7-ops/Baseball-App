@@ -5237,11 +5237,11 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 8;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.buzz-card.buzz-has-embed .buzz-text { -webkit-line-clamp: 2; }
+.buzz-card.buzz-has-embed .buzz-text { -webkit-line-clamp: 5; }
 
 .buzz-embed {
   margin-top: 7px;
