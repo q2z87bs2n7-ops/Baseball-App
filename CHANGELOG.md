@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.28.1
+**Current version:** v4.28.2
+
+**v4.28.2** — Baseball Buzz: moved below the upcoming/completed games in the Pulse side rail (order is now News → Games → Buzz).
 
 **v4.28.1** — Baseball Buzz: capped to the 10 most-recent posts (was 40); redesigned to match the side-rail "games" module — joined section header with post-count badge, bordered list container with row dividers/hover, name-ellipsis + accent tag + right-aligned relative time, 3-line text clamp.
 
