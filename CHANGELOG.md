@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.25.0
+**Current version:** v4.26.0
+
+**v4.26.0** — Merge to main: Team Podcasts strip documentation (branch `claude/research-podcast-apis-JzN1O`).
 
 **v4.25.1** — Docs: documented the Team Podcasts strip end-to-end — new `docs/podcast.md` subsystem doc; registered it in CLAUDE.md (subsystem-docs list + a `TEAM_PODCASTS` Hardcoding-Risks row + `collection-sync` now `…/DELETE`); added the strip to `docs/sections.md`, the functions to `docs/functions.md`, `src/config/podcasts.js` to `docs/module-graph.md`; updated `docs/auth-architecture.md` + `docs/card-collection.md` for the `DELETE /api/collection-sync` reset consolidation.
 
