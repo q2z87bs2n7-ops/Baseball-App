@@ -19,10 +19,6 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 // MLB defensive position code → traditional scorebook number.
 var POS = { '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','10':'DH' };
 
-// Approx field position of each fielder within the 0..60 diamond viewBox
-// (home at 30,58) — used to draw a faint hit-direction tick.
-var FCOORD = { '1':'30,42','2':'30,56','3':'49,39','4':'40,27','5':'13,39','6':'21,27','7':'13,13','8':'30,7','9':'47,13' };
-
 // Non-plate-appearance event types: never produce a cell (they happen
 // mid-AB or between batters) but still drive runner advancement.
 var NON_PA = {
@@ -89,12 +85,15 @@ function hitTrajectory(play){
   }
   return '';
 }
-function hitLocation(play){
+// Gameday batted-ball landing coordinates (home plate ≈ 125.42, 198.27).
+function hitCoords(play){
   var ev = play.playEvents || [];
   for(var i=ev.length-1;i>=0;i--){
-    if(ev[i].hitData && ev[i].hitData.location) return String(ev[i].hitData.location);
+    var hd = ev[i].hitData;
+    if(hd && hd.coordinates && hd.coordinates.coordX!=null && hd.coordinates.coordY!=null)
+      return { x:hd.coordinates.coordX, y:hd.coordinates.coordY };
   }
-  return '';
+  return null;
 }
 
 // Pitch count + resolved ball-strike count for the plate appearance.
@@ -291,7 +290,7 @@ function buildModel(feed){
         scored: reached===4,
         outNum: batterOut ? (nOuts||0) : 0,
         inningEnd: batterOut && nOuts===3,
-        p: pi.p, b: pi.b, s: pi.s, adv:'', loc: hitLocation(play)
+        p: pi.p, b: pi.b, s: pi.s, adv:'', hc: hitCoords(play), traj: hitTrajectory(play)
       };
       // Uncaught third strike: batter reached on a K — keep K/ꓘ, note why.
       if((et==='strikeout'||et==='strikeout_double_play') && !batterOut && reached>=1){
@@ -350,12 +349,27 @@ function diamondSVG(cell, size){
   var H='30,58', B1='58,30', B2='30,2', B3='2,30';
   var path = ['M30,58 L58,30','M58,30 L30,2','M30,2 L2,30','M2,30 L30,58'];
   var s = '<svg viewBox="0 0 60 60" width="'+size+'" height="'+size+'" style="display:block">';
-  // faint hit-direction tick toward the fielder who handled the ball
-  if(cell.loc && FCOORD[cell.loc] && !cell.ghost){
-    var pt = FCOORD[cell.loc];
-    s += '<line x1="30" y1="54" x2="'+pt.split(',')[0]+'" y2="'+pt.split(',')[1]+'" stroke="var(--muted)" stroke-width="1" opacity="0.3"/>';
-  }
   s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="none" stroke="var(--border)" stroke-width="1.5"/>';
+  // Batted-ball spray vector from Gameday landing coords: real direction
+  // (pull/center/oppo within the ±45° fair wedge) and depth; grounders
+  // straight, fly balls arced. Thin/muted so it reads under the run path.
+  if(cell.hc && !cell.ghost){
+    var dx = cell.hc.x - 125.42, dy = 198.27 - cell.hc.y;
+    var th = Math.atan2(dx, dy);
+    if(th>1.05) th=1.05; else if(th<-1.05) th=-1.05;
+    var rN = Math.sqrt(dx*dx+dy*dy)/210;
+    if(rN>1) rN=1; else if(rN<0.12) rN=0.12;
+    var L = 8 + rN*46;
+    var ex = Math.max(4, Math.min(56, 30 + L*Math.sin(th)));
+    var ey = Math.max(4, Math.min(56, 58 - L*Math.cos(th)));
+    var vx = ex-30, vy = ey-57, vl = Math.sqrt(vx*vx+vy*vy)||1;
+    var k = cell.traj==='fly_ball' ? 7 : cell.traj==='popup' ? 9 : cell.traj==='line_drive' ? 2 : 0;
+    var d = k>0
+      ? 'M30,57 Q'+(((30+ex)/2)+(-vy/vl)*k).toFixed(1)+','+(((57+ey)/2)+(vx/vl)*k).toFixed(1)+' '+ex.toFixed(1)+','+ey.toFixed(1)
+      : 'M30,57 L'+ex.toFixed(1)+','+ey.toFixed(1);
+    s += '<path d="'+d+'" stroke="var(--muted)" stroke-width="1.2" fill="none" opacity="0.55"/>';
+    s += '<circle cx="'+ex.toFixed(1)+'" cy="'+ey.toFixed(1)+'" r="1.5" fill="var(--muted)" opacity="0.7"/>';
+  }
   if(cell.scored) s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="var(--accent)" fill-opacity="0.28"/>';
   var seg = cell.scored ? 4 : (cell.reached||0);
   for(var i=0;i<seg;i++){
@@ -472,7 +486,8 @@ function renderInto(model){
     + renderLineScore(model)
     + '<div class="sc-legend">⚾ Diamond = plate appearance · filled = run scored · 6-3 / F8 = fielder out · '
     + 'K swinging / ꓘ called · diagonal = inning-ending out · CS/PO = runner out on bases · '
-    + 'MR = Manfred runner · dots (top-left) = RBI · footer = ball-strike · pitches · SB/WP/PB/BK/E = how a runner advanced</div>'
+    + 'MR = Manfred runner · dots (top-left) = RBI · thin line = batted-ball direction/depth (arc = fly) · '
+    + 'footer = ball-strike · pitches · SB/WP/PB/BK/E = how a runner advanced</div>'
     + renderTeamTable(model.away, model.innCount)
     + renderTeamTable(model.home, model.innCount)
     + renderPitchers(model.away)
