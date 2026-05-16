@@ -69,14 +69,30 @@ don't under-count vs. the R column. The base map resets each half-inning.
 | All scorecard logic + rendering | `src/overlay/scorecard.js` |
 | Overlay shell | `index.html` (`#scorecardOverlay`) |
 | Styles (`.sc-*`) | `styles.css` |
-| State (`scorecardOverlayOpen`, `scorecardGamePk`, `scorecardModel`) | `src/state.js` |
+| State (`scorecardOverlayOpen`, `scorecardGamePk`, `scorecardModel`, `scorecardCache`) | `src/state.js` |
 | Window exports + Escape-to-close | `src/main.js` |
 | Launch buttons | `src/sections/schedule.js`, `src/sections/live.js` |
 
+## Behaviour notes
+
+- **Per-inning LOB** — a "Left on base" footer row per team, counted from
+  the base map at each half-inning rollover; game totals in the line-score
+  `LOB` column.
+- **Live re-render** preserves the overlay's vertical scroll and each
+  grid's horizontal pan; a failed *refresh* keeps the existing view (only
+  the *first* load shows an error).
+- **Final games** are cached in `state.scorecardCache` for the session
+  (immutable for the day) — instant reopen, no refetch. Live games always
+  refetch on `LIVE_REFRESH_MS`.
+- **Accessibility** — `role="dialog"`/`aria-modal`/`aria-labelledby`,
+  per-cell `aria-label` summaries (SVGs are `aria-hidden`), a Tab focus
+  trap, and Esc-to-close.
+- **Print** — a `@media print` stylesheet yields a clean black-on-white
+  landscape printout (chrome hidden, teams kept off page breaks); 🖨 button
+  in the header.
+
 ## Known limitations
 
-- Per-inning LOB/summary box not implemented (game-total LOB only, from
-  the API).
 - Spray vectors are a geometric approximation of the Gameday coordinate
   system — direction and relative depth are right; exact landing spot is
   approximate.

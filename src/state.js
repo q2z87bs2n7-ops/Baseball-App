@@ -190,6 +190,7 @@ export const state = {
   scorecardOverlayOpen: false,
   scorecardGamePk: null,
   scorecardModel: null,
+  scorecardCache: {},
 
   // ── Collection State ─────────────────────────────────────────────────────
   collectionFilter: 'all',

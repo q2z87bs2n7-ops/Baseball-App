@@ -6314,3 +6314,54 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   line-height: 1;
   margin-top: 1px
 }
+.sc-actions { display: flex; gap: 8px; flex-shrink: 0 }
+.sc-print {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer
+}
+.sc-lob td {
+  font-size: .62rem;
+  color: var(--muted);
+  background: var(--card2);
+  height: 22px
+}
+.sc-lob td.sc-name { font-weight: 600; color: var(--text) }
+
+@media print {
+  body * { visibility: hidden !important }
+  #scorecardOverlay,
+  #scorecardOverlay * { visibility: visible !important }
+  #scorecardOverlay {
+    position: absolute !important;
+    inset: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    display: block !important
+  }
+  #scorecardCard {
+    max-width: none !important;
+    border: 0 !important;
+    background: #fff !important;
+    color: #000 !important
+  }
+  .sc-actions { display: none !important }
+  .sc-scroll { overflow: visible !important }
+  .sc-team { page-break-inside: avoid }
+  .sc-table th,
+  .sc-table td { border-color: #000 !important; color: #000 !important; background: #fff !important }
+  .sc-table thead th,
+  .sc-rhe,
+  .sc-lob td { background: #eee !important }
+  .sc-title,
+  .sc-sub,
+  .sc-pn,
+  .sc-team-h { color: #000 !important }
+  @page { size: landscape; margin: 0.4in }
+}

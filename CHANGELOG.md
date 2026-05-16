@@ -7,6 +7,8 @@
 
 **Current version:** v4.21.1
 
+**v4.21.2** — **Scorecard review-feedback pass.** Eight improvements from an external code review: (1) live re-render now preserves the overlay's scroll position + each grid's horizontal pan; (2) a failed *refresh* no longer wipes a good scorecard — only the first load shows an error; (4) `@media print` stylesheet + 🖨 button → clean black-on-white landscape printout; (5) final games session-cached in `state.scorecardCache` (instant reopen, no refetch); (6) accessibility — `role="dialog"`/`aria-modal`/`aria-labelledby`, per-cell `aria-label` summaries with `aria-hidden` SVGs, Tab focus-trap; (7) PH/PR `subRoles` keyed by resolved player id instead of name (same-name collision); (8) half-inning key style tidy; (10) per-inning "Left on base" footer row from the base map. Items 3 (sticky name column — already implemented) and 9 (file split — deliberate future refactor) intentionally deferred. Shipped on branch v4.21.2.
+
 **v4.21.1** — **Post-merge patch for the scorecard UAT-fix branch.** Bug-fix follow-up to v4.21.0 (not a new feature), so a patch bump per CLAUDE.md rule #7. Branch shipped v4.20.19 → v4.20.21:
 
 - **v4.20.19** — Fix missing SB/CS/PO markers for mid-at-bat actions. The advancement reason was read from the play-level `result.eventType`, but a steal / caught-stealing / pickoff that happens during an at-bat is recorded on that at-bat (eventType = the at-bat's result, e.g. `strikeout`), so the runner moved on the diamond but no marker was set. Now derived per-runner from `runner.details` (`movementReason`/`eventType`/`event`), falling back to the play-level reason. Found in UAT: Chisholm's stolen base on the Mets/Yankees scorecard showed no `SB`.

@@ -16,8 +16,8 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.21.1"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.21.1">
+<script defer src="dist/app.bundle.js?v=4.21.2"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.21.2">
 <style>
 /* In-app Daybreak splash — full lifecycle is ours. iOS shows manifest background_color (#0a0f1e, matches body) until HTML parses to #appSplash, then this overlay takes over.
    Entry (0-300ms): gradient + content fade IN from the matching dark bg → no snap-in jump from manifest bg.
@@ -434,7 +434,7 @@
   <div id="collectionBook" style="width:100%;max-width:960px;max-height:90vh;overflow-y:auto;border-radius:12px;background:var(--card);border:1px solid var(--border)"></div>
 </div>
 
-<div id="scorecardOverlay" onclick="if(event.target===this)closeScorecardOverlay()" style="display:none;position:fixed;inset:0;z-index:650;background:rgba(0,0,0,.85);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px">
+<div id="scorecardOverlay" role="dialog" aria-modal="true" aria-labelledby="scorecardTitle" onclick="if(event.target===this)closeScorecardOverlay()" style="display:none;position:fixed;inset:0;z-index:650;background:rgba(0,0,0,.85);align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px">
   <div id="scorecardCard" style="width:100%;max-width:1280px;border-radius:12px;background:var(--card);border:1px solid var(--border);margin:auto"></div>
 </div>
 
