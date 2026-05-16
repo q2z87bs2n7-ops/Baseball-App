@@ -167,7 +167,8 @@ function avatarHtml(p) {
 }
 
 function cardHtml(p) {
-  var meta = '<span class="buzz-meta-name">' + escapeNewsHtml(p.name) + '</span>'
+  var head = avatarHtml(p)
+    + '<span class="buzz-meta-name">' + escapeNewsHtml(p.name) + '</span>'
     + (p.tag ? '<span class="buzz-tag" data-cat="' + escapeNewsHtml(p.category || '') + '">'
         + escapeNewsHtml(p.tag) + '</span>' : '')
     + '<span class="buzz-time">' + relTime(p.ts) + '</span>';
@@ -182,15 +183,9 @@ function cardHtml(p) {
 
   return '<a class="buzz-card' + (hasEmbed ? ' buzz-has-embed' : '') + '" href="'
     + escapeNewsHtml(p.url) + '" target="_blank" rel="noopener noreferrer">'
-    + '<div class="buzz-row">'
-    + avatarHtml(p)
-    + '<div class="buzz-body">'
-    + '<div class="buzz-meta">' + meta + '</div>'
+    + '<div class="buzz-head">' + head + '</div>'
     + '<div class="buzz-text">' + escapeNewsHtml(p.text) + '</div>'
     + embed
-    + '</div>'
-    + '</div>'
-    + '<span class="buzz-ext" aria-hidden="true">↗</span>'
     + '</a>';
 }
 
