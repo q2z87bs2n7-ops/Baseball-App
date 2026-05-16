@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.17
+**Current version:** v4.22.0
+
+**v4.22.0** — Merge to main: Home Injury Report + Roster Moves cards (branch `claude/add-home-screen-team-items-hJHMJ`, PR #77).
 
 **v4.21.17** — Home Injury Report / Roster Moves: dropped the emoji from both card headers; documented both cards in `docs/sections.md` and registered `/transactions` + the `/roster` `&date=` gotcha in `docs/api-reference.md`.
 
