@@ -37,6 +37,9 @@ export function stopAllMedia(except) {
       } catch (e) { }
     }
   }
+  if (except !== 'podcast') {
+    if (typeof window !== 'undefined' && window.stopPodcast) window.stopPodcast();
+  }
   if (except !== 'highlight') {
     document.querySelectorAll('video').forEach(function (v) { if (!v.paused) v.pause(); });
   }

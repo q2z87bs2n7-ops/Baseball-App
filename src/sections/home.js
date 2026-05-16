@@ -8,6 +8,7 @@
 
 import { state } from '../state.js';
 import { MLB_BASE, API_BASE, TEAMS, TIMING } from '../config/constants.js';
+import { TEAM_PODCASTS, fallbackPodcastTerm } from '../config/podcasts.js';
 import { etDateStr, etDatePlus } from '../utils/format.js';
 import { forceHttps, escapeNewsHtml } from '../utils/news.js';
 
@@ -19,6 +20,7 @@ export function clearHomeTimer(){ if(homeLiveTimer){clearInterval(homeLiveTimer)
 
 var selectedVideoId=null,mediaVideos=[];
 const MLB_FALLBACK_UC='UCoLrcjPV5PbUrUyXq5mjc_A';
+var podcastShows=[],playingPodcastId=null;
 
 export async function loadTodayGame(){
   if(homeLiveTimer){clearInterval(homeLiveTimer);homeLiveTimer=null;}
@@ -174,3 +176,59 @@ async function loadMediaFeed(uc){
 function renderMediaList(){var listEl=document.getElementById('homeYoutubeList');if(!listEl)return;var html='';mediaVideos.forEach(function(v){var sel=v.videoId===selectedVideoId;var thumbUrl=v.thumb?forceHttps(v.thumb):'';html+='<div onclick="selectMediaVideo(\''+v.videoId+'\')" style="cursor:pointer;padding:10px;border-bottom:1px solid var(--border);background:'+(sel?'color-mix(in srgb,var(--accent) 12%,transparent)':'transparent')+';'+(sel?'border-left:3px solid var(--accent)':'border-left:3px solid transparent')+'"><img src="'+thumbUrl+'" style="width:100%;border-radius:4px;margin-bottom:6px;display:block" loading="lazy" onerror="this.style.display=\'none\'"/><div style="font-size:.72rem;font-weight:600;color:'+(sel?'var(--accent)':'var(--text)')+';line-height:1.3;margin-bottom:3px">'+v.title+'</div><div style="font-size:.65rem;color:var(--muted)">'+v.date+'</div></div>';});listEl.innerHTML=html;}
 
 export function selectMediaVideo(videoId){var stopAllMedia=window.stopAllMedia;if(stopAllMedia)stopAllMedia('youtube');selectedVideoId=videoId;var player=document.getElementById('homeYoutubePlayer');if(player)player.src='https://www.youtube-nocookie.com/embed/'+videoId+'?rel=0&enablejsapi=1';renderMediaList();}
+
+export async function loadHomePodcastWidget(){
+  var team=state.activeTeam,curated=TEAM_PODCASTS[team.id];
+  var themeTeam=state.themeOverride||state.activeTeam,bannerColor=state.themeInvert?themeTeam.secondary:themeTeam.primary;
+  var grad='background:linear-gradient(135deg,'+bannerColor+' 0%,var(--dark) 100%)';
+  var hdr=document.getElementById('homePodcastHeader');
+  if(hdr)hdr.innerHTML='<div style="'+grad+';border-radius:12px 12px 0 0;padding:16px 20px"><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:2px">🎙️ Team Podcasts</div><div style="font-size:1.1rem;font-weight:800;color:#fff">'+escapeNewsHtml(team.name)+'</div></div>';
+  var stripEl=document.getElementById('homePodcastStrip');
+  if(stripEl)stripEl.innerHTML='<div class="loading" style="padding:16px">Loading podcasts...</div>';
+  var pl=document.getElementById('homePodcastPlayer');if(pl)pl.innerHTML='';
+  podcastShows=[];playingPodcastId=null;
+  try{
+    var url=curated
+      ?API_BASE+'/api/proxy-podcast?ids='+curated.slice(0,5).map(function(p){return p.id;}).join(',')
+      :API_BASE+'/api/proxy-podcast?term='+encodeURIComponent(fallbackPodcastTerm(team.name));
+    var r=await fetch(url);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var json=await r.json();
+    if(!json.success||!json.shows||!json.shows.length)throw new Error(json.message||'No podcasts');
+    podcastShows=json.shows;
+    renderPodcastStrip();
+  }catch(e){if(stripEl)stripEl.innerHTML='<div class="error" style="padding:12px;color:var(--muted);font-size:.9rem">Could not load podcasts: '+e.message+'</div>';}
+}
+
+function renderPodcastStrip(){
+  var stripEl=document.getElementById('homePodcastStrip');if(!stripEl)return;
+  var html='';
+  podcastShows.forEach(function(s){
+    var on=s.collectionId===playingPodcastId;
+    var art=s.artwork?forceHttps(s.artwork):'';
+    html+='<div class="podcast-icon'+(on?' playing':'')+'" onclick="playPodcast('+s.collectionId+')" title="'+escapeNewsHtml(s.name)+'">'
+      +'<div class="podcast-icon-art"><img src="'+art+'" loading="lazy" onerror="this.style.visibility=\'hidden\'"/>'+(on?'<span class="podcast-icon-eq">▮▮▮</span>':'<span class="podcast-icon-play">▶</span>')+'</div>'
+      +'<div class="podcast-icon-name">'+escapeNewsHtml(s.name)+'</div></div>';
+  });
+  stripEl.innerHTML=html;
+}
+
+export function playPodcast(collectionId){
+  var show=podcastShows.find(function(s){return s.collectionId===collectionId;});
+  if(!show||!show.audioUrl)return;
+  var stopAllMedia=window.stopAllMedia;if(stopAllMedia)stopAllMedia('podcast');
+  playingPodcastId=collectionId;
+  var pl=document.getElementById('homePodcastPlayer');
+  if(pl){
+    var art=show.artwork?forceHttps(show.artwork):'';
+    pl.innerHTML='<div class="podcast-now"><img class="podcast-now-art" src="'+art+'" onerror="this.style.visibility=\'hidden\'"/>'
+      +'<div class="podcast-now-meta"><div class="podcast-now-show">'+escapeNewsHtml(show.name)+'</div>'
+      +'<div class="podcast-now-ep">'+escapeNewsHtml(show.episodeTitle||'Latest episode')+(show.date?' · '+escapeNewsHtml(show.date):'')+'</div>'
+      +'<audio id="homePodcastAudio" controls autoplay preload="none" style="width:100%;margin-top:8px"></audio></div></div>';
+    var a=document.getElementById('homePodcastAudio');
+    if(a){a.src=show.audioUrl;var p=a.play();if(p&&p.catch)p.catch(function(){});}
+  }
+  renderPodcastStrip();
+}
+
+export function stopPodcast(){var a=document.getElementById('homePodcastAudio');if(a&&!a.paused)a.pause();}
