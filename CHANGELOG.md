@@ -5,7 +5,15 @@
 
 ---
 
-**Current version:** v4.20.0
+**Current version:** v4.21.1
+
+**v4.21.1** — **Post-merge patch for the scorecard UAT-fix branch.** Bug-fix follow-up to v4.21.0 (not a new feature), so a patch bump per CLAUDE.md rule #7. Branch shipped v4.20.19 → v4.20.21:
+
+- **v4.20.19** — Fix missing SB/CS/PO markers for mid-at-bat actions. The advancement reason was read from the play-level `result.eventType`, but a steal / caught-stealing / pickoff that happens during an at-bat is recorded on that at-bat (eventType = the at-bat's result, e.g. `strikeout`), so the runner moved on the diamond but no marker was set. Now derived per-runner from `runner.details` (`movementReason`/`eventType`/`event`), falling back to the play-level reason. Found in UAT: Chisholm's stolen base on the Mets/Yankees scorecard showed no `SB`.
+- **v4.20.20** — Move the ball-strike/pitch count out of the cramped 6.5px in-SVG text to a tight `.sc-foot` caption directly below the diamond (and below each mini-diamond when batting around).
+- **v4.20.21** — Docs: `docs/scorecard.md` / `docs/sections.md` wording updated for the relocated pitch-count caption.
+
+**v4.21.0** — **Post-merge minor bump for the Old-School Scorecard branch (PR #72).** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.20.11 → v4.20.18; full per-version notes below.
 
 **v4.20.18** — **Old-School Scorecard overlay (new feature).** Branch `claude/baseball-scorecard-viz` shipped v4.20.11 → v4.20.18; merged to main as v4.21.0. New `src/overlay/scorecard.js` + `#scorecardOverlay` (z-index 650) reconstructs a traditional scoring-book from `feed/live` for any live or completed game. Per-version:
 
