@@ -6279,11 +6279,30 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .sc-cell { width: 60px; height: 60px; padding: 2px }
 .sc-cell svg { margin: 0 auto }
 .sc-rhe { width: 30px; background: var(--card2); font-weight: 700 }
-.sc-runs td { background: var(--card2); font-weight: 700; height: 24px }
-.sc-pitchers {
-  font-size: .72rem;
-  color: var(--muted);
-  margin-top: 8px;
-  line-height: 1.5
+.sc-team-h {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 18px 0 6px
 }
-.sc-pitchers b { color: var(--text) }
+.sc-ls { min-width: 520px; margin-bottom: 4px }
+.sc-ls td,
+.sc-ls th { height: 26px }
+.sc-subrow .sc-name { padding-left: 16px }
+.sc-subrow .sc-pn { font-weight: 500; color: var(--muted) }
+.sc-sub {
+  display: inline-block;
+  font-size: .58rem;
+  font-weight: 700;
+  color: var(--accent-text, #fff);
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-right: 6px;
+  vertical-align: middle
+}
+.sc-pit td,
+.sc-pit th { width: 38px }
+.sc-pit td.sc-name,
+.sc-pit th.sc-name { width: auto }
+.sc-dec { color: var(--accent); font-weight: 700; font-size: .66rem }
