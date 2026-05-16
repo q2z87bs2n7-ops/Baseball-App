@@ -475,9 +475,9 @@ export function resetCollection() {
   localStorage.removeItem('mlb_card_collection');
   updateCollectionUI();
   if (state.mlbSessionToken) {
-    fetch((window.API_BASE || '') + '/api/collection/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.mlbSessionToken }
+    fetch((window.API_BASE || '') + '/api/collection-sync', {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + state.mlbSessionToken }
     }).catch(function() {});
   }
   alert('Collection reset');
