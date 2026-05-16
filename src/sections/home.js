@@ -188,9 +188,8 @@ export async function loadHomePodcastWidget(){
   var pl=document.getElementById('homePodcastPlayer');if(pl)pl.innerHTML='';
   podcastShows=[];playingPodcastId=null;
   try{
-    var url=curated
-      ?API_BASE+'/api/proxy-podcast?ids='+curated.slice(0,5).map(function(p){return p.id;}).join(',')
-      :API_BASE+'/api/proxy-podcast?term='+encodeURIComponent(fallbackPodcastTerm(team.name));
+    var term=encodeURIComponent(fallbackPodcastTerm(team.name));
+    var url=API_BASE+'/api/proxy-podcast?term='+term+(curated?'&ids='+curated.map(function(p){return p.id;}).join(','):'');
     var r=await fetch(url);
     if(!r.ok)throw new Error('HTTP '+r.status);
     var json=await r.json();
