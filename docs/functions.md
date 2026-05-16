@@ -59,6 +59,9 @@ The signatures listed in the rest of this file are organised by topic, not by mo
 | `loadNextGame()` | Right home card — finds and renders series after the current one |
 | `loadHomeYoutubeWidget()` | Builds team-colored YouTube header, calls `loadMediaFeed(uc)`; replaced old `loadMedia()` when Media tab was folded into Home |
 | `loadMediaFeed(uc)` | Fetches YouTube channel RSS via `/api/proxy-youtube`, populates `mediaVideos[]`, auto-selects first video |
+| `loadHomePodcastWidget()` | Builds the team-colored Podcasts header, fetches `/api/proxy-podcast?term=…[&ids=…]` (curated `collectionId`s from `src/config/podcasts.js` + iTunes term fallback), populates `podcastShows[]`, renders the icon strip |
+| `playPodcast(collectionId)` | Plays the chosen show's latest episode in the inline `#homePodcastAudio` element; calls `stopAllMedia('podcast')` first; re-renders the strip to mark the playing show |
+| `stopPodcast()` | Pauses the inline podcast `<audio>` (called by `stopAllMedia` when radio/YouTube/highlight start) |
 
 ## Schedule Tab
 

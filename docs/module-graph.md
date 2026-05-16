@@ -42,6 +42,10 @@ src/
                                      MLB_BASE_V1_1, API_BASE, TEAMS,
                                      MLB_THEME, NEWS_SOURCE_LABELS/ICONS,
                                      TIMING.
+    podcasts.js                     — TEAM_PODCASTS (curated Apple
+                                     Podcasts collectionIds keyed by MLB
+                                     team id) + fallbackPodcastTerm().
+                                     Consumed by sections/home.js.
 
   devtools-feed/
     devLog.js                       — console wrap + ring buffer + devTrace

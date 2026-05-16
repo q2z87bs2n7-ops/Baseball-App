@@ -5,7 +5,23 @@
 
 ---
 
-**Current version:** v4.22.0
+**Current version:** v4.25.0
+
+**v4.25.1** — Docs: documented the Team Podcasts strip end-to-end — new `docs/podcast.md` subsystem doc; registered it in CLAUDE.md (subsystem-docs list + a `TEAM_PODCASTS` Hardcoding-Risks row + `collection-sync` now `…/DELETE`); added the strip to `docs/sections.md`, the functions to `docs/functions.md`, `src/config/podcasts.js` to `docs/module-graph.md`; updated `docs/auth-architecture.md` + `docs/card-collection.md` for the `DELETE /api/collection-sync` reset consolidation.
+
+**v4.25.0** — Merge to main: podcast strip last-month filter + newest-first sort + up to 8 with API fill (branch `claude/research-podcast-apis-JzN1O`).
+
+**v4.24.1** — Podcasts: only shows whose latest episode is within ~31 days are returned, sorted newest-episode-first, capped at 8. Stale curated `collectionId`s are dropped and the iTunes search backfills toward 8 (curated requests now also send the team term); if fewer than 8 are fresh, fewer are returned — the freshness bar is never relaxed. Edge cache cut 7d → 6h since the window and sort are time-relative.
+
+**v4.24.0** — Merge to main: consolidate collection reset into `collection-sync` (DELETE).
+
+**v4.23.1** — Consolidated `api/collection/reset.js` into `api/collection-sync.js` as a `DELETE` method (same `collection:{userId}` resource, same auth — duplicated `verifySession` removed). Frees a Vercel Hobby function slot (13 → 12) so `proxy-podcast.js` ships as its own single-purpose function. Client reset call updated to `DELETE /api/collection-sync`.
+
+**v4.23.0** — Merge to main: podcast proxy CORS + OPTIONS.
+
+**v4.22.2** — `api/proxy-podcast.js`: added `Access-Control-Allow-Origin: *` + OPTIONS handling so the strip loads from cross-origin preview deployments as well as same-origin production (matches `subscribe.js` / `collection-sync.js`).
+
+**v4.22.1** — **New Home feature: Team Podcasts strip** above the YouTube widget. Curated per-team Apple Podcasts (`collectionId`-anchored, `src/config/podcasts.js`) with iTunes search-by-term fallback for uncurated teams. New `api/proxy-podcast.js` resolves each show's artwork + latest-episode audio server-side via the keyless iTunes lookup API. Horizontal icon strip + inline `<audio>` player; integrates with `stopAllMedia` so it coexists with radio/YouTube.
 
 **v4.22.0** — Merge to main: Home Injury Report + Roster Moves cards (branch `claude/add-home-screen-team-items-hJHMJ`, PR #77).
 

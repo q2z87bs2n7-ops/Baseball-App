@@ -143,4 +143,4 @@ if (!demoMode) {
 
 ## Cross-device sync
 
-Sign-in required. `GET/PUT/POST /api/collection-sync` against Upstash Redis key `collection:{userId}`. Merge strategy: highest tier wins; same tier keeps newer `collectedAt` + merged events (deduped, capped 10). Background sync every 30s via `startSyncInterval()`. See `docs/auth-architecture.md` for full auth setup.
+Sign-in required. `GET/PUT/POST/DELETE /api/collection-sync` against Upstash Redis key `collection:{userId}` (`DELETE` = reset, called by `resetCollection()`). Merge strategy: highest tier wins; same tier keeps newer `collectedAt` + merged events (deduped, capped 10). Background sync every 30s via `startSyncInterval()`. See `docs/auth-architecture.md` for full auth setup.
