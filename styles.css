@@ -6253,33 +6253,45 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .sc-msg { padding: 40px 10px; text-align: center; color: var(--muted) }
 .sc-team { margin-bottom: 22px }
 .sc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch }
-.sc-table { border-collapse: collapse; width: 100%; min-width: 720px }
+/* Separate borders (not collapse) so sticky cells paint cleanly over
+   scrolled content on WebKit/iPad. Each cell draws right+bottom; the
+   table draws the top+left outer edge — no doubling, no bleed-through. */
+.sc-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  width: 100%;
+  min-width: 720px
+}
 .sc-table th,
 .sc-table td {
-  border: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   text-align: center;
   font-size: .72rem;
   color: var(--text)
 }
 .sc-table thead th {
-  background: var(--card2);
+  background: #ece1c8;
   padding: 6px 4px;
   font-weight: 700;
   position: sticky;
-  top: 0
+  top: 0;
+  z-index: 3
 }
 .sc-table th.sc-name,
 .sc-table td.sc-name {
   text-align: left;
-  padding: 4px 8px;
+  padding: 4px 6px;
   position: sticky;
   left: 0;
-  background: var(--card);
-  z-index: 1;
-  min-width: 180px;
+  background: #f4ecd8;
+  z-index: 2;
+  min-width: 148px;
   white-space: nowrap
 }
-.sc-table thead th.sc-name { background: var(--card2) }
+.sc-table thead th.sc-name { background: #ece1c8; z-index: 4 }
 .sc-ord {
   display: inline-block;
   width: 16px;

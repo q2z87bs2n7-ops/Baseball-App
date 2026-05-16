@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.5
+**Current version:** v4.21.6
+
+**v4.21.6** — **Scorecard sticky-column fixes (UAT).** (1) Fixed sticky name-column bleed-through when scrolling to later innings: switched `.sc-table` from `border-collapse: collapse` to `separate` + `border-spacing: 0` (per-cell right/bottom borders, table top/left edge) — the canonical fix for the WebKit/iPad bug where scrolled cells paint over a sticky column — and gave all sticky cells **opaque** backgrounds (the header sticky cell was translucent `rgba(…,.25)`), with corrected z-index layering (body-left 2, header 3, corner 4). (2) Trimmed the wasted name-column width: `min-width` 180 → 148px and tighter cell padding.
 
 **v4.21.5** — **Scorecard "Paper" heritage redesign (full replace).** Implements the design-handoff Paper variant: cream stock with paper-grain gradients, navy ink for plays, faded red for outs/RBI/HR/inning-end, faint-sand borders, pencil-mute spray/footer; serif type (Georgia + Playfair Display italic title via Google Fonts, Georgia fallback); Courier line score. Palette is fixed (not team-themed) — remapped through CSS custom properties scoped to `#scorecardCard` so the `.sc-*` rules recolour without a rewrite. Five cell-readability fixes: 76px cells (54px batting-around), HR diamond fill + 13pt code, 22pt centred K with spray suppressed, red restraint (navy paths for non-scoring hits), circled red out-number chip. Model logic untouched; the SB/CS/PO/adv functional markers added during UAT are preserved (restyled). Dark treatment dropped per the chosen delivery option.
 
