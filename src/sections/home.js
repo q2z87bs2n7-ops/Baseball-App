@@ -9,7 +9,7 @@
 import { state } from '../state.js';
 import { MLB_BASE, API_BASE, TEAMS, TIMING } from '../config/constants.js';
 import { etDateStr, etDatePlus } from '../utils/format.js';
-import { forceHttps } from '../utils/news.js';
+import { forceHttps, escapeNewsHtml } from '../utils/news.js';
 
 let homeCallbacks = { renderNextGame: null, teamCapImg: null };
 export function setHomeCallbacks(cb) { Object.assign(homeCallbacks, cb); }
@@ -103,6 +103,47 @@ export async function loadNextGame(){
     html+='</div></div></div>';
     document.getElementById('nextGame').innerHTML=html;
   }catch(e){document.getElementById('nextGame').innerHTML='<div class="error">Could not load next series</div>';}
+}
+
+export async function loadHomeInjuries(){
+  var el=document.getElementById('homeInjuries');if(!el)return;
+  el.innerHTML='<div class="loading">Loading injuries...</div>';
+  try{
+    var r=await fetch(MLB_BASE+'/teams/'+state.activeTeam.id+'/roster?rosterType=40Man');
+    var d=await r.json(),roster=d.roster||[];
+    var il=roster.filter(function(p){return p.status&&/injured list|disabled list/i.test(p.status.description||'');});
+    if(!il.length){el.innerHTML='<div class="empty-state">No players on the IL</div>';return;}
+    il.sort(function(a,b){return ((a.person&&a.person.fullName)||'').localeCompare((b.person&&b.person.fullName)||'');});
+    var html='<div class="home-roster-list">';
+    il.forEach(function(p){
+      var name=escapeNewsHtml((p.person&&p.person.fullName)||'—');
+      var pos=escapeNewsHtml((p.position&&p.position.abbreviation)||'');
+      var desc=escapeNewsHtml((p.status&&p.status.description)||'Injured List');
+      html+='<div class="home-roster-row"><div class="home-roster-main">'+name+(pos?'<span class="home-roster-pos">'+pos+'</span>':'')+'</div><div class="home-roster-sub">'+desc+'</div></div>';
+    });
+    el.innerHTML=html+'</div>';
+  }catch(e){el.innerHTML='<div class="error">Could not load injuries</div>';}
+}
+
+export async function loadHomeMoves(){
+  var el=document.getElementById('homeMoves');if(!el)return;
+  el.innerHTML='<div class="loading">Loading roster moves...</div>';
+  try{
+    var end=etDateStr(),start=etDatePlus(end,-30);
+    var r=await fetch(MLB_BASE+'/transactions?teamId='+state.activeTeam.id+'&startDate='+start+'&endDate='+end);
+    var d=await r.json(),tx=(d.transactions||[]).slice();
+    if(!tx.length){el.innerHTML='<div class="empty-state">No roster moves in the last 30 days</div>';return;}
+    tx.sort(function(a,b){return new Date(b.date||b.effectiveDate||0)-new Date(a.date||a.effectiveDate||0);});
+    tx=tx.slice(0,15);
+    var html='<div class="home-roster-list">';
+    tx.forEach(function(x){
+      var dt=x.date||x.effectiveDate;
+      var dlabel=dt?new Date(dt+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+      var desc=escapeNewsHtml(x.description||x.typeDesc||'Transaction');
+      html+='<div class="home-roster-row"><div class="home-roster-main">'+desc+'</div><div class="home-roster-sub">'+escapeNewsHtml(dlabel)+'</div></div>';
+    });
+    el.innerHTML=html+'</div>';
+  }catch(e){el.innerHTML='<div class="error">Could not load roster moves</div>';}
 }
 
 export async function loadHomeYoutubeWidget(){

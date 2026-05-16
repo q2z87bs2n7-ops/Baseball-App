@@ -2616,6 +2616,45 @@ nav button.active {
   color: var(--accent-text)
 }
 
+.home-roster-list {
+  max-height: 340px;
+  overflow-y: auto
+}
+
+.home-roster-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--border)
+}
+
+.home-roster-row:last-child {
+  border-bottom: 0
+}
+
+.home-roster-main {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35
+}
+
+.home-roster-pos {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: 7px
+}
+
+.home-roster-sub {
+  font-size: .72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0
+}
+
 .news-item {
   padding: 14px;
   border-bottom: 1px solid var(--border);

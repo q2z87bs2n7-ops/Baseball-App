@@ -136,7 +136,7 @@ import { selectNewsSource, loadNews, switchNewsFeed, toggleNewsTeamLens } from '
 import { showLiveGame, closeLiveView, fetchLiveGame, liveScorecard } from './sections/live.js';
 import { loadSchedule, changeMonth, selectCalGame, switchBoxTab, playHighlightVideo } from './sections/schedule.js';
 import { loadStandings } from './sections/standings.js';
-import { setHomeCallbacks, clearHomeTimer, loadTodayGame, loadNextGame, loadHomeYoutubeWidget, selectMediaVideo } from './sections/home.js';
+import { setHomeCallbacks, clearHomeTimer, loadTodayGame, loadNextGame, loadHomeInjuries, loadHomeMoves, loadHomeYoutubeWidget, selectMediaVideo } from './sections/home.js';
 import {
   setSyncCallbacks, syncCollection, mergeCollectionOnSignIn, mergeCollectionSlots, startSyncInterval,
 } from './collection/sync.js';
@@ -237,7 +237,7 @@ function initReal() {
   setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore, localDateStr: localDateStr, getEffectiveDate: getEffectiveDate, tcLookup: tcLookup });
   setRotationCallbacks({ refreshDebugPanel: refreshDebugPanel });
   setSyncCallbacks({ loadCollection: loadCollection, saveCollection: saveCollection, updateCollectionUI: updateCollectionUI });
-  setThemeCallbacks({ loadTodayGame: loadTodayGame, loadNextGame: loadNextGame, loadNews: loadNews, loadStandings: loadStandings, loadRoster: loadRoster, loadTeamStats: loadTeamStats, loadHomeYoutubeWidget: loadHomeYoutubeWidget, applyMyTeamLens: applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
+  setThemeCallbacks({ loadTodayGame: loadTodayGame, loadNextGame: loadNextGame, loadNews: loadNews, loadStandings: loadStandings, loadRoster: loadRoster, loadTeamStats: loadTeamStats, loadHomeInjuries: loadHomeInjuries, loadHomeMoves: loadHomeMoves, loadHomeYoutubeWidget: loadHomeYoutubeWidget, applyMyTeamLens: applyMyTeamLens, clearHomeLiveTimer: clearHomeTimer });
   setFeedCallbacks({ localDateStr: localDateStr });
   setHomeCallbacks({ renderNextGame: renderNextGame, teamCapImg: teamCapImg });
   setLeagueCallbacks({ teamCapImg: teamCapImg });
@@ -619,7 +619,7 @@ function renderNextGame(g,label){
   if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';pt.setAttribute('aria-checked','true');}document.getElementById('pushStatusText').textContent='On';}
   // Sync Qualified toggle UI to persisted state (HTML default is ON)
   if(!state.qualifiedOnly){var qt=document.getElementById('qualifiedToggle');if(qt){qt.classList.remove('on');qt.setAttribute('aria-checked','false');}}
-  applyTeamTheme(state.activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeYoutubeWidget();
+  applyTeamTheme(state.activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeInjuries();loadHomeMoves();loadHomeYoutubeWidget();
   updateCollectionUI();
   updateSyncUI();
   // Wire up demo mode callbacks so the module can call core render/feed functions
