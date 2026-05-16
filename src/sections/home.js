@@ -117,7 +117,8 @@ export async function loadHomeInjuries(){
       return /^D\d/i.test(code)||/injured list|disabled list|\bil\b/i.test(desc);
     });
     if(!il.length){el.innerHTML='<div class="empty-state">No players on the IL</div>';return;}
-    il.sort(function(a,b){return ((a.person&&a.person.fullName)||'').localeCompare((b.person&&b.person.fullName)||'');});
+    function ilDays(p){var s=(p.status&&p.status.code||'')+' '+(p.status&&p.status.description||'');var m=s.match(/\d+/);return m?parseInt(m[0],10):999;}
+    il.sort(function(a,b){return ilDays(a)-ilDays(b)||((a.person&&a.person.fullName)||'').localeCompare((b.person&&b.person.fullName)||'');});
     var html='<div class="home-roster-list">';
     il.forEach(function(p){
       var name=escapeNewsHtml((p.person&&p.person.fullName)||'—');
