@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.7
+**Current version:** v4.21.8
+
+**v4.21.8** — **Actually fix the name-column width.** The earlier `min-width` trim didn't help because the real cause was `.sc-table { width: 100% }` with auto table layout: the inning cells are fixed 80px so on a wide iPad/desktop *all* the leftover horizontal space was absorbed by the only flexible column — the name column. Changed the table to `width: max-content` (`min-width: 0`) so it sizes to its content and any slack falls outside the grid as blank paper instead of bloating the name column.
 
 **v4.21.7** — **Fix print regression from the Paper redesign.** The Playfair Display font was added as a render-blocking `<link rel="stylesheet">`; WebKit/iPad defers `window.print()` until pending stylesheets resolve, so when the Google Fonts request stalled the print dialog never appeared (Georgia fallback hid the visual symptom). Switched to a non-blocking `rel="preload" … onload` swap (+ `<noscript>` fallback) and trimmed the request to italic-800 only. Print works again; the font also no longer blocks first paint.
 

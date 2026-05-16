@@ -6261,8 +6261,10 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   border-spacing: 0;
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
-  width: 100%;
-  min-width: 720px
+  /* Size to content (don't stretch) — otherwise on wide screens the
+     only flexible column, the name column, absorbs all the slack. */
+  width: max-content;
+  min-width: 0
 }
 .sc-table th,
 .sc-table td {
