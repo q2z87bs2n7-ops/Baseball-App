@@ -5,7 +5,15 @@
 
 ---
 
-**Current version:** v4.21.13
+**Current version:** v4.21.17
+
+**v4.21.17** — Home Injury Report / Roster Moves: dropped the emoji from both card headers; documented both cards in `docs/sections.md` and registered `/transactions` + the `/roster` `&date=` gotcha in `docs/api-reference.md`.
+
+**v4.21.16** — Sort Injury Report by IL length ascending (10-day → 15-day → 60-day), player name A–Z tiebreak. Day count parsed from whichever of `status.code`/`status.description` carries the number.
+
+**v4.21.15** — Fix Injury Report showing no players on IL: add `&date={today}` to the 40-man roster fetch (without it the API returns season-opening "Active" statuses) and match IL status codes (D7/D10/D15/D60) in addition to description text.
+
+**v4.21.14** — **New Home cards: Injury Report + Roster Moves** above the YouTube widget. Injury Report filters the 40-man roster for IL statuses; Roster Moves lists the last 30 days of `/transactions`. Both reload on team switch via the theme-callback path; API text escaped via `escapeNewsHtml`.
 
 **v4.21.13** — Docs: refreshed `docs/scorecard.md` (Paper visual treatment, responsive batting-grid section, non-blocking font load, single inning-end slash, subtle launch button) and the CLAUDE.md scorecard summary to match the v4.21.5 → v4.21.12 work.
 

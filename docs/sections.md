@@ -9,6 +9,9 @@
 
 **Division Snapshot** — compact standings for active team's division.
 **Latest News** — top 5 ESPN headlines.
+**Injury Report** (`#homeInjuries`, `loadHomeInjuries()`) — IL players from `/teams/{id}/roster?rosterType=40Man&date={today}`. The `&date=` param is required: without it the API returns season-opening (all "Active") statuses. IL detection matches `status.code` `/^D\d/` (D7/D10/D15/D60) **or** `status.description` `/injured list|disabled list|\bil\b/i`. Sorted by IL length ascending (day count parsed from code/description), name A–Z tiebreak.
+**Roster Moves** (`#homeMoves`, `loadHomeMoves()`) — last 30 days of `/transactions?teamId={id}&startDate=&endDate=`, newest first, capped at 15. Date range built from `etDateStr()` / `etDatePlus(end,-30)`.
+Both cards reload on team switch via the theme-callback path (`themeCallbacks.loadHomeInjuries` / `loadHomeMoves` in `src/ui/theme.js` `switchTeam`). API text escaped via `escapeNewsHtml`.
 **YouTube Widget** (`#homeYoutubeWidget`) — team YouTube channel, 25%/75% two-panel layout. Loaded by `loadHomeYoutubeWidget()` → `loadMediaFeed(uc)`. **Requires deployed URL** — YouTube embeds return Error 153 on `file://`.
 
 ## 📅 Schedule
