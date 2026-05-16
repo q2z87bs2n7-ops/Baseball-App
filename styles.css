@@ -6209,8 +6209,42 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 /* ── Scorecard Overlay ───────────────────────────────────────────────── */
-.sc-btn { margin-left: 8px }
-#scorecardCard { padding: 16px }
+/* Scorecard launch button — quiet secondary action (don't compete with
+   the prominent solid "Watch Live" pill it sits beside). */
+.watch-live-btn.sc-btn {
+  margin-left: 8px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.watch-live-btn.sc-btn:hover,
+.watch-live-btn.sc-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--muted);
+  filter: none;
+}
+/* Paper (heritage) variant — remap the palette custom properties so every
+   existing .sc-* var() usage recolours, then layer on the serif typography
+   and sizing below. Intentionally fixed (not team-themed). */
+#scorecardCard {
+  --card: #f4ecd8;
+  --card2: rgba(199, 184, 150, 0.25);
+  --border: #c7b896;
+  --muted: #8a7d65;
+  --text: #2a2520;
+  --accent: #a8243a;
+  --accent-text: #f4ecd8;
+  padding: 18px 20px 22px;
+  color: #2a2520;
+  font-family: Georgia, 'Times New Roman', serif;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(212, 197, 168, 0.18), transparent 40%),
+    radial-gradient(ellipse at 80% 90%, rgba(212, 197, 168, 0.22), transparent 50%),
+    #f4ecd8;
+}
 .sc-head {
   display: flex;
   align-items: flex-start;
@@ -6235,33 +6269,47 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .sc-msg { padding: 40px 10px; text-align: center; color: var(--muted) }
 .sc-team { margin-bottom: 22px }
 .sc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch }
-.sc-table { border-collapse: collapse; width: 100%; min-width: 720px }
+/* Separate borders (not collapse) so sticky cells paint cleanly over
+   scrolled content on WebKit/iPad. Each cell draws right+bottom; the
+   table draws the top+left outer edge — no doubling, no bleed-through. */
+.sc-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  /* Size to content (don't stretch) — otherwise on wide screens the
+     only flexible column, the name column, absorbs all the slack. */
+  width: max-content;
+  min-width: 0
+}
 .sc-table th,
 .sc-table td {
-  border: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   text-align: center;
   font-size: .72rem;
   color: var(--text)
 }
 .sc-table thead th {
-  background: var(--card2);
+  background: #ece1c8;
   padding: 6px 4px;
   font-weight: 700;
   position: sticky;
-  top: 0
+  top: 0;
+  z-index: 3
 }
 .sc-table th.sc-name,
 .sc-table td.sc-name {
   text-align: left;
-  padding: 4px 8px;
+  padding: 4px 6px;
   position: sticky;
   left: 0;
-  background: var(--card);
-  z-index: 1;
-  min-width: 180px;
+  background: #f4ecd8;
+  z-index: 2;
+  min-width: 148px;
   white-space: nowrap
 }
-.sc-table thead th.sc-name { background: var(--card2) }
+.sc-table thead th.sc-name { background: #ece1c8; z-index: 4 }
 .sc-ord {
   display: inline-block;
   width: 16px;
@@ -6332,6 +6380,69 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   height: 22px
 }
 .sc-lob td.sc-name { font-weight: 600; color: var(--text) }
+
+/* Paper variant typography + sizing (overrides the base .sc-* rules) */
+.sc-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 800;
+  color: #1a3a6e;
+}
+.sc-sub { font-style: italic; letter-spacing: .03em }
+.sc-team-h {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  color: #1a3a6e;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: .62rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin: 18px 0 6px;
+}
+.sc-ls { font-family: 'Courier New', monospace }
+.sc-ls .sc-pn { font-family: Georgia, serif }
+.sc-table thead th { color: #1a3a6e }
+.sc-pn { color: #1a3a6e; font-weight: 700 }
+.sc-ord { color: var(--accent); opacity: .85 }
+.sc-pos { font-style: italic }
+.sc-rhe { color: #1a3a6e; font-weight: 900 }
+.sc-foot { font-family: 'Courier New', monospace; letter-spacing: .04em }
+.sc-cell { width: 80px; height: 80px; padding: 2px }
+.sc-subrow .sc-pn { color: var(--muted) }
+
+/* Responsive batting grid: fill the card width with a fixed name column
+   so the inning columns (and the diamonds) scale up on landscape/desktop
+   and there's no dead space; still scrolls when narrow. Scoped to the
+   batting table only — line-score/pitcher tables are unaffected. */
+.sc-ls { width: 100% }
+.sc-bat {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 820px;
+}
+.sc-bat th.sc-name,
+.sc-bat td.sc-name {
+  width: 150px;
+  white-space: normal;
+  overflow: hidden;
+  line-height: 1.18;
+  vertical-align: middle;
+}
+.sc-bat .sc-subrow .sc-name { padding-left: 10px }
+.sc-bat .sc-cell {
+  width: auto;
+  height: auto;
+  padding: 3px 2px;
+}
+.sc-bat .sc-cell > svg {
+  width: 100%;
+  height: auto;
+  max-width: 116px;
+  margin: 0 auto;
+}
+.sc-bat .sc-stack svg { width: 46px; height: 46px }
 
 @media print {
   body * { visibility: hidden !important }

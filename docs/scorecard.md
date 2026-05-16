@@ -30,6 +30,37 @@ payload supplies the batting order + substitutions
 W/L/S decisions (`liveData.decisions`). Self-refreshes on
 `TIMING.LIVE_REFRESH_MS` while the open game is Live.
 
+## Visual treatment — "Paper" heritage variant
+
+Full-replace redesign (no dark variant retained). Cream stock
+(`#f4ecd8` + two radial paper-grain gradients), navy ink (`#1a3a6e`)
+for plays/hits/scoring paths, faded red (`#a8243a`) reserved for
+outs/RBI/HR fill/inning-ending, faint sand (`#c7b896`) borders, pencil
+mute (`#8a7d65`) for positions/footer/spray. Serif type throughout
+(Georgia body; Playfair Display italic for the title, loaded
+**non-render-blocking** via `rel="preload"`+`onload` so it can never
+block first paint or `window.print()`, Georgia fallback offline);
+Courier mono for the line score. The palette is fixed and **not**
+team-themed — it's remapped via CSS custom properties scoped to
+`#scorecardCard`, so the existing `.sc-*` rules recolour without a
+rewrite. Cell-readability fixes baked in: HR fills the diamond + larger
+code, strikeouts render at 22pt centred, the spray vector is demoted
+and suppressed on K, the out number is a circled red chip, and the
+half-inning-ending out is a **single** red slash inside the diamond.
+
+### Responsive batting grid
+
+The batting table is `table-layout: fixed`, `width: 100%`, with a fixed
+**150px** name column (wrapping + `overflow:hidden` so long names and
+sub rows can't bleed into inning 1). The 9 inning columns share the
+remaining width and the diamond SVGs are fluid (scale up to ~116px on
+landscape/desktop, down with `min-width: 820px` scroll on narrow
+screens) — so the grid fills the card with no dead space regardless of
+orientation. Batting-around mini-diamonds are fixed 46px. Sticky
+name/header cells use `border-collapse: separate` + opaque backgrounds
+(WebKit/iPad bleed-through fix). The launch button (`.watch-live-btn.sc-btn`)
+is a quiet ghost style so it doesn't compete with "Watch Live".
+
 ## Rendering
 
 - **Line-score header** — inning strip + R / H / E / LOB per team.

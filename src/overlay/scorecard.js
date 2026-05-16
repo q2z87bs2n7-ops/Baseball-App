@@ -9,6 +9,11 @@
 // preserve scroll; dialog is focus-trapped and screen-reader labelled;
 // a print stylesheet supports a clean landscape printout.
 //
+// Visual treatment is the "Paper" heritage variant: cream stock, navy
+// ink for plays, faded red for outs/RBI/HR, serif type. The palette is
+// fixed (not team-themed) — remapped via CSS custom properties scoped to
+// #scorecardCard so the .sc-* rules recolour without a rewrite.
+//
 // Runner tracking is BASE-keyed (which batter's run currently occupies 1B/
 // 2B/3B), not runner-id-keyed — so pinch-runners inherit the base correctly
 // and a run is always credited to the batter who started it.
@@ -397,16 +402,25 @@ function buildModel(feed){
 
 // ── Rendering ──────────────────────────────────────────────────────────────
 
+// Paper (heritage) palette — fixed; intentionally independent of team theme.
+var INK_NAVY = '#1a3a6e', INK_RED = '#a8243a', INK_FAINT = '#b8a890', INK_EMPTY = '#d4c5a8';
+var CODE_FONT = 'Georgia, &quot;Times New Roman&quot;, serif';
+
 function diamondSVG(cell, size){
-  size = size || 56;
+  size = size || 76;
   var H='30,58', B1='58,30', B2='30,2', B3='2,30';
   var path = ['M30,58 L58,30','M58,30 L30,2','M30,2 L2,30','M2,30 L30,58'];
+  var isHR = cell.code === 'HR';
+  var isK  = cell.code === 'K' || cell.code === 'ꓘ';
+  var ink = cell.out ? INK_RED : INK_NAVY;
+  var pathStroke = (cell.scored || cell.hit) ? INK_NAVY : INK_FAINT;
+
   var s = '<svg viewBox="0 0 60 60" width="'+size+'" height="'+size+'" aria-hidden="true" focusable="false" style="display:block">';
-  s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="none" stroke="var(--border)" stroke-width="1.5"/>';
-  // Batted-ball spray vector from Gameday landing coords: real direction
-  // (pull/center/oppo within the ±45° fair wedge) and depth; grounders
-  // straight, fly balls arced. Thin/muted so it reads under the run path.
-  if(cell.hc && !cell.ghost){
+  s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="none" stroke="'+INK_FAINT+'" stroke-width="0.8"/>';
+
+  // Batted-ball spray vector — same geometry as before; demoted to a thin
+  // pencil stroke and suppressed on strikeouts (no batted ball).
+  if(cell.hc && !cell.ghost && !isK){
     var dx = cell.hc.x - 125.42, dy = 198.27 - cell.hc.y;
     var th = Math.atan2(dx, dy);
     if(th>1.05) th=1.05; else if(th<-1.05) th=-1.05;
@@ -420,28 +434,46 @@ function diamondSVG(cell, size){
     var d = k>0
       ? 'M30,57 Q'+(((30+ex)/2)+(-vy/vl)*k).toFixed(1)+','+(((57+ey)/2)+(vx/vl)*k).toFixed(1)+' '+ex.toFixed(1)+','+ey.toFixed(1)
       : 'M30,57 L'+ex.toFixed(1)+','+ey.toFixed(1);
-    s += '<path d="'+d+'" stroke="var(--muted)" stroke-width="1.2" fill="none" opacity="0.55"/>';
-    s += '<circle cx="'+ex.toFixed(1)+'" cy="'+ey.toFixed(1)+'" r="1.5" fill="var(--muted)" opacity="0.7"/>';
+    s += '<path d="'+d+'" stroke="'+INK_FAINT+'" stroke-width="0.9" fill="none" opacity="0.7"/>';
   }
-  if(cell.scored) s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="var(--accent)" fill-opacity="0.28"/>';
+
+  // HR — filled red polygon with red perimeter.
+  if(isHR){
+    s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="'+INK_RED+'" fill-opacity="0.18" stroke="'+INK_RED+'" stroke-width="1.2"/>';
+  }
+
   var seg = cell.scored ? 4 : (cell.reached||0);
   for(var i=0;i<seg;i++){
-    s += '<path d="'+path[i]+'" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" fill="none"/>';
+    s += '<path d="'+path[i]+'" stroke="'+pathStroke+'" stroke-width="2.4" stroke-linecap="round" fill="none"/>';
   }
   [B1,B2,B3].forEach(function(p,idx){
     var on = (idx+1) <= (cell.scored?3:cell.reached);
-    s += '<circle cx="'+p.split(',')[0]+'" cy="'+p.split(',')[1]+'" r="2.6" fill="'+(on?'var(--accent)':'var(--border)')+'"/>';
+    s += '<circle cx="'+p.split(',')[0]+'" cy="'+p.split(',')[1]+'" r="2.1" fill="'+(on?pathStroke:INK_EMPTY)+'"/>';
   });
-  if(cell.inningEnd) s += '<line x1="4" y1="4" x2="56" y2="56" stroke="var(--muted)" stroke-width="1.5" opacity="0.5"/>';
-  if(cell.outNum) s += '<text x="51" y="13" font-size="9" fill="var(--muted)" text-anchor="middle">'+cell.outNum+'</text>';
-  // RBI — classic convention: one dot per run batted in.
-  for(var ri=0; ri<(cell.rbi||0); ri++){
-    s += '<circle cx="'+(6+ri*4)+'" cy="10" r="1.6" fill="var(--accent)"/>';
+
+  // Inning-ending out — single red slash (traditional scorebook convention).
+  if(cell.inningEnd) s += '<line x1="3" y1="3" x2="57" y2="57" stroke="'+INK_RED+'" stroke-width="1.6" opacity="0.85"/>';
+
+  // Out number — circled red chip (traditional scorebook convention).
+  if(cell.outNum){
+    s += '<circle cx="50" cy="10" r="5.5" fill="none" stroke="'+INK_RED+'" stroke-width="0.9"/>';
+    s += '<text x="50" y="13" font-size="8.5" font-weight="700" font-family="'+CODE_FONT+'" fill="'+INK_RED+'" text-anchor="middle">'+cell.outNum+'</text>';
   }
-  var col = cell.hit ? 'var(--accent)' : ((cell.out||cell.outOnBase) ? 'var(--muted)' : 'var(--text)');
-  s += '<text x="30" y="31" font-size="11" font-weight="700" fill="'+col+'" text-anchor="middle">'+esc(cell.code)+'</text>';
-  var mid = cell.outOnBase ? (cell.outReason||'OUT') : cell.adv;
-  if(mid) s += '<text x="30" y="43" font-size="7.5" fill="'+(cell.outOnBase?'var(--muted)':'var(--accent)')+'" text-anchor="middle">'+esc(mid)+'</text>';
+  // RBI — one red dot per run batted in, top-left.
+  for(var ri=0; ri<(cell.rbi||0); ri++){
+    s += '<circle cx="'+(7+ri*4.5)+'" cy="9" r="1.6" fill="'+INK_RED+'"/>';
+  }
+
+  // Code — serif, with HR/K outcome hierarchy.
+  var codeSize = isK ? 22 : (isHR ? 13 : 11);
+  var codeY    = isK ? 38 : (isHR ? 32 : 31);
+  s += '<text x="30" y="'+codeY+'" font-size="'+codeSize+'" font-weight="700" font-family="'+CODE_FONT+'" fill="'+ink+'" text-anchor="middle">'+esc(cell.code)+'</text>';
+
+  // Advancement / runner-out marker (functional — preserved from prod).
+  if(!isK){
+    var mid = cell.outOnBase ? (cell.outReason||'OUT') : cell.adv;
+    if(mid) s += '<text x="30" y="47" font-size="7.5" font-family="'+CODE_FONT+'" fill="'+(cell.outOnBase?INK_RED:INK_FAINT)+'" text-anchor="middle">'+esc(mid)+'</text>';
+  }
   s += '</svg>';
   return s;
 }
@@ -455,8 +487,8 @@ function footHtml(cell){
 }
 
 function emptyCell(){
-  return '<svg viewBox="0 0 60 60" width="56" height="56" aria-hidden="true" focusable="false" style="display:block;opacity:.25">'
-       + '<polygon points="30,2 58,30 30,58 2,30" fill="none" stroke="var(--border)" stroke-width="1"/></svg>';
+  return '<svg viewBox="0 0 60 60" width="76" height="76" aria-hidden="true" focusable="false" style="display:block;opacity:.4">'
+       + '<polygon points="30,2 58,30 30,58 2,30" fill="none" stroke="'+INK_FAINT+'" stroke-width="0.8"/></svg>';
 }
 
 // Screen-reader summary of a plate appearance for the cell's aria-label.
@@ -477,7 +509,7 @@ function renderCellStack(arr){
   if(arr.length===1) return diamondSVG(arr[0]) + footHtml(arr[0]);
   // batting around: this batter came up twice+ in one inning
   return '<div class="sc-stack" title="batted around">'
-       + arr.map(function(c){ return '<div>'+diamondSVG(c, 38)+footHtml(c)+'</div>'; }).join('') + '</div>';
+       + arr.map(function(c){ return '<div>'+diamondSVG(c, 54)+footHtml(c)+'</div>'; }).join('') + '</div>';
 }
 
 function renderLineScore(model){
@@ -527,7 +559,7 @@ function renderTeamTable(team, innCount){
   lobRow += '</tr>';
 
   return '<div class="sc-team"><div class="sc-team-h">'+esc(team.name)+' — Batting</div>'
-       + '<div class="sc-scroll"><table class="sc-table"><thead><tr>'
+       + '<div class="sc-scroll"><table class="sc-table sc-bat"><thead><tr>'
        + th + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + lobRow + '</tfoot></table></div></div>';
 }
 
