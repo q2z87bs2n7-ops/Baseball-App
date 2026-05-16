@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.10
+**Current version:** v4.21.11
+
+**v4.21.11** — **Tone down the scorecard launch button.** It reused the prominent solid `.watch-live-btn` pill, so it was as eye-catching as "Watch Live" and oversized for a secondary action. Added a `.watch-live-btn.sc-btn` override (ghost style: transparent bg, 1px subtle border, muted text, smaller padding/font, lighter weight) — placement unchanged. The real "Watch Live" button is untouched.
 
 **v4.21.10** — **Fix batter names overflowing into inning 1.** Side effect of the v4.21.9 responsive grid: `table-layout: fixed` pinned the name column to a hard 150px, but the base `.sc-name` still had `white-space: nowrap`, so long names ("Bryce Harper 1B", "Edmundo Sosa LF") and especially indented sub rows (`SUB · Rafael Marchán C`) overflowed past 150px into the inning-1 diamond. Batting name cells now wrap (`white-space: normal`), hard-clip (`overflow: hidden`) so nothing can ever bleed into the grid, with tight line-height + vertical centering (rows are ~116px tall, so a 2-line name fits). Sub-row indent trimmed 16 → 10px to give the tag+name a touch more room. No data/logic change — subs were always tracked correctly; this was purely the fixed-width + nowrap layout gap.
 

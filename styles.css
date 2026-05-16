@@ -6209,7 +6209,23 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 /* ── Scorecard Overlay ───────────────────────────────────────────────── */
-.sc-btn { margin-left: 8px }
+/* Scorecard launch button — quiet secondary action (don't compete with
+   the prominent solid "Watch Live" pill it sits beside). */
+.watch-live-btn.sc-btn {
+  margin-left: 8px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.watch-live-btn.sc-btn:hover,
+.watch-live-btn.sc-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--muted);
+  filter: none;
+}
 /* Paper (heritage) variant — remap the palette custom properties so every
    existing .sc-* var() usage recolours, then layer on the serif typography
    and sizing below. Intentionally fixed (not team-themed). */
