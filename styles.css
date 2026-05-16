@@ -5098,56 +5098,22 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .buzz-list {
   background: var(--card);
   border: 1px solid var(--border);
-  border-top: none;
   overflow: hidden;
 }
 .buzz-has-footer .buzz-list { border-radius: 0; }
 .buzz-list:last-child { border-radius: 0 0 10px 10px; }
 
-.buzz-filter-row {
-  display: flex;
-  gap: 6px;
-  background: var(--card);
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  padding: 8px 0.875rem 10px;
-}
-.buzz-chip {
-  font-size: .68rem;
-  font-weight: 600;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--muted);
-  border: 1px solid transparent;
-  cursor: pointer;
-}
-.buzz-chip:hover { background: rgba(255, 255, 255, 0.07); }
-.buzz-chip[aria-pressed="true"] {
-  background: rgba(255, 89, 16, 0.12);
-  color: #ffb088;
-  border-color: rgba(255, 89, 16, 0.35);
-}
-.buzz-chip[disabled],
-.buzz-chip[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
-
 .buzz-card {
   display: block;
   position: relative;
   padding: 0.75rem 1.75rem 0.75rem 0.875rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--p-border, rgba(255, 255, 255, 0.04));
   text-decoration: none;
   color: inherit;
   transition: background 0.15s;
 }
 .buzz-card:last-child { border-bottom: none; }
 .buzz-card:hover { background: rgba(255, 255, 255, 0.06); }
-.buzz-none {
-  color: var(--muted);
-  font-size: .72rem;
-  text-align: center;
-  padding: 16px 0.875rem;
-}
 
 .buzz-row {
   display: grid;

@@ -23,10 +23,6 @@ const PER_ACCOUNT = 6;
 const CACHE_KEY = 'mlb_buzz_cache_v2';        // bumped: shape gained avatar/category/embedImage
 const CACHE_TTL_MS = 120000;                  // 2 min — reopen/reload guard only; the
                                               // scheduled timer force-fetches (see loadBaseballBuzz)
-const FILTER_KEY = 'mlb_buzz_filter_v1';
-
-var chipHandlerAttached = false;
-var filterHydrated = false;
 
 function rkeyOf(uri) {
   return (uri || '').split('/').pop() || '';
@@ -114,60 +110,12 @@ function writeCache(posts) {
   } catch (e) { /* quota / private mode — non-fatal */ }
 }
 
-function currentFilter() {
-  if (!filterHydrated) {
-    try { var s = localStorage.getItem(FILTER_KEY); if (s) state.baseballBuzzFilter = s; }
-    catch (e) { /* private mode — keep state default */ }
-    filterHydrated = true;
-  }
-  return state.baseballBuzzFilter || 'all';
-}
-
-// The user's selected team (Pulse-wide app state). Beat-writer posts carry
-// the short team name in `tag` (e.g. "Yankees"); match against the active
-// team's short name, falling back to a substring of the full name.
-function teamPostMatches(p) {
-  var t = state.activeTeam;
-  if (!t || p.category !== 'team' || !p.tag) return false;
-  var tag = p.tag.toLowerCase();
-  var short = (t.short || '').toLowerCase();
-  var full = (t.name || '').toLowerCase();
-  return tag === short || (full && full.indexOf(tag) !== -1);
-}
-
-function applyFilter(posts) {
-  var f = currentFilter();
-  if (f === 'team') {
-    if (!state.activeTeam) return [];
-    return posts.filter(teamPostMatches);
-  }
-  if (f === 'insider') {
-    return posts.filter(function (p) { return p.category === 'insider' || p.category === 'rumors'; });
-  }
-  return posts;
-}
-
 // force=true (the scheduled 2-min timer) always hits the network so the
 // timer is the true refresh cadence. force=false (first Pulse nav / reopen)
 // uses the localStorage cache so a reload within CACHE_TTL_MS is free.
 export async function loadBaseballBuzz(force) {
   var el = document.getElementById('sideRailBuzz');
   if (!el) return;
-  currentFilter();
-
-  if (!chipHandlerAttached) {
-    el.addEventListener('click', function (e) {
-      var chip = e.target.closest && e.target.closest('.buzz-chip');
-      if (!chip) return;
-      e.preventDefault();
-      if (chip.getAttribute('aria-disabled') === 'true') return;
-      var f = chip.getAttribute('data-filter') || 'all';
-      state.baseballBuzzFilter = f;
-      try { localStorage.setItem(FILTER_KEY, f); } catch (er) { /* non-fatal */ }
-      renderBaseballBuzz();
-    });
-    chipHandlerAttached = true;
-  }
 
   if (!force) {
     var cached = readCache();
@@ -205,21 +153,6 @@ export async function loadBaseballBuzz(force) {
 function buzzHeader() {
   return '<div class="side-rail-section-header">'
     + '<span class="side-rail-section-title">Baseball Buzz</span>'
-    + '</div>';
-}
-
-function renderFilterRow() {
-  var f = currentFilter();
-  var teamDisabled = !state.activeTeam;
-  function chip(id, label, extra) {
-    return '<button class="buzz-chip" data-filter="' + id + '"'
-      + ' aria-pressed="' + (f === id ? 'true' : 'false') + '"'
-      + (extra || '') + '>' + label + '</button>';
-  }
-  return '<div class="buzz-filter-row" role="tablist">'
-    + chip('all', 'All')
-    + chip('team', 'My team', teamDisabled ? ' aria-disabled="true" disabled' : '')
-    + chip('insider', 'Insiders')
     + '</div>';
 }
 
@@ -272,14 +205,9 @@ function renderBaseballBuzz() {
     return;
   }
 
-  var posts = applyFilter(all);
   el.classList.add('buzz-has-footer');
-  var html = buzzHeader() + renderFilterRow() + '<div class="buzz-list">';
-  if (!posts.length) {
-    html += '<div class="buzz-card buzz-none">No posts for this filter</div>';
-  } else {
-    posts.forEach(function (p) { html += cardHtml(p); });
-  }
+  var html = buzzHeader() + '<div class="buzz-list">';
+  all.forEach(function (p) { html += cardHtml(p); });
   html += '</div><div class="buzz-footer">via <span>Bluesky</span></div>';
   el.innerHTML = html;
 }

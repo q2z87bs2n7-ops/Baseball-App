@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.28.4
+**Current version:** v4.28.5
+
+**v4.28.5** — Baseball Buzz polish: removed the All/My-team/Insiders filter chips (and all filter state/handlers — feed is unfiltered); row dividers now use `var(--p-border)` to match the Completed/Upcoming games rows (the faint hardcoded divider is gone); restored the header→first-post divider (list keeps its top border, like the games container). Header font already matched "Upcoming Today" (shared `.side-rail-section-title`, .625rem) — unchanged.
 
 **v4.28.4** — Baseball Buzz: refresh cadence 10 min → **2 min** (new `TIMING.BUZZ_REFRESH_MS`); cache decoupled from the timer (scheduled tick force-fetches, `CACHE_TTL_MS` 10→2 min now only guards reopen/reload) so the interval is the true cadence — fixes the prior ~20-min effective rate. Text clamp expanded 3→8 lines (5 with an image embed) so the majority of a post is readable in the rail; very long posts still truncate.
 
