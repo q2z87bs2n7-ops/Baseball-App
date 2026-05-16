@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.20.0
+**Current version:** v4.21.0
+
+**v4.21.0** — **Post-merge minor bump for the Old-School Scorecard branch (PR #72).** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.20.11 → v4.20.18; full per-version notes below.
 
 **v4.20.18** — **Old-School Scorecard overlay (new feature).** Branch `claude/baseball-scorecard-viz` shipped v4.20.11 → v4.20.18; merged to main as v4.21.0. New `src/overlay/scorecard.js` + `#scorecardOverlay` (z-index 650) reconstructs a traditional scoring-book from `feed/live` for any live or completed game. Per-version:
 
