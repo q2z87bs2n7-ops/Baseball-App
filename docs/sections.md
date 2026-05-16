@@ -109,7 +109,7 @@ Triggered from Home card or matchup grid. Score header + count/runners + current
 Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}/playByPlay` (v1 path — do NOT use `feed/live` v1, it 404s)
 
 ## 📋 Old-School Scorecard (overlay)
-Triggered from the Schedule game-detail panel (Live + Final) and the Live Game View toolbar. Implemented as an overlay (`src/overlay/scorecard.js`), not a `<section>`. `#scorecardOverlay` (z-index 650) renders a traditional scoring-book: line-score header (R/H/E/LOB), a diamond per plate appearance with traced base paths + fielder notation + spray vector + ball-strike/pitch footer, batting-order rows with PH/PR sub-rows, batting-around stacking, runner-out (CS/PO) and Manfred-runner (MR) handling, and a full pitcher table with W/L/S. Runner tracking is base-keyed so pinch-runners inherit the base. Self-refreshes on `LIVE_REFRESH_MS` while a live game is open.
+Triggered from the Schedule game-detail panel (Live + Final) and the Live Game View toolbar. Implemented as an overlay (`src/overlay/scorecard.js`), not a `<section>`. `#scorecardOverlay` (z-index 650) renders a traditional scoring-book: line-score header (R/H/E/LOB), a diamond per plate appearance with traced base paths + fielder notation + spray vector + ball-strike/pitch caption below each diamond, batting-order rows with PH/PR sub-rows, batting-around stacking, runner-out (CS/PO) and Manfred-runner (MR) handling, and a full pitcher table with W/L/S. Runner tracking is base-keyed so pinch-runners inherit the base. Self-refreshes on `LIVE_REFRESH_MS` while a live game is open.
 
 Source: `/game/{gamePk}/feed/live` (v1.1 path). Full architecture: `docs/scorecard.md`.
 

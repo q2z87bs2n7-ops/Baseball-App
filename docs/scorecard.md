@@ -43,7 +43,7 @@ W/L/S decisions (`liveData.decisions`). Self-refreshes on
     `hitData.trajectory`
   - one accent **dot per RBI** (top-left); authoritative **out number**
     from `play.count.outs` (top-right); **inning-ending diagonal**
-  - in-cell **ball-strike + pitch count** footer from `playEvents`
+  - **ball-strike + pitch count** caption just below the diamond, from `playEvents`
   - **batted-ball spray vector** from `hitData.coordinates` — true
     direction within the ±45° fair wedge + depth; grounders straight,
     fly balls/popups arced

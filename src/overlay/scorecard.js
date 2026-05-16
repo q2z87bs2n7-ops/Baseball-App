@@ -44,6 +44,30 @@ function advReason(et){
   return '';
 }
 
+// Per-runner movement reason — read from the runner's own details, which
+// is reliable even when the steal/WP/etc. happens mid-at-bat (the play's
+// result.eventType is the at-bat's, not the action's).
+function runnerTags(r){
+  var d = r.details || {};
+  return ((d.movementReason||'') + ' ' + (d.eventType||'') + ' ' + (d.event||'')).toLowerCase();
+}
+function runnerAdvReason(r){
+  var s = runnerTags(r);
+  if(s.indexOf('stolen')>=0) return 'SB';
+  if(s.indexOf('wild_pitch')>=0 || s.indexOf('wild pitch')>=0) return 'WP';
+  if(s.indexOf('passed_ball')>=0 || s.indexOf('passed ball')>=0) return 'PB';
+  if(s.indexOf('balk')>=0) return 'BK';
+  if(s.indexOf('indiff')>=0) return 'DI';
+  if(s.indexOf('error')>=0) return 'E';
+  return '';
+}
+function runnerOutCode(r){
+  var s = runnerTags(r);
+  if(s.indexOf('caught_stealing')>=0 || s.indexOf('caught stealing')>=0) return 'CS';
+  if(s.indexOf('pickoff')>=0 || s.indexOf('pick-off')>=0 || s.indexOf('picked off')>=0) return 'PO';
+  return '';
+}
+
 function fielderChain(play){
   // Ordered fielder-number chain from credits, preserving fielding sequence
   // so rundowns like 1-3-6-3 keep their repeats. Only *consecutive*
@@ -253,9 +277,10 @@ function buildModel(feed){
           pre[sN]=cell; next[sN]=cell;
         } else return;
       }
+      var rReason = runnerAdvReason(r) || reason;
       if(mv.isOut){
         cell.outOnBase = true;
-        cell.outReason = runnerOutReason(et, play);
+        cell.outReason = runnerOutCode(r) || runnerOutReason(et, play);
         if(nOuts===3) cell.inningEnd = true;
         cell.outNum = nOuts || cell.outNum || 0;
         if(next[sN]===cell) delete next[sN];
@@ -263,13 +288,13 @@ function buildModel(feed){
       }
       var endN = baseToNum(mv.end);
       if(endN===4){
-        cell.scored = true; cell.reached = 3; if(reason) cell.adv = reason;
+        cell.scored = true; cell.reached = 3; if(rReason) cell.adv = rReason;
         if(next[sN]===cell) delete next[sN];
       } else if(endN>=1 && endN!==sN){
         if(next[sN]===cell) delete next[sN];
         next[endN] = cell;
         cell.reached = Math.max(cell.reached||0, Math.min(3,endN));
-        if(reason) cell.adv = reason;
+        if(rReason) cell.adv = rReason;
       }
     });
 
@@ -389,10 +414,16 @@ function diamondSVG(cell, size){
   s += '<text x="30" y="31" font-size="11" font-weight="700" fill="'+col+'" text-anchor="middle">'+esc(cell.code)+'</text>';
   var mid = cell.outOnBase ? (cell.outReason||'OUT') : cell.adv;
   if(mid) s += '<text x="30" y="43" font-size="7.5" fill="'+(cell.outOnBase?'var(--muted)':'var(--accent)')+'" text-anchor="middle">'+esc(mid)+'</text>';
-  var foot = (cell.b!=null && cell.s!=null && !cell.ghost ? cell.b+'-'+cell.s : '') + (cell.p ? ' · '+cell.p+'p' : '');
-  if(foot) s += '<text x="30" y="55" font-size="6.5" fill="var(--muted)" text-anchor="middle">'+esc(foot)+'</text>';
   s += '</svg>';
   return s;
+}
+
+// Ball-strike + pitch count, rendered just below the diamond (clearer
+// than cramming it inside the SVG).
+function footHtml(cell){
+  if(cell.ghost) return '';
+  var t = (cell.b!=null && cell.s!=null ? cell.b+'-'+cell.s : '') + (cell.p ? ' · '+cell.p+'p' : '');
+  return t ? '<div class="sc-foot">'+esc(t)+'</div>' : '';
 }
 
 function emptyCell(){
@@ -402,10 +433,10 @@ function emptyCell(){
 
 function renderCellStack(arr){
   if(!arr || !arr.length) return emptyCell();
-  if(arr.length===1) return diamondSVG(arr[0]);
+  if(arr.length===1) return diamondSVG(arr[0]) + footHtml(arr[0]);
   // batting around: this batter came up twice+ in one inning
   return '<div class="sc-stack" title="batted around">'
-       + arr.map(function(c){ return diamondSVG(c, 38); }).join('') + '</div>';
+       + arr.map(function(c){ return '<div>'+diamondSVG(c, 38)+footHtml(c)+'</div>'; }).join('') + '</div>';
 }
 
 function renderLineScore(model){
