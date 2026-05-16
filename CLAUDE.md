@@ -102,6 +102,7 @@ All bundle functions organised by subsystem: `docs/functions.md`. Key subsystem 
 - Card Collection: `docs/card-collection.md`
 - Radio system: `docs/radio-system.md`
 - Demo Mode: `docs/demo-mode.md`
+- Old-School Scorecard: `docs/scorecard.md`
 
 ---
 
@@ -134,6 +135,14 @@ Enabled teams, disabled teams, Radio Check tool, Hls.js routing: `docs/radio-sys
 Self-contained replay of May 11-12, 2026 from `assets/daily-events.json` (~2.5MB, 456 plays, 6 games). No API calls. Speeds: 1x (10s/play), 10x (1s/play), 30x (333ms/play). Toggle via `Shift+M` or "▶ Try Demo" button.
 
 `devTuning` object, all demo globals, key functions: `docs/demo-mode.md`.
+
+---
+
+## 📋 Old-School Scorecard
+
+Full-screen overlay reconstructing a traditional scoring-book from `feed/live` for any live or completed game. `#scorecardOverlay` (z-index 650). Launched from the Schedule game-detail panel (Live + Final) and the Live Game View toolbar. Line-score header, diamond-per-PA with traced base paths + fielder notation + spray vector + ball-strike/pitch footer, PH/PR sub-rows, batting-around stacking, CS/PO + Manfred-runner handling, full pitcher table with W/L/S. Runner tracking is **base-keyed** (not id-keyed) so pinch-runners inherit the base. All logic in `src/overlay/scorecard.js`; self-refreshes on `LIVE_REFRESH_MS` while a live game is open. Unsupported in Demo Mode (hits the live API).
+
+Full data model, notation engine, rendering, base-keyed tracking: `docs/scorecard.md`.
 
 ---
 

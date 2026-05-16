@@ -6207,3 +6207,103 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   margin-right: 6px;
   font-weight: 600
 }
+
+/* ── Scorecard Overlay ───────────────────────────────────────────────── */
+.sc-btn { margin-left: 8px }
+#scorecardCard { padding: 16px }
+.sc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px
+}
+.sc-title { font-size: 1.05rem; font-weight: 700; color: var(--text) }
+.sc-sub { font-size: .78rem; color: var(--muted); margin-top: 2px }
+.sc-live { color: #e5484d; font-weight: 700 }
+.sc-close {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0
+}
+.sc-msg { padding: 40px 10px; text-align: center; color: var(--muted) }
+.sc-team { margin-bottom: 22px }
+.sc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch }
+.sc-table { border-collapse: collapse; width: 100%; min-width: 720px }
+.sc-table th,
+.sc-table td {
+  border: 1px solid var(--border);
+  text-align: center;
+  font-size: .72rem;
+  color: var(--text)
+}
+.sc-table thead th {
+  background: var(--card2);
+  padding: 6px 4px;
+  font-weight: 700;
+  position: sticky;
+  top: 0
+}
+.sc-table th.sc-name,
+.sc-table td.sc-name {
+  text-align: left;
+  padding: 4px 8px;
+  position: sticky;
+  left: 0;
+  background: var(--card);
+  z-index: 1;
+  min-width: 180px;
+  white-space: nowrap
+}
+.sc-table thead th.sc-name { background: var(--card2) }
+.sc-ord {
+  display: inline-block;
+  width: 16px;
+  color: var(--muted);
+  font-weight: 700
+}
+.sc-pn { font-weight: 600 }
+.sc-pos { color: var(--muted); margin-left: 6px; font-size: .68rem }
+.sc-cell { width: 60px; height: 60px; padding: 2px }
+.sc-cell svg { margin: 0 auto }
+.sc-rhe { width: 30px; background: var(--card2); font-weight: 700 }
+.sc-team-h {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 18px 0 6px
+}
+.sc-ls { min-width: 520px; margin-bottom: 4px }
+.sc-ls td,
+.sc-ls th { height: 26px }
+.sc-subrow .sc-name { padding-left: 16px }
+.sc-subrow .sc-pn { font-weight: 500; color: var(--muted) }
+.sc-subtag {
+  display: inline-block;
+  font-size: .58rem;
+  font-weight: 700;
+  color: var(--accent-text, #fff);
+  background: var(--accent);
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-right: 6px;
+  vertical-align: middle
+}
+.sc-pit td,
+.sc-pit th { width: 38px }
+.sc-pit td.sc-name,
+.sc-pit th.sc-name { width: auto }
+.sc-dec { color: var(--accent); font-weight: 700; font-size: .66rem }
+.sc-stack {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap
+}

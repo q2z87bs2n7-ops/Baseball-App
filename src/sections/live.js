@@ -10,8 +10,11 @@ import { state } from '../state.js';
 import { SEASON, MLB_BASE, TIMING } from '../config/constants.js';
 import { fmt, fmtRate } from '../utils/format.js';
 import { buildBoxscore } from '../utils/boxscore.js';
+import { openScorecardOverlay } from '../overlay/scorecard.js';
 
 var liveGamePk=null,liveInterval=null;
+
+export function liveScorecard(){ if(liveGamePk!=null) openScorecardOverlay(liveGamePk); }
 
 export function showLiveGame(gamePk){liveGamePk=gamePk;document.querySelector('.main').style.display='none';document.getElementById('liveView').classList.add('active');fetchLiveGame();liveInterval=setInterval(fetchLiveGame,TIMING.LIVE_REFRESH_MS);}
 

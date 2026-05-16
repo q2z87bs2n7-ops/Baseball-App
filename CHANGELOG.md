@@ -7,6 +7,19 @@
 
 **Current version:** v4.20.0
 
+**v4.20.18** — **Old-School Scorecard overlay (new feature).** Branch `claude/baseball-scorecard-viz` shipped v4.20.11 → v4.20.18; merged to main as v4.21.0. New `src/overlay/scorecard.js` + `#scorecardOverlay` (z-index 650) reconstructs a traditional scoring-book from `feed/live` for any live or completed game. Per-version:
+
+- **v4.20.11** — Initial overlay: diamond-per-PA SVG grid, fielder notation (`6-3`/`F8`/`K`/`ꓘ`), traced base paths, per-inning R/H/E, pitcher one-liner. Launchable from Schedule cards (Live + Final) and the Live Game View toolbar (`liveScorecard()`). State fields, Escape-to-close, window exports.
+- **v4.20.12** — Correctness: station-to-station advancement (1B→2B was dropped), out numbers from authoritative `play.count.outs` (was double-counting on DPs), fielder-credit order preserved for rundowns (1-3-6-3) while collapsing the shared DP pivot (6-4-3), non-PA event skip-list (SB/CS/WP/PB/balk/pickoff/subs no longer render junk cells), `scheduledInnings` so 7-inning DH games stop drawing phantom columns.
+- **v4.20.13** — Authenticity: line-score header (inning strip + R/H/E) replacing the awkward per-row columns; in-cell ball-strike + pitch-count footer; inning-ending diagonal; advancement reason codes (SB/WP/PB/BK/E); out-type prefix from `hitData.trajectory`; full pitcher table with W/L/S decisions; PH/PR substitution tags; venue/date/attendance/weather header.
+- **v4.20.14** — Base-keyed runner tracking (was id-keyed): pinch-runners inherit the base and the run is credited to the originating batter; caught-stealing/pickoff outs marked (CS/PO); Manfred extra-innings runner synthesised as an `MR` cell; batting-around stored as an array and rendered as stacked mini-diamonds; uncaught-third-strike handled; LOB column; fixed `.sc-sub` CSS collision (→ `.sc-subtag`).
+- **v4.20.15** — Fixed nonsensical RBI marker (`1·`/`2R`) → one accent dot per RBI.
+- **v4.20.16** — Real batted-ball spray vector from `hitData.coordinates` (direction within the ±45° fair wedge + depth; grounders straight, fly balls arced), replacing the valueless line-to-fielder tick.
+- **v4.20.17** — Removed the legend/key strip and its unused CSS.
+- **v4.20.18** — Documentation: `docs/scorecard.md` (new), CLAUDE.md feature section + subsystem-docs entry, `docs/sections.md` + `docs/module-graph.md` entries.
+
+Live/demo behaviour elsewhere untouched; the overlay is additive and hits the live API only when opened (unsupported in Demo Mode).
+
 **v4.20.0** — **Post-merge minor bump for the demo-RISP / pitch-by-pitch / recorder-enrichment branch (PR #65).** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.19.3 → v4.19.18 covering:
 
 - **Recorder capture surface** (v4.19.3) — `addFeedItem` payload now carries `onFirst/onSecond/onThird` (post-play, derived from `play.runners[].movement.end`), `awayHits/homeHits`, `pitcherId`, `rbi`, `speed`. Pitch envelopes (`pitchTimeline[].pitches[]`) now carry per-pitch `ballsAfter/strikesAfter/outsAfter` from `playEvents[i].count`.

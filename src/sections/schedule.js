@@ -171,7 +171,8 @@ async function buildGameDetailPanel(g,gameNum){
     var html=sep+'<div class="boxscore-wrap">'+label+'<div class="boxscore-title">'+title+' &nbsp;·&nbsp; '+gameDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'</div>';
     html+='<div class="game-notes-grid"><div class="game-note-box"><div class="game-note-label">Score</div><div class="game-note-val">'+away.team.teamName+' '+aScore+', '+home.team.teamName+' '+hScore+'</div></div>';
     html+='<div class="game-note-box"><div class="game-note-label">Status</div><div class="game-note-val"><span class="live-indicator">● LIVE</span> · '+half+' '+inn+'</div></div></div>';
-    html+='<button onclick="showLiveGame('+g.gamePk+')" class="watch-live-btn">▶ Watch Live</button></div>';
+    html+='<button onclick="showLiveGame('+g.gamePk+')" class="watch-live-btn">▶ Watch Live</button>';
+    html+='<button onclick="openScorecardOverlay('+g.gamePk+')" class="watch-live-btn sc-btn">📋 Scorecard</button></div>';
     return html;
   }
   var ls={},bs={},content={};
@@ -198,6 +199,7 @@ async function buildGameDetailPanel(g,gameNum){
   html+='<tr><td>'+home.team.teamName+'</td>';innings.forEach(function(inn){html+='<td>'+(inn.home&&inn.home.runs!=null?inn.home.runs:'—')+'</td>';});
   html+='<td class="rhe rhe-start">'+(ls.teams&&ls.teams.home&&ls.teams.home.runs!=null?ls.teams.home.runs:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.hits!=null?ls.teams.home.hits:'—')+'</td><td class="rhe">'+(ls.teams&&ls.teams.home&&ls.teams.home.errors!=null?ls.teams.home.errors:'—')+'</td></tr>';
   html+='</tbody></table></div>';
+  html+='<button onclick="openScorecardOverlay('+g.gamePk+')" class="watch-live-btn sc-btn">📋 View Scorecard</button>';
   if(highlightUrl){
     var highlightHeadline=highlight.headline||'Full Game Highlight';
     var safeUrl=highlightUrl.replace(/'/g,"\\'");
