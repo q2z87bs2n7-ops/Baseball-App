@@ -1,6 +1,6 @@
 {
   "name": "baseball-app",
-  "version": "4.20.16",
+  "version": "4.20.17",
   "private": true,
   "scripts": {
     "build": "node build.mjs",

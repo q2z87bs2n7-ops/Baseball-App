@@ -6232,12 +6232,6 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   cursor: pointer;
   flex-shrink: 0
 }
-.sc-legend {
-  font-size: .72rem;
-  color: var(--muted);
-  margin-bottom: 14px;
-  line-height: 1.4
-}
 .sc-msg { padding: 40px 10px; text-align: center; color: var(--muted) }
 .sc-team { margin-bottom: 22px }
 .sc-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch }

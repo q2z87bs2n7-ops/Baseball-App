@@ -484,10 +484,6 @@ function renderInto(model){
     + '<div class="sc-sub">'+live+esc(model.status)+(model.meta?' · '+esc(model.meta):'')+'</div></div>'
     + '<button class="sc-close" onclick="closeScorecardOverlay()" aria-label="Close">✕</button></div>'
     + renderLineScore(model)
-    + '<div class="sc-legend">⚾ Diamond = plate appearance · filled = run scored · 6-3 / F8 = fielder out · '
-    + 'K swinging / ꓘ called · diagonal = inning-ending out · CS/PO = runner out on bases · '
-    + 'MR = Manfred runner · dots (top-left) = RBI · thin line = batted-ball direction/depth (arc = fly) · '
-    + 'footer = ball-strike · pitches · SB/WP/PB/BK/E = how a runner advanced</div>'
     + renderTeamTable(model.away, model.innCount)
     + renderTeamTable(model.home, model.innCount)
     + renderPitchers(model.away)
