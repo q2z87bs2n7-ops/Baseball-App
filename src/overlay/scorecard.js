@@ -12,19 +12,32 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 // MLB defensive position code → traditional scorebook number.
 var POS = { '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','10':'DH' };
 
+// Non-plate-appearance event types: these never produce a scorecard cell
+// (they happen mid-AB or between batters), but still feed runner advancement.
+var NON_PA = {
+  stolen_base:1, stolen_base_2b:1, stolen_base_3b:1, stolen_base_home:1,
+  caught_stealing:1, caught_stealing_2b:1, caught_stealing_3b:1, caught_stealing_home:1,
+  pickoff_1b:1, pickoff_2b:1, pickoff_3b:1,
+  pickoff_caught_stealing_2b:1, pickoff_caught_stealing_3b:1, pickoff_caught_stealing_home:1,
+  pickoff_error_1b:1, pickoff_error_2b:1, pickoff_error_3b:1,
+  wild_pitch:1, passed_ball:1, balk:1, defensive_indiff:1, other_advance:1,
+  runner_placed:1, defensive_substitution:1, offensive_substitution:1,
+  pitching_substitution:1, defensive_switch:1, injury:1, ejection:1, game_advisory:1
+};
+
 function fielderChain(play){
-  // Build an ordered fielder-number chain from the play's credits
-  // (assists first, putout last) — produces "6-3", "4-6-3", "F8", etc.
-  var assists = [], putouts = [];
+  // Ordered fielder-number chain from credits, preserving fielding sequence
+  // so rundowns like 1-3-6-3 keep their repeats. Only *consecutive*
+  // duplicates collapse, so a 6-4-3 DP doesn't print the shared pivot twice.
+  var seq = [];
   (play.runners||[]).forEach(function(r){
     (r.credits||[]).forEach(function(c){
-      var n = POS[c.position && c.position.code] || '';
-      if(!n) return;
-      if(c.credit==='f_putout' && putouts.indexOf(n)<0) putouts.push(n);
-      else if(c.credit==='f_assist' && assists.indexOf(n)<0) assists.push(n);
+      if(c.credit!=='f_putout' && c.credit!=='f_assist') return;
+      var num = POS[c.position && c.position.code] || '';
+      if(num && seq[seq.length-1]!==num) seq.push(num);
     });
   });
-  return assists.concat(putouts);
+  return seq;
 }
 
 function errorPos(play){
@@ -88,7 +101,7 @@ function buildModel(feed){
   var ls = ld.linescore||{};
   var box = ld.boxscore && ld.boxscore.teams ? ld.boxscore.teams : {};
   var plays = (ld.plays && ld.plays.allPlays) ? ld.plays.allPlays : [];
-  var innCount = Math.max(9, (ls.innings||[]).length, ls.currentInning||0);
+  var innCount = Math.max(ls.scheduledInnings || 9, (ls.innings||[]).length, ls.currentInning||0);
 
   function teamModel(sideKey){
     var t = box[sideKey]||{}, players = t.players||{};
@@ -123,63 +136,53 @@ function buildModel(feed){
     return found;
   }
 
-  // outs running per half-inning, and live runner tracking for advancement.
-  var outsByHalf = {};
   var activePA = {}; // runnerId → cell still live on the bases
 
   plays.forEach(function(play){
     if(!(play.about && play.about.isComplete)) return;
+    var et = (play.result && play.result.eventType) || '';
+    var isPA = !NON_PA[et];
     var half = play.about.halfInning; // 'top' | 'bottom'
     var inn = play.about.inning;
-    var isAway = half==='top';
-    var model = isAway ? away : home;
+    var model = half==='top' ? away : home;
     var batterId = play.matchup && play.matchup.batter && play.matchup.batter.id;
-    var row = rowFor(model, batterId);
-    var hk = half+inn;
-    if(outsByHalf[hk]==null) outsByHalf[hk]=0;
 
-    var n = notatePlay(play);
-    var br = (play.runners||[]).filter(function(r){
-      return r.details && r.details.runner && r.details.runner.id===batterId
-          && (r.movement.start==null || r.movement.originBase==null);
-    })[0];
-    var reached = br ? baseToNum(br.movement.end) : 0;
-    var batterOut = br ? !!br.movement.isOut : n.out;
-
-    var cell = {
-      code: n.code, hit:n.hit, out:batterOut,
-      rbi: (play.result && play.result.rbi) || 0,
-      reached: reached>=4 ? 3 : reached, // base path drawn up to 3B; scored handled by flag
-      scored: reached===4,
-      outNum: 0
-    };
-    if(batterOut){
-      outsByHalf[hk]++;
-      cell.outNum = outsByHalf[hk];
+    if(isPA){
+      var row = rowFor(model, batterId);
+      var n = notatePlay(play);
+      var br = (play.runners||[]).filter(function(r){
+        return r.details && r.details.runner && r.details.runner.id===batterId
+            && (r.movement.start==null || r.movement.originBase==null);
+      })[0];
+      var reached = br ? baseToNum(br.movement.end) : 0;
+      var batterOut = br ? !!br.movement.isOut : n.out;
+      var cell = {
+        code: n.code, hit:n.hit, out:batterOut,
+        rbi: (play.result && play.result.rbi) || 0,
+        reached: reached>=4 ? 3 : reached, // base path drawn up to 3B; scored handled by flag
+        scored: reached===4,
+        // Authoritative post-play out total (the batter's out is the
+        // trailing out on virtually every PA), not a hand-rolled tally.
+        outNum: batterOut ? ((play.count && play.count.outs) || 0) : 0
+      };
+      if(row) row.cells[inn] = cell;
+      // Close any prior PA for this batter (can't be on base twice), then
+      // mark this one live if the batter reached base and is still running.
+      delete activePA[batterId];
+      if(reached>=1 && reached<4 && !batterOut && !cell.scored) activePA[batterId] = cell;
     }
-    if(row) row.cells[inn] = cell;
 
-    // Close any prior PA for this batter (can't be on base twice), then
-    // mark this one live if the batter reached base and is still running.
-    delete activePA[batterId];
-    if(reached>=1 && reached<4 && !batterOut && !cell.scored) activePA[batterId] = cell;
-
-    // Apply this play's runner movements to anyone still live on base.
+    // Runner advancement applies on every play — PA and non-PA (SB, WP,
+    // PB, balk, etc.) alike — so live runners' base paths stay correct.
     (play.runners||[]).forEach(function(r){
       var rid = r.details && r.details.runner && r.details.runner.id;
       if(rid===batterId) return;
       var pa = activePA[rid];
       if(!pa) return;
-      var endN = baseToNum(r.movement.end);
-      if(r.movement.isOut){ delete activePA[rid]; return; }
+      if(r.movement && r.movement.isOut){ delete activePA[rid]; return; }
+      var endN = baseToNum(r.movement && r.movement.end);
       if(endN===4){ pa.scored=true; pa.reached=3; delete activePA[rid]; }
-      else if(endN>=1 && endN-1>pa.reached){ pa.reached=Math.min(3,endN); }
-    });
-    // Non-batter outs still increment the half-inning out counter.
-    (play.runners||[]).forEach(function(r){
-      var rid = r.details && r.details.runner && r.details.runner.id;
-      if(rid===batterId) return;
-      if(r.movement && r.movement.isOut) outsByHalf[hk]++;
+      else if(endN>=1 && endN>pa.reached){ pa.reached=Math.min(3,endN); }
     });
   });
 
