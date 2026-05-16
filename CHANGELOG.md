@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.11
+**Current version:** v4.21.12
+
+**v4.21.12** — **Fix double inning-ending diagonal.** Two diagonals were rendering on the half-inning-ending cell: the bold red slash inside the diamond SVG (the spec renderer's mark, the traditional scorebook convention) *and* a faint 135° cell-background gradient stripe added from the handoff README's checklist item 5. The spec only ever drew one; the README's cell-overlay note was an alternative, not an addition. Removed the cell-background gradient (and the now-unused `.inning-end` class plumbing) — a single in-diamond slash remains.
 
 **v4.21.11** — **Tone down the scorecard launch button.** It reused the prominent solid `.watch-live-btn` pill, so it was as eye-catching as "Watch Live" and oversized for a secondary action. Added a `.watch-live-btn.sc-btn` override (ghost style: transparent bg, 1px subtle border, muted text, smaller padding/font, lighter weight) — placement unchanged. The real "Watch Live" button is untouched.
 

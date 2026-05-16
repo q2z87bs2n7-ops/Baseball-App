@@ -451,7 +451,7 @@ function diamondSVG(cell, size){
     s += '<circle cx="'+p.split(',')[0]+'" cy="'+p.split(',')[1]+'" r="2.1" fill="'+(on?pathStroke:INK_EMPTY)+'"/>';
   });
 
-  // Inning-ending out — red slash (also reinforced by the cell background).
+  // Inning-ending out — single red slash (traditional scorebook convention).
   if(cell.inningEnd) s += '<line x1="3" y1="3" x2="57" y2="57" stroke="'+INK_RED+'" stroke-width="1.6" opacity="0.85"/>';
 
   // Out number — circled red chip (traditional scorebook convention).
@@ -548,8 +548,7 @@ function renderTeamTable(team, innCount){
         var lbl = (arr && arr.length)
           ? ' aria-label="'+esc(row.name+', inning '+inn+': '+arr.map(cellLabel).join('; '))+'"'
           : '';
-        var endCls = (arr && arr.length===1 && arr[0].inningEnd) ? ' inning-end' : '';
-        body += '<td class="sc-cell'+endCls+'"'+lbl+'>'+renderCellStack(arr)+'</td>';
+        body += '<td class="sc-cell"'+lbl+'>'+renderCellStack(arr)+'</td>';
       }
       body += '</tr>';
     });

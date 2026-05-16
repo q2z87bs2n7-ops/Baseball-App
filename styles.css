@@ -6410,9 +6410,6 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .sc-rhe { color: #1a3a6e; font-weight: 900 }
 .sc-foot { font-family: 'Courier New', monospace; letter-spacing: .04em }
 .sc-cell { width: 80px; height: 80px; padding: 2px }
-.sc-cell.inning-end {
-  background: linear-gradient(135deg, transparent 49%, rgba(168,36,58,.12) 49.5%, rgba(168,36,58,.12) 50.5%, transparent 51%);
-}
 .sc-subrow .sc-pn { color: var(--muted) }
 
 /* Responsive batting grid: fill the card width with a fixed name column
