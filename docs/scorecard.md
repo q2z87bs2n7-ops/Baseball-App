@@ -30,6 +30,22 @@ payload supplies the batting order + substitutions
 W/L/S decisions (`liveData.decisions`). Self-refreshes on
 `TIMING.LIVE_REFRESH_MS` while the open game is Live.
 
+## Visual treatment — "Paper" heritage variant
+
+Full-replace redesign (no dark variant retained). Cream stock
+(`#f4ecd8` + two radial paper-grain gradients), navy ink (`#1a3a6e`)
+for plays/hits/scoring paths, faded red (`#a8243a`) reserved for
+outs/RBI/HR fill/inning-ending, faint sand (`#c7b896`) borders, pencil
+mute (`#8a7d65`) for positions/footer/spray. Serif type throughout
+(Georgia body; Playfair Display italic for the title via Google Fonts,
+Georgia fallback offline); Courier mono for the line score. Diamond
+cells are 76px (54px when batting around). The palette is fixed and
+**not** team-themed — it's remapped via CSS custom properties scoped to
+`#scorecardCard`, so the existing `.sc-*` rules recolour without a
+rewrite. Cell-readability fixes baked in: HR fills the diamond + larger
+code, strikeouts render at 22pt centred, the spray vector is demoted
+and suppressed on K, and the out number is a circled red chip.
+
 ## Rendering
 
 - **Line-score header** — inning strip + R / H / E / LOB per team.

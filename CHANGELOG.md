@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.4
+**Current version:** v4.21.5
+
+**v4.21.5** — **Scorecard "Paper" heritage redesign (full replace).** Implements the design-handoff Paper variant: cream stock with paper-grain gradients, navy ink for plays, faded red for outs/RBI/HR/inning-end, faint-sand borders, pencil-mute spray/footer; serif type (Georgia + Playfair Display italic title via Google Fonts, Georgia fallback); Courier line score. Palette is fixed (not team-themed) — remapped through CSS custom properties scoped to `#scorecardCard` so the `.sc-*` rules recolour without a rewrite. Five cell-readability fixes: 76px cells (54px batting-around), HR diamond fill + 13pt code, 22pt centred K with spray suppressed, red restraint (navy paths for non-scoring hits), circled red out-number chip. Model logic untouched; the SB/CS/PO/adv functional markers added during UAT are preserved (restyled). Dark treatment dropped per the chosen delivery option.
 
 **v4.21.4** — Chore: remove a stray `Score cards.zip` (UAT artifact uploaded to the branch) so it doesn't ship to main; recoverable in branch history.
 

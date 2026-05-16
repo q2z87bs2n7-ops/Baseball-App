@@ -6210,7 +6210,25 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 
 /* ── Scorecard Overlay ───────────────────────────────────────────────── */
 .sc-btn { margin-left: 8px }
-#scorecardCard { padding: 16px }
+/* Paper (heritage) variant — remap the palette custom properties so every
+   existing .sc-* var() usage recolours, then layer on the serif typography
+   and sizing below. Intentionally fixed (not team-themed). */
+#scorecardCard {
+  --card: #f4ecd8;
+  --card2: rgba(199, 184, 150, 0.25);
+  --border: #c7b896;
+  --muted: #8a7d65;
+  --text: #2a2520;
+  --accent: #a8243a;
+  --accent-text: #f4ecd8;
+  padding: 18px 20px 22px;
+  color: #2a2520;
+  font-family: Georgia, 'Times New Roman', serif;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(212, 197, 168, 0.18), transparent 40%),
+    radial-gradient(ellipse at 80% 90%, rgba(212, 197, 168, 0.22), transparent 50%),
+    #f4ecd8;
+}
 .sc-head {
   display: flex;
   align-items: flex-start;
@@ -6332,6 +6350,40 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   height: 22px
 }
 .sc-lob td.sc-name { font-weight: 600; color: var(--text) }
+
+/* Paper variant typography + sizing (overrides the base .sc-* rules) */
+.sc-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 800;
+  color: #1a3a6e;
+}
+.sc-sub { font-style: italic; letter-spacing: .03em }
+.sc-team-h {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  color: #1a3a6e;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: .62rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin: 18px 0 6px;
+}
+.sc-ls { font-family: 'Courier New', monospace }
+.sc-ls .sc-pn { font-family: Georgia, serif }
+.sc-table thead th { color: #1a3a6e }
+.sc-pn { color: #1a3a6e; font-weight: 700 }
+.sc-ord { color: var(--accent); opacity: .85 }
+.sc-pos { font-style: italic }
+.sc-rhe { color: #1a3a6e; font-weight: 900 }
+.sc-foot { font-family: 'Courier New', monospace; letter-spacing: .04em }
+.sc-cell { width: 80px; height: 80px; padding: 2px }
+.sc-cell.inning-end {
+  background: linear-gradient(135deg, transparent 49%, rgba(168,36,58,.12) 49.5%, rgba(168,36,58,.12) 50.5%, transparent 51%);
+}
+.sc-subrow .sc-pn { color: var(--muted) }
 
 @media print {
   body * { visibility: hidden !important }
