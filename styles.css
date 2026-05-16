@@ -6307,3 +6307,10 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   align-items: center;
   flex-wrap: wrap
 }
+.sc-foot {
+  font-size: .62rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1;
+  margin-top: 1px
+}

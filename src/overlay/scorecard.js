@@ -414,10 +414,16 @@ function diamondSVG(cell, size){
   s += '<text x="30" y="31" font-size="11" font-weight="700" fill="'+col+'" text-anchor="middle">'+esc(cell.code)+'</text>';
   var mid = cell.outOnBase ? (cell.outReason||'OUT') : cell.adv;
   if(mid) s += '<text x="30" y="43" font-size="7.5" fill="'+(cell.outOnBase?'var(--muted)':'var(--accent)')+'" text-anchor="middle">'+esc(mid)+'</text>';
-  var foot = (cell.b!=null && cell.s!=null && !cell.ghost ? cell.b+'-'+cell.s : '') + (cell.p ? ' · '+cell.p+'p' : '');
-  if(foot) s += '<text x="30" y="55" font-size="6.5" fill="var(--muted)" text-anchor="middle">'+esc(foot)+'</text>';
   s += '</svg>';
   return s;
+}
+
+// Ball-strike + pitch count, rendered just below the diamond (clearer
+// than cramming it inside the SVG).
+function footHtml(cell){
+  if(cell.ghost) return '';
+  var t = (cell.b!=null && cell.s!=null ? cell.b+'-'+cell.s : '') + (cell.p ? ' · '+cell.p+'p' : '');
+  return t ? '<div class="sc-foot">'+esc(t)+'</div>' : '';
 }
 
 function emptyCell(){
@@ -427,10 +433,10 @@ function emptyCell(){
 
 function renderCellStack(arr){
   if(!arr || !arr.length) return emptyCell();
-  if(arr.length===1) return diamondSVG(arr[0]);
+  if(arr.length===1) return diamondSVG(arr[0]) + footHtml(arr[0]);
   // batting around: this batter came up twice+ in one inning
   return '<div class="sc-stack" title="batted around">'
-       + arr.map(function(c){ return diamondSVG(c, 38); }).join('') + '</div>';
+       + arr.map(function(c){ return '<div>'+diamondSVG(c, 38)+footHtml(c)+'</div>'; }).join('') + '</div>';
 }
 
 function renderLineScore(model){
