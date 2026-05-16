@@ -6410,7 +6410,14 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   min-width: 820px;
 }
 .sc-bat th.sc-name,
-.sc-bat td.sc-name { width: 150px }
+.sc-bat td.sc-name {
+  width: 150px;
+  white-space: normal;
+  overflow: hidden;
+  line-height: 1.18;
+  vertical-align: middle;
+}
+.sc-bat .sc-subrow .sc-name { padding-left: 10px }
 .sc-bat .sc-cell {
   width: auto;
   height: auto;

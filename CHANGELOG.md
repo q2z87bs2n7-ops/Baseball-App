@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.9
+**Current version:** v4.21.10
+
+**v4.21.10** — **Fix batter names overflowing into inning 1.** Side effect of the v4.21.9 responsive grid: `table-layout: fixed` pinned the name column to a hard 150px, but the base `.sc-name` still had `white-space: nowrap`, so long names ("Bryce Harper 1B", "Edmundo Sosa LF") and especially indented sub rows (`SUB · Rafael Marchán C`) overflowed past 150px into the inning-1 diamond. Batting name cells now wrap (`white-space: normal`), hard-clip (`overflow: hidden`) so nothing can ever bleed into the grid, with tight line-height + vertical centering (rows are ~116px tall, so a 2-line name fits). Sub-row indent trimmed 16 → 10px to give the tag+name a touch more room. No data/logic change — subs were always tracked correctly; this was purely the fixed-width + nowrap layout gap.
 
 **v4.21.9** — **Responsive batting grid (fixes the landscape dead space).** The v4.21.8 content-width fix stopped the name-column bloat but left a wide blank strip on landscape iPad/desktop and made the fixed-size diamonds feel small. The diamonds were never actually resized by orientation — they're a fixed 76px; it was purely the empty space. Made the batting table fill the card width via `table-layout: fixed` with a 150px name column, so the 9 inning columns share the remaining width and the diamond SVGs scale up to fill them (capped at 116px), with `min-width: 820px` so it still scrolls when narrow. Scoped to `.sc-bat` only (line-score now also spans full width for visual coherence; pitcher table unchanged). Net: bigger diamonds on landscape, no dead space, no name-column regression.
 
