@@ -6296,9 +6296,9 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   vertical-align: middle
 }
 .sc-pit td,
-.sc-pit th { width: 38px }
+.sc-pit th { width: 46px; white-space: nowrap }
 .sc-pit td.sc-name,
-.sc-pit th.sc-name { width: auto }
+.sc-pit th.sc-name { width: auto; min-width: 132px }
 .sc-dec { color: var(--accent); font-weight: 700; font-size: .66rem }
 .sc-stack {
   display: flex;

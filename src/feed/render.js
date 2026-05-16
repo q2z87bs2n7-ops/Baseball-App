@@ -397,13 +397,13 @@ function renderTicker() {
 
 function renderSideRailGames() {
   var upcomingHtml='', completedHtml='';
-  var upcomingGames=[], completedGames=[];
+  var upcomingGames=[], completedGames=[], liveCount=0;
   var localDateStr=feedCallbacks.localDateStr;
   var filterDate=state.demoMode&&localDateStr?localDateStr(state.demoDate):localDateStr?localDateStr(new Date()):null;
   if(state.demoMode&&DEBUG) console.log('Demo: renderSideRailGames filtering to date',filterDate,'from',Object.keys(state.gameStates).length,'total games');
   Object.values(state.gameStates).forEach(function(g) {
     if(state.demoMode&&localDateStr&&localDateStr(new Date(g.gameDateMs))!==filterDate) return;
-    if (g.status==='Live') return;
+    if (g.status==='Live') { liveCount++; return; }
     if (g.status==='Final') completedGames.push(g);
     else upcomingGames.push(g);
   });
@@ -443,7 +443,7 @@ function renderSideRailGames() {
     completedHtml+='</div>';
   }
   var gamesHtml=upcomingHtml+completedHtml;
-  if (!gamesHtml) gamesHtml='<div style="color:var(--muted);font-size:.75rem;padding:12px;text-align:center;">No games today</div>';
+  if (!gamesHtml) gamesHtml='<div style="color:var(--muted);font-size:.75rem;padding:12px;text-align:center;">'+(liveCount?('All '+liveCount+' game'+(liveCount>1?'s':'')+' in progress — see ticker above'):'No games today')+'</div>';
   document.getElementById('sideRailGames').innerHTML=gamesHtml;
 }
 
