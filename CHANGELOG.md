@@ -7,7 +7,7 @@
 
 **Current version:** v4.28.6
 
-**v4.28.6** — Baseball Buzz layout fix: replaced the avatar-gutter grid with a single header row (avatar + name + category pill + time all on one line, name ellipsises so the badge no longer wraps below) and full-width post text reclaiming the dead space under the avatar; added a right gutter so time/text don't reach the edge; dropped the now-redundant hover ↗ glyph.
+**v4.28.6** — Baseball Buzz layout fix: replaced the avatar-gutter grid with a single header row (avatar + name + category pill + time all on one line, name ellipsises so the badge no longer wraps below) and full-width post text reclaiming the dead space under the avatar; added a right gutter so time/text don't reach the edge; dropped the now-redundant hover ↗ glyph. Docs: added `docs/buzz.md` subsystem doc; registered it in CLAUDE.md's subsystem list; updated `docs/sections.md`, `docs/functions.md`, `docs/module-graph.md`. Merged to prod at v4.28.6 (version intentionally not bumped on merge).
 
 **v4.28.5** — Baseball Buzz polish: removed the All/My-team/Insiders filter chips (and all filter state/handlers — feed is unfiltered); row dividers now use `var(--p-border)` to match the Completed/Upcoming games rows (the faint hardcoded divider is gone); restored the header→first-post divider (list keeps its top border, like the games container). Header font already matched "Upcoming Today" (shared `.side-rail-section-title`, .625rem) — unchanged.
 

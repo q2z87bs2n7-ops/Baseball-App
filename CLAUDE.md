@@ -102,6 +102,7 @@ All bundle functions organised by subsystem: `docs/functions.md`. Key subsystem 
 - Card Collection: `docs/card-collection.md`
 - Radio system: `docs/radio-system.md`
 - Team Podcasts strip: `docs/podcast.md`
+- Baseball Buzz (Pulse social rail): `docs/buzz.md`
 - Demo Mode: `docs/demo-mode.md`
 - Old-School Scorecard: `docs/scorecard.md`
 
