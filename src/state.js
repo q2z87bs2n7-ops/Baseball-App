@@ -69,6 +69,7 @@ export const state = {
   newsArticlesCache: [],
   pulseNewsArticles: [],
   pulseNewsIndex: 0,
+  baseballBuzzPosts: [],
 
   // ── League Pulse State ───────────────────────────────────────────────────
   pulseInitialized: false,

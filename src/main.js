@@ -103,6 +103,7 @@ import {
 import {
   loadPulseNews, nextNewsCard, prevNewsCard,
 } from './pulse/news-carousel.js';
+import { loadBaseballBuzz } from './pulse/baseball-buzz.js';
 import {
   setTuningCallbacks, toggleDevTools, updateTuning, resetTuning,
   updateColorOverride, captureCurrentTheme, toggleColorLock,
@@ -297,6 +298,7 @@ function initReal() {
   loadOnThisDayCache(); loadYesterdayCache();
   loadTransactionsCache(); loadHighLowCache();
   loadPulseNews();
+  loadBaseballBuzz();
   document.removeEventListener('visibilitychange',onStoryVisibilityChange);
   document.addEventListener('visibilitychange',onStoryVisibilityChange);
   pollLeaguePulse().then(function(){buildStoryPool();setFocusGame(state.focusGamePk);if(typeof window!=='undefined'&&typeof window.dismissAppSplash==='function')window.dismissAppSplash();});
@@ -307,6 +309,8 @@ function initReal() {
   state.videoClipPollTimer=setInterval(pollPendingVideoClips,30*1000);
   if(state.newsRefreshTimer){clearInterval(state.newsRefreshTimer);state.newsRefreshTimer=null;}
   state.newsRefreshTimer=setInterval(loadPulseNews,TIMING.NEWS_REFRESH_MS);
+  if(state.buzzRefreshTimer){clearInterval(state.buzzRefreshTimer);state.buzzRefreshTimer=null;}
+  state.buzzRefreshTimer=setInterval(loadBaseballBuzz,TIMING.NEWS_REFRESH_MS);
   if(state.yesterdayRefreshTimer){clearInterval(state.yesterdayRefreshTimer);state.yesterdayRefreshTimer=null;}
   state.yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){

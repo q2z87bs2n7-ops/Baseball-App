@@ -5094,6 +5094,65 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   margin-top: 16px;
 }
 
+.buzz-list {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.buzz-card {
+  display: block;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--p-border, rgba(255, 255, 255, 0.04));
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.buzz-card:last-child {
+  border-bottom: none;
+}
+
+.buzz-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.buzz-meta {
+  font-size: .66rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.buzz-tag {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.buzz-time {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.buzz-text {
+  font-size: .72rem;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.buzz-empty {
+  color: var(--muted);
+  font-size: .75rem;
+  padding: 20px;
+  text-align: center;
+}
+
 .side-rail-title {
   font-size: .69rem;
   font-weight: 700;
