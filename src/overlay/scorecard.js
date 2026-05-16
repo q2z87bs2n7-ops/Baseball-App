@@ -367,7 +367,10 @@ function diamondSVG(cell, size){
   });
   if(cell.inningEnd) s += '<line x1="4" y1="4" x2="56" y2="56" stroke="var(--muted)" stroke-width="1.5" opacity="0.5"/>';
   if(cell.outNum) s += '<text x="51" y="13" font-size="9" fill="var(--muted)" text-anchor="middle">'+cell.outNum+'</text>';
-  if(cell.rbi) s += '<text x="9" y="13" font-size="8" fill="var(--accent)" text-anchor="middle">'+cell.rbi+(cell.rbi>1?'R':'·')+'</text>';
+  // RBI — classic convention: one dot per run batted in.
+  for(var ri=0; ri<(cell.rbi||0); ri++){
+    s += '<circle cx="'+(6+ri*4)+'" cy="10" r="1.6" fill="var(--accent)"/>';
+  }
   var col = cell.hit ? 'var(--accent)' : ((cell.out||cell.outOnBase) ? 'var(--muted)' : 'var(--text)');
   s += '<text x="30" y="31" font-size="11" font-weight="700" fill="'+col+'" text-anchor="middle">'+esc(cell.code)+'</text>';
   var mid = cell.outOnBase ? (cell.outReason||'OUT') : cell.adv;
@@ -469,7 +472,7 @@ function renderInto(model){
     + renderLineScore(model)
     + '<div class="sc-legend">⚾ Diamond = plate appearance · filled = run scored · 6-3 / F8 = fielder out · '
     + 'K swinging / ꓘ called · diagonal = inning-ending out · CS/PO = runner out on bases · '
-    + 'MR = Manfred runner · footer = ball-strike · pitches · SB/WP/PB/BK/E = how a runner advanced</div>'
+    + 'MR = Manfred runner · dots (top-left) = RBI · footer = ball-strike · pitches · SB/WP/PB/BK/E = how a runner advanced</div>'
     + renderTeamTable(model.away, model.innCount)
     + renderTeamTable(model.home, model.innCount)
     + renderPitchers(model.away)
