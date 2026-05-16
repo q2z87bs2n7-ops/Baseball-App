@@ -1,10 +1,13 @@
 // Old-school scorecard overlay — renders a baseball scoring-book view of a
 // game (live or completed) from the MLB feed/live payload: a line-score
 // header, a diamond per plate appearance with traced base paths, fielder
-// notation (6-3, F8, K/ꓘ), in-cell ball-strike/pitch count, inning-ending
+// notation (6-3, F8, K/ꓘ), ball-strike/pitch caption, inning-ending
 // diagonals, advancement reason codes (WP/PB/BK/SB/E), runner-out markers
 // (CS/PO), batting-around stacking, Manfred runner (MR) handling,
-// substitution markers (PH/PR), and a full pitcher table with W/L/S.
+// substitution markers (PH/PR), per-inning left-on-base, and a full pitcher
+// table with W/L/S. Final games are session-cached; live re-renders
+// preserve scroll; dialog is focus-trapped and screen-reader labelled;
+// a print stylesheet supports a clean landscape printout.
 //
 // Runner tracking is BASE-keyed (which batter's run currently occupies 1B/
 // 2B/3B), not runner-id-keyed — so pinch-runners inherit the base correctly
@@ -195,15 +198,26 @@ function buildModel(feed){
   if(dec.loser && dec.loser.id) decById[dec.loser.id] = 'L';
   if(dec.save && dec.save.id) decById[dec.save.id] = 'S';
 
+  // PH/PR roles keyed by the entering player's id (resolved from the
+  // batting team's boxscore by name) so two same-named players in one
+  // game can't collide; falls back to a name key if unresolved.
   var subRoles = {};
   plays.forEach(function(p){
-    var ev = p.result && p.result.eventType;
-    if(ev!=='offensive_substitution' && ev!=='defensive_substitution') return;
+    if((p.result && p.result.eventType) !== 'offensive_substitution') return;
     var dsc = (p.result && p.result.description) || '';
     var role = /Pinch-hitter/i.test(dsc) ? 'PH' : /Pinch-runner/i.test(dsc) ? 'PR' : '';
     if(!role) return;
     var m = dsc.match(/(?:Pinch-hitter|Pinch-runner)\s+(.+?)\s+replaces/i);
-    if(m) subRoles[m[1].trim()] = role;
+    if(!m) return;
+    var nm = m[1].trim();
+    var side = (p.about && p.about.halfInning==='top') ? 'away' : 'home';
+    var players = (box[side] && box[side].players) || {};
+    var id = null;
+    Object.keys(players).forEach(function(k){
+      var pl = players[k];
+      if(pl && pl.person && pl.person.fullName===nm) id = pl.person.id;
+    });
+    subRoles[id!=null ? id : ('name:'+nm)] = role;
   });
 
   function teamModel(sideKey){
@@ -241,13 +255,19 @@ function buildModel(feed){
   function pushCell(row,inn,cell){ (row.cells[inn]=row.cells[inn]||[]).push(cell); }
 
   var onBase = {}; // base number (1/2/3) → cell currently occupying it
-  var prevHalf = null;
+  var prevHalf = null, prevSide = null, prevInn = null;
+  var lobA = {}, lobH = {}; // per-inning runners left on base
 
   plays.forEach(function(play){
     if(!(play.about && play.about.isComplete)) return;
     var inn = play.about.inning, half = play.about.halfInning;
-    var hk = inn + half;
-    if(hk !== prevHalf){ onBase = {}; prevHalf = hk; } // runners don't carry across half-innings
+    var hk = inn + '-' + half;
+    if(hk !== prevHalf){
+      // half-inning rolled over: whatever's still on base was stranded
+      if(prevHalf!=null) (prevSide==='away'?lobA:lobH)[prevInn] = Object.keys(onBase).length;
+      onBase = {}; prevHalf = hk;
+      prevSide = half==='top' ? 'away' : 'home'; prevInn = inn;
+    }
     var model = half==='top' ? away : home;
     var et = (play.result && play.result.eventType) || '';
     var isPA = !NON_PA[et];
@@ -330,6 +350,13 @@ function buildModel(feed){
 
     onBase = next;
   });
+  if(prevHalf!=null) (prevSide==='away'?lobA:lobH)[prevInn] = Object.keys(onBase).length;
+
+  function lobByInn(map){
+    var out=[];
+    for(var i=1;i<=innCount;i++) out.push(map[i]!=null ? map[i] : '');
+    return out;
+  }
 
   function lineTotals(side){
     var tt = (ls.teams && ls.teams[side]) || {};
@@ -359,11 +386,12 @@ function buildModel(feed){
     innCount: innCount,
     status: (gd.status && gd.status.detailedState) || '',
     isLive: gd.status && gd.status.abstractGameState==='Live',
+    isFinal: gd.status && gd.status.abstractGameState==='Final',
     dateStr: dt.officialDate || '',
     meta: metaBits.join(' · '),
     subRoles: subRoles,
-    away: { name:(at.teamName||at.name||'Away'), model:away, totals:lineTotals('away'), inn:inningRuns('away') },
-    home: { name:(ht.teamName||ht.name||'Home'), model:home, totals:lineTotals('home'), inn:inningRuns('home') }
+    away: { name:(at.teamName||at.name||'Away'), model:away, totals:lineTotals('away'), inn:inningRuns('away'), lobInn:lobByInn(lobA) },
+    home: { name:(ht.teamName||ht.name||'Home'), model:home, totals:lineTotals('home'), inn:inningRuns('home'), lobInn:lobByInn(lobH) }
   };
 }
 
@@ -373,7 +401,7 @@ function diamondSVG(cell, size){
   size = size || 56;
   var H='30,58', B1='58,30', B2='30,2', B3='2,30';
   var path = ['M30,58 L58,30','M58,30 L30,2','M30,2 L2,30','M2,30 L30,58'];
-  var s = '<svg viewBox="0 0 60 60" width="'+size+'" height="'+size+'" style="display:block">';
+  var s = '<svg viewBox="0 0 60 60" width="'+size+'" height="'+size+'" aria-hidden="true" focusable="false" style="display:block">';
   s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="none" stroke="var(--border)" stroke-width="1.5"/>';
   // Batted-ball spray vector from Gameday landing coords: real direction
   // (pull/center/oppo within the ±45° fair wedge) and depth; grounders
@@ -427,8 +455,21 @@ function footHtml(cell){
 }
 
 function emptyCell(){
-  return '<svg viewBox="0 0 60 60" width="56" height="56" style="display:block;opacity:.25">'
+  return '<svg viewBox="0 0 60 60" width="56" height="56" aria-hidden="true" focusable="false" style="display:block;opacity:.25">'
        + '<polygon points="30,2 58,30 30,58 2,30" fill="none" stroke="var(--border)" stroke-width="1"/></svg>';
+}
+
+// Screen-reader summary of a plate appearance for the cell's aria-label.
+function cellLabel(c){
+  if(!c) return '';
+  var p = [c.ghost ? 'Manfred runner on 2nd' : c.code];
+  if(c.scored) p.push('scored');
+  else if(c.outOnBase) p.push('out on the bases ('+(c.outReason||'')+')');
+  else if(c.out) p.push('out'+(c.outNum?' number '+c.outNum:''));
+  else if(c.reached) p.push('reached '+(['','1st','2nd','3rd'][c.reached]||'base'));
+  if(c.rbi) p.push(c.rbi+' RBI');
+  if(c.adv && !c.outOnBase && c.adv!=='safe') p.push('advanced '+c.adv);
+  return p.join(', ');
 }
 
 function renderCellStack(arr){
@@ -459,25 +500,35 @@ function renderTeamTable(team, innCount){
   var th = '<th class="sc-name">'+esc(team.name)+'</th>';
   for(var i=1;i<=innCount;i++) th += '<th>'+i+'</th>';
 
+  var sr = team.subRoles || {};
   var body = '';
   slotNums.forEach(function(sn){
     slots[sn].forEach(function(row, subIdx){
-      var roleTag = subIdx>0 ? '<span class="sc-subtag">'+esc(team.subRoles && team.subRoles[row.name] || 'SUB')+'</span>' : '';
+      var role = sr[row.id] || sr['name:'+row.name];
+      var roleTag = subIdx>0 ? '<span class="sc-subtag">'+esc(role||'SUB')+'</span>' : '';
       body += '<tr'+(subIdx>0?' class="sc-subrow"':'')+'>';
       body += '<td class="sc-name"><span class="sc-ord">'+(subIdx===0?sn:'')+'</span>'
             + roleTag
             + '<span class="sc-pn">'+esc(row.name)+'</span>'
             + '<span class="sc-pos">'+esc(row.pos)+'</span></td>';
       for(var inn=1;inn<=innCount;inn++){
-        body += '<td class="sc-cell">'+renderCellStack(row.cells[inn])+'</td>';
+        var arr = row.cells[inn];
+        var lbl = (arr && arr.length)
+          ? ' aria-label="'+esc(row.name+', inning '+inn+': '+arr.map(cellLabel).join('; '))+'"'
+          : '';
+        body += '<td class="sc-cell"'+lbl+'>'+renderCellStack(arr)+'</td>';
       }
       body += '</tr>';
     });
   });
 
+  var lobRow = '<tr class="sc-lob"><td class="sc-name">Left on base</td>';
+  for(var li=0; li<innCount; li++) lobRow += '<td>'+(team.lobInn && team.lobInn[li]!=='' && team.lobInn[li]!=null ? team.lobInn[li] : '')+'</td>';
+  lobRow += '</tr>';
+
   return '<div class="sc-team"><div class="sc-team-h">'+esc(team.name)+' — Batting</div>'
        + '<div class="sc-scroll"><table class="sc-table"><thead><tr>'
-       + th + '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+       + th + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + lobRow + '</tfoot></table></div></div>';
 }
 
 function renderPitchers(team){
@@ -508,39 +559,74 @@ function renderInto(model){
   var card = document.getElementById('scorecardCard');
   if(!card) return;
   model.away.subRoles = model.subRoles; model.home.subRoles = model.subRoles;
+  // Preserve scroll position + horizontal pans across the live re-render.
+  var ov = document.getElementById('scorecardOverlay');
+  var sy = ov ? ov.scrollTop : 0;
+  var prevScroll = [];
+  var scs = card.querySelectorAll('.sc-scroll');
+  for(var z=0;z<scs.length;z++) prevScroll.push(scs[z].scrollLeft);
   var live = model.isLive ? '<span class="sc-live">● LIVE</span> ' : '';
   card.innerHTML =
     '<div class="sc-head">'
-    + '<div><div class="sc-title">'+esc(model.away.name)+' @ '+esc(model.home.name)+'</div>'
+    + '<div><div class="sc-title" id="scorecardTitle">'+esc(model.away.name)+' @ '+esc(model.home.name)+'</div>'
     + '<div class="sc-sub">'+live+esc(model.status)+(model.meta?' · '+esc(model.meta):'')+'</div></div>'
-    + '<button class="sc-close" onclick="closeScorecardOverlay()" aria-label="Close">✕</button></div>'
+    + '<div class="sc-actions">'
+    + '<button class="sc-print" onclick="window.print()" aria-label="Print scorecard">🖨</button>'
+    + '<button class="sc-close" onclick="closeScorecardOverlay()" aria-label="Close scorecard">✕</button></div></div>'
     + renderLineScore(model)
     + renderTeamTable(model.away, model.innCount)
     + renderTeamTable(model.home, model.innCount)
     + renderPitchers(model.away)
     + renderPitchers(model.home);
+  if(ov) ov.scrollTop = sy;
+  var ns = card.querySelectorAll('.sc-scroll');
+  for(var z2=0;z2<ns.length && z2<prevScroll.length;z2++) ns[z2].scrollLeft = prevScroll[z2];
 }
 
 function setMsg(msg){
   var card = document.getElementById('scorecardCard');
-  if(card) card.innerHTML = '<div class="sc-head"><div class="sc-title">Scorecard</div>'
-    + '<button class="sc-close" onclick="closeScorecardOverlay()" aria-label="Close">✕</button></div>'
+  if(card) card.innerHTML = '<div class="sc-head"><div class="sc-title" id="scorecardTitle">Scorecard</div>'
+    + '<button class="sc-close" onclick="closeScorecardOverlay()" aria-label="Close scorecard">✕</button></div>'
     + '<div class="sc-msg">'+esc(msg)+'</div>';
 }
 
 async function loadScorecard(){
   var gamePk = state.scorecardGamePk;
   if(!gamePk) return;
+  // Final games are immutable for the day — serve the built model instantly.
+  var cached = state.scorecardCache[gamePk];
+  if(cached && cached.isFinal){
+    state.scorecardModel = cached;
+    renderInto(cached);
+    return;
+  }
   try{
     var res = await fetch(MLB_BASE_V1_1+'/game/'+gamePk+'/feed/live');
     if(!res.ok) throw new Error('HTTP '+res.status);
     var feed = await res.json();
     if(state.scorecardGamePk!==gamePk || !state.scorecardOverlayOpen) return;
-    state.scorecardModel = buildModel(feed);
-    renderInto(state.scorecardModel);
+    var model = buildModel(feed);
+    state.scorecardModel = model;
+    if(model.isFinal) state.scorecardCache[gamePk] = model;
+    renderInto(model);
   }catch(e){
-    if(state.scorecardOverlayOpen) setMsg('Could not load scorecard data.');
+    // Only clobber the view on the first load; let refresh failures pass
+    // silently so a flaky poll doesn't wipe a good scorecard mid-game.
+    if(state.scorecardOverlayOpen && !state.scorecardModel) setMsg('Could not load scorecard data.');
   }
+}
+
+// Keep Tab focus inside the open overlay.
+function trapFocus(e){
+  if(e.key!=='Tab') return;
+  var el = document.getElementById('scorecardOverlay');
+  if(!el || !state.scorecardOverlayOpen) return;
+  var f = [].slice.call(el.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])'))
+            .filter(function(n){ return n.offsetParent !== null; });
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
 }
 
 export function openScorecardOverlay(gamePk){
@@ -550,6 +636,9 @@ export function openScorecardOverlay(gamePk){
   state.scorecardGamePk = gamePk;
   el.style.display = 'flex';
   setMsg('Loading scorecard…');
+  document.addEventListener('keydown', trapFocus, true);
+  var cb = el.querySelector('.sc-close');
+  if(cb) cb.focus();
   loadScorecard();
   if(refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(function(){
@@ -562,6 +651,7 @@ export function closeScorecardOverlay(){
   state.scorecardOverlayOpen = false;
   state.scorecardGamePk = null;
   state.scorecardModel = null;
+  document.removeEventListener('keydown', trapFocus, true);
   if(refreshTimer){ clearInterval(refreshTimer); refreshTimer = null; }
   if(el) el.style.display = 'none';
 }
