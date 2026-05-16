@@ -16,10 +16,11 @@
 <script defer src="assets/vendor/pulse-card-templates.js"></script>
 <script defer src="assets/vendor/focusCard.js"></script>
 <script defer src="assets/vendor/collectionCard.js"></script>
-<script defer src="dist/app.bundle.js?v=4.21.6"></script>
-<link rel="stylesheet" href="dist/styles.min.css?v=4.21.6">
+<script defer src="dist/app.bundle.js?v=4.21.7"></script>
+<link rel="stylesheet" href="dist/styles.min.css?v=4.21.7">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,800;1,800&display=swap">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,800&display=swap"></noscript>
 <style>
 /* In-app Daybreak splash — full lifecycle is ours. iOS shows manifest background_color (#0a0f1e, matches body) until HTML parses to #appSplash, then this overlay takes over.
    Entry (0-300ms): gradient + content fade IN from the matching dark bg → no snap-in jump from manifest bg.

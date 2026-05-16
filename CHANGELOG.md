@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.6
+**Current version:** v4.21.7
+
+**v4.21.7** — **Fix print regression from the Paper redesign.** The Playfair Display font was added as a render-blocking `<link rel="stylesheet">`; WebKit/iPad defers `window.print()` until pending stylesheets resolve, so when the Google Fonts request stalled the print dialog never appeared (Georgia fallback hid the visual symptom). Switched to a non-blocking `rel="preload" … onload` swap (+ `<noscript>` fallback) and trimmed the request to italic-800 only. Print works again; the font also no longer blocks first paint.
 
 **v4.21.6** — **Scorecard sticky-column fixes (UAT).** (1) Fixed sticky name-column bleed-through when scrolling to later innings: switched `.sc-table` from `border-collapse: collapse` to `separate` + `border-spacing: 0` (per-cell right/bottom borders, table top/left edge) — the canonical fix for the WebKit/iPad bug where scrolled cells paint over a sticky column — and gave all sticky cells **opaque** backgrounds (the header sticky cell was translucent `rgba(…,.25)`), with corrected z-index layering (body-left 2, header 3, corner 4). (2) Trimmed the wasted name-column width: `min-width` 180 → 148px and tighter cell padding.
 
