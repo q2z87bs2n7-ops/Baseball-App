@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.8
+**Current version:** v4.21.9
+
+**v4.21.9** — **Responsive batting grid (fixes the landscape dead space).** The v4.21.8 content-width fix stopped the name-column bloat but left a wide blank strip on landscape iPad/desktop and made the fixed-size diamonds feel small. The diamonds were never actually resized by orientation — they're a fixed 76px; it was purely the empty space. Made the batting table fill the card width via `table-layout: fixed` with a 150px name column, so the 9 inning columns share the remaining width and the diamond SVGs scale up to fill them (capped at 116px), with `min-width: 820px` so it still scrolls when narrow. Scoped to `.sc-bat` only (line-score now also spans full width for visual coherence; pitcher table unchanged). Net: bigger diamonds on landscape, no dead space, no name-column regression.
 
 **v4.21.8** — **Actually fix the name-column width.** The earlier `min-width` trim didn't help because the real cause was `.sc-table { width: 100% }` with auto table layout: the inning cells are fixed 80px so on a wide iPad/desktop *all* the leftover horizontal space was absorbed by the only flexible column — the name column. Changed the table to `width: max-content` (`min-width: 0`) so it sizes to its content and any slack falls outside the grid as blank paper instead of bloating the name column.
 

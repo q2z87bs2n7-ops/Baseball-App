@@ -560,7 +560,7 @@ function renderTeamTable(team, innCount){
   lobRow += '</tr>';
 
   return '<div class="sc-team"><div class="sc-team-h">'+esc(team.name)+' — Batting</div>'
-       + '<div class="sc-scroll"><table class="sc-table"><thead><tr>'
+       + '<div class="sc-scroll"><table class="sc-table sc-bat"><thead><tr>'
        + th + '</tr></thead><tbody>' + body + '</tbody><tfoot>' + lobRow + '</tfoot></table></div></div>';
 }
 

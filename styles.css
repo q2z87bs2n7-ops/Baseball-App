@@ -6399,6 +6399,31 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 .sc-subrow .sc-pn { color: var(--muted) }
 
+/* Responsive batting grid: fill the card width with a fixed name column
+   so the inning columns (and the diamonds) scale up on landscape/desktop
+   and there's no dead space; still scrolls when narrow. Scoped to the
+   batting table only — line-score/pitcher tables are unaffected. */
+.sc-ls { width: 100% }
+.sc-bat {
+  width: 100%;
+  table-layout: fixed;
+  min-width: 820px;
+}
+.sc-bat th.sc-name,
+.sc-bat td.sc-name { width: 150px }
+.sc-bat .sc-cell {
+  width: auto;
+  height: auto;
+  padding: 3px 2px;
+}
+.sc-bat .sc-cell > svg {
+  width: 100%;
+  height: auto;
+  max-width: 116px;
+  margin: 0 auto;
+}
+.sc-bat .sc-stack svg { width: 46px; height: 46px }
+
 @media print {
   body * { visibility: hidden !important }
   #scorecardOverlay,
