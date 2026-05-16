@@ -2,8 +2,13 @@
 // game (live or completed) from the MLB feed/live payload: a line-score
 // header, a diamond per plate appearance with traced base paths, fielder
 // notation (6-3, F8, K/ꓘ), in-cell ball-strike/pitch count, inning-ending
-// diagonals, advancement reason codes (WP/PB/BK/SB/E), substitution markers
-// (PH/PR), and a full pitcher table with W/L/S decisions.
+// diagonals, advancement reason codes (WP/PB/BK/SB/E), runner-out markers
+// (CS/PO), batting-around stacking, Manfred runner (MR) handling,
+// substitution markers (PH/PR), and a full pitcher table with W/L/S.
+//
+// Runner tracking is BASE-keyed (which batter's run currently occupies 1B/
+// 2B/3B), not runner-id-keyed — so pinch-runners inherit the base correctly
+// and a run is always credited to the batter who started it.
 import { state } from '../state.js';
 import { MLB_BASE_V1_1, TIMING } from '../config/constants.js';
 
@@ -14,8 +19,12 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 // MLB defensive position code → traditional scorebook number.
 var POS = { '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','10':'DH' };
 
-// Non-plate-appearance event types: these never produce a scorecard cell
-// (they happen mid-AB or between batters), but still feed runner advancement.
+// Approx field position of each fielder within the 0..60 diamond viewBox
+// (home at 30,58) — used to draw a faint hit-direction tick.
+var FCOORD = { '1':'30,42','2':'30,56','3':'49,39','4':'40,27','5':'13,39','6':'21,27','7':'13,13','8':'30,7','9':'47,13' };
+
+// Non-plate-appearance event types: never produce a cell (they happen
+// mid-AB or between batters) but still drive runner advancement.
 var NON_PA = {
   stolen_base:1, stolen_base_2b:1, stolen_base_3b:1, stolen_base_home:1,
   caught_stealing:1, caught_stealing_2b:1, caught_stealing_3b:1, caught_stealing_home:1,
@@ -64,12 +73,26 @@ function errorPos(play){
   return p;
 }
 
+// How a baserunner was retired (not at the plate).
+function runnerOutReason(et, play){
+  if(et.indexOf('caught_stealing')===0 || et.indexOf('pickoff_caught_stealing')===0) return 'CS';
+  if(et.indexOf('pickoff')===0) return 'PO';
+  return fielderChain(play).join('-') || 'OUT';
+}
+
 // Batted-ball trajectory from the last pitch's hitData — authoritative,
 // replaces fragile prose regex on result.description.
 function hitTrajectory(play){
   var ev = play.playEvents || [];
   for(var i=ev.length-1;i>=0;i--){
     if(ev[i].hitData && ev[i].hitData.trajectory) return ev[i].hitData.trajectory;
+  }
+  return '';
+}
+function hitLocation(play){
+  var ev = play.playEvents || [];
+  for(var i=ev.length-1;i>=0;i--){
+    if(ev[i].hitData && ev[i].hitData.location) return String(ev[i].hitData.location);
   }
   return '';
 }
@@ -140,16 +163,15 @@ function buildModel(feed){
   var ls = ld.linescore||{};
   var box = ld.boxscore && ld.boxscore.teams ? ld.boxscore.teams : {};
   var plays = (ld.plays && ld.plays.allPlays) ? ld.plays.allPlays : [];
-  var innCount = Math.max(ls.scheduledInnings || 9, (ls.innings||[]).length, ls.currentInning||0);
+  var regInn = ls.scheduledInnings || 9;
+  var innCount = Math.max(regInn, (ls.innings||[]).length, ls.currentInning||0);
 
-  // W/L/S decisions → pitcher id → letter.
   var dec = ld.decisions || {};
   var decById = {};
   if(dec.winner && dec.winner.id) decById[dec.winner.id] = 'W';
   if(dec.loser && dec.loser.id) decById[dec.loser.id] = 'L';
   if(dec.save && dec.save.id) decById[dec.save.id] = 'S';
 
-  // Pinch-hitter / pinch-runner roles, parsed from substitution descriptions.
   var subRoles = {};
   plays.forEach(function(p){
     var ev = p.result && p.result.eventType;
@@ -163,7 +185,7 @@ function buildModel(feed){
 
   function teamModel(sideKey){
     var t = box[sideKey]||{}, players = t.players||{};
-    var slots = {}; // slot number → [player rows]
+    var slots = {};
     Object.keys(players).forEach(function(pid){
       var p = players[pid];
       if(p.battingOrder==null) return;
@@ -174,7 +196,7 @@ function buildModel(feed){
         name: p.person.fullName,
         pos: (p.position && p.position.abbreviation) || '',
         order: ord,
-        cells: {} // inning → cell
+        cells: {} // inning → [cell, …]  (array supports batting around)
       });
     });
     Object.keys(slots).forEach(function(s){ slots[s].sort(function(a,b){return a.order-b.order;}); });
@@ -186,25 +208,71 @@ function buildModel(feed){
   }
 
   var away = teamModel('away'), home = teamModel('home');
-  function rowFor(model,batterId){
+  function rowFor(model,pid){
     var found=null;
     Object.keys(model.slots).forEach(function(s){
-      model.slots[s].forEach(function(r){ if(r.id===batterId) found=r; });
+      model.slots[s].forEach(function(r){ if(r.id===pid) found=r; });
     });
     return found;
   }
+  function pushCell(row,inn,cell){ (row.cells[inn]=row.cells[inn]||[]).push(cell); }
 
-  var activePA = {}; // runnerId → cell still live on the bases
+  var onBase = {}; // base number (1/2/3) → cell currently occupying it
+  var prevHalf = null;
 
   plays.forEach(function(play){
     if(!(play.about && play.about.isComplete)) return;
+    var inn = play.about.inning, half = play.about.halfInning;
+    var hk = inn + half;
+    if(hk !== prevHalf){ onBase = {}; prevHalf = hk; } // runners don't carry across half-innings
+    var model = half==='top' ? away : home;
     var et = (play.result && play.result.eventType) || '';
     var isPA = !NON_PA[et];
-    var half = play.about.halfInning; // 'top' | 'bottom'
-    var inn = play.about.inning;
-    var model = half==='top' ? away : home;
-    var batterId = play.matchup && play.matchup.batter && play.matchup.batter.id;
     var reason = advReason(et);
+    var batterId = play.matchup && play.matchup.batter && play.matchup.batter.id;
+    var nOuts = play.count && play.count.outs;
+
+    // Snapshot pre-play occupancy; mutate a working copy so concurrent
+    // runner movements all resolve against the same starting state.
+    var pre = {}, next = {};
+    for(var k in onBase){ pre[k]=onBase[k]; next[k]=onBase[k]; }
+
+    (play.runners||[]).forEach(function(r){
+      var rid = r.details && r.details.runner && r.details.runner.id;
+      if(rid===batterId) return; // batter handled below
+      var mv = r.movement || {};
+      var sN = baseToNum(mv.originBase || mv.start);
+      if(sN<1 || sN>3) return;
+      var cell = pre[sN];
+      if(!cell){
+        // Manfred runner: extra-inning runner pre-placed on 2B with no PA.
+        if(inn>regInn && sN===2){
+          cell = { code:'MR', hit:false, out:false, rbi:0, reached:2, scored:false,
+                   outNum:0, inningEnd:false, p:0, b:0, s:0, adv:'', ghost:true };
+          var grow = rowFor(model, rid);
+          if(grow) pushCell(grow, inn, cell);
+          pre[sN]=cell; next[sN]=cell;
+        } else return;
+      }
+      if(mv.isOut){
+        cell.outOnBase = true;
+        cell.outReason = runnerOutReason(et, play);
+        if(nOuts===3) cell.inningEnd = true;
+        cell.outNum = nOuts || cell.outNum || 0;
+        if(next[sN]===cell) delete next[sN];
+        return;
+      }
+      var endN = baseToNum(mv.end);
+      if(endN===4){
+        cell.scored = true; cell.reached = 3; if(reason) cell.adv = reason;
+        if(next[sN]===cell) delete next[sN];
+      } else if(endN>=1 && endN!==sN){
+        if(next[sN]===cell) delete next[sN];
+        next[endN] = cell;
+        cell.reached = Math.max(cell.reached||0, Math.min(3,endN));
+        if(reason) cell.adv = reason;
+      }
+    });
 
     if(isPA){
       var row = rowFor(model, batterId);
@@ -219,38 +287,30 @@ function buildModel(feed){
       var cell = {
         code: n.code, hit:n.hit, out:batterOut,
         rbi: (play.result && play.result.rbi) || 0,
-        reached: reached>=4 ? 3 : reached, // base path drawn up to 3B; scored handled by flag
+        reached: reached>=4 ? 3 : reached,
         scored: reached===4,
-        // Authoritative post-play out total (the batter's out is the
-        // trailing out on virtually every PA), not a hand-rolled tally.
-        outNum: batterOut ? ((play.count && play.count.outs) || 0) : 0,
-        inningEnd: batterOut && play.count && play.count.outs===3,
-        p: pi.p, b: pi.b, s: pi.s, adv: ''
+        outNum: batterOut ? (nOuts||0) : 0,
+        inningEnd: batterOut && nOuts===3,
+        p: pi.p, b: pi.b, s: pi.s, adv:'', loc: hitLocation(play)
       };
-      if(row) row.cells[inn] = cell;
-      // Close any prior PA for this batter (can't be on base twice), then
-      // mark this one live if the batter reached base and is still running.
-      delete activePA[batterId];
-      if(reached>=1 && reached<4 && !batterOut && !cell.scored) activePA[batterId] = cell;
+      // Uncaught third strike: batter reached on a K — keep K/ꓘ, note why.
+      if((et==='strikeout'||et==='strikeout_double_play') && !batterOut && reached>=1){
+        var dd = ((play.result && play.result.description)||'').toLowerCase();
+        cell.adv = /wild pitch/.test(dd) ? 'WP'
+                 : /passed ball/.test(dd) ? 'PB'
+                 : /error/.test(dd) ? 'E' : 'safe';
+      }
+      if(row) pushCell(row, inn, cell);
+      if(!batterOut && !cell.scored && reached>=1 && reached<=3) next[reached] = cell;
     }
 
-    // Runner advancement applies on every play — PA and non-PA (SB, WP,
-    // PB, balk, etc.) alike — so live runners' base paths stay correct.
-    (play.runners||[]).forEach(function(r){
-      var rid = r.details && r.details.runner && r.details.runner.id;
-      if(rid===batterId) return;
-      var pa = activePA[rid];
-      if(!pa) return;
-      if(r.movement && r.movement.isOut){ delete activePA[rid]; return; }
-      var endN = baseToNum(r.movement && r.movement.end);
-      if(endN===4){ pa.scored=true; pa.reached=3; if(reason) pa.adv=reason; delete activePA[rid]; }
-      else if(endN>=1 && endN>pa.reached){ pa.reached=Math.min(3,endN); if(reason) pa.adv=reason; }
-    });
+    onBase = next;
   });
 
   function lineTotals(side){
     var tt = (ls.teams && ls.teams[side]) || {};
-    return { r:tt.runs!=null?tt.runs:'—', h:tt.hits!=null?tt.hits:'—', e:tt.errors!=null?tt.errors:'—' };
+    return { r:tt.runs!=null?tt.runs:'—', h:tt.hits!=null?tt.hits:'—',
+             e:tt.errors!=null?tt.errors:'—', lob:tt.leftOnBase!=null?tt.leftOnBase:'—' };
   }
   function inningRuns(side){
     var out=[];
@@ -285,29 +345,34 @@ function buildModel(feed){
 
 // ── Rendering ──────────────────────────────────────────────────────────────
 
-function diamondSVG(cell){
-  // viewBox 0..60; home(30,58) 1B(58,30) 2B(30,2) 3B(2,30)
+function diamondSVG(cell, size){
+  size = size || 56;
   var H='30,58', B1='58,30', B2='30,2', B3='2,30';
   var path = ['M30,58 L58,30','M58,30 L30,2','M30,2 L2,30','M2,30 L30,58'];
-  var s = '<svg viewBox="0 0 60 60" width="56" height="56" style="display:block">';
+  var s = '<svg viewBox="0 0 60 60" width="'+size+'" height="'+size+'" style="display:block">';
+  // faint hit-direction tick toward the fielder who handled the ball
+  if(cell.loc && FCOORD[cell.loc] && !cell.ghost){
+    var pt = FCOORD[cell.loc];
+    s += '<line x1="30" y1="54" x2="'+pt.split(',')[0]+'" y2="'+pt.split(',')[1]+'" stroke="var(--muted)" stroke-width="1" opacity="0.3"/>';
+  }
   s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="none" stroke="var(--border)" stroke-width="1.5"/>';
   if(cell.scored) s += '<polygon points="'+B2+' '+B1+' '+H+' '+B3+'" fill="var(--accent)" fill-opacity="0.28"/>';
   var seg = cell.scored ? 4 : (cell.reached||0);
   for(var i=0;i<seg;i++){
     s += '<path d="'+path[i]+'" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" fill="none"/>';
   }
-  [B1,B2,B3].forEach(function(pt,idx){
+  [B1,B2,B3].forEach(function(p,idx){
     var on = (idx+1) <= (cell.scored?3:cell.reached);
-    s += '<circle cx="'+pt.split(',')[0]+'" cy="'+pt.split(',')[1]+'" r="2.6" fill="'+(on?'var(--accent)':'var(--border)')+'"/>';
+    s += '<circle cx="'+p.split(',')[0]+'" cy="'+p.split(',')[1]+'" r="2.6" fill="'+(on?'var(--accent)':'var(--border)')+'"/>';
   });
-  // Inning-ending out → diagonal slash across the cell (scorebook convention).
   if(cell.inningEnd) s += '<line x1="4" y1="4" x2="56" y2="56" stroke="var(--muted)" stroke-width="1.5" opacity="0.5"/>';
   if(cell.outNum) s += '<text x="51" y="13" font-size="9" fill="var(--muted)" text-anchor="middle">'+cell.outNum+'</text>';
   if(cell.rbi) s += '<text x="9" y="13" font-size="8" fill="var(--accent)" text-anchor="middle">'+cell.rbi+(cell.rbi>1?'R':'·')+'</text>';
-  var col = cell.hit ? 'var(--accent)' : (cell.out ? 'var(--muted)' : 'var(--text)');
+  var col = cell.hit ? 'var(--accent)' : ((cell.out||cell.outOnBase) ? 'var(--muted)' : 'var(--text)');
   s += '<text x="30" y="31" font-size="11" font-weight="700" fill="'+col+'" text-anchor="middle">'+esc(cell.code)+'</text>';
-  if(cell.adv) s += '<text x="30" y="43" font-size="7.5" fill="var(--accent)" text-anchor="middle">'+esc(cell.adv)+'</text>';
-  var foot = (cell.b!=null && cell.s!=null ? cell.b+'-'+cell.s : '') + (cell.p ? ' · '+cell.p+'p' : '');
+  var mid = cell.outOnBase ? (cell.outReason||'OUT') : cell.adv;
+  if(mid) s += '<text x="30" y="43" font-size="7.5" fill="'+(cell.outOnBase?'var(--muted)':'var(--accent)')+'" text-anchor="middle">'+esc(mid)+'</text>';
+  var foot = (cell.b!=null && cell.s!=null && !cell.ghost ? cell.b+'-'+cell.s : '') + (cell.p ? ' · '+cell.p+'p' : '');
   if(foot) s += '<text x="30" y="55" font-size="6.5" fill="var(--muted)" text-anchor="middle">'+esc(foot)+'</text>';
   s += '</svg>';
   return s;
@@ -318,15 +383,24 @@ function emptyCell(){
        + '<polygon points="30,2 58,30 30,58 2,30" fill="none" stroke="var(--border)" stroke-width="1"/></svg>';
 }
 
+function renderCellStack(arr){
+  if(!arr || !arr.length) return emptyCell();
+  if(arr.length===1) return diamondSVG(arr[0]);
+  // batting around: this batter came up twice+ in one inning
+  return '<div class="sc-stack" title="batted around">'
+       + arr.map(function(c){ return diamondSVG(c, 38); }).join('') + '</div>';
+}
+
 function renderLineScore(model){
   var n = model.innCount;
   var h = '<div class="sc-scroll"><table class="sc-table sc-ls"><thead><tr><th class="sc-name"></th>';
   for(var i=1;i<=n;i++) h += '<th>'+i+'</th>';
-  h += '<th class="sc-rhe">R</th><th class="sc-rhe">H</th><th class="sc-rhe">E</th></tr></thead><tbody>';
+  h += '<th class="sc-rhe">R</th><th class="sc-rhe">H</th><th class="sc-rhe">E</th><th class="sc-rhe">LOB</th></tr></thead><tbody>';
   [model.away, model.home].forEach(function(t){
     h += '<tr><td class="sc-name"><span class="sc-pn">'+esc(t.name)+'</span></td>';
     for(var k=0;k<n;k++) h += '<td>'+(t.inn[k]!=null?t.inn[k]:'')+'</td>';
-    h += '<td class="sc-rhe">'+t.totals.r+'</td><td class="sc-rhe">'+t.totals.h+'</td><td class="sc-rhe">'+t.totals.e+'</td></tr>';
+    h += '<td class="sc-rhe">'+t.totals.r+'</td><td class="sc-rhe">'+t.totals.h+'</td>'
+       + '<td class="sc-rhe">'+t.totals.e+'</td><td class="sc-rhe">'+t.totals.lob+'</td></tr>';
   });
   return h + '</tbody></table></div>';
 }
@@ -340,15 +414,14 @@ function renderTeamTable(team, innCount){
   var body = '';
   slotNums.forEach(function(sn){
     slots[sn].forEach(function(row, subIdx){
-      var roleTag = subIdx>0 ? '<span class="sc-sub">'+(team.subRoles && team.subRoles[row.name] || 'SUB')+'</span>' : '';
+      var roleTag = subIdx>0 ? '<span class="sc-subtag">'+esc(team.subRoles && team.subRoles[row.name] || 'SUB')+'</span>' : '';
       body += '<tr'+(subIdx>0?' class="sc-subrow"':'')+'>';
       body += '<td class="sc-name"><span class="sc-ord">'+(subIdx===0?sn:'')+'</span>'
             + roleTag
             + '<span class="sc-pn">'+esc(row.name)+'</span>'
             + '<span class="sc-pos">'+esc(row.pos)+'</span></td>';
       for(var inn=1;inn<=innCount;inn++){
-        var c = row.cells[inn];
-        body += '<td class="sc-cell">'+(c?diamondSVG(c):emptyCell())+'</td>';
+        body += '<td class="sc-cell">'+renderCellStack(row.cells[inn])+'</td>';
       }
       body += '</tr>';
     });
@@ -386,7 +459,6 @@ function renderPitchers(team){
 function renderInto(model){
   var card = document.getElementById('scorecardCard');
   if(!card) return;
-  // attach parsed sub-roles onto each team for the batting renderer
   model.away.subRoles = model.subRoles; model.home.subRoles = model.subRoles;
   var live = model.isLive ? '<span class="sc-live">● LIVE</span> ' : '';
   card.innerHTML =
@@ -396,8 +468,8 @@ function renderInto(model){
     + '<button class="sc-close" onclick="closeScorecardOverlay()" aria-label="Close">✕</button></div>'
     + renderLineScore(model)
     + '<div class="sc-legend">⚾ Diamond = plate appearance · filled = run scored · 6-3 / F8 = fielder out · '
-    + 'K swinging / ꓘ called · diagonal = inning-ending out · footer = ball-strike · pitches · '
-    + 'SB/WP/PB/BK/E = how a runner advanced</div>'
+    + 'K swinging / ꓘ called · diagonal = inning-ending out · CS/PO = runner out on bases · '
+    + 'MR = Manfred runner · footer = ball-strike · pitches · SB/WP/PB/BK/E = how a runner advanced</div>'
     + renderTeamTable(model.away, model.innCount)
     + renderTeamTable(model.home, model.innCount)
     + renderPitchers(model.away)

@@ -139,10 +139,14 @@ src/
                                      (6-3/F8/K/ꓘ), traced base paths, in-cell
                                      ball-strike + pitch count, inning-ending
                                      diagonals, advancement reason codes
-                                     (SB/WP/PB/BK/E), PH/PR substitution tags,
-                                     and a full pitcher table with W/L/S
-                                     decisions. Self-refreshes on
-                                     LIVE_REFRESH_MS while a live game is open.
+                                     (SB/WP/PB/BK/E), runner-out markers
+                                     (CS/PO), Manfred-runner (MR) handling,
+                                     batting-around stacking, PH/PR sub tags,
+                                     and a full pitcher table with W/L/S.
+                                     Runner tracking is base-keyed (not
+                                     id-keyed) so pinch-runners inherit the
+                                     base. Self-refreshes on LIVE_REFRESH_MS
+                                     while a live game is open.
 
   cards/
     playerCard.js                   — resolvePlayerCardData, showPlayerCard,

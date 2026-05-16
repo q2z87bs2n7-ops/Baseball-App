@@ -6290,7 +6290,7 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .sc-ls th { height: 26px }
 .sc-subrow .sc-name { padding-left: 16px }
 .sc-subrow .sc-pn { font-weight: 500; color: var(--muted) }
-.sc-sub {
+.sc-subtag {
   display: inline-block;
   font-size: .58rem;
   font-weight: 700;
@@ -6306,3 +6306,10 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .sc-pit td.sc-name,
 .sc-pit th.sc-name { width: auto }
 .sc-dec { color: var(--accent); font-weight: 700; font-size: .66rem }
+.sc-stack {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap
+}
