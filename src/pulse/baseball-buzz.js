@@ -9,18 +9,23 @@
 // dropped (original posts only). Results are merged, freshness-filtered to
 // the last ~30 days, sorted newest-first, capped, and cached in
 // localStorage for NEWS_REFRESH_MS so a Pulse re-init doesn't refetch ~45
-// feeds every time.
+// feeds every time. v2: avatars, category tag pills, image embeds, filter
+// chips (All / My team / Insiders), "via Bluesky" footer.
 
 import { state } from '../state.js';
 import { BASEBALL_BUZZ_ACCOUNTS } from '../config/buzz.js';
-import { escapeNewsHtml } from '../utils/news.js';
+import { escapeNewsHtml, isSafeNewsImage, forceHttps } from '../utils/news.js';
 
 const BSKY_API = 'https://public.api.bsky.app/xrpc';
 const FRESH_MS = 31 * 24 * 60 * 60 * 1000;   // "last month"
 const MAX_POSTS = 10;
 const PER_ACCOUNT = 6;
-const CACHE_KEY = 'mlb_buzz_cache_v1';
-const CACHE_TTL_MS = 600000;                 // 10 min (== TIMING.NEWS_REFRESH_MS)
+const CACHE_KEY = 'mlb_buzz_cache_v2';        // bumped: shape gained avatar/category/embedImage
+const CACHE_TTL_MS = 600000;                  // 10 min (== TIMING.NEWS_REFRESH_MS)
+const FILTER_KEY = 'mlb_buzz_filter_v1';
+
+var chipHandlerAttached = false;
+var filterHydrated = false;
 
 function rkeyOf(uri) {
   return (uri || '').split('/').pop() || '';
@@ -35,6 +40,24 @@ function relTime(ts) {
   if (h < 24) return h + 'h';
   var d = Math.floor(h / 24);
   return d + 'd';
+}
+
+function initialsOf(name) {
+  var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  var first = parts[0].charAt(0);
+  var last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  return (first + last).toUpperCase();
+}
+
+// First image-embed thumb URL, or null. Only app.bsky.embed.images#view —
+// link previews (external#view) and quote posts (record#view) are ignored.
+function extractEmbedImage(embed) {
+  if (!embed) return null;
+  if (embed.$type === 'app.bsky.embed.images#view' && embed.images && embed.images[0]) {
+    return embed.images[0].thumb || null;
+  }
+  return null;
 }
 
 async function fetchAccount(acct) {
@@ -59,6 +82,9 @@ async function fetchAccount(acct) {
         name: acct.name || (p.author && p.author.displayName) || handle,
         handle: handle,
         tag: acct.tag || '',
+        category: acct.category || 'team',
+        avatar: (p.author && p.author.avatar) || null,
+        embedImage: extractEmbedImage(p.embed),
         text: p.record.text,
         ts: ts,
         url: 'https://bsky.app/profile/' + handle + '/post/' + rkeyOf(p.uri),
@@ -87,9 +113,57 @@ function writeCache(posts) {
   } catch (e) { /* quota / private mode — non-fatal */ }
 }
 
+function currentFilter() {
+  if (!filterHydrated) {
+    try { var s = localStorage.getItem(FILTER_KEY); if (s) state.baseballBuzzFilter = s; }
+    catch (e) { /* private mode — keep state default */ }
+    filterHydrated = true;
+  }
+  return state.baseballBuzzFilter || 'all';
+}
+
+// The user's selected team (Pulse-wide app state). Beat-writer posts carry
+// the short team name in `tag` (e.g. "Yankees"); match against the active
+// team's short name, falling back to a substring of the full name.
+function teamPostMatches(p) {
+  var t = state.activeTeam;
+  if (!t || p.category !== 'team' || !p.tag) return false;
+  var tag = p.tag.toLowerCase();
+  var short = (t.short || '').toLowerCase();
+  var full = (t.name || '').toLowerCase();
+  return tag === short || (full && full.indexOf(tag) !== -1);
+}
+
+function applyFilter(posts) {
+  var f = currentFilter();
+  if (f === 'team') {
+    if (!state.activeTeam) return [];
+    return posts.filter(teamPostMatches);
+  }
+  if (f === 'insider') {
+    return posts.filter(function (p) { return p.category === 'insider' || p.category === 'rumors'; });
+  }
+  return posts;
+}
+
 export async function loadBaseballBuzz() {
   var el = document.getElementById('sideRailBuzz');
   if (!el) return;
+  currentFilter();
+
+  if (!chipHandlerAttached) {
+    el.addEventListener('click', function (e) {
+      var chip = e.target.closest && e.target.closest('.buzz-chip');
+      if (!chip) return;
+      e.preventDefault();
+      if (chip.getAttribute('aria-disabled') === 'true') return;
+      var f = chip.getAttribute('data-filter') || 'all';
+      state.baseballBuzzFilter = f;
+      try { localStorage.setItem(FILTER_KEY, f); } catch (er) { /* non-fatal */ }
+      renderBaseballBuzz();
+    });
+    chipHandlerAttached = true;
+  }
 
   var cached = readCache();
   if (cached && cached.length) {
@@ -99,7 +173,8 @@ export async function loadBaseballBuzz() {
   }
 
   if (!state.baseballBuzzPosts || !state.baseballBuzzPosts.length) {
-    el.innerHTML = buzzHeader('') + '<div class="buzz-empty">Loading…</div>';
+    el.classList.remove('buzz-has-footer');
+    el.innerHTML = buzzHeader() + '<div class="buzz-empty">Loading…</div>';
   }
 
   try {
@@ -115,37 +190,90 @@ export async function loadBaseballBuzz() {
     renderBaseballBuzz();
   } catch (e) {
     if (!state.baseballBuzzPosts || !state.baseballBuzzPosts.length) {
-      el.innerHTML = buzzHeader('') + '<div class="buzz-empty">Buzz feed unavailable</div>';
+      el.classList.remove('buzz-has-footer');
+      el.innerHTML = buzzHeader() + '<div class="buzz-empty">Buzz feed unavailable</div>';
     }
   }
 }
 
-function buzzHeader(count) {
+function buzzHeader() {
   return '<div class="side-rail-section-header">'
     + '<span class="side-rail-section-title">Baseball Buzz</span>'
-    + (count ? '<span class="game-count">' + count + '</span>' : '')
     + '</div>';
+}
+
+function renderFilterRow() {
+  var f = currentFilter();
+  var teamDisabled = !state.activeTeam;
+  function chip(id, label, extra) {
+    return '<button class="buzz-chip" data-filter="' + id + '"'
+      + ' aria-pressed="' + (f === id ? 'true' : 'false') + '"'
+      + (extra || '') + '>' + label + '</button>';
+  }
+  return '<div class="buzz-filter-row" role="tablist">'
+    + chip('all', 'All')
+    + chip('team', 'My team', teamDisabled ? ' aria-disabled="true" disabled' : '')
+    + chip('insider', 'Insiders')
+    + '</div>';
+}
+
+function avatarHtml(p) {
+  var ini = escapeNewsHtml(initialsOf(p.name));
+  var img = '';
+  if (p.avatar && isSafeNewsImage(p.avatar)) {
+    img = '<img src="' + escapeNewsHtml(forceHttps(p.avatar)) + '" alt="" loading="lazy"'
+      + ' onerror="this.remove()">';
+  }
+  return '<span class="buzz-avatar"><span class="buzz-avatar-fallback">' + ini + '</span>' + img + '</span>';
+}
+
+function cardHtml(p) {
+  var meta = '<span class="buzz-meta-name">' + escapeNewsHtml(p.name) + '</span>'
+    + (p.tag ? '<span class="buzz-tag" data-cat="' + escapeNewsHtml(p.category || '') + '">'
+        + escapeNewsHtml(p.tag) + '</span>' : '')
+    + '<span class="buzz-time">' + relTime(p.ts) + '</span>';
+
+  var embed = '';
+  var hasEmbed = false;
+  if (p.embedImage && isSafeNewsImage(p.embedImage)) {
+    hasEmbed = true;
+    embed = '<div class="buzz-embed"><img src="' + escapeNewsHtml(forceHttps(p.embedImage))
+      + '" alt="" loading="lazy"></div>';
+  }
+
+  return '<a class="buzz-card' + (hasEmbed ? ' buzz-has-embed' : '') + '" href="'
+    + escapeNewsHtml(p.url) + '" target="_blank" rel="noopener noreferrer">'
+    + '<div class="buzz-row">'
+    + avatarHtml(p)
+    + '<div class="buzz-body">'
+    + '<div class="buzz-meta">' + meta + '</div>'
+    + '<div class="buzz-text">' + escapeNewsHtml(p.text) + '</div>'
+    + embed
+    + '</div>'
+    + '</div>'
+    + '<span class="buzz-ext" aria-hidden="true">↗</span>'
+    + '</a>';
 }
 
 function renderBaseballBuzz() {
   var el = document.getElementById('sideRailBuzz');
   if (!el) return;
-  var posts = state.baseballBuzzPosts || [];
-  if (!posts.length) {
-    el.innerHTML = buzzHeader('') + '<div class="buzz-empty">No recent posts</div>';
+  var all = state.baseballBuzzPosts || [];
+
+  if (!all.length) {
+    el.classList.remove('buzz-has-footer');
+    el.innerHTML = buzzHeader() + '<div class="buzz-empty">No recent posts</div>';
     return;
   }
-  var html = buzzHeader(posts.length);
-  html += '<div class="buzz-list">';
-  posts.forEach(function (p) {
-    var meta = '<span class="buzz-meta-name">' + escapeNewsHtml(p.name) + '</span>'
-      + (p.tag ? '<span class="buzz-tag">' + escapeNewsHtml(p.tag) + '</span>' : '')
-      + '<span class="buzz-time">' + relTime(p.ts) + '</span>';
-    html += '<a class="buzz-card" href="' + p.url + '" target="_blank" rel="noopener noreferrer">'
-      + '<div class="buzz-meta">' + meta + '</div>'
-      + '<div class="buzz-text">' + escapeNewsHtml(p.text) + '</div>'
-      + '</a>';
-  });
-  html += '</div>';
+
+  var posts = applyFilter(all);
+  el.classList.add('buzz-has-footer');
+  var html = buzzHeader() + renderFilterRow() + '<div class="buzz-list">';
+  if (!posts.length) {
+    html += '<div class="buzz-card buzz-none">No posts for this filter</div>';
+  } else {
+    posts.forEach(function (p) { html += cardHtml(p); });
+  }
+  html += '</div><div class="buzz-footer">via <span>Bluesky</span></div>';
   el.innerHTML = html;
 }

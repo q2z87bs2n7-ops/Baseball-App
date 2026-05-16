@@ -90,7 +90,7 @@ Matchups: all MLB games, 3-per-row, day toggle (Yesterday/Today/Tomorrow), opaci
 Sources: `/schedule?sportId=1&date={date}&hydrate=linescore,team` + `/stats/leaders` with `statGroup` param
 
 ## ⚡ Pulse
-Global live MLB play-by-play feed — scoring plays, home runs, RISP across all simultaneous games. Lazy-loaded on first nav. **Desktop/iPad Landscape (≥1025px):** CSS Grid 700px + 320px side rail with games module + news carousel. **≤767px:** side rail hidden, single column.
+Global live MLB play-by-play feed — scoring plays, home runs, RISP across all simultaneous games. Lazy-loaded on first nav. **Desktop/iPad Landscape (≥1025px):** CSS Grid 700px + 320px side rail: MLB News carousel → games module → **Baseball Buzz** (`#sideRailBuzz`, `src/pulse/baseball-buzz.js`) — curated baseball Bluesky accounts (`src/config/buzz.js`) via the keyless public AT-Protocol API, client-side, last-month/newest-first, capped 10, avatars + category tag pills + image embeds + All/My-team/Insiders filter chips (localStorage-persisted) + "via Bluesky" footer. **≤767px:** side rail hidden, single column.
 
 Ticker: live-only chips sorted by inning progress. Expanded chip (base diamond SVG) fires when `g.onFirst || g.onSecond || g.onThird`. Feed: newest-first, inserted at correct chronological position via `data-ts` attributes.
 

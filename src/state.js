@@ -70,6 +70,7 @@ export const state = {
   pulseNewsArticles: [],
   pulseNewsIndex: 0,
   baseballBuzzPosts: [],
+  baseballBuzzFilter: 'all',
 
   // ── League Pulse State ───────────────────────────────────────────────────
   pulseInitialized: false,
