@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.21.3
+**Current version:** v4.21.4
+
+**v4.21.4** — Chore: remove a stray `Score cards.zip` (UAT artifact uploaded to the branch) so it doesn't ship to main; recoverable in branch history.
 
 **v4.21.3** — **UAT fixes.** (1) Pulse side-rail games: when every game is in progress, both Upcoming and Completed are empty and the panel wrongly read "No games today" (`renderSideRailGames` deliberately excludes Live games — they're in the ticker). It now counts live games and shows "All N games in progress — see ticker above" when that's the case. (2) Scorecard pitcher table: narrowed the name column (`min-width` 180 → 132px) and widened/`nowrap`-ed the value columns (38 → 46px) so the P-S figure (e.g. `106-71`) stops wrapping and the line breathes.
 
