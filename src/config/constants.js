@@ -93,6 +93,7 @@ export const TIMING = {
   LEAGUE_REFRESH_MS:  60000,  // around the league matchup auto-refresh
   STORY_POOL_MS:      30000,  // buildStoryPool rebuild interval
   NEWS_REFRESH_MS:   600000,  // news carousel refresh (10 min)
+  BUZZ_REFRESH_MS:   120000,  // Baseball Buzz side-rail refresh (2 min)
   YESTERDAY_REFRESH_MS: 3600000, // yesterday recap hourly refresh
   CARD_DISMISS_MS:     5500,  // player/RBI card auto-dismiss
   CARD_CLOSE_ANIM_MS:   280,  // card close animation duration

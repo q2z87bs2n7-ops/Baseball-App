@@ -102,6 +102,7 @@ All bundle functions organised by subsystem: `docs/functions.md`. Key subsystem 
 - Card Collection: `docs/card-collection.md`
 - Radio system: `docs/radio-system.md`
 - Team Podcasts strip: `docs/podcast.md`
+- Baseball Buzz (Pulse social rail): `docs/buzz.md`
 - Demo Mode: `docs/demo-mode.md`
 - Old-School Scorecard: `docs/scorecard.md`
 
@@ -190,7 +191,8 @@ Subtle bugs that could be silently re-introduced. Full descriptions + reproducti
 | `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated — last updated 2026-05-06 | Update Set when sweep results change |
 | `TEAM_PODCASTS` collectionIds (`src/config/podcasts.js`) | Hand-curated Apple Podcasts ids — last curated 2026-05-16; shows go inactive / rebrand | Re-verify each offseason: drop shows inactive >1 month, refresh ids. Stale curated shows are auto-hidden at runtime (last-month filter) and backfilled from iTunes search |
 | Hls.js CDN URL | `cdn.jsdelivr.net/npm/hls.js@1.5.18` — pinned, free CDN | Bundle locally if CDN unreliable |
-| `NEWS_IMAGE_HOSTS` allowlist | Hand-curated CDN domain list — thumbnails silently fall back to placeholder if CDN changes | Add new hostname to `NEWS_IMAGE_HOSTS` regex in `src/utils/news.js` |
+| `NEWS_IMAGE_HOSTS` allowlist | Hand-curated CDN domain list — thumbnails silently fall back to placeholder if CDN changes (now incl. `bsky.app` for Buzz avatars/embeds) | Add new hostname to `NEWS_IMAGE_HOSTS` regex in `src/utils/news.js` |
+| `BASEBALL_BUZZ_ACCOUNTS` handles (`src/config/buzz.js`) | Hand-curated Bluesky handles — UNVERIFIED at authoring (no network); accounts churn/rename | Re-verify each offseason vs `public.api.bsky.app`. A wrong handle silently yields no posts (feed degrades gracefully); prefer domain handles |
 
 ---
 

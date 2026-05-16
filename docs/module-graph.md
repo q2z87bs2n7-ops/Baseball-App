@@ -42,6 +42,9 @@ src/
                                      MLB_BASE_V1_1, API_BASE, TEAMS,
                                      MLB_THEME, NEWS_SOURCE_LABELS/ICONS,
                                      TIMING.
+    buzz.js                         — BASEBALL_BUZZ_ACCOUNTS (curated
+                                     baseball Bluesky handles + category)
+                                     for the Pulse "Baseball Buzz" rail.
     podcasts.js                     — TEAM_PODCASTS (curated Apple
                                      Podcasts collectionIds keyed by MLB
                                      team id) + fallbackPodcastTerm().
@@ -116,6 +119,11 @@ src/
     news-carousel.js                — loadPulseNews, nextNewsCard, prevNewsCard,
                                      renderPulseNewsCard. Rotating headline
                                      carousel in Pulse side rail.
+    baseball-buzz.js                — loadBaseballBuzz + render. Curated
+                                     baseball Bluesky posts in the Pulse
+                                     side rail via the keyless public
+                                     AT-Protocol API (client-side, no
+                                     proxy). Consumes src/config/buzz.js.
 
   carousel/
     rotation.js                     — buildStoryPool, rotateStory, showStoryCard,

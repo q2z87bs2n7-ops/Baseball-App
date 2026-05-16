@@ -9,18 +9,20 @@
 // dropped (original posts only). Results are merged, freshness-filtered to
 // the last ~30 days, sorted newest-first, capped, and cached in
 // localStorage for NEWS_REFRESH_MS so a Pulse re-init doesn't refetch ~45
-// feeds every time.
+// feeds every time. v2: avatars, category tag pills, image embeds, filter
+// chips (All / My team / Insiders), "via Bluesky" footer.
 
 import { state } from '../state.js';
 import { BASEBALL_BUZZ_ACCOUNTS } from '../config/buzz.js';
-import { escapeNewsHtml } from '../utils/news.js';
+import { escapeNewsHtml, isSafeNewsImage, forceHttps } from '../utils/news.js';
 
 const BSKY_API = 'https://public.api.bsky.app/xrpc';
 const FRESH_MS = 31 * 24 * 60 * 60 * 1000;   // "last month"
-const MAX_POSTS = 40;
+const MAX_POSTS = 10;
 const PER_ACCOUNT = 6;
-const CACHE_KEY = 'mlb_buzz_cache_v1';
-const CACHE_TTL_MS = 600000;                 // 10 min (== TIMING.NEWS_REFRESH_MS)
+const CACHE_KEY = 'mlb_buzz_cache_v2';        // bumped: shape gained avatar/category/embedImage
+const CACHE_TTL_MS = 120000;                  // 2 min — reopen/reload guard only; the
+                                              // scheduled timer force-fetches (see loadBaseballBuzz)
 
 function rkeyOf(uri) {
   return (uri || '').split('/').pop() || '';
@@ -35,6 +37,24 @@ function relTime(ts) {
   if (h < 24) return h + 'h';
   var d = Math.floor(h / 24);
   return d + 'd';
+}
+
+function initialsOf(name) {
+  var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  var first = parts[0].charAt(0);
+  var last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  return (first + last).toUpperCase();
+}
+
+// First image-embed thumb URL, or null. Only app.bsky.embed.images#view —
+// link previews (external#view) and quote posts (record#view) are ignored.
+function extractEmbedImage(embed) {
+  if (!embed) return null;
+  if (embed.$type === 'app.bsky.embed.images#view' && embed.images && embed.images[0]) {
+    return embed.images[0].thumb || null;
+  }
+  return null;
 }
 
 async function fetchAccount(acct) {
@@ -59,6 +79,9 @@ async function fetchAccount(acct) {
         name: acct.name || (p.author && p.author.displayName) || handle,
         handle: handle,
         tag: acct.tag || '',
+        category: acct.category || 'team',
+        avatar: (p.author && p.author.avatar) || null,
+        embedImage: extractEmbedImage(p.embed),
         text: p.record.text,
         ts: ts,
         url: 'https://bsky.app/profile/' + handle + '/post/' + rkeyOf(p.uri),
@@ -87,20 +110,25 @@ function writeCache(posts) {
   } catch (e) { /* quota / private mode — non-fatal */ }
 }
 
-export async function loadBaseballBuzz() {
+// force=true (the scheduled 2-min timer) always hits the network so the
+// timer is the true refresh cadence. force=false (first Pulse nav / reopen)
+// uses the localStorage cache so a reload within CACHE_TTL_MS is free.
+export async function loadBaseballBuzz(force) {
   var el = document.getElementById('sideRailBuzz');
   if (!el) return;
 
-  var cached = readCache();
-  if (cached && cached.length) {
-    state.baseballBuzzPosts = cached;
-    renderBaseballBuzz();
-    return;
+  if (!force) {
+    var cached = readCache();
+    if (cached && cached.length) {
+      state.baseballBuzzPosts = cached;
+      renderBaseballBuzz();
+      return;
+    }
   }
 
   if (!state.baseballBuzzPosts || !state.baseballBuzzPosts.length) {
-    el.innerHTML = '<div class="side-rail-title">Baseball Buzz</div>'
-      + '<div class="buzz-empty">Loading…</div>';
+    el.classList.remove('buzz-has-footer');
+    el.innerHTML = buzzHeader() + '<div class="buzz-empty">Loading…</div>';
   }
 
   try {
@@ -116,31 +144,65 @@ export async function loadBaseballBuzz() {
     renderBaseballBuzz();
   } catch (e) {
     if (!state.baseballBuzzPosts || !state.baseballBuzzPosts.length) {
-      el.innerHTML = '<div class="side-rail-title">Baseball Buzz</div>'
-        + '<div class="buzz-empty">Buzz feed unavailable</div>';
+      el.classList.remove('buzz-has-footer');
+      el.innerHTML = buzzHeader() + '<div class="buzz-empty">Buzz feed unavailable</div>';
     }
   }
+}
+
+function buzzHeader() {
+  return '<div class="side-rail-section-header">'
+    + '<span class="side-rail-section-title">Baseball Buzz</span>'
+    + '</div>';
+}
+
+function avatarHtml(p) {
+  var ini = escapeNewsHtml(initialsOf(p.name));
+  var img = '';
+  if (p.avatar && isSafeNewsImage(p.avatar)) {
+    img = '<img src="' + escapeNewsHtml(forceHttps(p.avatar)) + '" alt="" loading="lazy"'
+      + ' onerror="this.remove()">';
+  }
+  return '<span class="buzz-avatar"><span class="buzz-avatar-fallback">' + ini + '</span>' + img + '</span>';
+}
+
+function cardHtml(p) {
+  var head = avatarHtml(p)
+    + '<span class="buzz-meta-name">' + escapeNewsHtml(p.name) + '</span>'
+    + (p.tag ? '<span class="buzz-tag" data-cat="' + escapeNewsHtml(p.category || '') + '">'
+        + escapeNewsHtml(p.tag) + '</span>' : '')
+    + '<span class="buzz-time">' + relTime(p.ts) + '</span>';
+
+  var embed = '';
+  var hasEmbed = false;
+  if (p.embedImage && isSafeNewsImage(p.embedImage)) {
+    hasEmbed = true;
+    embed = '<div class="buzz-embed"><img src="' + escapeNewsHtml(forceHttps(p.embedImage))
+      + '" alt="" loading="lazy"></div>';
+  }
+
+  return '<a class="buzz-card' + (hasEmbed ? ' buzz-has-embed' : '') + '" href="'
+    + escapeNewsHtml(p.url) + '" target="_blank" rel="noopener noreferrer">'
+    + '<div class="buzz-head">' + head + '</div>'
+    + '<div class="buzz-text">' + escapeNewsHtml(p.text) + '</div>'
+    + embed
+    + '</a>';
 }
 
 function renderBaseballBuzz() {
   var el = document.getElementById('sideRailBuzz');
   if (!el) return;
-  var posts = state.baseballBuzzPosts || [];
-  var html = '<div class="side-rail-title">Baseball Buzz</div>';
-  if (!posts.length) {
-    el.innerHTML = html + '<div class="buzz-empty">No recent posts</div>';
+  var all = state.baseballBuzzPosts || [];
+
+  if (!all.length) {
+    el.classList.remove('buzz-has-footer');
+    el.innerHTML = buzzHeader() + '<div class="buzz-empty">No recent posts</div>';
     return;
   }
-  html += '<div class="buzz-list">';
-  posts.forEach(function (p) {
-    var meta = escapeNewsHtml(p.name)
-      + (p.tag ? ' <span class="buzz-tag">' + escapeNewsHtml(p.tag) + '</span>' : '')
-      + ' <span class="buzz-time">· ' + relTime(p.ts) + '</span>';
-    html += '<a class="buzz-card" href="' + p.url + '" target="_blank" rel="noopener noreferrer">'
-      + '<div class="buzz-meta">' + meta + '</div>'
-      + '<div class="buzz-text">' + escapeNewsHtml(p.text) + '</div>'
-      + '</a>';
-  });
-  html += '</div>';
+
+  el.classList.add('buzz-has-footer');
+  var html = buzzHeader() + '<div class="buzz-list">';
+  all.forEach(function (p) { html += cardHtml(p); });
+  html += '</div><div class="buzz-footer">via <span>Bluesky</span></div>';
   el.innerHTML = html;
 }
