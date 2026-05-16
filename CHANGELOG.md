@@ -5,7 +5,9 @@
 
 ---
 
-**Current version:** v4.28.0
+**Current version:** v4.28.1
+
+**v4.28.1** — Baseball Buzz: capped to the 10 most-recent posts (was 40); redesigned to match the side-rail "games" module — joined section header with post-count badge, bordered list container with row dividers/hover, name-ellipsis + accent tag + right-aligned relative time, 3-line text clamp.
 
 **v4.28.0** — Merge to main: Pulse Baseball Buzz Bluesky side-rail feed (branch `claude/research-podcast-apis-JzN1O`).
 

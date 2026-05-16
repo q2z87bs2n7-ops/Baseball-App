@@ -5097,13 +5097,14 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 .buzz-list {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
   overflow: hidden;
 }
 
 .buzz-card {
   display: block;
-  padding: 0.625rem 0.75rem;
+  padding: 0.625rem 0.875rem;
   border-bottom: 1px solid var(--p-border, rgba(255, 255, 255, 0.04));
   text-decoration: none;
   transition: background 0.15s;
@@ -5118,20 +5119,32 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
 }
 
 .buzz-meta {
-  font-size: .66rem;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: .6875rem;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 3px;
+  margin-bottom: 4px;
+}
+
+.buzz-meta-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .buzz-tag {
   color: var(--accent);
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .buzz-time {
   color: var(--muted);
   font-weight: 600;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .buzz-text {
@@ -5141,15 +5154,19 @@ body:has(#pulse.active) .settings-panel, body:has(#yesterday.active) .settings-p
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   display: -webkit-box;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .buzz-empty {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
   color: var(--muted);
-  font-size: .75rem;
-  padding: 20px;
+  font-size: .72rem;
+  padding: 16px;
   text-align: center;
 }
 

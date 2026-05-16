@@ -17,7 +17,7 @@ import { escapeNewsHtml } from '../utils/news.js';
 
 const BSKY_API = 'https://public.api.bsky.app/xrpc';
 const FRESH_MS = 31 * 24 * 60 * 60 * 1000;   // "last month"
-const MAX_POSTS = 40;
+const MAX_POSTS = 10;
 const PER_ACCOUNT = 6;
 const CACHE_KEY = 'mlb_buzz_cache_v1';
 const CACHE_TTL_MS = 600000;                 // 10 min (== TIMING.NEWS_REFRESH_MS)
@@ -99,8 +99,7 @@ export async function loadBaseballBuzz() {
   }
 
   if (!state.baseballBuzzPosts || !state.baseballBuzzPosts.length) {
-    el.innerHTML = '<div class="side-rail-title">Baseball Buzz</div>'
-      + '<div class="buzz-empty">Loading…</div>';
+    el.innerHTML = buzzHeader('') + '<div class="buzz-empty">Loading…</div>';
   }
 
   try {
@@ -116,26 +115,32 @@ export async function loadBaseballBuzz() {
     renderBaseballBuzz();
   } catch (e) {
     if (!state.baseballBuzzPosts || !state.baseballBuzzPosts.length) {
-      el.innerHTML = '<div class="side-rail-title">Baseball Buzz</div>'
-        + '<div class="buzz-empty">Buzz feed unavailable</div>';
+      el.innerHTML = buzzHeader('') + '<div class="buzz-empty">Buzz feed unavailable</div>';
     }
   }
+}
+
+function buzzHeader(count) {
+  return '<div class="side-rail-section-header">'
+    + '<span class="side-rail-section-title">Baseball Buzz</span>'
+    + (count ? '<span class="game-count">' + count + '</span>' : '')
+    + '</div>';
 }
 
 function renderBaseballBuzz() {
   var el = document.getElementById('sideRailBuzz');
   if (!el) return;
   var posts = state.baseballBuzzPosts || [];
-  var html = '<div class="side-rail-title">Baseball Buzz</div>';
   if (!posts.length) {
-    el.innerHTML = html + '<div class="buzz-empty">No recent posts</div>';
+    el.innerHTML = buzzHeader('') + '<div class="buzz-empty">No recent posts</div>';
     return;
   }
+  var html = buzzHeader(posts.length);
   html += '<div class="buzz-list">';
   posts.forEach(function (p) {
-    var meta = escapeNewsHtml(p.name)
-      + (p.tag ? ' <span class="buzz-tag">' + escapeNewsHtml(p.tag) + '</span>' : '')
-      + ' <span class="buzz-time">· ' + relTime(p.ts) + '</span>';
+    var meta = '<span class="buzz-meta-name">' + escapeNewsHtml(p.name) + '</span>'
+      + (p.tag ? '<span class="buzz-tag">' + escapeNewsHtml(p.tag) + '</span>' : '')
+      + '<span class="buzz-time">' + relTime(p.ts) + '</span>';
     html += '<a class="buzz-card" href="' + p.url + '" target="_blank" rel="noopener noreferrer">'
       + '<div class="buzz-meta">' + meta + '</div>'
       + '<div class="buzz-text">' + escapeNewsHtml(p.text) + '</div>'
