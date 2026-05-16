@@ -16,7 +16,7 @@ Users can optionally sign in to enable card collection sync across devices and d
 - `/api/auth/email-verify` — Magic-link verification (exchanges token for session token, redirects to app)
 
 **One sync endpoint:**
-- `/api/collection-sync` — GET (fetch remote cards), POST (push single card), PUT (full sync with merge)
+- `/api/collection-sync` — GET (fetch remote cards), POST (push single card), PUT (full sync with merge), DELETE (reset/clear collection)
 
 **Storage (Upstash Redis keyed by opaque user ID):**
 - `session:{token}` — session metadata (userId, auth_method, expiresAt) — 90-day TTL
@@ -125,6 +125,7 @@ Users can optionally sign in to enable card collection sync across devices and d
 - **GET `/api/collection-sync`** — Fetch remote collection from Redis
 - **PUT `/api/collection-sync`** — Full sync (POST local collection, merge on server, return merged result)
 - **POST `/api/collection-sync`** — Push single card (used by background sync)
+- **DELETE `/api/collection-sync`** — Reset: delete the user's `collection:{userId}` key (consolidated from the removed `api/collection/reset.js` at v4.23.1; called by `resetCollection()` in `src/collection/book.js`)
 
 **Background sync:**
 - Fires every 30 seconds when signed in via `startSyncInterval()`

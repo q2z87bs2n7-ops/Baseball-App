@@ -37,7 +37,7 @@ Full file map, layering rule, and runtime dependency table: `docs/module-graph.m
 - **Cron**: GitHub Actions (free) pings `/api/notify` every 5 minutes
 
 ### Session Storage & Cross-Device Sync
-Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: GitHub OAuth + Email magic-link. Session: 40-char random token, 90-day TTL, `localStorage('mlb_session_token')`. Collection sync: `GET/PUT/POST /api/collection-sync` → Upstash Redis `collection:{userId}`. Merge: highest tier wins; same tier keeps newer `collectedAt` + merged events (deduped, capped 10). Vercel env vars required: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `EMAIL_API_KEY`, `EMAIL_FROM_ADDRESS`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`. Full setup: `docs/auth-architecture.md`.
+Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: GitHub OAuth + Email magic-link. Session: 40-char random token, 90-day TTL, `localStorage('mlb_session_token')`. Collection sync: `GET/PUT/POST/DELETE /api/collection-sync` → Upstash Redis `collection:{userId}` (`DELETE` = reset, consolidated from the removed `api/collection/reset.js` at v4.23.1). Merge: highest tier wins; same tier keeps newer `collectedAt` + merged events (deduped, capped 10). Vercel env vars required: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `EMAIL_API_KEY`, `EMAIL_FROM_ADDRESS`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`. Full setup: `docs/auth-architecture.md`.
 
 **Rule:** before deleting any file in repo root or `icons/`, grep `index.html`, `src/`, `sw.js`, and `manifest.json` for references first. Full runtime dependency table: `docs/module-graph.md`.
 
@@ -101,6 +101,7 @@ All bundle functions organised by subsystem: `docs/functions.md`. Key subsystem 
 - At-Bat Focus Mode: `docs/focus-mode.md`
 - Card Collection: `docs/card-collection.md`
 - Radio system: `docs/radio-system.md`
+- Team Podcasts strip: `docs/podcast.md`
 - Demo Mode: `docs/demo-mode.md`
 - Old-School Scorecard: `docs/scorecard.md`
 
@@ -187,6 +188,7 @@ Subtle bugs that could be silently re-introduced. Full descriptions + reproducti
 | Game state strings | MLB uses both `"Preview"` and `"Scheduled"` | Both checked — verify if new states appear |
 | `MLB_TEAM_RADIO` URLs | radio.net-sourced; stations may change CDNs | Re-run 🔍 Radio Check sweep periodically |
 | `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated — last updated 2026-05-06 | Update Set when sweep results change |
+| `TEAM_PODCASTS` collectionIds (`src/config/podcasts.js`) | Hand-curated Apple Podcasts ids — last curated 2026-05-16; shows go inactive / rebrand | Re-verify each offseason: drop shows inactive >1 month, refresh ids. Stale curated shows are auto-hidden at runtime (last-month filter) and backfilled from iTunes search |
 | Hls.js CDN URL | `cdn.jsdelivr.net/npm/hls.js@1.5.18` — pinned, free CDN | Bundle locally if CDN unreliable |
 | `NEWS_IMAGE_HOSTS` allowlist | Hand-curated CDN domain list — thumbnails silently fall back to placeholder if CDN changes | Add new hostname to `NEWS_IMAGE_HOSTS` regex in `src/utils/news.js` |
 
