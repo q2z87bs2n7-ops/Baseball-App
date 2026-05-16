@@ -2,7 +2,7 @@ import { state } from '../state.js';
 import { TEAMS, MLB_THEME } from '../config/constants.js';
 import { devTrace } from '../devtools-feed/devLog.js';
 
-let themeCallbacks = { loadTodayGame: null, loadNextGame: null, loadNews: null, loadStandings: null, loadRoster: null, loadTeamStats: null, loadHomeInjuries: null, loadHomeMoves: null, loadHomeYoutubeWidget: null, applyMyTeamLens: null, clearHomeLiveTimer: null };
+let themeCallbacks = { loadTodayGame: null, loadNextGame: null, loadNews: null, loadStandings: null, loadRoster: null, loadTeamStats: null, loadHomeInjuries: null, loadHomeMoves: null, loadHomeYoutubeWidget: null, loadHomePodcastWidget: null, applyMyTeamLens: null, clearHomeLiveTimer: null };
 function setThemeCallbacks(callbacks) {
   Object.assign(themeCallbacks, callbacks);
 }
@@ -218,6 +218,7 @@ function switchTeam(teamId){
   if(themeCallbacks.loadTeamStats) themeCallbacks.loadTeamStats();
   if(themeCallbacks.loadHomeInjuries) themeCallbacks.loadHomeInjuries();
   if(themeCallbacks.loadHomeMoves) themeCallbacks.loadHomeMoves();
+  if(themeCallbacks.loadHomePodcastWidget) themeCallbacks.loadHomePodcastWidget();
   if(themeCallbacks.loadHomeYoutubeWidget) themeCallbacks.loadHomeYoutubeWidget();
   if(document.getElementById('schedule').classList.contains('active')&&themeCallbacks.loadTodayGame) themeCallbacks.loadTodayGame();
   if(state.myTeamLens&&themeCallbacks.applyMyTeamLens) themeCallbacks.applyMyTeamLens(true);
