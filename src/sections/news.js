@@ -54,6 +54,7 @@ export async function loadNews(){
   if(state.newsFeedMode==='team'){
     try{
       var resp=await fetch(teamUrl);
+      if(!resp.ok) throw new Error(resp.status);
       var d=await resp.json();
       var arts=(d.articles||[]).filter(function(a){return a.headline;});
       if(!arts.length)throw new Error('No articles');
@@ -64,17 +65,19 @@ export async function loadNews(){
   }
   try{
     var responses=await Promise.all([fetch(API_BASE+'/api/proxy-news'),fetch(teamUrl)]);
+    if(!responses[0].ok) throw new Error(responses[0].status);
     var d=await responses[0].json();
     state.newsArticlesCache=Array.isArray(d.articles)?d.articles:[];
     if(!state.newsArticlesCache.length)throw new Error('No articles');
     renderNewsList();
-    if(homeEl){var hD=await responses[1].json();var hArts=(hD.articles||[]).filter(function(a){return a.headline;});homeEl.innerHTML=hArts.slice(0,5).map(mkEspnRow).join('')||'<div class="loading">No news available</div>';}
+    if(homeEl&&responses[1].ok){var hD=await responses[1].json();var hArts=(hD.articles||[]).filter(function(a){return a.headline;});homeEl.innerHTML=hArts.slice(0,5).map(mkEspnRow).join('')||'<div class="loading">No news available</div>';}
   }catch(e){
     try{
       var fb=await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20');
+      if(!fb.ok) throw new Error(fb.status);
       var fbD=await fb.json();var fbArts=(fbD.articles||[]).filter(function(a){return a.headline;});
       if(fullEl)fullEl.innerHTML=fbArts.map(mkEspnRow).join('');
-      if(homeEl){var hResp=await fetch(teamUrl);var hJ=await hResp.json();homeEl.innerHTML=(hJ.articles||[]).filter(function(a){return a.headline;}).slice(0,5).map(mkEspnRow).join('')||'<div class="loading">No news available</div>';}
+      if(homeEl){var hResp=await fetch(teamUrl);if(!hResp.ok) throw new Error(hResp.status);var hJ=await hResp.json();homeEl.innerHTML=(hJ.articles||[]).filter(function(a){return a.headline;}).slice(0,5).map(mkEspnRow).join('')||'<div class="loading">No news available</div>';}
     }catch(e2){var msg='<div class="error">News unavailable (proxy and ESPN both failed).</div>';if(fullEl)fullEl.innerHTML=msg;if(homeEl)homeEl.innerHTML=msg;}
   }
 }
