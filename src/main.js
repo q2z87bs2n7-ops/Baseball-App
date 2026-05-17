@@ -301,7 +301,7 @@ function initReal() {
   loadBaseballBuzz();
   document.removeEventListener('visibilitychange',onStoryVisibilityChange);
   document.addEventListener('visibilitychange',onStoryVisibilityChange);
-  pollLeaguePulse().then(function(){buildStoryPool();setFocusGame(state.focusGamePk);if(typeof window!=='undefined'&&typeof window.dismissAppSplash==='function')window.dismissAppSplash();});
+  pollLeaguePulse().then(function(){buildStoryPool();setFocusGame(state.focusGamePk);if(typeof window!=='undefined'&&typeof window.dismissAppSplash==='function')window.dismissAppSplash();}).catch(function(e){console.error('[boot] pollLeaguePulse error',e);});
   state.pulseTimer=setInterval(pollLeaguePulse,TIMING.PULSE_POLL_MS);
   if(state.storyPoolTimer){clearInterval(state.storyPoolTimer);state.storyPoolTimer=null;}
   state.storyPoolTimer=setInterval(buildStoryPool,TIMING.STORY_POOL_MS);
@@ -316,7 +316,7 @@ function initReal() {
     loadYesterdayCache().then(function(){
       var ydCard=document.getElementById('yesterdayCard');
       if(ydCard&&ydCard.offsetParent!==null) renderYesterdayRecap();
-    });
+    }).catch(function(e){console.error('[boot] loadYesterdayCache error',e);});
   },TIMING.YESTERDAY_REFRESH_MS);
 }
 
@@ -665,7 +665,7 @@ function renderNextGame(g,label){
       pollLeaguePulse().then(function(){
         buildStoryPool();
         if (state.focusGamePk) setFocusGame(state.focusGamePk);
-      });
+      }).catch(function(e){console.error('[pulse] pollLeaguePulse error',e);});
       state.pulseTimer = setInterval(pollLeaguePulse, TIMING.PULSE_POLL_MS);
       state.storyPoolTimer = setInterval(buildStoryPool, TIMING.STORY_POOL_MS);
       state.videoClipPollTimer = setInterval(pollPendingVideoClips, 30 * 1000);
