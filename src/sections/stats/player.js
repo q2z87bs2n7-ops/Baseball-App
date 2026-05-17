@@ -29,6 +29,7 @@ export async function selectPlayer(id,type,noScroll){
       fetch(MLB_BASE+'/people/'+id+'/stats?stats=season&season='+SEASON+'&group='+group),
       group==='fielding'?Promise.resolve():fetchLeagueLeaders(group)
     ]);
+    if(!r.ok) throw new Error(r.status);
     if(group!=='fielding'){
       fetchGameLog(id, group).then(function(){ onGameLogResolved(id, group); });
     }
@@ -187,6 +188,7 @@ async function fetchStatSplits(playerId, group){
   try{
     var codes = 'vl,vr,h,a,risp,e,r,lc';
     var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=statSplits&sitCodes='+codes+'&season='+SEASON+'&group='+group);
+    if(!r.ok) throw new Error(r.status);
     var d = await r.json();
     var splits = (d.stats && d.stats[0] && d.stats[0].splits) ? d.stats[0].splits : [];
     state.statSplitsCache[key] = { splits: splits, ts: Date.now() };
@@ -291,6 +293,7 @@ async function fetchPitchArsenal(playerId){
   if(cached && Date.now()-cached.ts < PITCH_ARSENAL_TTL_MS) return cached.data;
   try{
     var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=pitchArsenal&season='+SEASON);
+    if(!r.ok) throw new Error(r.status);
     var d = await r.json();
     var splits = (d.stats && d.stats[0] && d.stats[0].splits) ? d.stats[0].splits : [];
     var arsenal = splits.map(function(s){
@@ -819,6 +822,7 @@ async function fetchGameLog(playerId, group){
   if(existing && Date.now() - existing.ts < GAMELOG_TTL_MS) return existing.games;
   try {
     var r = await fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=gameLog&season='+SEASON+'&group='+group);
+    if(!r.ok) throw new Error(r.status);
     var d = await r.json();
     var games = (d.stats && d.stats[0] && d.stats[0].splits) ? d.stats[0].splits : [];
     state.gameLogCache[cacheKey] = { games: games, ts: Date.now() };
