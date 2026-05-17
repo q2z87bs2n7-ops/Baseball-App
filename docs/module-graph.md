@@ -358,6 +358,8 @@ Files that are NOT part of the bundle but must be present in the repo / served a
 
 **Script load chain (all `<script defer>`):** `pulse-card-templates.js` → `focusCard.js` → `collectionCard.js` → `app.bundle.js` — executed in DOM order after document parses. The theme-flash prevention snippet at `index.html:7` is the only inline-and-synchronous script.
 
+> History: a previous dynamic script-insert pattern caused the bundle to execute **async**; the readyState guard in `src/dev/tuning.js` is no longer load-order-critical but is harmless and retained.
+
 ---
 
 ## Layering rule
