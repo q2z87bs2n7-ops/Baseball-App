@@ -201,6 +201,6 @@ export function installNavClicks(showSectionFn) {
     const btn = e.target.closest('button[data-section]');
     if (!btn) return;
     const section = btn.getAttribute('data-section');
-    if (section) showSectionFn(section, btn);
+    if (section && document.getElementById(section)) showSectionFn(section, btn);
   });
 }
