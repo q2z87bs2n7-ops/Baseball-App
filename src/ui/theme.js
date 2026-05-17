@@ -157,7 +157,8 @@ function toggleSettings(){document.getElementById('settingsPanel').classList.tog
 
 function setupSettingsClickOutside(){
   document.addEventListener('click',function(e){
-    if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');
+    const wrap=document.querySelector('.settings-wrap');
+    if(wrap&&!wrap.contains(e.target)){const panel=document.getElementById('settingsPanel');if(panel)panel.classList.remove('open');}
     const tt=document.getElementById('calTooltip');if(tt&&tt.classList.contains('open')&&!e.target.closest('.cal-day'))tt.classList.remove('open');
   });
 }
