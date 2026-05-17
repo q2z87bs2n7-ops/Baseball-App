@@ -1,7 +1,7 @@
 # App Pages & Sections
 
 ## 🏠 Home
-**Left card — "Next Game"** (`#todayGame`, `loadTodayGame()`) — priority: (1) live game with score + Watch Live, (2) upcoming today, (3) next upcoming. Series info via `getSeriesInfo(g)`. Layout: 5-column row [opp cap] [opp name/score] [—] [my name/score] [my cap]. Background: opp primary → #111827 50% → active-team colour (built in `renderNextGame`, NOT via `gameGradient()` — see Critical Traps in CLAUDE.md).
+**Left card — "Next Game"** (`#todayGame`, `loadTodayGame()`) — priority: (1) live game with score + Watch Live, (2) upcoming today, (3) next upcoming. Series info via `getSeriesInfo(g)`. Layout: 5-column row [opp cap] [opp name/score] [—] [my name/score] [my cap]. Background: opp primary → #111827 50% → active-team colour (built in `renderNextGame`, NOT via `gameGradient()` — see below).
 
 **Right card — "Next Series"** (`#nextGame`, `loadNextGame()`) — fetches 28 days, groups into series, finds the **second** series with any non-Final game (skips current series). 3-stop gradient.
 
