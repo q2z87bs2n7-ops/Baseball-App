@@ -50,6 +50,12 @@ body {
   touch-action: manipulation
 }
 
+/* iOS Safari only fires click on non-interactive elements that have cursor:pointer.
+   Scoped to coarse-pointer (touch) devices so desktop cursor is unaffected. */
+@media (pointer: coarse) {
+  body { cursor: pointer }
+}
+
 header {
   background: var(--primary);
   border-bottom: 2px solid var(--secondary);
