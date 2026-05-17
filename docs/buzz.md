@@ -23,9 +23,15 @@ Games → Baseball Buzz). Hidden ≤767px with the rest of the side rail.
 - `category` — drives the pill's coloured dot only: `league` / `rumors` /
   `analytics` / `insider` / `team` / `scouting`.
 
-~15 core accounts (MLB, FanGraphs + writers, Baseball Prospectus, Baseball
-America, Rosenthal/Passan/Stark/Law, Sarah Langs, Codify) + one beat
-writer per all 30 clubs.
+49 accounts total: 18 national/analytics (trade rumours, insiders, FanGraphs
+writers, BP, BA, Pitcher List, Codify, Keith Law, Sarah Langs) + 22 beat
+writers + 9 SB Nation community blogs.
+
+**Coverage gaps (as of 2026-05-17):** no active Bluesky beat writer found
+for Yankees, Rays, Tigers, Braves, Marlins, Cardinals, Pirates, Rockies, or
+Diamondbacks. Some gaps are partly filled by community blogs (Royals Review,
+Gaslamp Ball, Lookout Landing, Bleed Cubbie Blue, South Side Sox). Re-verify
+each offseason and replace stale handles when writers move outlets.
 
 **HARDCODING RISK:** handles were hand-curated and **NOT live-verified**
 at authoring (no network in the build env). A wrong/renamed handle simply
@@ -42,7 +48,7 @@ initReal()                                  src/main.js
   └─ setInterval(() => loadBaseballBuzz(true), TIMING.BUZZ_REFRESH_MS)
 loadBaseballBuzz(force)                      src/pulse/baseball-buzz.js
   ├─ !force: fresh localStorage cache (≤2 min)? → render, return
-  ├─ Promise.allSettled( fetchAccount × ~45 )
+  ├─ Promise.allSettled( fetchAccount × ~49 )
   │     GET public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed
   │         ?actor=<handle>&limit=6&filter=posts_no_replies
   │     drop reposts (item.reason) + replies (record.reply)
@@ -66,8 +72,8 @@ thumb only — link previews / quote posts ignored), `text`, `ts`, and a
   (Earlier the TTL equalled the interval and the cache was written a few
   seconds late, so every other tick was a no-op → effective ~20 min;
   force-fetch fixed that.)
-- Cost: each pull = ~45 keyless `getAuthorFeed` requests from the browser
-  (~45 req / 2 min) — well within Bluesky's per-IP budget. No multi-author
+- Cost: each pull = ~49 keyless `getAuthorFeed` requests from the browser
+  (~49 req / 2 min) — well within Bluesky's per-IP budget. No multi-author
   endpoint exists without a Bluesky List (which needs an account), so the
   fan-out is inherent.
 
