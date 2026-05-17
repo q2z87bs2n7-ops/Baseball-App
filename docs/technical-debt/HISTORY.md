@@ -6,7 +6,43 @@
 
 None. To start one, say **"Start tech debt sprint"** in conversation with Claude.
 
+---
+
 ## Completed Sprints
+
+### Sprint: 2026-05-17-baseball-app
+**Status:** ✅ COMPLETE
+**Branch:** `claude/tech-debt-sprint-f1Zgf`
+**Merged:** 2026-05-17
+
+**Issues fixed:**
+- HIGH: 3 (H1 — var→const/let across 51 src files; H2 — .ok checks on 15 fetch sites; H3 — .catch() on 11 promise chains)
+- MEDIUM: 3 (M1 Phase 1 — delegated nav clicks; M2 — aria-labels; M3 — sw.js var cleanup)
+- Deferred: 1 (L1 — dead-code removal, skipped by user decision)
+
+**UAT fixes:** 2 regressions found and fixed (M1 more-button crash guard; iOS click-outside close)
+
+**Result:** 6 issues fixed, 2 UAT regressions resolved, 10/10 QA checks passed, UAT passed. Version 4.28.6 → 4.28.18.
+
+**Code Changes:**
+- `src/**/*.js` (51 files): 2,485 `var` → `const`/`let`
+- `src/sections/news.js`, `live.js`, `stats/player.js`: 15 `.ok` checks added
+- `src/main.js`, `yesterday.js`, `stats/player.js`: 11 `.catch()` handlers added
+- `src/nav/behavior.js`: `installNavClicks` export + UAT guard fix
+- `index.html`: 7 nav `onclick` removed; 5 `aria-label` additions
+- `sw.js`: 5 `var` → `const`/`let`
+- `styles.css`: `cursor:pointer` on `@media (pointer:coarse)` body (iOS fix)
+
+**Reports:**
+- [Full Audit](./audits/audit-2026-05-17-baseball-app.md)
+- [QA Test Results](./qa/qa-2026-05-17-baseball-app.md)
+- [Sprint Summary](./sprints/sprint-2026-05-17-baseball-app.md)
+
+**Known issues that remain open:**
+- L1: Dead-code removal — deferred by user decision
+- M1 (remainder): 133 non-nav inline `onclick` handlers — deferred to future sprint
+
+---
 
 ### Sprint: 2026-05-06-baseball-app
 **Status:** ✅ COMPLETE
