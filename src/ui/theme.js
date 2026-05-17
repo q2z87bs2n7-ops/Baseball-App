@@ -156,10 +156,24 @@ function togglePulseColorScheme(){
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
 
 function setupSettingsClickOutside(){
-  document.addEventListener('click',function(e){
-    if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');
-    const tt=document.getElementById('calTooltip');if(tt&&tt.classList.contains('open')&&!e.target.closest('.cal-day'))tt.classList.remove('open');
-  });
+  // iOS suppresses click synthesis on scrollable-area taps even with cursor:pointer.
+  // touchend fires unconditionally — filter genuine taps by movement delta < 10px.
+  let t0x=0,t0y=0;
+  document.addEventListener('touchstart',function(e){
+    t0x=e.touches[0].clientX;t0y=e.touches[0].clientY;
+  },{passive:true});
+  function closeIfOutside(target){
+    const wrap=document.querySelector('.settings-wrap');
+    if(wrap&&!wrap.contains(target)){const panel=document.getElementById('settingsPanel');if(panel)panel.classList.remove('open');}
+    const tt=document.getElementById('calTooltip');if(tt&&tt.classList.contains('open')&&!target.closest('.cal-day'))tt.classList.remove('open');
+  }
+  document.addEventListener('touchend',function(e){
+    const t=e.changedTouches[0];
+    if(Math.abs(t.clientX-t0x)>10||Math.abs(t.clientY-t0y)>10)return;
+    const target=document.elementFromPoint(t.clientX,t.clientY);
+    if(target)closeIfOutside(target);
+  },{passive:true});
+  document.addEventListener('click',function(e){closeIfOutside(e.target);});
 }
 
 function buildThemeSelect(){
