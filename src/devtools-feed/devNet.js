@@ -14,27 +14,27 @@ export const devNetLog = [];
 
 (function wrapFetch() {
   if (typeof window === 'undefined' || !window.fetch) return;
-  var origFetch = window.fetch.bind(window);
+  const origFetch = window.fetch.bind(window);
   window.fetch = function(input, init) {
-    var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    var url = (typeof input === 'string') ? input : (input && input.url) || '';
-    var method = (init && init.method) || (input && input.method) || 'GET';
-    var entry = { ts: Date.now(), method: method.toUpperCase(), url: url, status: null, ok: null, ms: null, sizeBytes: null, errorMsg: null };
+    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const url = (typeof input === 'string') ? input : (input && input.url) || '';
+    const method = (init && init.method) || (input && input.method) || 'GET';
+    const entry = { ts: Date.now(), method: method.toUpperCase(), url: url, status: null, ok: null, ms: null, sizeBytes: null, errorMsg: null };
     devNetLog.push(entry);
     if (devNetLog.length > DEV_NET_CAP) devNetLog.splice(0, devNetLog.length - DEV_NET_CAP);
     return origFetch(input, init).then(function(res) {
-      var t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       entry.ms = Math.round(t1 - t0);
       entry.status = res.status;
       entry.ok = res.ok;
       try {
-        var cl = res.headers && res.headers.get && res.headers.get('content-length');
+        const cl = res.headers && res.headers.get && res.headers.get('content-length');
         if (cl) entry.sizeBytes = parseInt(cl, 10);
       } catch (e) {}
       if (!res.ok) pushDevLog('warn', 'net', [method.toUpperCase() + ' ' + res.status + ' · ' + url + ' · ' + entry.ms + 'ms']);
       return res;
     }, function(err) {
-      var t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       entry.ms = Math.round(t1 - t0);
       entry.ok = false;
       entry.errorMsg = (err && err.message) ? err.message : String(err);

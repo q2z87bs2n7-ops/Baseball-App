@@ -16,9 +16,9 @@ function forceHttps(url) {
 // fall back to any .mp4 URL. Returns null if no playable URL.
 export function pickPlayback(playbacks) {
   if (!playbacks || !playbacks.length) return null;
-  var mp4 = playbacks.find(function(p) { return p.name === 'mp4Avc'; });
+  const mp4 = playbacks.find(function(p) { return p.name === 'mp4Avc'; });
   if (mp4) return mp4.url;
-  var any = playbacks.find(function(p) { return p.url && p.url.endsWith('.mp4'); });
+  const any = playbacks.find(function(p) { return p.url && p.url.endsWith('.mp4'); });
   return any ? any.url : null;
 }
 
@@ -26,11 +26,11 @@ export function pickPlayback(playbacks) {
 // MLB API returns cuts either as array [{src,width,aspectRatio}] or object keyed by "WxH".
 export function pickHeroImage(item) {
   if (!item || !item.image) return null;
-  var raw = item.image.cuts;
+  const raw = item.image.cuts;
   if (!raw) return null;
-  var cuts = Array.isArray(raw) ? raw : Object.values(raw);
+  const cuts = Array.isArray(raw) ? raw : Object.values(raw);
   if (!cuts.length) return null;
-  var c16 = cuts.filter(function(c) { return c.aspectRatio === '16:9' && (c.width || 0) >= 480; });
+  const c16 = cuts.filter(function(c) { return c.aspectRatio === '16:9' && (c.width || 0) >= 480; });
   c16.sort(function(a, b) { return (a.width || 0) - (b.width || 0); });
   if (c16.length) return c16[0].src || c16[0].url || null;
   cuts.sort(function(a, b) { return (b.width || 0) - (a.width || 0); });
@@ -45,8 +45,8 @@ export function pickHeroImage(item) {
 export async function fetchGameContent(gamePk) {
   if (state.yesterdayContentCache[gamePk]) return state.yesterdayContentCache[gamePk];
   try {
-    var r = await fetch(MLB_BASE + '/game/' + gamePk + '/content');
-    var d = await r.json();
+    const r = await fetch(MLB_BASE + '/game/' + gamePk + '/content');
+    const d = await r.json();
     state.yesterdayContentCache[gamePk] = d;
     return d;
   } catch (e) {
@@ -58,16 +58,16 @@ export async function fetchGameContent(gamePk) {
 // Inject a "▶" play tile into a feed row's DOM, wired to openVideoOverlay on click.
 // Idempotent — sets `data-clip-patched=1` so a second call no-ops.
 export function patchFeedItemWithClip(feedItemTs, gamePk, clip) {
-  var url = pickPlayback(clip.playbacks);
-  var thumb = pickHeroImage(clip);
-  var title = clip.headline || clip.blurb || 'Watch Highlight';
+  const url = pickPlayback(clip.playbacks);
+  const thumb = pickHeroImage(clip);
+  const title = clip.headline || clip.blurb || 'Watch Highlight';
   if (!url) return;
-  var el = document.querySelector('#feed [data-ts="' + feedItemTs + '"][data-gamepk="' + gamePk + '"]');
+  const el = document.querySelector('#feed [data-ts="' + feedItemTs + '"][data-gamepk="' + gamePk + '"]');
   if (!el || el.dataset.clipPatched) return;
   el.dataset.clipPatched = '1';
-  var wrap = document.createElement('div');
+  const wrap = document.createElement('div');
   wrap.style.cssText = 'margin-top:8px;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:#000;line-height:0;width:80%;margin-left:auto;margin-right:auto';
-  var thumbUrl = thumb ? forceHttps(thumb) : '';
+  const thumbUrl = thumb ? forceHttps(thumb) : '';
   wrap.innerHTML = (thumbUrl ? '<img src="' + thumbUrl + '" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block" onerror="this.style.display=\'none\'">' : '<div style="width:100%;aspect-ratio:16/9;background:#111"></div>')
     + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">'
     + '<div style="width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;padding-left:3px">▶</div>'
@@ -83,24 +83,24 @@ export async function pollPendingVideoClips() {
   // Anchor the 2h cutoff to demoCurrentTime when replaying — feed items
   // baseline-captured from a previous day have ts values far older than
   // real Date.now(), so a real-clock cutoff filters them all out.
-  var anchorMs = state.demoMode ? (state.demoCurrentTime || 0) : Date.now();
-  var cutoff = state.demoMode
+  const anchorMs = state.demoMode ? (state.demoCurrentTime || 0) : Date.now();
+  const cutoff = state.demoMode
     ? anchorMs - 2 * 60 * 60 * 1000
     : anchorMs - 16 * 60 * 60 * 1000;
-  var feed = document.getElementById('feed');
+  const feed = document.getElementById('feed');
   if (!feed) return;
-  var pending = state.feedItems.filter(function(item) {
+  const pending = state.feedItems.filter(function(item) {
     if (!item.data || !item.data.batterId) return false;
     if (item.data.event !== 'Home Run' && !item.data.scoring && !(state.demoMode && item.data.event === 'Caught Stealing')) return false;
     if (!item.ts || item.ts.getTime() < cutoff) return false;
-    var el = feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
+    const el = feed.querySelector('[data-ts="' + item.ts.getTime() + '"][data-gamepk="' + item.gamePk + '"]');
     return el && !el.dataset.clipPatched;
   });
   if (!pending.length) return;
-  var byGame = {};
+  const byGame = {};
   pending.forEach(function(item) { (byGame[item.gamePk] = byGame[item.gamePk] || []).push(item); });
-  for (var pk in byGame) {
-    var gpk = +pk;
+  for (const pk in byGame) {
+    const gpk = +pk;
     if (state.demoMode) {
       // Demo replay: use the LATEST contentCacheTimeline snapshot — clips
       // are typically published 1-20+ min after the play they correspond
@@ -108,30 +108,30 @@ export async function pollPendingVideoClips() {
       // yet contain the play's clip. We're replaying, so we already know
       // the full set of clips for the game; player_id + closest-clip
       // matching below sorts out which clip belongs to which play.
-      var timeline = state.contentCacheTimeline[gpk] || [];
-      var snap = timeline.length ? timeline[timeline.length - 1] : null;
+      const timeline = state.contentCacheTimeline[gpk] || [];
+      const snap = timeline.length ? timeline[timeline.length - 1] : null;
       if (snap && snap.items && snap.items.length) {
         state.liveContentCache[gpk] = { items: snap.items, fetchedAt: state.demoCurrentTime || 0 };
       }
     } else {
-      var cached = state.liveContentCache[gpk];
+      const cached = state.liveContentCache[gpk];
       // Bust cache when any new feed item for this game arrived after the last
       // content snapshot — covers HRs, stolen bases, great catches, etc.
-      var hasNewerEvent = cached && byGame[pk].some(function(item) {
+      const hasNewerEvent = cached && byGame[pk].some(function(item) {
         return item.ts.getTime() > cached.fetchedAt;
       });
       if (!cached || hasNewerEvent || (Date.now() - cached.fetchedAt) > 5 * 60 * 1000) {
         try {
-          var r = await fetch(MLB_BASE + '/game/' + gpk + '/content');
+          const r = await fetch(MLB_BASE + '/game/' + gpk + '/content');
           if (!r.ok) continue;
-          var d = await r.json();
-          var all = (d.highlights && d.highlights.highlights && d.highlights.highlights.items) || [];
+          const d = await r.json();
+          const all = (d.highlights && d.highlights.highlights && d.highlights.highlights.items) || [];
           // Keep only playable video clips; exclude data-visualization (darkroom, bat-track, etc.)
           state.liveContentCache[gpk] = {
             items: all.filter(function(it) {
               if (it.type !== 'video' || !pickPlayback(it.playbacks)) return false;
               return !(it.keywordsAll || []).some(function(kw) {
-                var v = (kw.value || kw.slug || '').toLowerCase();
+                const v = (kw.value || kw.slug || '').toLowerCase();
                 return v === 'data-visualization' || v === 'data_visualization';
               });
             }),
@@ -143,14 +143,14 @@ export async function pollPendingVideoClips() {
         } catch (e) { continue; }
       }
     }
-    var clips = (state.liveContentCache[gpk] && state.liveContentCache[gpk].items) || [];
+    const clips = (state.liveContentCache[gpk] && state.liveContentCache[gpk].items) || [];
     if (!clips.length) continue;
     // Exclude Statcast/Savant clips — analysis overlays, not broadcast replays.
     function isStatcast(clip) {
-      var title = (clip.headline || clip.blurb || '').toLowerCase();
+      const title = (clip.headline || clip.blurb || '').toLowerCase();
       if (title.indexOf('statcast') !== -1 || title.indexOf('savant') !== -1) return true;
       return (clip.keywordsAll || []).some(function(kw) {
-        var v = (kw.value || kw.slug || '').toLowerCase();
+        const v = (kw.value || kw.slug || '').toLowerCase();
         return v === 'statcast' || v === 'savant';
       });
     }
@@ -158,22 +158,22 @@ export async function pollPendingVideoClips() {
     // overlays, not batting highlight replays. Their timestamps fall before the actual hit
     // clip, causing nearest-timestamp matching to pick them over the correct clip.
     function isABSChallenge(clip) {
-      var tax = (clip.keywordsAll || []).filter(function(kw) { return kw.type === 'taxonomy'; });
-      var hasAbs = tax.some(function(kw) { return (kw.value || kw.slug || '').toLowerCase() === 'abs'; });
-      var hasChallenge = tax.some(function(kw) { return (kw.value || kw.slug || '').toLowerCase() === 'challenge'; });
+      const tax = (clip.keywordsAll || []).filter(function(kw) { return kw.type === 'taxonomy'; });
+      const hasAbs = tax.some(function(kw) { return (kw.value || kw.slug || '').toLowerCase() === 'abs'; });
+      const hasChallenge = tax.some(function(kw) { return (kw.value || kw.slug || '').toLowerCase() === 'challenge'; });
       return hasAbs && hasChallenge;
     }
-    var broadcastClips = clips.filter(function(c) { return !isStatcast(c) && !isABSChallenge(c); });
+    const broadcastClips = clips.filter(function(c) { return !isStatcast(c) && !isABSChallenge(c); });
     // Prefer clips tagged home-run / scoring-play / walk-off (API uses hyphens, not underscores).
-    var scoringClips = broadcastClips.filter(function(clip) {
+    const scoringClips = broadcastClips.filter(function(clip) {
       return (clip.keywordsAll || []).some(function(kw) {
-        var v = kw.value || kw.slug || '';
+        const v = kw.value || kw.slug || '';
         return v === 'home-run' || v === 'scoring-play' || v === 'walk-off';
       });
     });
     byGame[pk].forEach(function(item) {
-      var playTs = item.ts.getTime();
-      var bid = String(item.data.batterId);
+      const playTs = item.ts.getTime();
+      const bid = String(item.data.batterId);
       function hasPlayer(clip) {
         return (clip.keywordsAll || []).some(function(kw) {
           if (kw.type === 'player_id') return String(kw.value || '') === bid;
@@ -186,14 +186,14 @@ export async function pollPendingVideoClips() {
       // (e.g. a sac fly clip onto a HR feed item) whenever the real clip wasn't
       // published yet. No clip is better than the wrong clip — unpatched items retry
       // on the next 30s poll.
-      var playerFromScoring = scoringClips.filter(hasPlayer);
-      var playerFromBroadcast = broadcastClips.filter(hasPlayer);
-      var pool = playerFromScoring.length ? playerFromScoring : playerFromBroadcast;
-      var best = null, bestDiff = Infinity;
+      const playerFromScoring = scoringClips.filter(hasPlayer);
+      const playerFromBroadcast = broadcastClips.filter(hasPlayer);
+      const pool = playerFromScoring.length ? playerFromScoring : playerFromBroadcast;
+      let best = null, bestDiff = Infinity;
       pool.forEach(function(clip) {
-        var clipTs = clip.date ? new Date(clip.date).getTime() : null;
+        const clipTs = clip.date ? new Date(clip.date).getTime() : null;
         if (!clipTs) return;
-        var diff = Math.abs(clipTs - playTs);
+        const diff = Math.abs(clipTs - playTs);
         if (diff < bestDiff) { bestDiff = diff; best = clip; }
       });
       // Only patch if the clip is within the time cap of the play — a stolen
@@ -202,7 +202,7 @@ export async function pollPendingVideoClips() {
       // clips publish); demo uses 60 min because we use the recording's final
       // snapshot which mixes early and late clips, and clip.date can drift
       // significantly from the play for early-inning events.
-      var matchCapMs = state.demoMode ? 60 * 60 * 1000 : 20 * 60 * 1000;
+      const matchCapMs = state.demoMode ? 60 * 60 * 1000 : 20 * 60 * 1000;
       if (best && bestDiff <= matchCapMs) {
         state.lastVideoClip = best;
         patchFeedItemWithClip(playTs, gpk, best);
@@ -220,30 +220,30 @@ export async function devTestVideoClip() {
     openVideoOverlay(pickPlayback(state.lastVideoClip.playbacks), state.lastVideoClip.headline || state.lastVideoClip.blurb || 'Highlight');
     return;
   }
-  var keys = Object.keys(state.yesterdayContentCache);
-  for (var i = 0; i < keys.length; i++) {
-    var c = state.yesterdayContentCache[keys[i]];
+  const keys = Object.keys(state.yesterdayContentCache);
+  for (let i = 0; i < keys.length; i++) {
+    const c = state.yesterdayContentCache[keys[i]];
     if (!c) continue;
-    var items = (c.highlights && c.highlights.highlights && c.highlights.highlights.items) || [];
-    var playable = items.filter(function(it) { return it.type === 'video' && pickPlayback(it.playbacks); });
+    const items = (c.highlights && c.highlights.highlights && c.highlights.highlights.items) || [];
+    const playable = items.filter(function(it) { return it.type === 'video' && pickPlayback(it.playbacks); });
     if (playable.length) {
-      var clip = playable[2] || playable[0];
+      const clip = playable[2] || playable[0];
       state.lastVideoClip = clip;
       openVideoOverlay(pickPlayback(clip.playbacks), clip.headline || clip.blurb || 'Highlight');
       return;
     }
   }
   try {
-    var ds = etDatePlus(etDateStr(), -1);
-    var r = await fetch(MLB_BASE + '/schedule?date=' + ds + '&sportId=1&hydrate=team');
+    const ds = etDatePlus(etDateStr(), -1);
+    const r = await fetch(MLB_BASE + '/schedule?date=' + ds + '&sportId=1&hydrate=team');
     if (!r.ok) throw new Error(r.status);
-    var d = await r.json();
-    var games = (d.dates || []).flatMap(function(dt) { return dt.games || []; });
+    const d = await r.json();
+    const games = (d.dates || []).flatMap(function(dt) { return dt.games || []; });
     if (!games.length) { alert('No clip available — open Yesterday Recap first'); return; }
-    var content = await fetchGameContent(games[0].gamePk);
+    const content = await fetchGameContent(games[0].gamePk);
     if (!content) throw new Error('no content');
-    var items2 = (content.highlights && content.highlights.highlights && content.highlights.highlights.items) || [];
-    var playable2 = items2.filter(function(it) { return it.type === 'video' && pickPlayback(it.playbacks); });
+    const items2 = (content.highlights && content.highlights.highlights && content.highlights.highlights.items) || [];
+    const playable2 = items2.filter(function(it) { return it.type === 'video' && pickPlayback(it.playbacks); });
     if (!playable2.length) { alert('No playable clip found for yesterday'); return; }
     state.lastVideoClip = playable2[0];
     openVideoOverlay(pickPlayback(playable2[0].playbacks), playable2[0].headline || playable2[0].blurb || 'Highlight');

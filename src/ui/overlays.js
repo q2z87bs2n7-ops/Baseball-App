@@ -14,9 +14,9 @@ export function setOverlayCallbacks(cbs) {
 }
 
 export function openVideoOverlay(url, title) {
-  var ov = document.getElementById('videoOverlay');
-  var vid = document.getElementById('videoOverlayPlayer');
-  var ttl = document.getElementById('videoOverlayTitle');
+  const ov = document.getElementById('videoOverlay');
+  const vid = document.getElementById('videoOverlayPlayer');
+  const ttl = document.getElementById('videoOverlayTitle');
   if (!ov || !vid) return;
   if (ttl) ttl.textContent = title || '';
   vid.src = url;
@@ -25,14 +25,14 @@ export function openVideoOverlay(url, title) {
 }
 
 export function closeVideoOverlay() {
-  var ov = document.getElementById('videoOverlay');
-  var vid = document.getElementById('videoOverlayPlayer');
+  const ov = document.getElementById('videoOverlay');
+  const vid = document.getElementById('videoOverlayPlayer');
   if (vid) { vid.pause(); vid.src = ''; }
   if (ov) ov.style.display = 'none';
 }
 
 export function dismissPlayerCard() {
-  var overlay = document.getElementById('playerCardOverlay');
+  const overlay = document.getElementById('playerCardOverlay');
   if (!overlay || !overlay.classList.contains('open')) return;
   if (_flashCollectionRailMessage) _flashCollectionRailMessage();
   if (window._playerCardTimer) { clearTimeout(window._playerCardTimer); window._playerCardTimer = null; }
@@ -45,7 +45,7 @@ export function dismissPlayerCard() {
 
 export function closeSignInCTA() {
   if (state.signInCTATimer) { clearTimeout(state.signInCTATimer); state.signInCTATimer = null; }
-  var el = document.getElementById('signInCTA');
+  const el = document.getElementById('signInCTA');
   if (!el) return;
   el.style.opacity = '0';
   el.style.transform = 'translateX(-50%) translateY(16px)';

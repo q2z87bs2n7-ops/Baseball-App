@@ -24,24 +24,24 @@ export function leaderEntry(group, statKey) {
 // hitter just below the leader cohort doesn't look like a bug.
 export function computePercentile(group, statKey, value) {
   if (value == null || value === '') return null;
-  var entry = leaderEntry(group, statKey);
+  const entry = leaderEntry(group, statKey);
   if (!entry) return null;
-  var arr = state.leagueLeaders[group + ':' + entry.leaderCategory];
+  const arr = state.leagueLeaders[group + ':' + entry.leaderCategory];
   if (!arr || !arr.length) return null;
-  var v = parseFloat(value);
+  const v = parseFloat(value);
   if (isNaN(v)) return null;
   // arr is sorted best→worst by fetchLeagueLeaders. Find first index where v
   // would no longer beat the existing entry — that's our rank.
-  var rank = arr.length;
-  var foundInPool = false;
-  for (var i = 0; i < arr.length; i++) {
-    var beats = entry.lowerIsBetter ? v < arr[i].value : v > arr[i].value;
+  let rank = arr.length;
+  let foundInPool = false;
+  for (let i = 0; i < arr.length; i++) {
+    const beats = entry.lowerIsBetter ? v < arr[i].value : v > arr[i].value;
     if (beats) { rank = i + 1; foundInPool = true; break; }
-    var ties = v === arr[i].value;
+    const ties = v === arr[i].value;
     if (ties) { rank = i + 1; foundInPool = true; break; }
   }
-  var total = arr.length;
-  var percentile = Math.max(0, Math.min(100, Math.round(((total - rank) / Math.max(1, total - 1)) * 100)));
+  const total = arr.length;
+  const percentile = Math.max(0, Math.min(100, Math.round(((total - rank) / Math.max(1, total - 1)) * 100)));
   return { rank: rank, total: total, percentile: percentile, outsideTop: !foundInPool };
 }
 
@@ -57,7 +57,7 @@ export function tierFromPercentile(p) {
 // Colored percentile bar HTML. Empty string when percentile unavailable.
 export function pctBar(percentile) {
   if (percentile == null) return '';
-  var tier = tierFromPercentile(percentile);
+  const tier = tierFromPercentile(percentile);
   return '<div class="pct-bar pct-bar--' + tier + '"><i style="width:' + percentile + '%"></i></div>';
 }
 
@@ -66,7 +66,7 @@ export function pctBar(percentile) {
 // leader pool (see renderOverviewTab in loaders.js).
 export function rankCaption(rank, total) {
   if (rank == null || total == null) return '';
-  var label = '#' + rank;
+  const label = '#' + rank;
   return '<div class="rank-caption"><span>MLB</span><b>' + label + '</b></div>';
 }
 
@@ -78,14 +78,14 @@ export function rankCaption(rank, total) {
 export function avgChip(playerValue, basisValue, decimals, lowerIsBetter) {
   if (basisValue == null) return '';
   decimals = decimals === undefined ? 3 : decimals;
-  var b = parseFloat(basisValue);
+  const b = parseFloat(basisValue);
   if (isNaN(b)) return '';
-  var s = b.toFixed(decimals);
+  let s = b.toFixed(decimals);
   if (decimals >= 3 && s.charAt(0) === '0') s = s.slice(1);
-  var p = playerValue == null ? NaN : parseFloat(playerValue);
-  var cls = '';
+  const p = playerValue == null ? NaN : parseFloat(playerValue);
+  let cls = '';
   if (!isNaN(p)) {
-    var beats = lowerIsBetter ? p < b : p > b;
+    const beats = lowerIsBetter ? p < b : p > b;
     cls = beats ? ' pos' : ' neg';
   }
   return '<span class="delta-chip avg-chip' + cls + '">Avg: ' + s + '</span>';
@@ -96,24 +96,24 @@ export function avgChip(playerValue, basisValue, decimals, lowerIsBetter) {
 // limit=300 (server-capped at ~100 per category in practice). Returns null if
 // the cache is empty or the stat isn't configured.
 export function leagueAverage(group, statKey) {
-  var entry = leaderEntry(group, statKey);
+  const entry = leaderEntry(group, statKey);
   if (!entry) return null;
-  var arr = state.leagueLeaders[group + ':' + entry.leaderCategory];
+  const arr = state.leagueLeaders[group + ':' + entry.leaderCategory];
   if (!arr || !arr.length) return null;
-  var sum = 0;
-  for (var i = 0; i < arr.length; i++) sum += arr[i].value;
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) sum += arr[i].value;
   return sum / arr.length;
 }
 
 // Mean across the active team's roster from state.statsCache. Used for the
 // "vs team" basis option. Returns null if statsCache is empty for the group.
 export function teamAverage(group, statKey) {
-  var pool = state.statsCache[group] || [];
+  const pool = state.statsCache[group] || [];
   if (!pool.length) return null;
-  var sum = 0, n = 0;
-  for (var i = 0; i < pool.length; i++) {
-    var raw = pool[i].stat ? pool[i].stat[statKey] : null;
-    var v = raw == null ? NaN : parseFloat(raw);
+  let sum = 0, n = 0;
+  for (let i = 0; i < pool.length; i++) {
+    const raw = pool[i].stat ? pool[i].stat[statKey] : null;
+    const v = raw == null ? NaN : parseFloat(raw);
     if (!isNaN(v)) { sum += v; n++; }
   }
   return n ? sum / n : null;

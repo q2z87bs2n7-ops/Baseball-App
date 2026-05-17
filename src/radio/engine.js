@@ -18,7 +18,7 @@ let radioCurrentTeamId = null;
 
 export function pickRadioForFocus() {
   if (state.focusGamePk && state.gameStates[state.focusGamePk]) {
-    var g = state.gameStates[state.focusGamePk];
+    const g = state.gameStates[state.focusGamePk];
     if (MLB_TEAM_RADIO[g.homeId] && APPROVED_RADIO_TEAM_IDS.has(g.homeId))
       return Object.assign({ teamId: g.homeId, abbr: g.homeAbbr }, MLB_TEAM_RADIO[g.homeId]);
     if (MLB_TEAM_RADIO[g.awayId] && APPROVED_RADIO_TEAM_IDS.has(g.awayId))
@@ -30,7 +30,7 @@ export function pickRadioForFocus() {
 export function stopAllMedia(except) {
   if (except !== 'radio' && radioAudio && !radioAudio.paused) { stopRadio(); }
   if (except !== 'youtube') {
-    var yt = document.getElementById('homeYoutubePlayer');
+    const yt = document.getElementById('homeYoutubePlayer');
     if (yt && yt.contentWindow) {
       try {
         yt.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
@@ -66,8 +66,8 @@ export function loadRadioStream(pick) {
   if (!radioAudio) { radioAudio = new Audio(); radioAudio.preload = 'none'; }
   radioAudio.pause();
   radioCurrentTeamId = pick.teamId;
-  var isHls = pick.format === 'hls';
-  var nativeHls = radioAudio.canPlayType('application/vnd.apple.mpegurl');
+  const isHls = pick.format === 'hls';
+  const nativeHls = radioAudio.canPlayType('application/vnd.apple.mpegurl');
   if (isHls && window.Hls && Hls.isSupported()) {
     radioHls = new Hls();
     radioHls.loadSource(pick.url);
@@ -100,12 +100,12 @@ function handleRadioError(err) {
 }
 
 export function setRadioUI(on, pick) {
-  var t = document.getElementById('radioToggle'), k = document.getElementById('radioToggleKnob'), s = document.getElementById('radioStatusText');
+  const t = document.getElementById('radioToggle'), k = document.getElementById('radioToggleKnob'), s = document.getElementById('radioStatusText');
   if (t) {
     t.setAttribute('aria-checked', on ? 'true' : 'false');
     if (on) {
       t.style.background = '#22c55e'; k.style.left = '21px';
-      var label = pick && pick.name ? pick.name : 'Radio';
+      let label = pick && pick.name ? pick.name : 'Radio';
       if (pick && pick.abbr) label = pick.abbr + ' · ' + label;
       s.textContent = 'Playing · ' + label;
     } else {
@@ -113,13 +113,13 @@ export function setRadioUI(on, pick) {
       s.textContent = 'Off · Auto-pairs to focus game';
     }
   }
-  var ptbDot = document.getElementById('ptbRadioDot');
+  const ptbDot = document.getElementById('ptbRadioDot');
   if (ptbDot) ptbDot.style.display = on ? 'inline-block' : 'none';
 }
 
 export function updateRadioForFocus() {
   if (!radioAudio || radioAudio.paused) return;
-  var pick = pickRadioForFocus();
+  const pick = pickRadioForFocus();
   if (pick.teamId !== radioCurrentTeamId) loadRadioStream(pick);
 }
 

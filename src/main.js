@@ -209,15 +209,15 @@ async function fetchBoxscore(gamePk){
     // or null if no snapshot has landed yet for this game (HR/RBI cards
     // already gracefully handle a null boxscore by leaving jersey/position
     // blank — same as live behaviour for unknown players).
-    var snaps = state.boxscoreSnapshots[gamePk] || [];
-    var nowMs = state.demoCurrentTime || 0;
-    for (var i = snaps.length - 1; i >= 0; i--) {
+    const snaps = state.boxscoreSnapshots[gamePk] || [];
+    const nowMs = state.demoCurrentTime || 0;
+    for (let i = snaps.length - 1; i >= 0; i--) {
       if (snaps[i].ts <= nowMs) return snaps[i].data;
     }
     return null;
   }
   if(!state.boxscoreCache[gamePk]){
-    try{var bsR=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore');if(!bsR.ok)throw new Error(bsR.status);state.boxscoreCache[gamePk]=await bsR.json();
+    try{const bsR=await fetch(MLB_BASE+'/game/'+gamePk+'/boxscore');if(!bsR.ok)throw new Error(bsR.status);state.boxscoreCache[gamePk]=await bsR.json();
       if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
         window.Recorder._captureBoxscore(gamePk, state.boxscoreCache[gamePk]);
       }
@@ -233,7 +233,7 @@ function initLeaguePulse() {
 }
 function initReal() {
   // Populate runtime version slot (single source: package.json → __APP_VERSION__ via esbuild define)
-  var _verEl = document.querySelector('.settings-version[data-version]');
+  const _verEl = document.querySelector('.settings-version[data-version]');
   if (_verEl) _verEl.textContent = 'v' + (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '?');
   setCarouselCallbacks({ updateFeedEmpty: updateFeedEmpty, fetchBoxscore: fetchBoxscore, localDateStr: localDateStr, getEffectiveDate: getEffectiveDate, tcLookup: tcLookup });
   setRotationCallbacks({ refreshDebugPanel: refreshDebugPanel });
@@ -257,12 +257,12 @@ function initReal() {
     // synthesizes the old {hitting:{cat:[{person,team,...}]}} shape so the
     // test-card pool (book.js:addLeadersFromMap) keeps working.
     getLeagueLeadersCache: function() {
-      var out = { hitting: {}, pitching: {} };
-      var cache = state.leagueLeaders || {};
+      const out = { hitting: {}, pitching: {} };
+      const cache = state.leagueLeaders || {};
       Object.keys(cache).forEach(function(key) {
-        var i = key.indexOf(':');
+        const i = key.indexOf(':');
         if (i < 0) return;
-        var grp = key.slice(0, i), cat = key.slice(i + 1);
+        const grp = key.slice(0, i), cat = key.slice(i + 1);
         if (!out[grp]) return;
         out[grp][cat] = (cache[key] || []).map(function(l) {
           return {
@@ -289,7 +289,7 @@ function initReal() {
     refreshDebugPanel: refreshDebugPanel,
     devTuningDefaults: devTuningDefaults,
   });
-  var mockBar=document.getElementById('mockBar');
+  const mockBar=document.getElementById('mockBar');
   if(mockBar){mockBar.style.display='none';mockBar.style.setProperty('display','none','important');}
   // Midnight window: at 0–5am ET, seed state.pollDateStr to yesterday so West Coast games are found
   if(!state.demoMode&&etHour()<6){state.pollDateStr=etDatePlus(etDateStr(),-1);}
@@ -314,7 +314,7 @@ function initReal() {
   if(state.yesterdayRefreshTimer){clearInterval(state.yesterdayRefreshTimer);state.yesterdayRefreshTimer=null;}
   state.yesterdayRefreshTimer=setInterval(function(){
     loadYesterdayCache().then(function(){
-      var ydCard=document.getElementById('yesterdayCard');
+      const ydCard=document.getElementById('yesterdayCard');
       if(ydCard&&ydCard.offsetParent!==null) renderYesterdayRecap();
     }).catch(function(e){console.error('[boot] loadYesterdayCache error',e);});
   },TIMING.YESTERDAY_REFRESH_MS);
@@ -323,7 +323,7 @@ function initReal() {
 
 // ── Demo State Export ────────────────────────────────────────────────────────────
 function exportPulseStateAsSnapshot(){
-  var snapshot={
+  const snapshot={
     metadata:{exportedAt:new Date().toISOString(),season:SEASON},
     gameStates:state.gameStates,
     feedItems:state.feedItems.map(function(item){return{gamePk:item.gamePk,playTime:item.playTime.toISOString(),type:item.type,event:item.event,desc:item.desc,badge:item.badge,scoring:item.scoring,inning:item.inning,halfInning:item.halfInning,outs:item.outs,awayScore:item.awayScore,homeScore:item.homeScore,data:item.data};}),
@@ -339,14 +339,14 @@ function exportPulseStateAsSnapshot(){
     scheduleData:state.scheduleData
   };
   localStorage.setItem('mlb_demo_snapshot',JSON.stringify(snapshot));
-  var json=JSON.stringify(snapshot,null,2);
-  var modal=document.createElement('div');
+  const json=JSON.stringify(snapshot,null,2);
+  const modal=document.createElement('div');
   modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px';
   modal.innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:600px;width:100%;max-height:80vh;display:flex;flex-direction:column">'
     +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px">📸 Pulse State Exported</div>'
     +'<textarea id="exportJson" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--muted);padding:12px;border-radius:8px;font-family:monospace;font-size:11px;resize:none;margin-bottom:12px">'+json+'</textarea>'
     +'<div style="display:flex;gap:10px">'
-    +'<button onclick="var el=document.getElementById(\'exportJson\');navigator.clipboard.writeText(el.value).then(function(){alert(\'Copied!\');},function(){try{el.select();document.execCommand(\'copy\');alert(\'Copied!\');}catch(e){alert(\'Copy failed — please copy manually.\');}});this.parentElement.parentElement.parentElement.remove();" style="flex:1;background:var(--secondary);color:var(--accent-text);border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>'
+    +'<button onclick="const el=document.getElementById(\'exportJson\');navigator.clipboard.writeText(el.value).then(function(){alert(\'Copied!\');},function(){try{el.select();document.execCommand(\'copy\');alert(\'Copied!\');}catch(e){alert(\'Copy failed — please copy manually.\');}});this.parentElement.parentElement.parentElement.remove();" style="flex:1;background:var(--secondary);color:var(--accent-text);border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:600">📋 Copy</button>'
     +'<button onclick="this.parentElement.parentElement.parentElement.remove()" style="flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);padding:10px;border-radius:6px;cursor:pointer;font-weight:600">Close</button>'
     +'</div>'
     +'</div>';
@@ -371,24 +371,24 @@ function updateInningStates(){
 
 // ── Debug Panel (v2.7.1) ──────────────────────────────────────────────────────
 function refreshDebugPanel(){
-  var panel=document.getElementById('debugPanel');
+  const panel=document.getElementById('debugPanel');
   if(!panel) return;
 
-  var now=Date.now();
-  var gameStatesArr=Object.values(state.gameStates);
-  var liveCount=gameStatesArr.filter(function(g){return g.status==='Live';}).length;
-  var finalCount=gameStatesArr.filter(function(g){return g.status==='Final';}).length;
-  var previewCount=gameStatesArr.filter(function(g){return g.status==='Preview'||g.status==='Scheduled';}).length;
+  const now=Date.now();
+  const gameStatesArr=Object.values(state.gameStates);
+  const liveCount=gameStatesArr.filter(function(g){return g.status==='Live';}).length;
+  const finalCount=gameStatesArr.filter(function(g){return g.status==='Final';}).length;
+  const previewCount=gameStatesArr.filter(function(g){return g.status==='Preview'||g.status==='Scheduled';}).length;
 
-  var tier1=state.storyPool.filter(function(s){return s.tier===1;}).length;
-  var tier2=state.storyPool.filter(function(s){return s.tier===2;}).length;
-  var tier3=state.storyPool.filter(function(s){return s.tier===3;}).length;
-  var tier4=state.storyPool.filter(function(s){return s.tier===4;}).length;
+  const tier1=state.storyPool.filter(function(s){return s.tier===1;}).length;
+  const tier2=state.storyPool.filter(function(s){return s.tier===2;}).length;
+  const tier3=state.storyPool.filter(function(s){return s.tier===3;}).length;
+  const tier4=state.storyPool.filter(function(s){return s.tier===4;}).length;
 
-  var nextPollIn=Math.round((1042-Date.now())%15000/1000); if(nextPollIn<0)nextPollIn+=15;
-  var nextRotateIn=state.storyRotateTimer?Math.round((state.devTuning.rotateMs-(now%(state.devTuning.rotateMs||20000)))/1000):'—';
+  let nextPollIn=Math.round((1042-Date.now())%15000/1000); if(nextPollIn<0)nextPollIn+=15;
+  const nextRotateIn=state.storyRotateTimer?Math.round((state.devTuning.rotateMs-(now%(state.devTuning.rotateMs||20000)))/1000):'—';
 
-  var html='<div style="padding:0;line-height:1.6">';
+  let html='<div style="padding:0;line-height:1.6">';
   html+='<div style="font-weight:600;margin-bottom:6px;color:var(--accent)">📊 Service Health</div>';
   html+='<div>Polls active: '+Object.keys(state.gameStates).length+'</div>';
   html+='<div>Live/Final/Preview: '+liveCount+' / '+finalCount+' / '+previewCount+'</div>';
@@ -405,13 +405,13 @@ function refreshDebugPanel(){
   html+='<div style="margin-top:8px;font-weight:600;color:var(--accent);margin-bottom:4px">All Stories ('+state.storyPool.length+')</div>';
   if(state.storyPool.length){
     state.storyPool.forEach(function(s,idx){
-      var cooldownRemain=s.lastShown?Math.max(0,Math.round((s.cooldownMs-(now-s.lastShown.getTime()))/1000)):'—';
-      var age=Math.round((now-s.ts.getTime())/1000);
-      var ageStr=age<60?age+'s':Math.floor(age/60)+'m';
-      var decay=Math.pow(Math.max(0,1-s.decayRate),age/60000/30);
-      var score=s.priority*decay;
-      var shownStr=s.lastShown?'shown '+Math.floor((now-s.lastShown.getTime())/1000)+'s ago':'never';
-      var isCurrent=s.id===state.storyShownId?' ★':'';
+      const cooldownRemain=s.lastShown?Math.max(0,Math.round((s.cooldownMs-(now-s.lastShown.getTime()))/1000)):'—';
+      const age=Math.round((now-s.ts.getTime())/1000);
+      const ageStr=age<60?age+'s':Math.floor(age/60)+'m';
+      const decay=Math.pow(Math.max(0,1-s.decayRate),age/60000/30);
+      const score=s.priority*decay;
+      const shownStr=s.lastShown?'shown '+Math.floor((now-s.lastShown.getTime())/1000)+'s ago':'never';
+      const isCurrent=s.id===state.storyShownId?' ★':'';
       html+='<div style="margin-top:4px;padding:4px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:2px solid var(--border)"><span style="color:var(--accent)">['+(idx+1)+'] T'+s.tier+isCurrent+'</span> '+s.headline.substring(0,50)+'<br/>'
         +'<span style="color:var(--muted);font-size:0.9em">'+s.type+' · pri '+Math.round(score)+' · '+ageStr+' old · cooldown '+cooldownRemain+'s · '+shownStr+'</span></div>';
     });
@@ -432,14 +432,14 @@ function refreshDebugPanel(){
 // MLB API instead of their own calendar (see src/utils/format.js).
 function localDateStr(d){return etDateStr(d);}
 
-function scrollToGame(gamePk){var el=document.querySelector('[data-gamepk="'+gamePk+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}
+function scrollToGame(gamePk){const el=document.querySelector('[data-gamepk="'+gamePk+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}
 
 
 function pruneStaleGames(beforeDateStr) {
   Object.keys(state.gameStates).forEach(function(pk) {
-    var g=state.gameStates[pk];
+    const g=state.gameStates[pk];
     if (g.status!=='Final'||!g.gameDateMs) return;
-    var gDate=localDateStr(new Date(g.gameDateMs));
+    const gDate=localDateStr(new Date(g.gameDateMs));
     if (gDate<beforeDateStr) {
       delete state.gameStates[pk];
       state.enabledGames.delete(+pk);
@@ -462,8 +462,8 @@ function pruneStaleGames(beforeDateStr) {
 // imported from ./ui/sound.js
 
 // fmt, fmtRate, fmtDateTime imported from ./utils/format.js
-function capImgError(el,primary,secondary,letter){el.onerror=null;var p=(primary||'#333').replace(/#/g,'%23'),s=(secondary||'#fff').replace(/#/g,'%23');el.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="'+p+'"/><text x="32" y="41" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="'+s+'">'+letter+'</text></svg>';}
-function teamCapImg(teamId,name,primary,secondary,cls){var letter=(name||'?')[0].toUpperCase();var p=encodeURIComponent(primary||'#333'),s=encodeURIComponent(secondary||'#fff');return'<img src="https://www.mlbstatic.com/team-logos/'+teamId+'.svg" class="'+(cls||'card-cap')+'" onerror="capImgError(this,\''+primary+'\',\''+secondary+'\',\''+letter+'\')">';}
+function capImgError(el,primary,secondary,letter){el.onerror=null;const p=(primary||'#333').replace(/#/g,'%23'),s=(secondary||'#fff').replace(/#/g,'%23');el.src='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="'+p+'"/><text x="32" y="41" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="'+s+'">'+letter+'</text></svg>';}
+function teamCapImg(teamId,name,primary,secondary,cls){const letter=(name||'?')[0].toUpperCase();const p=encodeURIComponent(primary||'#333'),s=encodeURIComponent(secondary||'#fff');return'<img src="https://www.mlbstatic.com/team-logos/'+teamId+'.svg" class="'+(cls||'card-cap')+'" onerror="capImgError(this,\''+primary+'\',\''+secondary+'\',\''+letter+'\')">';}
 
 // ── Theme/UI (v3.39.21) ─── EXTRACTED to ui/theme.js
 // Functions imported: applyTeamTheme, applyPulseMLBTheme, setPulseColorScheme, updatePulseToggle,
@@ -485,7 +485,7 @@ function showSection(id,btn){
   if(id!=='league')clearLeagueTimer();
   if(id!=='home')clearHomeTimer();
   // Capture scroll for the outgoing section before swapping
-  var prev=document.querySelector('.section.active');
+  const prev=document.querySelector('.section.active');
   if(prev)captureScroll(prev.id);
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
   document.querySelectorAll('nav button').forEach(function(b){b.classList.remove('active');});
@@ -495,7 +495,7 @@ function showSection(id,btn){
   // button so the user has a visible mobile-bar anchor.
   if(!btn){
     btn=document.querySelector('nav button[data-section="'+id+'"]');
-    var moreBtn=document.querySelector('nav button[data-section="more"]');
+    const moreBtn=document.querySelector('nav button[data-section="more"]');
     if(moreBtn&&(id==='news'||id==='standings'||id==='stats'))moreBtn.classList.add('active');
   }
   if(btn)btn.classList.add('active');
@@ -524,50 +524,50 @@ function showSection(id,btn){
 // unchanged when both opp colors are too similar (e.g., Yankees navy/navy vs Mets blue).
 // pickOppColor imported from ./utils/format.js
 function getSeriesInfo(g){
-  var sn=g.seriesGameNumber||(g.seriesSummary&&g.seriesSummary.seriesGameNumber);
-  var total=g.gamesInSeries||(g.seriesSummary&&g.seriesSummary.gamesInSeries);
-  var desc=g.seriesSummary&&g.seriesSummary.seriesStatus?g.seriesSummary.seriesStatus:null;
+  const sn=g.seriesGameNumber||(g.seriesSummary&&g.seriesSummary.seriesGameNumber);
+  const total=g.gamesInSeries||(g.seriesSummary&&g.seriesSummary.gamesInSeries);
+  const desc=g.seriesSummary&&g.seriesSummary.seriesStatus?g.seriesSummary.seriesStatus:null;
   if(sn&&total&&desc)return'Game '+sn+' of '+total+' · '+desc;
   if(!state.scheduleData.length)return sn&&total?'Game '+sn+' of '+total:null;
-  var oppId=g.teams.home.team.id===state.activeTeam.id?g.teams.away.team.id:g.teams.home.team.id;
-  var venueId=g.venue&&g.venue.id,gameDateStr=g.gameDate.split('T')[0];
-  var series=state.scheduleData.filter(function(s){
-    var sOpp=s.teams.home.team.id===state.activeTeam.id?s.teams.away.team.id:s.teams.home.team.id;
-    var sVenue=s.venue&&s.venue.id,daysDiff=Math.abs((new Date(s.gameDate.split('T')[0])-new Date(gameDateStr))/86400000);
+  const oppId=g.teams.home.team.id===state.activeTeam.id?g.teams.away.team.id:g.teams.home.team.id;
+  const venueId=g.venue&&g.venue.id,gameDateStr=g.gameDate.split('T')[0];
+  const series=state.scheduleData.filter(function(s){
+    const sOpp=s.teams.home.team.id===state.activeTeam.id?s.teams.away.team.id:s.teams.home.team.id;
+    const sVenue=s.venue&&s.venue.id,daysDiff=Math.abs((new Date(s.gameDate.split('T')[0])-new Date(gameDateStr))/86400000);
     return sOpp===oppId&&sVenue===venueId&&daysDiff<=4;
   }).sort(function(a,b){return new Date(a.gameDate)-new Date(b.gameDate);});
   if(!sn&&series.length<2)return null;
-  var gameNum=sn||(series.findIndex(function(s){return s.gamePk===g.gamePk;})+1);
-  var gameTotal=total||series.length,myW=0,oppW=0;
-  series.forEach(function(s){if(s.status.abstractGameState!=='Final')return;var myT=s.teams.home.team.id===state.activeTeam.id?s.teams.home:s.teams.away;if(myT.isWinner)myW++;else oppW++;});
-  var recStr='';
+  const gameNum=sn||(series.findIndex(function(s){return s.gamePk===g.gamePk;})+1);
+  let gameTotal=total||series.length,myW=0,oppW=0;
+  series.forEach(function(s){if(s.status.abstractGameState!=='Final')return;const myT=s.teams.home.team.id===state.activeTeam.id?s.teams.home:s.teams.away;if(myT.isWinner)myW++;else oppW++;});
+  let recStr='';
   if(myW>oppW)recStr=' · '+state.activeTeam.short+' lead '+myW+'-'+oppW;
-  else if(oppW>myW){var oN=g.teams.home.team.id===state.activeTeam.id?g.teams.away.team.teamName:g.teams.home.team.teamName;recStr=' · '+oN+' lead '+oppW+'-'+myW;}
+  else if(oppW>myW){const oN=g.teams.home.team.id===state.activeTeam.id?g.teams.away.team.teamName:g.teams.home.team.teamName;recStr=' · '+oN+' lead '+oppW+'-'+myW;}
   else if(myW>0)recStr=' · Tied '+myW+'-'+myW;
   return'Game '+gameNum+' of '+gameTotal+recStr;
 }
 
 function renderNextGame(g,label){
-  var home=g.teams.home,away=g.teams.away,teamHome=home.team.id===state.activeTeam.id;
-  var opp=teamHome?away:home,my=teamHome?home:away;
-  var status=g.status.abstractGameState,seriesInfo=getSeriesInfo(g);
-  var oppD=TEAMS.find(function(t){return t.id===opp.team.id;})||{};
-  var myD=TEAMS.find(function(t){return t.id===my.team.id;})||{};
-  var showScores=status==='Live'||status==='Final';
-  var oppScore=showScores?(opp.score!=null?opp.score:0):'';
-  var myScore=showScores?(my.score!=null?my.score:0):'';
-  var oppKicker=teamHome?'VS':'AT';
-  var myKicker=teamHome?'HOME':'AWAY';
-  var topBadge='';
-  if(status==='Live'){var inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'▼ ':'▲ ')+g.linescore.currentInning+' · ':'';topBadge='<span class="hero-live-meta">'+inn+'<span class="hero-live-dot"></span>LIVE</span>';}
-  else if(status==='Final'){var mW=my.isWinner;topBadge='<span class="badge badge-final">FINAL</span> <span class="badge '+(mW?'badge-w':'badge-l')+'">'+(mW?'W':'L')+'</span>';}
-  var bottomRight='';
+  const home=g.teams.home,away=g.teams.away,teamHome=home.team.id===state.activeTeam.id;
+  const opp=teamHome?away:home,my=teamHome?home:away;
+  const status=g.status.abstractGameState,seriesInfo=getSeriesInfo(g);
+  const oppD=TEAMS.find(function(t){return t.id===opp.team.id;})||{};
+  const myD=TEAMS.find(function(t){return t.id===my.team.id;})||{};
+  const showScores=status==='Live'||status==='Final';
+  const oppScore=showScores?(opp.score!=null?opp.score:0):'';
+  const myScore=showScores?(my.score!=null?my.score:0):'';
+  const oppKicker=teamHome?'VS':'AT';
+  const myKicker=teamHome?'HOME':'AWAY';
+  let topBadge='';
+  if(status==='Live'){const inn=g.linescore&&g.linescore.currentInning?(g.linescore.inningHalf==='Bottom'?'▼ ':'▲ ')+g.linescore.currentInning+' · ':'';topBadge='<span class="hero-live-meta">'+inn+'<span class="hero-live-dot"></span>LIVE</span>';}
+  else if(status==='Final'){const mW=my.isWinner;topBadge='<span class="badge badge-final">FINAL</span> <span class="badge '+(mW?'badge-w':'badge-l')+'">'+(mW?'W':'L')+'</span>';}
+  let bottomRight='';
   if(status==='Live'){bottomRight='<button onclick="showLiveGame('+g.gamePk+')" class="btn-primary">▶ Watch Live</button>';}
   else if(status!=='Final'){bottomRight='<div class="hero-meta-strong">'+(teamHome?'🏟️ Home':'✈️ Away')+' · '+fmtDateTime(g.gameDate)+'</div>';}
-  var themeTeamMy=state.themeOverride||myD;
-  var myPrimaryForClash=state.themeInvert?(themeTeamMy.secondary||state.activeTeam.primary):(themeTeamMy.primary||state.activeTeam.primary);
-  var oppPrimary=pickOppColor(oppD.primary||'#333',oppD.secondary,myPrimaryForClash);
-  var html='<div class="game-big surface-hero has-opp-tint" style="--opp-primary:'+oppPrimary+'">';
+  const themeTeamMy=state.themeOverride||myD;
+  const myPrimaryForClash=state.themeInvert?(themeTeamMy.secondary||state.activeTeam.primary):(themeTeamMy.primary||state.activeTeam.primary);
+  const oppPrimary=pickOppColor(oppD.primary||'#333',oppD.secondary,myPrimaryForClash);
+  let html='<div class="game-big surface-hero has-opp-tint" style="--opp-primary:'+oppPrimary+'">';
   html+='<div class="hero-kicker-row"><span class="eyebrow eyebrow--accent">'+label+'</span>';
   if(topBadge)html+=' '+topBadge;
   html+='</div>';
@@ -588,8 +588,8 @@ function renderNextGame(g,label){
 // ── Boot IIFE ────────────────────────────────────────────────────────────────
 (async function(){
   // iPad viewport fix — remove user-scalable/shrink-to-fit that can cause layout blowout on iPad
-  (function(){try{var ua=navigator.userAgent||'';var isIPad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);if(isIPad){var m=document.querySelector('meta[name=viewport]');if(m)m.setAttribute('content','width=device-width, initial-scale=1.0');}}catch(e){}}());
-  var sv=function(k){return localStorage.getItem(k);};
+  (function(){try{const ua=navigator.userAgent||'';const isIPad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);if(isIPad){const m=document.querySelector('meta[name=viewport]');if(m)m.setAttribute('content','width=device-width, initial-scale=1.0');}}catch(e){}}());
+  const sv=function(k){return localStorage.getItem(k);};
   // soundSettings is hydrated from localStorage inside ./ui/sound.js on import.
   // Restore session token
   state.mlbSessionToken=sv('mlb_session_token');state.mlbAuthUser=sv('mlb_auth_user');
@@ -610,7 +610,7 @@ function renderNextGame(g,label){
     startSyncInterval();
   }
   if(sv('mlb_team'))state.activeTeam=TEAMS.find(t=>t.id===parseInt(sv('mlb_team')))||state.activeTeam;
-  var storedTheme=sv('mlb_theme');
+  const storedTheme=sv('mlb_theme');
   if(!storedTheme||storedTheme==='-1'){state.themeOverride=MLB_THEME;}
   else if(storedTheme==='0'){state.themeOverride=null;}
   else{state.themeOverride=TEAMS.find(t=>t.id===parseInt(storedTheme))||null;}
@@ -619,10 +619,10 @@ function renderNextGame(g,label){
   buildTeamSelect();buildThemeSelect();updatePulseToggle();
   document.getElementById('themeSelect').value=storedTheme||'-1';
   if(sv('mlb_theme_scope'))document.getElementById('themeScopeSelect').value=sv('mlb_theme_scope');
-  if(state.themeInvert){var it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';it.setAttribute('aria-checked','true');}
-  if(sv('mlb_push')==='1'){var pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';pt.setAttribute('aria-checked','true');}document.getElementById('pushStatusText').textContent='On';}
+  if(state.themeInvert){const it=document.getElementById('invertToggle'),ik=document.getElementById('invertToggleKnob');it.style.background='var(--primary)';ik.style.left='21px';it.setAttribute('aria-checked','true');}
+  if(sv('mlb_push')==='1'){const pt=document.getElementById('pushToggle'),pk=document.getElementById('pushToggleKnob');if(pt){pt.style.background='var(--secondary)';pk.style.left='21px';pt.setAttribute('aria-checked','true');}document.getElementById('pushStatusText').textContent='On';}
   // Sync Qualified toggle UI to persisted state (HTML default is ON)
-  if(!state.qualifiedOnly){var qt=document.getElementById('qualifiedToggle');if(qt){qt.classList.remove('on');qt.setAttribute('aria-checked','false');}}
+  if(!state.qualifiedOnly){const qt=document.getElementById('qualifiedToggle');if(qt){qt.classList.remove('on');qt.setAttribute('aria-checked','false');}}
   applyTeamTheme(state.activeTeam);loadTodayGame();loadNextGame();loadNews();loadStandings();loadRoster();loadHomeInjuries();loadHomeMoves();loadHomePodcastWidget();loadHomeYoutubeWidget();
   updateCollectionUI();
   updateSyncUI();
@@ -730,15 +730,15 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'P') { devTestVideoClip(); }
   if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
   if(e.shiftKey && e.key === 'L') {
-    var p=document.getElementById('devToolsPanel');
+    const p=document.getElementById('devToolsPanel');
     if(p && p.style.display!=='block') toggleDevTools();
-    var det=document.getElementById('logCaptureDetails');
+    const det=document.getElementById('logCaptureDetails');
     if(det){det.open=true;renderLogCapture();det.scrollIntoView({block:'nearest'});}
   }
   if(e.shiftKey && e.key === 'S') {
-    var p=document.getElementById('devToolsPanel');
+    const p=document.getElementById('devToolsPanel');
     if(p && p.style.display!=='block') toggleDevTools();
-    var det=document.getElementById('appStateDetails');
+    const det=document.getElementById('appStateDetails');
     if(det){det.open=true;renderAppState();det.scrollIntoView({block:'nearest'});}
   }
   if(e.shiftKey && e.key === 'I') { copyDiagnosticSnapshot(); }

@@ -12,7 +12,7 @@ export const devLog = []; // {ts:number, level:'log'|'warn'|'error'|'info', src:
 
 export function pushDevLog(level, src, args) {
   try {
-    var msg = Array.prototype.map.call(args, function(a) {
+    let msg = Array.prototype.map.call(args, function(a) {
       if (a == null) return String(a);
       if (typeof a === 'string') return a;
       if (a instanceof Error) return (a.stack || (a.name + ': ' + a.message));
@@ -26,7 +26,7 @@ export function pushDevLog(level, src, args) {
 
 (function wrapConsole() {
   ['log', 'info', 'warn', 'error'].forEach(function(lvl) {
-    var orig = console[lvl];
+    const orig = console[lvl];
     console[lvl] = function() {
       pushDevLog(lvl === 'info' ? 'log' : lvl, '', arguments);
       try { orig.apply(console, arguments); } catch (e) {}
@@ -39,7 +39,7 @@ window.addEventListener('error', function(e) {
 });
 
 window.addEventListener('unhandledrejection', function(e) {
-  var r = e && e.reason;
+  const r = e && e.reason;
   pushDevLog('error', 'promise', [r && r.stack ? r.stack : (r && r.message ? r.message : String(r))]);
 });
 
@@ -48,7 +48,7 @@ window.addEventListener('unhandledrejection', function(e) {
 // adds, radio start/stop, etc.) so the buffer is useful in production where
 // DEBUG=false and console.log calls are otherwise gated out.
 export function devTrace(src) {
-  var args = Array.prototype.slice.call(arguments, 1);
+  const args = Array.prototype.slice.call(arguments, 1);
   pushDevLog('log', src || 'app', args);
   // Note: DEBUG flag is checked via typeof so this works even if main.js
   // hasn't declared DEBUG yet (function-call-time evaluation).
