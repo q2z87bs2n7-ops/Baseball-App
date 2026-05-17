@@ -13,8 +13,8 @@ function setFeedCallbacks(callbacks) {
 }
 
 function baseDiamondSvg(on1,on2,on3) {
-  var litStyle='fill:#ffd000;filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
-  var dimStyle='fill:var(--muted,#9aa0a8);opacity:0.4';
+  const litStyle='fill:#ffd000;filter:drop-shadow(0 0 3px rgba(255,208,0,0.85))';
+  const dimStyle='fill:var(--muted,#9aa0a8);opacity:0.4';
   return '<svg class="ticker-diamond" width="28" height="24" viewBox="0 0 28 24" aria-hidden="true">'
     +'<path d="M14,21 L24,12 L14,3 L4,12 Z" fill="none" style="stroke:var(--border,rgba(255,255,255,0.1))" stroke-width="1.2" opacity="0.45"/>'
     +'<circle cx="14" cy="21" r="2" style="'+dimStyle+'"/>'
@@ -41,24 +41,24 @@ function tensionBand(score) {
 function startCountdown(targetMs) {
   if (state.countdownTimer){clearInterval(state.countdownTimer);state.countdownTimer=null;}
   function tick() {
-    var el=document.getElementById('heroCountdown');
+    const el=document.getElementById('heroCountdown');
     if (!el){clearInterval(state.countdownTimer);state.countdownTimer=null;return;}
-    var diff=targetMs-Date.now();
+    const diff=targetMs-Date.now();
     if (diff<=0){el.textContent='Starting now';}
-    else if (diff>=3600000){var hrs=Math.floor(diff/3600000),mins=Math.ceil((diff%3600000)/60000);el.textContent='First pitch in '+hrs+'h'+(mins>0?' '+mins+'m':'');}
-    else{var mins=Math.ceil(diff/60000);el.textContent='First pitch in '+mins+'m';}
+    else if (diff>=3600000){const hrs=Math.floor(diff/3600000),mins=Math.ceil((diff%3600000)/60000);el.textContent='First pitch in '+hrs+'h'+(mins>0?' '+mins+'m':'');}
+    else{const mins=Math.ceil(diff/60000);el.textContent='First pitch in '+mins+'m';}
   }
   tick(); state.countdownTimer=setInterval(tick,30000);
 }
 
 function isPostSlate() {
-  var games=Object.values(state.gameStates);
+  const games=Object.values(state.gameStates);
   if (!games.length) return false;
   if (!games.every(function(g){return g.status==='Final';})) return false;
-  var lastTerminalMs=0;
+  let lastTerminalMs=0;
   state.feedItems.forEach(function(fi){
     if (fi.data&&fi.data.type==='status'&&(fi.data.label==='Game Final'||fi.data.label==='Game Postponed')) {
-      var ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
+      const ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
     }
   });
   if (!lastTerminalMs) return false;
@@ -66,15 +66,15 @@ function isPostSlate() {
 }
 
 function isIntermission() {
-  var games=Object.values(state.gameStates);
+  const games=Object.values(state.gameStates);
   if (!games.length) return false;
   if (!games.some(function(g){return g.status==='Final';})) return false;
   if (games.some(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';})) return false;
   if (!games.some(function(g){return g.status!=='Final';})) return false;
-  var lastTerminalMs=0;
+  let lastTerminalMs=0;
   state.feedItems.forEach(function(fi){
     if (fi.data&&fi.data.type==='status'&&(fi.data.label==='Game Final'||fi.data.label==='Game Postponed')) {
-      var ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
+      const ms=fi.ts.getTime(); if (ms>lastTerminalMs) lastTerminalMs=ms;
     }
   });
   if (!lastTerminalMs) return false;
@@ -86,16 +86,16 @@ async function fetchTomorrowPreview() {
   if (Date.now()-state.tomorrowPreview.fetchedAt < 10*60*1000) return;
   state.tomorrowPreview.inFlight=true;
   try {
-    var ts=etDatePlus(state.pollDateStr||etDateStr(),1);
-    var r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+ts+'&hydrate=team');
+    const ts=etDatePlus(state.pollDateStr||etDateStr(),1);
+    const r=await fetch(MLB_BASE+'/schedule?sportId=1&date='+ts+'&hydrate=team');
     if(!r.ok) throw new Error(r.status);
-    var d=await r.json();
-    var games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
+    const d=await r.json();
+    const games=(d.dates||[]).flatMap(function(dt){return dt.games||[];});
     state.tomorrowPreview.dateStr=ts;
     state.tomorrowPreview.gameCount=games.length;
     if (games.length) {
       games.sort(function(a,b){return new Date(a.gameDate).getTime()-new Date(b.gameDate).getTime();});
-      var first=games[0], ms=new Date(first.gameDate).getTime();
+      const first=games[0], ms=new Date(first.gameDate).getTime();
       state.tomorrowPreview.firstPitchMs=ms;
       state.tomorrowPreview.gameTime=new Date(ms).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     } else {
@@ -115,63 +115,63 @@ function hypeHeadline(diffMs) {
 }
 
 function renderAllHiddenState() {
-  var el=document.getElementById('feedEmpty');
+  const el=document.getElementById('feedEmpty');
   el.className='';
   el.innerHTML='<span class="empty-icon">👁</span><div class="empty-title">Feed hidden</div><div class="empty-sub">Tap a game chip above to follow its live feed.</div>';
 }
 
 function updateFeedEmpty() {
-  var feed=document.getElementById('feed');
-  var hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
-  var hasHiddenItems=!!feed.querySelector('.feed-item.feed-hidden');
-  var hasAnyGames=Object.keys(state.gameStates).length>0;
-  var hasLiveInProgress=Object.values(state.gameStates).some(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
-  var postSlate=isPostSlate();
-  var intermission=!postSlate&&isIntermission();
+  const feed=document.getElementById('feed');
+  const hasVisible=!!feed.querySelector('.feed-item:not(.feed-hidden)');
+  const hasHiddenItems=!!feed.querySelector('.feed-item.feed-hidden');
+  const hasAnyGames=Object.keys(state.gameStates).length>0;
+  const hasLiveInProgress=Object.values(state.gameStates).some(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
+  const postSlate=isPostSlate();
+  const intermission=!postSlate&&isIntermission();
   // User manually hid all games via ticker chips — distinct from "no games exist"
-  var allUserHidden=!state.myTeamLens&&!postSlate&&!intermission&&hasHiddenItems&&!hasVisible;
-  var showHype=(!hasVisible&&!allUserHidden&&!(state.myTeamLens&&hasLiveInProgress))||(!hasAnyGames)||postSlate||intermission;
+  const allUserHidden=!state.myTeamLens&&!postSlate&&!intermission&&hasHiddenItems&&!hasVisible;
+  const showHype=(!hasVisible&&!allUserHidden&&!(state.myTeamLens&&hasLiveInProgress))||(!hasAnyGames)||postSlate||intermission;
   if (showHype) renderEmptyState(postSlate, intermission);
   else if (allUserHidden) renderAllHiddenState();
   document.getElementById('feedEmpty').style.display=(showHype||allUserHidden)?'':'none';
-  var hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames','myTeamLensBtn'];
+  const hideWhenEmpty=['gameTicker','sideRailNews','sideRailGames','myTeamLensBtn'];
   document.getElementById('pulse').classList.toggle('pulse-empty', !hasAnyGames || showHype);
   hideWhenEmpty.forEach(function(id){
-    var el=document.getElementById(id);
+    const el=document.getElementById(id);
     if(el) el.style.display=(showHype&&!allUserHidden)?'none':'';
   });
-  var ybtn=document.getElementById('ptbYestBtn');
+  const ybtn=document.getElementById('ptbYestBtn');
   if(ybtn) ybtn.style.display=(state.yesterdayCache&&state.yesterdayCache.length&&!showHype&&!allUserHidden)?'':'none';
 }
 
 function renderEmptyState(postSlate, intermission) {
-  var el=document.getElementById('feedEmpty');
-  var upcoming=Object.values(state.gameStates).filter(function(g){
+  const el=document.getElementById('feedEmpty');
+  const upcoming=Object.values(state.gameStates).filter(function(g){
     if(!(g.status==='Preview'||g.status==='Scheduled'||(g.status==='Live'&&(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')))) return false;
-    var rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
+    const rawG=state.storyCarouselRawGameData&&state.storyCarouselRawGameData[g.gamePk];
     if(rawG&&rawG.doubleHeader==='Y'&&rawG.gameNumber==2){
       if(Object.values(state.gameStates).some(function(s){return s.status==='Live'&&s.awayId===g.awayId&&s.homeId===g.homeId;})) return false;
     }
     return true;
   });
-  upcoming.sort(function(a,b){var aMs=a.gameDateMs||0,bMs=b.gameDateMs||0;if(aMs!==bMs)return aMs-bMs;return a.awayAbbr.localeCompare(b.awayAbbr);});
+  upcoming.sort(function(a,b){const aMs=a.gameDateMs||0,bMs=b.gameDateMs||0;if(aMs!==bMs)return aMs-bMs;return a.awayAbbr.localeCompare(b.awayAbbr);});
   devTrace('empty','renderEmptyState · upcoming='+upcoming.length+' · postSlate='+postSlate+' · intermission='+intermission);
   if (!upcoming.length){
     el.className='';
     if (postSlate) {
       fetchTomorrowPreview();
-      var subText='Live play-by-play returns when games begin.';
-      var countdownHtml='';
+      let subText='Live play-by-play returns when games begin.';
+      let countdownHtml='';
       if (state.tomorrowPreview.firstPitchMs) {
         countdownHtml='<div id="heroCountdown" style="margin-top:14px;font-size:1rem;color:var(--accent);font-weight:700"></div>';
-        var n=state.tomorrowPreview.gameCount;
+        const n=state.tomorrowPreview.gameCount;
         subText='Next slate · '+n+' '+(n===1?'game':'games')+' · first pitch '+(state.tomorrowPreview.gameTime||'TBD');
       } else if (state.tomorrowPreview.fetchedAt && state.tomorrowPreview.gameCount===0) {
         subText='No games scheduled in the next slate.';
       }
-      var _etH=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).getHours();
-      var _pastMidnight=_etH<6;
-      var slateRecapCta=(Object.values(state.gameStates).length)?'<button onclick="openYesterdayRecap('+(_pastMidnight?'-1':'0')+')" style="margin-top:20px;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:.06em;padding:9px 18px;border-radius:7px;cursor:pointer">📺 '+(_pastMidnight?"Yesterday's":"Today's")+' Highlights →</button>':'';
+      const _etH=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})).getHours();
+      const _pastMidnight=_etH<6;
+      const slateRecapCta=(Object.values(state.gameStates).length)?'<button onclick="openYesterdayRecap('+(_pastMidnight?'-1':'0')+')" style="margin-top:20px;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.8rem;font-weight:700;letter-spacing:.06em;padding:9px 18px;border-radius:7px;cursor:pointer">📺 '+(_pastMidnight?"Yesterday's":"Today's")+' Highlights →</button>':'';
       el.innerHTML='<span class="empty-icon">🏁</span><div class="empty-title">Slate complete</div><div class="empty-sub">'+subText+'</div>'+countdownHtml+slateRecapCta;
       if (state.tomorrowPreview.firstPitchMs) startCountdown(state.tomorrowPreview.firstPitchMs);
     } else {
@@ -180,14 +180,14 @@ function renderEmptyState(postSlate, intermission) {
     return;
   }
   el.className='has-upcoming';
-  var hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
-  var heroGrad=state.themeOverride===MLB_THEME?'linear-gradient(90deg,'+MLB_THEME.primary+' 0%,#111827 45%,'+MLB_THEME.primary+' 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
-  var headline=hypeHeadline(hero.gameDateMs?hero.gameDateMs-Date.now():0);
-  var labelText=intermission
+  const hero=upcoming[0], rest=upcoming.slice(1), n=upcoming.length;
+  const heroGrad=state.themeOverride===MLB_THEME?'linear-gradient(90deg,'+MLB_THEME.primary+' 0%,#111827 45%,'+MLB_THEME.primary+' 100%)':'linear-gradient(90deg,'+hero.awayPrimary+' 0%,#111827 45%,'+hero.homePrimary+' 100%)';
+  const headline=hypeHeadline(hero.gameDateMs?hero.gameDateMs-Date.now():0);
+  const labelText=intermission
     ? 'NEXT UP &middot; '+n+(n===1?' GAME REMAINING':' GAMES REMAINING')
     : n+(n===1?' UPCOMING GAME':' UPCOMING GAMES');
-  var hypeRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
-  var hypeBlock=intermission
+  const hypeRecapCta=(state.yesterdayCache&&state.yesterdayCache.length)?'<button onclick="openYesterdayRecap()" style="display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--accent);color:var(--accent);font-size:.78rem;font-weight:700;letter-spacing:.06em;padding:7px 16px;border-radius:7px;cursor:pointer">📺 Yesterday\'s Highlights →</button>':'';
+  const hypeBlock=intermission
     ?'<div class="empty-hype-block"><div class="empty-hype-headline">'+headline+'</div></div>'
     :'<div class="empty-hype-block"><div class="empty-hype-headline">'+headline+'</div>'
     +'<div class="hype-cta-row">'
@@ -196,7 +196,7 @@ function renderEmptyState(postSlate, intermission) {
     +'</div>'
     +'<div class="empty-hype-pills"><span class="hype-pill hr">💥 Home Runs</span><span class="hype-pill scoring">🟢 Scoring Plays</span><span class="hype-pill risp">⚡ RISP</span></div>'
     +'<div class="empty-hype-sub">Play-by-play from every MLB game surfaces here the moment a game starts.</div></div>';
-  var html='<div class="empty-upcoming-label">'+labelText+'</div>'
+  let html='<div class="empty-upcoming-label">'+labelText+'</div>'
     +hypeBlock
     +'<div class="upcoming-hero" style="background:'+heroGrad+'">'
     +'<div class="upcoming-hero-kicker">NEXT UP</div>'
@@ -224,54 +224,54 @@ function renderEmptyState(postSlate, intermission) {
 }
 
 function addFeedItem(gamePk,data) {
-  var item={gamePk:gamePk,data:data,ts:data.playTime||new Date()};
-  var idx=state.feedItems.findIndex(function(fi){return fi.ts<=item.ts;});
+  const item={gamePk:gamePk,data:data,ts:data.playTime||new Date()};
+  const idx=state.feedItems.findIndex(function(fi){return fi.ts<=item.ts;});
   if(idx===-1) state.feedItems.push(item); else state.feedItems.splice(idx,0,item);
   if(state.feedItems.length>600) state.feedItems.length=600;
   if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
     window.Recorder._captureFeedItem(item);
   }
-  var el=buildFeedEl(item);
+  const el=buildFeedEl(item);
   el.dataset.ts=item.ts.getTime();
   if(!state.enabledGames.has(+gamePk)) el.classList.add('feed-hidden');
-  var feed=document.getElementById('feed');
-  var tsMs=item.ts.getTime();
-  var sibling=Array.from(feed.children).find(function(c){return +c.dataset.ts<tsMs;});
+  const feed=document.getElementById('feed');
+  const tsMs=item.ts.getTime();
+  const sibling=Array.from(feed.children).find(function(c){return +c.dataset.ts<tsMs;});
   feed.insertBefore(el,sibling||null);
   updateFeedEmpty();
 }
 
 function buildFeedEl(item) {
-  var el=document.createElement('div'), g=state.gameStates[item.gamePk], d=item.data;
+  const el=document.createElement('div'), g=state.gameStates[item.gamePk], d=item.data;
   if (d.type==='status') {
     el.className='feed-item status-change'; el.setAttribute('data-gamepk',item.gamePk);
     el.innerHTML='<div class="status-row"><span class="status-icon">'+d.icon+'</span><span class="status-label">'+d.label+'</span><span class="status-sub">'+d.sub+'</span></div>';
     return el;
   }
-  var cls='feed-item';
+  let cls='feed-item';
   if (d.playClass==='homerun') cls+=' homerun';
   else if (d.playClass==='scoring') cls+=' scoring';
   else if (d.playClass==='risp') cls+=' risp';
   el.className=cls; el.setAttribute('data-gamepk',item.gamePk);
-  var half=d.halfInning==='top'?'▲':'▼';
-  var innStr=half+ordinal(d.inning), outsStr=d.outs===1?'1 out':d.outs+' outs';
-  var timeStr=item.ts.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  var metaHtml='<div class="feed-meta">'
+  const half=d.halfInning==='top'?'▲':'▼';
+  const innStr=half+ordinal(d.inning), outsStr=d.outs===1?'1 out':d.outs+' outs';
+  const timeStr=item.ts.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const metaHtml='<div class="feed-meta">'
     +'<span class="feed-game-tag"><span class="feed-team-dot" style="background:'+g.awayPrimary+'"></span>'+g.awayAbbr+'&nbsp;<strong>'+d.awayScore+'</strong></span>'
     +'<span class="feed-sep">·</span>'
     +'<span class="feed-game-tag"><strong>'+d.homeScore+'</strong>&nbsp;'+g.homeAbbr+'<span class="feed-team-dot" style="background:'+g.homePrimary+'"></span></span>'
     +'<span class="feed-sep">·</span><span>'+innStr+'</span><span class="feed-sep">·</span><span>'+outsStr+'</span>'
     +'<span class="feed-time">'+timeStr+'</span></div>';
-  var icon=d.event==='Home Run'?'💥 ':d.scoring?'🟢 ':'';
-  var scoreBadge='';
+  const icon=d.event==='Home Run'?'💥 ':d.scoring?'🟢 ':'';
+  let scoreBadge='';
   if (d.scoring) {
-    var awayScores=(d.halfInning==='top');
-    var awayHtml=awayScores?'<span class="feed-score-scorer">'+g.awayAbbr+'&thinsp;'+d.awayScore+'</span>':g.awayAbbr+'&thinsp;'+d.awayScore;
-    var homeHtml=!awayScores?'<span class="feed-score-scorer">'+d.homeScore+'&thinsp;'+g.homeAbbr+'</span>':d.homeScore+'&thinsp;'+g.homeAbbr;
+    const awayScores=(d.halfInning==='top');
+    const awayHtml=awayScores?'<span class="feed-score-scorer">'+g.awayAbbr+'&thinsp;'+d.awayScore+'</span>':g.awayAbbr+'&thinsp;'+d.awayScore;
+    const homeHtml=!awayScores?'<span class="feed-score-scorer">'+d.homeScore+'&thinsp;'+g.homeAbbr+'</span>':d.homeScore+'&thinsp;'+g.homeAbbr;
     scoreBadge='<span class="feed-score-badge">'+awayHtml+'<span class="feed-score-sep">·</span>'+homeHtml+'</span>';
   }
-  var rispBadge=d.risp?'<span class="risp-tag">⚡ RISP</span>':'';
-  var evt=d.event||'', playBadge='';
+  const rispBadge=d.risp?'<span class="risp-tag">⚡ RISP</span>':'';
+  let evt=d.event||'', playBadge='';
   if (evt==='Single') playBadge='<span class="play-tag hit-tag">1B</span>';
   else if (evt==='Double') playBadge='<span class="play-tag hit-tag">2B</span>';
   else if (evt==='Triple') playBadge='<span class="play-tag hit-tag">3B</span>';
@@ -285,18 +285,18 @@ function buildFeedEl(item) {
 }
 
 function renderFeed() {
-  var feed=document.getElementById('feed');
+  const feed=document.getElementById('feed');
   if(!feed) return;
   feed.innerHTML='';
   state.feedItems.forEach(function(item){
     if(state.demoMode&&item.ts.getTime()>state.demoCurrentTime) return;
-    var el=buildFeedEl(item);el.dataset.ts=item.ts.getTime();if(!state.enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);
+    const el=buildFeedEl(item);el.dataset.ts=item.ts.getTime();if(!state.enabledGames.has(+item.gamePk))el.classList.add('feed-hidden');feed.appendChild(el);
   });
   updateFeedEmpty();
 }
 
 function renderTicker() {
-  var ticker=document.getElementById('gameTicker'), states=Object.values(state.gameStates);
+  let ticker=document.getElementById('gameTicker'), states=Object.values(state.gameStates);
   states=states.filter(function(g){return g.status==='Live';});
   if (!states.length){
     ticker.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px 12px;min-height:50px;">'
@@ -316,29 +316,29 @@ function renderTicker() {
   });
 
   // FLIP phase 1 — snapshot left offsets before any DOM change
-  var oldLeft={};
+  const oldLeft={};
   ticker.querySelectorAll('.ticker-game[data-gamepk]').forEach(function(el){
     oldLeft[el.dataset.gamepk]=el.offsetLeft;
   });
 
   // Update or create each chip in-place (preserves elements for FLIP)
   states.forEach(function(g){
-    var isLive=g.status==='Live', isFinal=g.status==='Final';
-    var sc=isLive?'status-live':isFinal?'status-final':'status-preview';
-    var half=g.halfInning==='top'?'▲':'▼';
-    var isPostponed=isFinal&&(g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended');
-    var innStr=isLive?(half+g.inning):isPostponed?'PPD':isFinal?'FINAL':g.gameTime?g.gameTime:'PRE';
-    var warmupClass='';
+    const isLive=g.status==='Live', isFinal=g.status==='Final';
+    const sc=isLive?'status-live':isFinal?'status-final':'status-preview';
+    const half=g.halfInning==='top'?'▲':'▼';
+    const isPostponed=isFinal&&(g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended');
+    const innStr=isLive?(half+g.inning):isPostponed?'PPD':isFinal?'FINAL':g.gameTime?g.gameTime:'PRE';
+    let warmupClass='';
     if(isLive&&(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')){warmupClass=' warmup-state';}
-    var dot=isLive?'<div class="ticker-live-dot'+warmupClass+'"></div>':'';
-    var hasRunners=isLive&&(g.onFirst||g.onSecond||g.onThird);
-    var fc=state.enabledGames.has(g.gamePk)?' feed-enabled':' feed-disabled';
-    var rc=hasRunners?' has-risp':'';
-    var band=tensionBand(calcFocusScore(g));
-    var tc=band?' tb-'+band:'';
-    var outsHtml='';
+    const dot=isLive?'<div class="ticker-live-dot'+warmupClass+'"></div>':'';
+    const hasRunners=isLive&&(g.onFirst||g.onSecond||g.onThird);
+    const fc=state.enabledGames.has(g.gamePk)?' feed-enabled':' feed-disabled';
+    const rc=hasRunners?' has-risp':'';
+    const band=tensionBand(calcFocusScore(g));
+    const tc=band?' tb-'+band:'';
+    let outsHtml='';
     if(isLive){outsHtml='<span class="ticker-outs">'+[0,1,2].map(function(i){return '<span class="out-dot'+(i<g.outs?' out-on':'')+'"></span>';}).join('')+'</span>';}
-    var inner;
+    let inner;
     if(hasRunners){
       inner='<div class="ticker-top">'+dot
         +'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span>'
@@ -347,12 +347,12 @@ function renderTicker() {
         +'</div><div class="ticker-bottom">'+baseDiamondSvg(g.onFirst,g.onSecond,g.onThird)
         +'<span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div>';
     } else {
-      var spacer=isLive?'<div class="ticker-dot-spacer"></div>':'';
+      const spacer=isLive?'<div class="ticker-dot-spacer"></div>':'';
       inner='<div class="ticker-row">'+dot+'<span class="ticker-score">'+g.awayAbbr+'&nbsp;<strong>'+g.awayScore+'</strong></span></div>'
         +'<div class="ticker-row">'+spacer+'<span class="ticker-score">'+g.homeAbbr+'&nbsp;<strong>'+g.homeScore+'</strong></span></div>'
         +'<div class="ticker-row"><span class="ticker-inning">'+innStr+'</span>'+outsHtml+'</div>';
     }
-    var el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
+    let el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
     if(el){
       el.className='ticker-game '+sc+fc+rc+tc;
       el.innerHTML=inner;
@@ -368,21 +368,21 @@ function renderTicker() {
 
   // Remove chips for games no longer live
   ticker.querySelectorAll('.ticker-game[data-gamepk]').forEach(function(el){
-    var pk=+el.dataset.gamepk;
+    const pk=+el.dataset.gamepk;
     if(!states.some(function(g){return g.gamePk===pk;})) ticker.removeChild(el);
   });
 
   // Reorder: appendChild moves existing elements to the end in score order
   states.forEach(function(g){
-    var el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
+    const el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
     if(el) ticker.appendChild(el);
   });
 
   // FLIP phase 2 — animate chips that moved from their old position
   states.forEach(function(g){
-    var el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
+    const el=ticker.querySelector('.ticker-game[data-gamepk="'+g.gamePk+'"]');
     if(!el||oldLeft[g.gamePk]==null) return;
-    var delta=oldLeft[g.gamePk]-el.offsetLeft;
+    const delta=oldLeft[g.gamePk]-el.offsetLeft;
     if(Math.abs(delta)<1) return;
     el.style.transition='none';
     el.style.transform='translateX('+delta+'px)';
@@ -396,10 +396,10 @@ function renderTicker() {
 }
 
 function renderSideRailGames() {
-  var upcomingHtml='', completedHtml='';
-  var upcomingGames=[], completedGames=[], liveCount=0;
-  var localDateStr=feedCallbacks.localDateStr;
-  var filterDate=state.demoMode&&localDateStr?localDateStr(state.demoDate):localDateStr?localDateStr(new Date()):null;
+  let upcomingHtml='', completedHtml='';
+  let upcomingGames=[], completedGames=[], liveCount=0;
+  const localDateStr=feedCallbacks.localDateStr;
+  const filterDate=state.demoMode&&localDateStr?localDateStr(state.demoDate):localDateStr?localDateStr(new Date()):null;
   if(state.demoMode&&DEBUG) console.log('Demo: renderSideRailGames filtering to date',filterDate,'from',Object.keys(state.gameStates).length,'total games');
   Object.values(state.gameStates).forEach(function(g) {
     if(state.demoMode&&localDateStr&&localDateStr(new Date(g.gameDateMs))!==filterDate) return;
@@ -413,7 +413,7 @@ function renderSideRailGames() {
     upcomingHtml+='<div class="side-rail-section-header"><span class="side-rail-section-title">Upcoming Today</span><span class="game-count">'+upcomingGames.length+'</span></div>';
     upcomingHtml+='<div class="side-rail-games-container">';
     upcomingGames.forEach(function(g) {
-      var time=g.gameTime||'TBD';
+      const time=g.gameTime||'TBD';
       upcomingHtml+='<div class="side-rail-game" onclick="showLiveGame('+g.gamePk+')">'
         +'<span class="side-rail-game-time-badge">'+time+'</span>'
         +'<span class="side-rail-game-dot" style="background:'+g.awayPrimary+'"></span>'
@@ -429,8 +429,8 @@ function renderSideRailGames() {
     completedHtml+='<div class="side-rail-section-header"><span class="side-rail-section-title">Completed</span><span class="game-count">'+completedGames.length+'</span></div>';
     completedHtml+='<div class="side-rail-games-container">';
     completedGames.forEach(function(g) {
-      var isPostponed=g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended';
-      var scoreStr=isPostponed?'PPD':g.awayScore+'-'+g.homeScore;
+      const isPostponed=g.detailedState==='Postponed'||g.detailedState==='Cancelled'||g.detailedState==='Suspended';
+      const scoreStr=isPostponed?'PPD':g.awayScore+'-'+g.homeScore;
       completedHtml+='<div class="side-rail-game" onclick="showLiveGame('+g.gamePk+')">'
         +'<span class="side-rail-game-score-badge">'+scoreStr+'</span>'
         +'<span class="side-rail-game-dot" style="background:'+g.awayPrimary+'"></span>'
@@ -442,21 +442,21 @@ function renderSideRailGames() {
     });
     completedHtml+='</div>';
   }
-  var gamesHtml=upcomingHtml+completedHtml;
+  let gamesHtml=upcomingHtml+completedHtml;
   if (!gamesHtml) gamesHtml='<div style="color:var(--muted);font-size:.75rem;padding:12px;text-align:center;">'+(liveCount?('All '+liveCount+' game'+(liveCount>1?'s':'')+' in progress — see ticker above'):'No games today')+'</div>';
   document.getElementById('sideRailGames').innerHTML=gamesHtml;
 }
 
 function showAlert(opts) {
-  var icon=opts.icon||'🔔', evtLabel=opts.event||'', desc=opts.desc||'', color=opts.color||'#e03030', duration=opts.duration||5000, persistent=!!opts.persistent;
-  var stack=document.getElementById('alertStack'), el=document.createElement('div');
+  const icon=opts.icon||'🔔', evtLabel=opts.event||'', desc=opts.desc||'', color=opts.color||'#e03030', duration=opts.duration||5000, persistent=!!opts.persistent;
+  const stack=document.getElementById('alertStack'), el=document.createElement('div');
   el.className='alert-toast'; el.style.borderLeftColor=color;
   if(!persistent) el.style.setProperty('--toast-duration',duration+'ms');
-  var closeBtn=persistent?'<button class="alert-dismiss" onclick="event.stopPropagation()" aria-label="Dismiss">✕</button>':'';
-  var progressBar=persistent?'':'<div class="alert-progress"></div>';
+  const closeBtn=persistent?'<button class="alert-dismiss" onclick="event.stopPropagation()" aria-label="Dismiss">✕</button>':'';
+  const progressBar=persistent?'':'<div class="alert-progress"></div>';
   el.innerHTML='<span class="alert-icon">'+icon+'</span><div class="alert-body"><div class="alert-event">'+evtLabel+'</div><div class="alert-desc">'+desc+'</div></div>'+closeBtn+progressBar;
   el.addEventListener('click',function(){dismissAlert(el);});
-  if(persistent){var btn=el.querySelector('.alert-dismiss');if(btn)btn.addEventListener('click',function(){dismissAlert(el);});}
+  if(persistent){const btn=el.querySelector('.alert-dismiss');if(btn)btn.addEventListener('click',function(){dismissAlert(el);});}
   stack.appendChild(el);
   if(!persistent) setTimeout(function(){dismissAlert(el);},duration);
 }

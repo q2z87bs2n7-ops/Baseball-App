@@ -12,10 +12,10 @@ import { loadLeaders } from './leaders.js';
 import { selectPlayer } from './player.js';
 
 async function fetchAllPlayerStats(){
-  var groups=['hitting','pitching'];
-  for(var gi=0;gi<groups.length;gi++){
-    var group=groups[gi],players=group==='hitting'?state.rosterData.hitting:state.rosterData.pitching;if(!players.length)continue;
-    var results=await Promise.all(players.map(async function(p){try{var r=await fetch(MLB_BASE+'/people/'+p.person.id+'/stats?stats=season&season='+SEASON+'&group='+group);var d=await r.json();var stat=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;if(!stat)return null;return{player:p.person,position:p.position,stat:stat};}catch(e){return null;}}));
+  const groups=['hitting','pitching'];
+  for(let gi=0;gi<groups.length;gi++){
+    const group=groups[gi],players=group==='hitting'?state.rosterData.hitting:state.rosterData.pitching;if(!players.length)continue;
+    const results=await Promise.all(players.map(async function(p){try{const r=await fetch(MLB_BASE+'/people/'+p.person.id+'/stats?stats=season&season='+SEASON+'&group='+group);const d=await r.json();const stat=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;if(!stat)return null;return{player:p.person,position:p.position,stat:stat};}catch(e){return null;}}));
     state.statsCache[group]=results.filter(function(x){return x!==null;});
   }
   loadLeaders();
@@ -29,17 +29,17 @@ async function fetchAllPlayerStats(){
 // excluded — HOT/COLD is an offensive concept tied to OPS.
 async function fetchLastN(playerId, n){
   n = n || 15;
-  var existing = state.lastNCache[playerId];
+  const existing = state.lastNCache[playerId];
   if(existing && Date.now() - existing.ts < HOT_COLD_TTL_MS) return existing;
   try{
-    var responses = await Promise.all([
+    const responses = await Promise.all([
       fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=lastXGames&group=hitting&season='+SEASON+'&gameNumber=10'),
       fetch(MLB_BASE+'/people/'+playerId+'/stats?stats=lastXGames&group=hitting&season='+SEASON+'&gameNumber=15')
     ]);
-    var d10 = await responses[0].json();
-    var d15 = await responses[1].json();
-    var stat10 = d10.stats && d10.stats[0] && d10.stats[0].splits && d10.stats[0].splits[0] && d10.stats[0].splits[0].stat;
-    var stat15 = d15.stats && d15.stats[0] && d15.stats[0].splits && d15.stats[0].splits[0] && d15.stats[0].splits[0].stat;
+    const d10 = await responses[0].json();
+    const d15 = await responses[1].json();
+    const stat10 = d10.stats && d10.stats[0] && d10.stats[0].splits && d10.stats[0].splits[0] && d10.stats[0].splits[0].stat;
+    const stat15 = d15.stats && d15.stats[0] && d15.stats[0].splits && d15.stats[0].splits[0] && d15.stats[0].splits[0].stat;
     if(stat10 && stat15){ state.lastNCache[playerId] = { last10: stat10, last15: stat15, ts: Date.now() }; return state.lastNCache[playerId]; }
   }catch(e){}
   return null;
@@ -48,7 +48,7 @@ async function fetchLastN(playerId, n){
 // Batched fetch for every hitter in the active roster. After resolution, kick
 // off a re-render so the badges appear without user interaction.
 async function fetchLastNForRoster(){
-  var hitters = state.rosterData.hitting || [];
+  const hitters = state.rosterData.hitting || [];
   if(!hitters.length) return;
   await Promise.all(hitters.map(function(p){ return fetchLastN(p.person.id); }));
   if(state.currentLeaderTab === 'hitting') loadLeaders();
@@ -59,8 +59,8 @@ export async function loadRoster(){
   document.getElementById('playerList').innerHTML='<div class="loading">Loading players...</div>';
   document.getElementById('rosterTitle').textContent=SEASON+' '+state.activeTeam.short+' Players';
   try{
-    var r=await fetch(MLB_BASE+'/teams/'+state.activeTeam.id+'/roster?rosterType=40Man&season='+SEASON+'&hydrate=person');
-    var d=await r.json(),roster=d.roster||[];
+    const r=await fetch(MLB_BASE+'/teams/'+state.activeTeam.id+'/roster?rosterType=40Man&season='+SEASON+'&hydrate=person');
+    const d=await r.json(),roster=d.roster||[];
     // Two-way players (TWP) like Ohtani belong in BOTH lists — they qualify
     // as both hitters and pitchers, so they should appear in both Leaders
     // boards + Roster groups + Today's Leaders. Pure pitchers ('P') are
@@ -79,16 +79,16 @@ export async function loadRoster(){
 // "Pitchers" bucket otherwise).
 function rosterBucketKey(player, tab){
   if(tab==='pitching'){
-    var entry=(state.statsCache.pitching||[]).find(function(p){return p.player&&p.player.id===player.person.id;});
+    const entry=(state.statsCache.pitching||[]).find(function(p){return p.player&&p.player.id===player.person.id;});
     if(entry&&entry.stat){
-      var gs=parseInt(entry.stat.gamesStarted,10)||0;
-      var gp=parseInt(entry.stat.gamesPlayed,10)||0;
+      const gs=parseInt(entry.stat.gamesStarted,10)||0;
+      const gp=parseInt(entry.stat.gamesPlayed,10)||0;
       if(gs>=3 || (gp>0 && gs/gp >= 0.5)) return 'SP';
       return 'RP';
     }
     return 'P';
   }
-  var abbr=player.position&&player.position.abbreviation||'';
+  const abbr=player.position&&player.position.abbreviation||'';
   if(abbr==='C') return 'C';
   if(abbr==='1B'||abbr==='2B'||abbr==='3B'||abbr==='SS'||abbr==='IF') return 'IF';
   if(abbr==='LF'||abbr==='CF'||abbr==='RF'||abbr==='OF') return 'OF';
@@ -116,11 +116,11 @@ const ROSTER_BUCKET_LABEL = {
 // keyed off the active leader pill so the Roster column reflects the current
 // stat focus. Falls back to OPS/ERA when no pill is active.
 function rosterInlineStatFor(player, tab){
-  var group=tab==='fielding'?'hitting':tab; // fielding tab still surfaces hitting line
-  var pool=state.statsCache[group]||[];
-  var entry=pool.find(function(p){return p.player&&p.player.id===player.person.id;});
+  const group=tab==='fielding'?'hitting':tab; // fielding tab still surfaces hitting line
+  const pool=state.statsCache[group]||[];
+  const entry=pool.find(function(p){return p.player&&p.player.id===player.person.id;});
   if(!entry||!entry.stat)return null;
-  var s=entry.stat;
+  const s=entry.stat;
   if(group==='hitting'){
     return{
       display:fmtRate(s.avg)+' / '+(s.homeRuns||0)+' HR / '+fmtRate(s.ops)+' OPS',
@@ -137,38 +137,38 @@ function rosterInlineStatFor(player, tab){
 // (higher = better), ERA for pitching (lower = better — bar widths are
 // inverted in the renderer).
 function rosterTeamBest(group){
-  var pool=state.statsCache[group]||[];
+  const pool=state.statsCache[group]||[];
   if(!pool.length)return null;
-  var key=group==='pitching'?'era':'ops';
-  var values=pool.map(function(p){return p.stat?parseFloat(p.stat[key]):NaN;}).filter(function(v){return !isNaN(v);});
+  const key=group==='pitching'?'era':'ops';
+  const values=pool.map(function(p){return p.stat?parseFloat(p.stat[key]):NaN;}).filter(function(v){return !isNaN(v);});
   if(!values.length)return null;
   return group==='pitching'?Math.min.apply(null,values):Math.max.apply(null,values);
 }
 
 export function renderPlayerList(){
-  var tab=state.currentRosterTab;
-  var players=state.rosterData[tab]||[];
+  const tab=state.currentRosterTab;
+  const players=state.rosterData[tab]||[];
   if(!players.length){document.getElementById('playerList').innerHTML='<div class="loading">No players found</div>';return;}
-  var showBadges=tab==='hitting';
-  var statGroup=tab==='fielding'?'hitting':tab;
-  var teamBest=rosterTeamBest(statGroup);
+  const showBadges=tab==='hitting';
+  const statGroup=tab==='fielding'?'hitting':tab;
+  const teamBest=rosterTeamBest(statGroup);
   // Bucket players by position
-  var buckets={};
+  const buckets={};
   players.forEach(function(p){
-    var k=rosterBucketKey(p,tab);
+    const k=rosterBucketKey(p,tab);
     (buckets[k]=buckets[k]||[]).push(p);
   });
-  var order=ROSTER_BUCKET_ORDER[tab]||['OTH'];
-  var html='';
+  const order=ROSTER_BUCKET_ORDER[tab]||['OTH'];
+  let html='';
   order.forEach(function(key){
-    var list=buckets[key];
+    const list=buckets[key];
     if(!list||!list.length)return;
     html+='<div class="roster-section-header">'+(ROSTER_BUCKET_LABEL[key]||key)+' <span class="roster-section-count">'+list.length+'</span></div>';
     list.forEach(function(p){
-      var sel=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id===p.person.id;
-      var badge=showBadges?hotColdBadge(p.person.id):'';
-      var inline=rosterInlineStatFor(p,tab);
-      var barW=0;
+      const sel=state.selectedPlayer&&state.selectedPlayer.person&&state.selectedPlayer.person.id===p.person.id;
+      const badge=showBadges?hotColdBadge(p.person.id):'';
+      const inline=rosterInlineStatFor(p,tab);
+      let barW=0;
       if(inline && teamBest){
         if(statGroup==='pitching') barW = isFinite(teamBest/inline.raw) ? Math.min(100,Math.max(8,(teamBest/inline.raw)*100)) : 0;
         else barW = isFinite(inline.raw/teamBest) ? Math.min(100,Math.max(8,(inline.raw/teamBest)*100)) : 0;
@@ -188,4 +188,4 @@ export function renderPlayerList(){
   document.getElementById('playerList').innerHTML=html;
 }
 
-export function switchRosterTab(tab,btn){state.currentRosterTab=tab;state.selectedPlayer=null;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);var players=state.rosterData[tab]||[];if(players.length)selectPlayer(players[0].person.id,tab,true);else{renderPlayerList();document.getElementById('playerStatsTitle').textContent='Player Stats';document.getElementById('playerStats').innerHTML='<div class="empty-state">No players available</div>';}}
+export function switchRosterTab(tab,btn){state.currentRosterTab=tab;state.selectedPlayer=null;document.querySelectorAll('.stat-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');scrollTabIntoView(btn);const players=state.rosterData[tab]||[];if(players.length)selectPlayer(players[0].person.id,tab,true);else{renderPlayerList();document.getElementById('playerStatsTitle').textContent='Player Stats';document.getElementById('playerStats').innerHTML='<div class="empty-state">No players available</div>';}}

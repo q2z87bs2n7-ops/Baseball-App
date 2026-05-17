@@ -30,8 +30,8 @@ function deepClone(x) {
   if (x instanceof Date) return new Date(x.getTime());
   if (x instanceof Set) return Array.from(x);
   if (Array.isArray(x)) return x.map(deepClone);
-  var out = {};
-  for (var k in x) {
+  const out = {};
+  for (const k in x) {
     if (Object.prototype.hasOwnProperty.call(x, k)) out[k] = deepClone(x[k]);
   }
   return out;
@@ -45,7 +45,7 @@ function tsNow() { return Date.now(); }
 // by keyword/headline, and rendering one mp4Avc playback + one 16:9 thumb.
 function trimClip(clip) {
   if (!clip) return clip;
-  var trimmed = {
+  const trimmed = {
     id: clip.id,
     headline: clip.headline,
     blurb: clip.blurb,
@@ -56,20 +56,20 @@ function trimClip(clip) {
   // Keep one playback URL (mp4Avc preferred, any .mp4 fallback — what
   // pickPlayback would select anyway)
   if (clip.playbacks && clip.playbacks.length) {
-    var mp4 = clip.playbacks.find(function(p) { return p.name === 'mp4Avc'; });
-    var any = mp4 || clip.playbacks.find(function(p) { return p.url && typeof p.url === 'string' && p.url.endsWith('.mp4'); });
+    const mp4 = clip.playbacks.find(function(p) { return p.name === 'mp4Avc'; });
+    const any = mp4 || clip.playbacks.find(function(p) { return p.url && typeof p.url === 'string' && p.url.endsWith('.mp4'); });
     if (any) trimmed.playbacks = [{ name: any.name, url: any.url }];
   }
   // Keep one 16:9 ≥480w cut (smallest above the floor — what pickHeroImage prefers)
   if (clip.image) {
-    var raw = clip.image.cuts;
-    var cuts = Array.isArray(raw) ? raw : (raw ? Object.values(raw) : []);
+    const raw = clip.image.cuts;
+    const cuts = Array.isArray(raw) ? raw : (raw ? Object.values(raw) : []);
     if (cuts.length) {
-      var c16 = cuts.filter(function(c) { return c.aspectRatio === '16:9' && (c.width || 0) >= 480; });
+      const c16 = cuts.filter(function(c) { return c.aspectRatio === '16:9' && (c.width || 0) >= 480; });
       c16.sort(function(a, b) { return (a.width || 0) - (b.width || 0); });
-      var best = c16[0];
+      let best = c16[0];
       if (!best) {
-        var sorted = cuts.slice().sort(function(a, b) { return (b.width || 0) - (a.width || 0); });
+        const sorted = cuts.slice().sort(function(a, b) { return (b.width || 0) - (a.width || 0); });
         best = sorted[0];
       }
       if (best) {
@@ -82,7 +82,7 @@ function trimClip(clip) {
 
 function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 function downloadFilename() {
-  var d = new Date();
+  const d = new Date();
   return 'daily-events-' + d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate())
     + '-' + pad2(d.getHours()) + pad2(d.getMinutes()) + '.json';
 }
@@ -97,10 +97,10 @@ const Recorder = {
 
   start: function() {
     if (Recorder.active) return;
-    var startTs = tsNow();
+    const startTs = tsNow();
     // Step 1 — baseline snapshot of current in-memory state (before observers).
     // Captures everything that's already happened in the session.
-    var baselineFeed = (state.feedItems || []);
+    let baselineFeed = (state.feedItems || []);
     if (baselineFeed.length > FEED_BASELINE_CAP) {
       // Keep most-recent N (feedItems are stored newest-first by addFeedItem)
       baselineFeed = baselineFeed.slice(0, FEED_BASELINE_CAP);
@@ -141,10 +141,10 @@ const Recorder = {
     };
     // Fold pre-existing liveContentCache entries into contentCacheTimeline
     // as a single trimmed entry per game at t=startTs.
-    var existingContent = state.liveContentCache || {};
+    const existingContent = state.liveContentCache || {};
     Object.keys(existingContent).forEach(function(pk) {
-      var entry = existingContent[pk];
-      var items = (entry && entry.items) || [];
+      const entry = existingContent[pk];
+      const items = (entry && entry.items) || [];
       if (!items.length) return;
       Recorder.data.contentCacheTimeline[pk] = [{
         ts: startTs,
@@ -184,7 +184,7 @@ const Recorder = {
   // disturbing the running recording.
   _stampExportMetadata: function() {
     if (!Recorder.data) return;
-    var now = tsNow();
+    const now = tsNow();
     Recorder.data.metadata.exportedAt = now;
     Recorder.data.metadata.durationMs = now - Recorder.startedAt;
     Recorder.data.metadata.midRun = Recorder.active;
@@ -202,9 +202,9 @@ const Recorder = {
   download: function() {
     if (!Recorder.data) return;
     Recorder._stampExportMetadata();
-    var blob = new Blob([JSON.stringify(Recorder.data)], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
+    const blob = new Blob([JSON.stringify(Recorder.data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     a.href = url;
     a.download = downloadFilename();
     document.body.appendChild(a);
@@ -216,11 +216,11 @@ const Recorder = {
   copy: function() {
     if (!Recorder.data) return;
     Recorder._stampExportMetadata();
-    var text = JSON.stringify(Recorder.data);
+    const text = JSON.stringify(Recorder.data);
     function flash(msg) {
-      var btn = document.getElementById('recorderCopyBtn');
+      const btn = document.getElementById('recorderCopyBtn');
       if (!btn) return;
-      var orig = btn.textContent;
+      const orig = btn.textContent;
       btn.textContent = msg;
       setTimeout(function() { btn.textContent = orig; }, 1500);
     }
@@ -236,7 +236,7 @@ const Recorder = {
   },
 
   _fallbackCopy: function(text) {
-    var ta = document.createElement('textarea');
+    const ta = document.createElement('textarea');
     ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
     document.body.appendChild(ta); ta.select();
     try { document.execCommand('copy'); } catch (e) {}
@@ -254,15 +254,15 @@ const Recorder = {
 
   _captureFeedItem: function(item) {
     if (!Recorder.data) return;
-    var entry = {
+    const entry = {
       gamePk: item.gamePk,
       data: deepClone(item.data),
       ts: item.ts ? item.ts.getTime() : tsNow(),
     };
     // Dedup against last few entries by gamePk + ts + type
-    var arr = Recorder.data.feedItems;
-    for (var i = arr.length - 1; i >= Math.max(0, arr.length - 20); i--) {
-      var e = arr[i];
+    const arr = Recorder.data.feedItems;
+    for (let i = arr.length - 1; i >= Math.max(0, arr.length - 20); i--) {
+      const e = arr[i];
       if (e.gamePk === entry.gamePk && e.ts === entry.ts
           && (e.data && entry.data && e.data.type === entry.data.type
               && (e.data.event || '') === (entry.data.event || ''))) {
@@ -275,13 +275,13 @@ const Recorder = {
 
   _capturePlayPitches: function(play, gamePk, gameCtx) {
     if (!Recorder.data || !play || !play.about) return;
-    var abIdx = play.about.atBatIndex;
+    const abIdx = play.about.atBatIndex;
     if (abIdx == null) return;
-    var pitchEvents = (play.playEvents || []).filter(function(e) {
+    const pitchEvents = (play.playEvents || []).filter(function(e) {
       return e.isPitch || e.type === 'pitch';
     });
     if (!pitchEvents.length) return;
-    var envelope = {
+    const envelope = {
       atBatIndex: abIdx,
       ts: play.about.endTime ? new Date(play.about.endTime).getTime() : tsNow(),
       batterId: (play.matchup && play.matchup.batter && play.matchup.batter.id) || null,
@@ -323,14 +323,14 @@ const Recorder = {
   // pitchTimeline target — merge by atBatIndex; 5s data wins over 15s.
   _captureFocusPitches: function(currentPlay, gamePk) {
     if (!Recorder.data || !currentPlay) return;
-    var g = state.gameStates[gamePk] || {};
+    const g = state.gameStates[gamePk] || {};
     Recorder._capturePlayPitches(currentPlay, gamePk, g);
   },
 
   _mergePitchEnvelope: function(gamePk, envelope) {
     if (!Recorder.data.pitchTimeline[gamePk]) Recorder.data.pitchTimeline[gamePk] = [];
-    var arr = Recorder.data.pitchTimeline[gamePk];
-    var existing = arr.findIndex(function(e) { return e.atBatIndex === envelope.atBatIndex; });
+    const arr = Recorder.data.pitchTimeline[gamePk];
+    const existing = arr.findIndex(function(e) { return e.atBatIndex === envelope.atBatIndex; });
     if (existing === -1) {
       arr.push(envelope);
     } else if ((envelope.pitches || []).length >= (arr[existing].pitches || []).length) {
@@ -339,7 +339,7 @@ const Recorder = {
     }
     // Cap per game
     if (arr.length > PITCH_CAP_PER_GAME) {
-      var dropped = arr.splice(0, arr.length - PITCH_CAP_PER_GAME);
+      const dropped = arr.splice(0, arr.length - PITCH_CAP_PER_GAME);
       Recorder._note('⚠ pitch cap hit · gamePk=' + gamePk + ' dropped=' + dropped.length);
     }
   },
@@ -347,7 +347,7 @@ const Recorder = {
   _captureContentDelta: function(gamePk, items) {
     if (!Recorder.data) return;
     if (!Recorder.data.contentCacheTimeline[gamePk]) Recorder.data.contentCacheTimeline[gamePk] = [];
-    var arr = Recorder.data.contentCacheTimeline[gamePk];
+    const arr = Recorder.data.contentCacheTimeline[gamePk];
     arr.push({ ts: tsNow(), items: (items || []).map(trimClip) });
     if (arr.length > CONTENT_CAP_PER_GAME) arr.shift();
   },
@@ -355,7 +355,7 @@ const Recorder = {
   _captureBoxscore: function(gamePk, bs) {
     if (!Recorder.data || !bs) return;
     if (!Recorder.data.boxscoreSnapshots[gamePk]) Recorder.data.boxscoreSnapshots[gamePk] = [];
-    var arr = Recorder.data.boxscoreSnapshots[gamePk];
+    const arr = Recorder.data.boxscoreSnapshots[gamePk];
     arr.push({ ts: tsNow(), data: deepClone(bs) });
     if (arr.length > BOXSCORE_CAP_PER_GAME) arr.shift();
   },
@@ -367,14 +367,14 @@ const Recorder = {
 
   _captureFocusTrack: function() {
     if (!Recorder.data) return;
-    var entry = {
+    const entry = {
       ts: tsNow(),
       focusGamePk: state.focusGamePk || null,
       isManual: !!state.focusIsManual,
       tensionLabel: (state.focusState && state.focusState.tensionLabel) || null,
     };
-    var arr = Recorder.data.focusTrack;
-    var last = arr[arr.length - 1];
+    const arr = Recorder.data.focusTrack;
+    const last = arr[arr.length - 1];
     // Dedup contiguous identical samples
     if (last && last.focusGamePk === entry.focusGamePk
         && last.isManual === entry.isManual
@@ -407,35 +407,35 @@ const Recorder = {
   // ── UI ───────────────────────────────────────────────────────────────────
 
   _updateStatus: function() {
-    var el = document.getElementById('recorderStatus');
+    const el = document.getElementById('recorderStatus');
     if (!el) return;
     if (!Recorder.data) {
       el.textContent = 'Idle. Click Start to begin capture.';
       el.style.color = 'var(--muted)';
       return;
     }
-    var bytes = 0;
+    let bytes = 0;
     try { bytes = JSON.stringify(Recorder.data).length; } catch (e) { bytes = -1; }
-    var games = Object.keys(Recorder.data.gameStates || {}).length;
-    var feedCount = (Recorder.data.feedItems || []).length;
-    var pitchTotal = 0, clipTotal = 0;
-    for (var pk in Recorder.data.pitchTimeline) {
+    const games = Object.keys(Recorder.data.gameStates || {}).length;
+    const feedCount = (Recorder.data.feedItems || []).length;
+    let pitchTotal = 0, clipTotal = 0;
+    for (const pk in Recorder.data.pitchTimeline) {
       pitchTotal += (Recorder.data.pitchTimeline[pk] || []).reduce(function(s, ab) {
         return s + ((ab.pitches || []).length);
       }, 0);
     }
-    for (var ck in Recorder.data.contentCacheTimeline) {
+    for (const ck in Recorder.data.contentCacheTimeline) {
       clipTotal += (Recorder.data.contentCacheTimeline[ck] || []).length;
     }
-    var elapsedMs = Recorder.active
+    const elapsedMs = Recorder.active
       ? (tsNow() - Recorder.startedAt)
       : ((Recorder.data.metadata && Recorder.data.metadata.durationMs) || 0);
-    var mins = Math.floor(elapsedMs / 60000);
-    var secs = Math.floor((elapsedMs % 60000) / 1000);
-    var mb = (bytes / (1024 * 1024)).toFixed(2);
-    var pitchHint = '';
+    const mins = Math.floor(elapsedMs / 60000);
+    const secs = Math.floor((elapsedMs % 60000) / 1000);
+    const mb = (bytes / (1024 * 1024)).toFixed(2);
+    let pitchHint = '';
     if (Recorder.active && pitchTotal === 0) pitchHint = ' · Pitch data: starts on next poll';
-    var stateLabel = Recorder.active ? 'Recording' : 'Stopped';
+    const stateLabel = Recorder.active ? 'Recording' : 'Stopped';
     el.textContent = stateLabel + ' · ' + mins + 'm ' + pad2(secs) + 's · ' + games + ' games · '
       + feedCount + ' plays · ' + pitchTotal + ' pitches · ' + clipTotal + ' clips · ' + mb + ' MB' + pitchHint;
     if (bytes >= HARD_CAP_BYTES) {
@@ -456,21 +456,21 @@ const Recorder = {
   },
 
   _updateButtonState: function() {
-    var toggleBtn = document.getElementById('recorderToggleBtn');
-    var copyBtn = document.getElementById('recorderCopyBtn');
-    var dlBtn = document.getElementById('recorderDownloadBtn');
-    var resetBtn = document.getElementById('recorderResetBtn');
+    const toggleBtn = document.getElementById('recorderToggleBtn');
+    const copyBtn = document.getElementById('recorderCopyBtn');
+    const dlBtn = document.getElementById('recorderDownloadBtn');
+    const resetBtn = document.getElementById('recorderResetBtn');
     if (toggleBtn) toggleBtn.textContent = Recorder.active ? '⏹ Stop Recording' : '⏺ Start Recording';
     // Download/Copy work both during and after recording (mid-run snapshots
     // are non-destructive — recording continues). Reset stays gated on !active.
-    var hasData = !!Recorder.data;
+    const hasData = !!Recorder.data;
     if (copyBtn) copyBtn.disabled = !hasData;
     if (dlBtn) dlBtn.disabled = !hasData;
     if (resetBtn) resetBtn.disabled = Recorder.active;
   },
 
   _note: function(msg) {
-    var el = document.getElementById('recorderStatusNote');
+    const el = document.getElementById('recorderStatusNote');
     if (!el) return;
     el.textContent = msg;
     el.style.color = '#f59e0b';

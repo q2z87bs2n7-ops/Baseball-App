@@ -8,9 +8,9 @@ import { isSafeNewsImage } from '../utils/news.js';
 // powered the Pulse carousel before the v3.42 multi-source aggregator detour.
 export async function loadPulseNews() {
   try {
-    var r=await fetch(API_BASE+'/api/proxy-rss?feed=mlb');
+    const r=await fetch(API_BASE+'/api/proxy-rss?feed=mlb');
     if(!r.ok) throw new Error('Status '+r.status);
-    var d=await r.json();
+    const d=await r.json();
     if(!d.success||!Array.isArray(d.articles)||!d.articles.length) throw new Error('Empty MLB feed');
     state.pulseNewsArticles=d.articles.slice(0,10);
     state.pulseNewsIndex=0;
@@ -18,10 +18,10 @@ export async function loadPulseNews() {
     return;
   } catch(e) { /* fall through to ESPN */ }
   try {
-    var r2=await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20');
+    const r2=await fetch('https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news?limit=20');
     if(!r2.ok) throw new Error('Status '+r2.status);
-    var d2=await r2.json();
-    var arts=(d2.articles||[]).filter(function(a){return a.headline;}).slice(0,10).map(function(a){
+    const d2=await r2.json();
+    const arts=(d2.articles||[]).filter(function(a){return a.headline;}).slice(0,10).map(function(a){
       return {
         title:a.headline,
         link:(a.links&&a.links.web&&a.links.web.href)||'',
@@ -39,21 +39,21 @@ export async function loadPulseNews() {
 }
 
 function renderPulseNewsCard() {
-  var container=document.getElementById('newsCard');
+  const container=document.getElementById('newsCard');
   if(!container) return;
   if(!state.pulseNewsArticles.length) {
     showNewsUnavailable();
     return;
   }
-  var article=state.pulseNewsArticles[state.pulseNewsIndex];
-  var img='';
+  const article=state.pulseNewsArticles[state.pulseNewsIndex];
+  let img='';
   if(article.image&&isSafeNewsImage(article.image)) {
-    var imgUrl=forceHttps(article.image);
+    const imgUrl=forceHttps(article.image);
     img='<img src="'+imgUrl+'" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block" onerror="this.style.display=\'none\'">';
   }
-  var headline=article.headline||article.title||'News';
-  var pubDate=article.pubDate||article.published||article.publishedAt||'';
-  var html='<div style="padding:12px;display:flex;flex-direction:column;gap:8px">'
+  const headline=article.headline||article.title||'News';
+  const pubDate=article.pubDate||article.published||article.publishedAt||'';
+  const html='<div style="padding:12px;display:flex;flex-direction:column;gap:8px">'
     +img
     +'<div style="font-size:.8rem;font-weight:600;color:var(--text);line-height:1.35">'+headline+'</div>'
     +(pubDate?'<div style="font-size:.65rem;color:var(--muted)">'+fmtNewsDate(pubDate)+'</div>':'')
@@ -78,7 +78,7 @@ export function prevNewsCard() {
 }
 
 function showNewsUnavailable() {
-  var container=document.getElementById('newsCard');
+  const container=document.getElementById('newsCard');
   if(container) {
     container.innerHTML='<div style="color:var(--muted);font-size:.75rem;padding:20px;text-align:center;">News feed unavailable</div>';
   }

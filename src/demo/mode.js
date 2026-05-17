@@ -58,9 +58,9 @@ export function setDemoCallbacks(callbacks) {
 
 async function loadDailyEventsJSON(){
   try{
-    var r=await fetch('./assets/daily-events.json');
+    const r=await fetch('./assets/daily-events.json');
     if(!r.ok) return null;
-    var data=await r.json();
+    const data=await r.json();
     // feedItems[].ts may be number (recorder v2) or string (legacy) or
     // missing (legacy with playTime instead). Normalise to Date.
     if(data.feedItems){
@@ -95,7 +95,7 @@ async function loadDailyEventsJSON(){
 }
 
 function updateDemoBtnLabel(){
-  var lbl=document.getElementById('demoBtnLabel');
+  const lbl=document.getElementById('demoBtnLabel');
   if(lbl) lbl.textContent=state.demoMode?'⏹ Exit Demo':'▶ Try Demo';
 }
 
@@ -145,25 +145,25 @@ async function initDemo() {
   // Dismiss via the same paths each overlay's own open/close uses — inline
   // display:none would stick around and block subsequent showPlayerCard
   // (which opens via classList.add('open') and relies on the CSS rule).
-  var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
-  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
+  const _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
+  const _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
   state.demoMode=true;
   document.body.classList.add('demo-active');
-  var pulseSection=document.getElementById('pulse');
+  const pulseSection=document.getElementById('pulse');
   if(pulseSection) pulseSection.classList.add('active');
-  var main=document.getElementById('main');
+  const main=document.getElementById('main');
   if(main) main.style.display='none';
-  var feedWrap=document.getElementById('feedWrap');
+  const feedWrap=document.getElementById('feedWrap');
   if(feedWrap) feedWrap.style.display='block';
   demoSpeedMs=10000;
   demoPaused=false;
-  var mockBar=document.getElementById('mockBar');
+  const mockBar=document.getElementById('mockBar');
   if(mockBar){
     mockBar.style.display='flex';
     mockBar.classList.add('open');
-    var badge=document.getElementById('mockBarBadge');
+    const badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='📽️ Demo';
-    var fabBadge=document.getElementById('demoFabBadge');
+    const fabBadge=document.getElementById('demoFabBadge');
     if(fabBadge) fabBadge.textContent='1x';
     document.getElementById('demoSpeed1x').style.display='';
     document.getElementById('demoSpeed10x').style.display='';
@@ -173,7 +173,7 @@ async function initDemo() {
     document.getElementById('demoNextHRBtn').style.display='';
     document.getElementById('demoPauseBtn').style.display='';
     document.getElementById('demoForwardBtn').style.display='';
-    var _exitBtn=document.getElementById('demoExitBtn');
+    const _exitBtn=document.getElementById('demoExitBtn');
     if(_exitBtn) _exitBtn.style.display='';
     document.getElementById('demoPauseBtn').textContent='⏸';
   }
@@ -182,7 +182,7 @@ async function initDemo() {
   // Wipe the feed DOM too — addFeedItem appends to feed.children rather
   // than re-rendering from state, so live-session plays would otherwise
   // stay on screen behind the demo backlog walk.
-  var _feed=document.getElementById('feed');
+  const _feed=document.getElementById('feed');
   if(_feed) _feed.innerHTML='';
   state.scheduleData=[];
   state.enabledGames=new Set();
@@ -201,7 +201,7 @@ async function initDemo() {
   state.storyCarouselRawGameData={};
   state.stolenBaseEvents=[];
   state.inningRecapsFired=new Set();state.inningRecapsPending={};state.lastInningState={};
-  var jsonData=await loadDailyEventsJSON();
+  const jsonData=await loadDailyEventsJSON();
   if(!jsonData||!jsonData.gameStates){
     _showAlert({icon:'⚠️',event:'Demo Load Failed',desc:'Could not load daily-events.json',color:'#e85d4f',duration:3000});
     return;
@@ -210,7 +210,7 @@ async function initDemo() {
   // Recorder v2 nests story-carousel caches under `caches.*`. Legacy
   // daily-events.json had them at the top level — keep both paths so
   // either shape loads cleanly.
-  var c=jsonData.caches||{};
+  const c=jsonData.caches||{};
   state.dailyLeadersCache=c.dailyLeadersCache||jsonData.dailyLeadersCache||null;
   state.onThisDayCache=c.onThisDayCache||jsonData.onThisDayCache||[];
   state.yesterdayCache=c.yesterdayCache||jsonData.yesterdayCache||[];
@@ -238,7 +238,7 @@ async function initDemo() {
   state.focusTrack=jsonData.focusTrack||[];
   if(jsonData.lastVideoClip) state.lastVideoClip=jsonData.lastVideoClip;
   if(jsonData.gameStates){
-    var earliestMs=Infinity;
+    let earliestMs=Infinity;
     Object.values(jsonData.gameStates).forEach(function(g){
       if(g.gameDateMs&&g.gameDateMs<earliestMs) earliestMs=g.gameDateMs;
     });
@@ -253,17 +253,17 @@ async function initDemo() {
   // recording session. demoCurrentTime starts at the first queue play
   // so pitchTimeline/contentCacheTimeline/focusTrack lookups land cleanly
   // (their entries were captured during the recording window).
-  var cutoff=(jsonData.metadata&&jsonData.metadata.startedAt)||0;
+  const cutoff=(jsonData.metadata&&jsonData.metadata.startedAt)||0;
   // Normalise feedItems' ts → Date and split by cutoff
-  var allItems=(jsonData.feedItems||[]).map(function(item){
-    var ts=item.ts||item.playTime;
+  const allItems=(jsonData.feedItems||[]).map(function(item){
+    let ts=item.ts||item.playTime;
     if(typeof ts==='number') ts=new Date(ts);
     else if(typeof ts==='string') ts=new Date(ts);
     if(!(ts instanceof Date)) ts=new Date();
     return {gamePk:item.gamePk,data:item.data,ts:ts};
   });
   allItems.sort(function(a,b){ return a.ts.getTime()-b.ts.getTime(); });
-  var backlogItems=[],queueItems=[];
+  const backlogItems=[],queueItems=[];
   allItems.forEach(function(item){
     if(item.ts.getTime()<cutoff) backlogItems.push(item);
     else queueItems.push(item);
@@ -273,7 +273,7 @@ async function initDemo() {
   // Game Final entry was pushed off the recorder cap, plus genuine Preview
   // games that hadn't started yet) — otherwise they appear in Upcoming
   // forever, since no play will flip their status.
-  var touched=new Set();
+  const touched=new Set();
   allItems.forEach(function(item){ if(item.gamePk) touched.add(+item.gamePk); });
   Object.values(state.gameStates).forEach(function(g){
     if(!touched.has(+g.gamePk)) return;
@@ -294,8 +294,8 @@ async function initDemo() {
   // recording-start time.
   state.feedItems=[];
   backlogItems.forEach(function(item){
-    var g=state.gameStates[item.gamePk];
-    var d=item.data||{};
+    const g=state.gameStates[item.gamePk];
+    const d=item.data||{};
     // _addFeedItem keys item.ts off data.playTime — ensure it's a Date
     // (loadDailyEventsJSON normalises top-level item.ts but not nested
     // data.playTime, so a string-typed playTime would propagate into a
@@ -327,8 +327,8 @@ async function initDemo() {
   // first new play after the user clicked Record.
   state.demoPlayQueue=[];
   queueItems.forEach(function(item){
-    var ts=item.ts.getTime();
-    var d=item.data||{};
+    const ts=item.ts.getTime();
+    const d=item.data||{};
     state.demoPlayQueue.push({
       gamePk:item.gamePk,ts:ts,
       event:d.event,desc:d.desc,type:d.type||'play',inning:d.inning,halfInning:d.halfInning,outs:d.outs,
@@ -368,14 +368,14 @@ async function initDemo() {
 
 async function loadDemoGames() {
   try{
-    var todayEt=etDateStr();
-    for(var dayOffset=1;dayOffset<=7;dayOffset++){
-      var dateStr=etDatePlus(todayEt,-dayOffset);
-      var r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1');
+    const todayEt=etDateStr();
+    for(let dayOffset=1;dayOffset<=7;dayOffset++){
+      const dateStr=etDatePlus(todayEt,-dayOffset);
+      const r=await fetch(MLB_BASE+'/schedule?date='+dateStr+'&sportId=1');
       if(!r.ok) continue;
-      var data=await r.json();
-      var allGames=data.games||[];
-      var games=allGames.filter(function(g){return g.status.abstractGameState==='Final';});
+      const data=await r.json();
+      const allGames=data.games||[];
+      const games=allGames.filter(function(g){return g.status.abstractGameState==='Final';});
       if(games.length>0){
         state.demoGamesCache=games.map(function(g){
           return{gamePk:g.gamePk,gameDateTime:g.gameDateTime,awayTeam:{id:g.teams.away.team.id,name:g.teams.away.name,shortName:g.teams.away.shortName},homeTeam:{id:g.teams.home.team.id,name:g.teams.home.name,shortName:g.teams.home.shortName},venue:g.venue||'',gameDetails:g};
@@ -392,21 +392,21 @@ async function loadDemoGames() {
 
 async function buildDemoPlayQueue(games) {
   state.demoPlayQueue=[];
-  for(var i=0;i<games.length;i++){
-    var g=games[i];
+  for(let i=0;i<games.length;i++){
+    const g=games[i];
     try{
-      var r=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay');
+      const r=await fetch(MLB_BASE+'/game/'+g.gamePk+'/playByPlay');
       if(!r.ok) continue;
-      var pbp=await r.json();
+      const pbp=await r.json();
       if(pbp.allPlays&&pbp.allPlays.length>0){
         pbp.allPlays.forEach(function(p){
           if(p.result&&p.result.event){
-            var evt=p.result.event,scorer=false,desc='',playEvent='other';
+            let evt=p.result.event,scorer=false,desc='',playEvent='other';
             if(['Home Run','Single','Double','Triple'].indexOf(evt)>-1){scorer=true;desc=(p.player?p.player.fullName+' ':'')+(p.result.description||evt);}else{desc=p.result.description||evt;}
             if(evt==='Home Run') playEvent='homerun';
             if(['Single','Double','Triple'].indexOf(evt)>-1) playEvent='hit';
             if(p.about&&p.about.inning&&p.about.halfInning){
-              var awayRuns=0,homeRuns=0;
+              let awayRuns=0,homeRuns=0;
               if(p.liveData&&p.liveData.linescore&&p.liveData.linescore.teams){
                 awayRuns=p.liveData.linescore.teams.away&&p.liveData.linescore.teams.away.runs?p.liveData.linescore.teams.away.runs:0;
                 homeRuns=p.liveData.linescore.teams.home&&p.liveData.linescore.teams.home.runs?p.liveData.linescore.teams.home.runs:0;
@@ -435,13 +435,13 @@ async function pollDemoFeeds(){
     renderDemoEndScreen();
     return;
   }
-  var play=state.demoPlayQueue[state.demoPlayIdx];
-  var tickStart=Date.now();
+  const play=state.demoPlayQueue[state.demoPlayIdx];
+  const tickStart=Date.now();
   await advanceDemoPlay(play);
   state.demoPlayIdx++;
   // Subtract elapsed (mostly pitch sub-ticks) so each cycle still totals
   // ~demoSpeedMs regardless of how long the at-bat's pitches took to animate.
-  var nextDelay=Math.max(40,demoSpeedMs-(Date.now()-tickStart));
+  const nextDelay=Math.max(40,demoSpeedMs-(Date.now()-tickStart));
   clearTimeout(state.demoTimer);
   state.demoTimer=setTimeout(pollDemoFeeds,nextDelay);
 }
@@ -452,7 +452,7 @@ export function setDemoSpeed(ms,btn){
     document.querySelectorAll('#demoSpeed1x,#demoSpeed10x,#demoSpeed30x').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   }
-  var fabBadge=document.getElementById('demoFabBadge');
+  const fabBadge=document.getElementById('demoFabBadge');
   if(fabBadge) fabBadge.textContent = ms>=10000?'1x':ms>=1000?'10x':'30x';
   if(state.demoMode&&!demoPaused&&state.demoTimer){
     clearTimeout(state.demoTimer);
@@ -462,7 +462,7 @@ export function setDemoSpeed(ms,btn){
 
 export function toggleDemoPause(){
   demoPaused=!demoPaused;
-  var btn=document.getElementById('demoPauseBtn');
+  const btn=document.getElementById('demoPauseBtn');
   if(btn) btn.textContent=demoPaused?'▶':'⏸';
   if(!demoPaused&&state.demoMode) pollDemoFeeds();
 }
@@ -482,8 +482,8 @@ export function forwardDemoPlay(){
 export function demoNextHR(){
   if(_hrSeekActive) return; // already seeking
   // Confirm there's an HR ahead so we don't fast-forward to the end
-  var found=false;
-  for(var i=state.demoPlayIdx;i<state.demoPlayQueue.length;i++){
+  let found=false;
+  for(let i=state.demoPlayIdx;i<state.demoPlayQueue.length;i++){
     if(state.demoPlayQueue[i].event==='Home Run'){found=true;break;}
   }
   if(!found){_showAlert({icon:'⚠️',event:'No more HRs',desc:'Reached end of demo',duration:2000});return;}
@@ -495,7 +495,7 @@ export function demoNextHR(){
   demoSpeedMs=500;
   if(demoPaused){
     demoPaused=false;
-    var btn=document.getElementById('demoPauseBtn');
+    const btn=document.getElementById('demoPauseBtn');
     if(btn) btn.textContent='⏸ Pause';
   }
   clearTimeout(state.demoTimer);
@@ -503,7 +503,7 @@ export function demoNextHR(){
 }
 
 async function advanceDemoPlay(play) {
-  var g=state.gameStates[play.gamePk];
+  const g=state.gameStates[play.gamePk];
   if(!g){ state.demoCurrentTime=play.ts; return; }
   // Pitch sub-tick: when the focused game is the one this play belongs to,
   // reveal the at-bat's pitches one-by-one *before* the outcome lands so the
@@ -513,7 +513,7 @@ async function advanceDemoPlay(play) {
     await _animateFocusPitches(play);
   }
   state.demoCurrentTime=play.ts;
-  var feedData={playTime:new Date(play.ts)};
+  const feedData={playTime:new Date(play.ts)};
   if(play.type==='status'){
     feedData.type='status';
     feedData.icon=play.icon;
@@ -542,7 +542,7 @@ async function advanceDemoPlay(play) {
     }
     // Capture pre-update score so we can infer RBI count from the delta —
     // fallback path for legacy recordings that don't carry play.rbi.
-    var prevAway=g.awayScore||0, prevHome=g.homeScore||0;
+    const prevAway=g.awayScore||0, prevHome=g.homeScore||0;
     g.inning=play.inning;
     g.halfInning=play.halfInning;
     g.outs=play.outs;
@@ -555,26 +555,26 @@ async function advanceDemoPlay(play) {
     if(play.homeHits!=null) g.homeHits=play.homeHits;
     // Live trackers — mirror pollGamePlays bookkeeping so demo's story
     // carousel + perfect-game tracker stay live with the play stream.
-    var isHitEvt=['Single','Double','Triple','Home Run'].indexOf(play.event)!==-1;
+    const isHitEvt=['Single','Double','Triple','Home Run'].indexOf(play.event)!==-1;
     if(state.perfectGameTracker[play.gamePk]===undefined) state.perfectGameTracker[play.gamePk]=true;
     if(['Walk','Hit By Pitch','Intentional Walk','Error','Fielders Choice','Catcher Interference'].indexOf(play.event)!==-1) state.perfectGameTracker[play.gamePk]=false;
     if(isHitEvt) state.perfectGameTracker[play.gamePk]=false;
     if(isHitEvt&&play.batterId){
-      var dh=state.dailyHitsTracker[play.batterId]||{name:play.batterName,hits:0,hrs:0,gamePk:play.gamePk};
+      const dh=state.dailyHitsTracker[play.batterId]||{name:play.batterName,hits:0,hrs:0,gamePk:play.gamePk};
       dh.hits++; if(play.event==='Home Run') dh.hrs++; dh.name=play.batterName||dh.name; dh.gamePk=play.gamePk;
       state.dailyHitsTracker[play.batterId]=dh;
     }
     if(play.event==='Strikeout'&&play.pitcherId){
-      var kkey=play.gamePk+'_'+play.pitcherId;
-      var ke=state.dailyPitcherKs[kkey]||{name:play.pitcherName,ks:0,gamePk:play.gamePk};
+      const kkey=play.gamePk+'_'+play.pitcherId;
+      const ke=state.dailyPitcherKs[kkey]||{name:play.pitcherName,ks:0,gamePk:play.gamePk};
       ke.ks++; ke.name=play.pitcherName||ke.name; state.dailyPitcherKs[kkey]=ke;
     }
     // Inning recap firing — mirror src/pulse/poll.js:238
     if(play.outs===3){
-      var _rk=play.gamePk+'_'+play.inning+'_'+(play.halfInning||'top').toLowerCase();
+      const _rk=play.gamePk+'_'+play.inning+'_'+(play.halfInning||'top').toLowerCase();
       if(!state.inningRecapsFired.has(_rk)) state.inningRecapsPending[_rk]={gamePk:play.gamePk,inning:play.inning,halfInning:(play.halfInning||'top').toLowerCase()};
     }
-    var badge='';
+    let badge='';
     if(play.event==='Home Run') badge='HR';
     else if(play.event==='Double') badge='2B';
     else if(play.event==='Triple') badge='3B';
@@ -617,16 +617,16 @@ async function advanceDemoPlay(play) {
         _hrSeekActive=false;
         demoSpeedMs=_hrSeekPriorSpeed||10000;
         demoPaused=true;
-        var pauseBtn=document.getElementById('demoPauseBtn');
+        const pauseBtn=document.getElementById('demoPauseBtn');
         if(pauseBtn) pauseBtn.textContent='▶';
       }
     }else if(play.scoring){
       // Prefer the captured RBI; fall back to score-delta inference for
       // legacy recordings whose feedItems predate play.rbi capture.
-      var rbi=(play.rbi!=null)?play.rbi:Math.max(0,(play.awayScore-prevAway)+(play.homeScore-prevHome));
+      let rbi=(play.rbi!=null)?play.rbi:Math.max(0,(play.awayScore-prevAway)+(play.homeScore-prevHome));
       if(!rbi) rbi=1;
-      var rbiOk=(Date.now()-(state.rbiCardCooldowns[play.gamePk]||0))>=state.devTuning.rbiCooldown;
-      var rbiScore=calcRBICardScore(rbi,play.event,play.awayScore,play.homeScore,play.inning,play.halfInning);
+      const rbiOk=(Date.now()-(state.rbiCardCooldowns[play.gamePk]||0))>=state.devTuning.rbiCooldown;
+      const rbiScore=calcRBICardScore(rbi,play.event,play.awayScore,play.homeScore,play.inning,play.halfInning);
       if(_showRBICard&&rbiScore>=state.devTuning.rbiThreshold&&play.batterId&&rbiOk){
         state.rbiCardCooldowns[play.gamePk]=Date.now();
         _showRBICard(play.batterId,play.batterName||'',g.awayId,g.homeId,play.halfInning,rbi,play.event,play.awayScore,play.homeScore,play.inning,play.gamePk);
@@ -653,23 +653,23 @@ async function advanceDemoPlay(play) {
 // then advance demoCurrentTime to each pitch's eventTs and re-hydrate the focus
 // card. Budgets ~50% of demoSpeedMs across pitches so the cycle still feels 1x.
 async function _animateFocusPitches(play){
-  var timeline=(state.pitchTimeline&&state.pitchTimeline[play.gamePk])||[];
+  const timeline=(state.pitchTimeline&&state.pitchTimeline[play.gamePk])||[];
   if(!timeline.length||!play.batterId) return;
-  var envelope=null;
-  for(var ei=timeline.length-1;ei>=0;ei--){
-    var ev=timeline[ei];
+  let envelope=null;
+  for(let ei=timeline.length-1;ei>=0;ei--){
+    const ev=timeline[ei];
     if(ev.batterId===play.batterId&&Math.abs((ev.ts||0)-play.ts)<60000){ envelope=ev; break; }
   }
   if(!envelope) return;
-  var pitches=(envelope.pitches||[]).filter(function(p){ return p.eventTs!=null; });
+  const pitches=(envelope.pitches||[]).filter(function(p){ return p.eventTs!=null; });
   if(!pitches.length) return;
   // Total pitch-animation budget — capped at half a play tick so the
   // outer pollDemoFeeds rhythm survives.
-  var budget=Math.max(100,Math.min(demoSpeedMs*0.5,4000));
-  var perPitchMs=Math.max(40,Math.floor(budget/pitches.length));
-  for(var i=0;i<pitches.length;i++){
+  const budget=Math.max(100,Math.min(demoSpeedMs*0.5,4000));
+  const perPitchMs=Math.max(40,Math.floor(budget/pitches.length));
+  for(let i=0;i<pitches.length;i++){
     if(!state.demoMode) return;
-    var p=pitches[i];
+    const p=pitches[i];
     state.demoCurrentTime=p.eventTs;
     if(_pollFocusLinescore&&state.focusGamePk===play.gamePk) _pollFocusLinescore();
     await new Promise(function(res){ setTimeout(res,perPitchMs); });
@@ -680,7 +680,7 @@ function renderDemoEndScreen() {
   state.demoMode=false;
   clearTimeout(state.demoTimer);
   if(state.storyRotateTimer) clearInterval(state.storyRotateTimer);
-  var overlay=document.createElement('div');
+  const overlay=document.createElement('div');
   overlay.className='demo-end-screen';
   overlay.innerHTML='<div class="demo-end-card"><div class="demo-end-headline">Demo Complete</div>'
     +'<div class="demo-end-summary">'+state.demoGamesCache.length+' games &middot; '+state.demoPlayQueue.length+' plays</div>'
@@ -737,10 +737,10 @@ export function exitDemo() {
   // Dismiss via the same paths each overlay's own open/close uses — inline
   // display:none would stick around and block subsequent showPlayerCard
   // (which opens via classList.add('open') and relies on the CSS rule).
-  var _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
-  var _focusMini = document.getElementById('focusMiniBar'); if (_focusMini) _focusMini.style.display = 'none';
-  var _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
-  var overlay=document.querySelector('.demo-end-screen');
+  const _focusOv = document.getElementById('focusOverlay'); if (_focusOv) _focusOv.style.display = 'none';
+  const _focusMini = document.getElementById('focusMiniBar'); if (_focusMini) _focusMini.style.display = 'none';
+  const _playerOv = document.getElementById('playerCardOverlay'); if (_playerOv) _playerOv.classList.remove('open');
+  const overlay=document.querySelector('.demo-end-screen');
   if(overlay) overlay.remove();
   document.body.classList.remove('demo-active');
 
@@ -783,36 +783,36 @@ export function exitDemo() {
   state.yesterdayContentCache={};
   state.boxscoreCache={};
 
-  var feed=document.getElementById('feed');
+  const feed=document.getElementById('feed');
   if(feed) feed.innerHTML='';
-  var ticker=document.getElementById('gameTicker');
+  const ticker=document.getElementById('gameTicker');
   if(ticker) ticker.innerHTML='';
 
-  var mockBar=document.getElementById('mockBar');
+  const mockBar=document.getElementById('mockBar');
   if(mockBar){
     mockBar.style.display='none';
     mockBar.classList.remove('open');
-    var btnNormal=document.getElementById('btnNormal');
+    const btnNormal=document.getElementById('btnNormal');
     if(btnNormal) btnNormal.style.display='';
-    var btnFast=document.getElementById('btnFast');
+    const btnFast=document.getElementById('btnFast');
     if(btnFast) btnFast.style.display='';
-    var btnSkip=document.getElementById('btnSkip');
+    const btnSkip=document.getElementById('btnSkip');
     if(btnSkip) btnSkip.style.display='';
-    var demoSpeed1x=document.getElementById('demoSpeed1x');
+    const demoSpeed1x=document.getElementById('demoSpeed1x');
     if(demoSpeed1x) demoSpeed1x.style.display='none';
-    var demoSpeed10x=document.getElementById('demoSpeed10x');
+    const demoSpeed10x=document.getElementById('demoSpeed10x');
     if(demoSpeed10x) demoSpeed10x.style.display='none';
-    var demoSpeed30x=document.getElementById('demoSpeed30x');
+    const demoSpeed30x=document.getElementById('demoSpeed30x');
     if(demoSpeed30x) demoSpeed30x.style.display='none';
-    var demoNextHRBtn=document.getElementById('demoNextHRBtn');
+    const demoNextHRBtn=document.getElementById('demoNextHRBtn');
     if(demoNextHRBtn) demoNextHRBtn.style.display='none';
-    var demoPauseBtn=document.getElementById('demoPauseBtn');
+    const demoPauseBtn=document.getElementById('demoPauseBtn');
     if(demoPauseBtn) demoPauseBtn.style.display='none';
-    var demoForwardBtn=document.getElementById('demoForwardBtn');
+    const demoForwardBtn=document.getElementById('demoForwardBtn');
     if(demoForwardBtn) demoForwardBtn.style.display='none';
-    var demoExitBtn=document.getElementById('demoExitBtn');
+    const demoExitBtn=document.getElementById('demoExitBtn');
     if(demoExitBtn) demoExitBtn.style.display='none';
-    var badge=document.getElementById('mockBarBadge');
+    const badge=document.getElementById('mockBarBadge');
     if(badge) badge.textContent='⚡ Mock';
   }
   updateDemoBtnLabel();

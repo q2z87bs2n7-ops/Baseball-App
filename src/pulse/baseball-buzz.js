@@ -29,21 +29,21 @@ function rkeyOf(uri) {
 }
 
 function relTime(ts) {
-  var s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
   if (s < 60) return 'now';
-  var m = Math.floor(s / 60);
+  const m = Math.floor(s / 60);
   if (m < 60) return m + 'm';
-  var h = Math.floor(m / 60);
+  const h = Math.floor(m / 60);
   if (h < 24) return h + 'h';
-  var d = Math.floor(h / 24);
+  const d = Math.floor(h / 24);
   return d + 'd';
 }
 
 function initialsOf(name) {
-  var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';
-  var first = parts[0].charAt(0);
-  var last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
   return (first + last).toUpperCase();
 }
 
@@ -59,22 +59,22 @@ function extractEmbedImage(embed) {
 
 async function fetchAccount(acct) {
   try {
-    var url = BSKY_API + '/app.bsky.feed.getAuthorFeed?actor='
+    const url = BSKY_API + '/app.bsky.feed.getAuthorFeed?actor='
       + encodeURIComponent(acct.handle)
       + '&limit=' + PER_ACCOUNT + '&filter=posts_no_replies';
-    var r = await fetch(url);
+    const r = await fetch(url);
     if (!r.ok) return [];
-    var d = await r.json();
-    var feed = (d && d.feed) || [];
-    var out = [];
+    const d = await r.json();
+    const feed = (d && d.feed) || [];
+    const out = [];
     feed.forEach(function (item) {
       if (item.reason) return;                       // skip reposts
-      var p = item.post;
+      const p = item.post;
       if (!p || !p.record || !p.record.text) return; // skip empties
       if (p.record.reply) return;                    // belt-and-braces: no replies
-      var ts = Date.parse(p.record.createdAt || '');
+      const ts = Date.parse(p.record.createdAt || '');
       if (!ts || Date.now() - ts > FRESH_MS) return; // last-month only
-      var handle = (p.author && p.author.handle) || acct.handle;
+      const handle = (p.author && p.author.handle) || acct.handle;
       out.push({
         name: acct.name || (p.author && p.author.displayName) || handle,
         handle: handle,
@@ -95,9 +95,9 @@ async function fetchAccount(acct) {
 
 function readCache() {
   try {
-    var raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    var c = JSON.parse(raw);
+    const c = JSON.parse(raw);
     if (!c || !Array.isArray(c.posts)) return null;
     if (Date.now() - c.ts > CACHE_TTL_MS) return null;
     return c.posts;
@@ -114,11 +114,11 @@ function writeCache(posts) {
 // timer is the true refresh cadence. force=false (first Pulse nav / reopen)
 // uses the localStorage cache so a reload within CACHE_TTL_MS is free.
 export async function loadBaseballBuzz(force) {
-  var el = document.getElementById('sideRailBuzz');
+  const el = document.getElementById('sideRailBuzz');
   if (!el) return;
 
   if (!force) {
-    var cached = readCache();
+    const cached = readCache();
     if (cached && cached.length) {
       state.baseballBuzzPosts = cached;
       renderBaseballBuzz();
@@ -132,8 +132,8 @@ export async function loadBaseballBuzz(force) {
   }
 
   try {
-    var results = await Promise.allSettled(BASEBALL_BUZZ_ACCOUNTS.map(fetchAccount));
-    var posts = [];
+    const results = await Promise.allSettled(BASEBALL_BUZZ_ACCOUNTS.map(fetchAccount));
+    let posts = [];
     results.forEach(function (res) {
       if (res.status === 'fulfilled' && res.value) posts = posts.concat(res.value);
     });
@@ -157,8 +157,8 @@ function buzzHeader() {
 }
 
 function avatarHtml(p) {
-  var ini = escapeNewsHtml(initialsOf(p.name));
-  var img = '';
+  const ini = escapeNewsHtml(initialsOf(p.name));
+  let img = '';
   if (p.avatar && isSafeNewsImage(p.avatar)) {
     img = '<img src="' + escapeNewsHtml(forceHttps(p.avatar)) + '" alt="" loading="lazy"'
       + ' onerror="this.remove()">';
@@ -167,14 +167,14 @@ function avatarHtml(p) {
 }
 
 function cardHtml(p) {
-  var head = avatarHtml(p)
+  const head = avatarHtml(p)
     + '<span class="buzz-meta-name">' + escapeNewsHtml(p.name) + '</span>'
     + (p.tag ? '<span class="buzz-tag" data-cat="' + escapeNewsHtml(p.category || '') + '">'
         + escapeNewsHtml(p.tag) + '</span>' : '')
     + '<span class="buzz-time">' + relTime(p.ts) + '</span>';
 
-  var embed = '';
-  var hasEmbed = false;
+  let embed = '';
+  let hasEmbed = false;
   if (p.embedImage && isSafeNewsImage(p.embedImage)) {
     hasEmbed = true;
     embed = '<div class="buzz-embed"><img src="' + escapeNewsHtml(forceHttps(p.embedImage))
@@ -190,9 +190,9 @@ function cardHtml(p) {
 }
 
 function renderBaseballBuzz() {
-  var el = document.getElementById('sideRailBuzz');
+  const el = document.getElementById('sideRailBuzz');
   if (!el) return;
-  var all = state.baseballBuzzPosts || [];
+  const all = state.baseballBuzzPosts || [];
 
   if (!all.length) {
     el.classList.remove('buzz-has-footer');
@@ -201,7 +201,7 @@ function renderBaseballBuzz() {
   }
 
   el.classList.add('buzz-has-footer');
-  var html = buzzHeader() + '<div class="buzz-list">';
+  let html = buzzHeader() + '<div class="buzz-list">';
   all.forEach(function (p) { html += cardHtml(p); });
   html += '</div><div class="buzz-footer">via <span>Bluesky</span></div>';
   el.innerHTML = html;

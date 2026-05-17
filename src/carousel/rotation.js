@@ -14,8 +14,8 @@ function setRotationCallbacks(callbacks) {
 }
 
 async function buildStoryPool(){
-  var now=Date.now();
-  var staleCutoff=now-30*60000;
+  const now=Date.now();
+  const staleCutoff=now-30*60000;
   state.stolenBaseEvents=state.stolenBaseEvents.filter(function(sb){return sb.ts&&sb.ts.getTime()>staleCutoff;});
   state.actionEvents=state.actionEvents.filter(function(ae){return ae.ts&&ae.ts.getTime()>staleCutoff;});
   if(now-state.dailyLeadersLastFetch>5*60000){loadDailyLeaders();state.dailyLeadersLastFetch=now;}
@@ -24,22 +24,22 @@ async function buildStoryPool(){
   if(now-state.liveWPLastFetch>(state.devTuning.livewp_refresh_ms||90000)){loadLiveWPCache();}
   await loadProbablePitcherStats();
   fetchMissingHRBatterStats();
-  var multiHitStories=await genMultiHitDay();
-  var wpStories=await genWinProbabilityStories();
-  var streakStories=await genStreakStories();
-  var fresh=[].concat(
+  const multiHitStories=await genMultiHitDay();
+  const wpStories=await genWinProbabilityStories();
+  const streakStories=await genStreakStories();
+  let fresh=[].concat(
     genHRStories(),genNoHitterWatch(),genWalkOffThreat(),genBasesLoaded(),genStolenBaseStories(),genActionEventStories(),genBigInning(),
     genFinalScoreStories(),streakStories,multiHitStories,genDailyLeaders(),
     genPitcherGem(),genOnThisDay(),genYesterdayHighlights(),genProbablePitchers(),genInningRecapStories(),
     wpStories,genRosterMoveStories(),genSeasonHighStories(),
     genLiveWinProbStories(),genDailyIntro()
   );
-  var introMarquee=fresh.find(function(s){return s.type==='editorial'&&s.id.indexOf('dailyintro_')===0&&s.gamePk;});
+  const introMarquee=fresh.find(function(s){return s.type==='editorial'&&s.id.indexOf('dailyintro_')===0&&s.gamePk;});
   if(introMarquee){
-    var dupId='probable_'+introMarquee.gamePk;
+    const dupId='probable_'+introMarquee.gamePk;
     fresh=fresh.filter(function(s){return s.id!==dupId;});
   }
-  var hrInnings={};
+  const hrInnings={};
   state.feedItems.forEach(function(item){
     if(!item.data||item.data.event!=='Home Run')return;
     if(!item.ts||now-item.ts.getTime()>5*60000)return;
@@ -47,12 +47,12 @@ async function buildStoryPool(){
   });
   fresh=fresh.filter(function(s){
     if(s.id.indexOf('basesloaded_')!==0)return true;
-    var parts=s.id.split('_');
+    const parts=s.id.split('_');
     if(parts.length<4)return true;
     return !hrInnings[parts[1]+'_'+parts[2]+'_'+parts[3]];
   });
   state.storyPool=fresh.slice().sort(function(a,b){return b.priority-a.priority;});
-  var carousel=document.getElementById('storyCarousel');
+  const carousel=document.getElementById('storyCarousel');
   if(!carousel) return;
   if(state.storyPool.length){
     if(carousel.style.display==='none'){
@@ -68,13 +68,13 @@ async function buildStoryPool(){
 
 function rotateStory(){
   if(!state.storyPool.length) return;
-  var now=Date.now();
-  var maxCooldown=Math.max(state.storyPool.length*state.devTuning.rotateMs*1.5,2*60000);
-  var eligible=state.storyPool.filter(function(s){return !s.lastShown||(now-s.lastShown.getTime())>Math.min(s.cooldownMs,maxCooldown);});
+  const now=Date.now();
+  const maxCooldown=Math.max(state.storyPool.length*state.devTuning.rotateMs*1.5,2*60000);
+  let eligible=state.storyPool.filter(function(s){return !s.lastShown||(now-s.lastShown.getTime())>Math.min(s.cooldownMs,maxCooldown);});
   if(!eligible.length){eligible=state.storyPool.slice().sort(function(a,b){return (a.lastShown?a.lastShown.getTime():0)-(b.lastShown?b.lastShown.getTime():0);});}
-  var scored=eligible.map(function(s){
-    var ageMin=(now-s.ts.getTime())/60000;
-    var decay=Math.pow(Math.max(0,1-s.decayRate),ageMin/30);
+  const scored=eligible.map(function(s){
+    const ageMin=(now-s.ts.getTime())/60000;
+    const decay=Math.pow(Math.max(0,1-s.decayRate),ageMin/30);
     return {s:s,score:s.priority*decay};
   });
   scored.sort(function(a,b){return b.score-a.score;});
@@ -89,10 +89,10 @@ function showStoryCard(story){
 }
 
 function renderStoryCard(story){
-  var el=document.getElementById('storyCard'); if(!el) return;
-  var badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',leaders:'leaders',probables:'probables',highlight:'highlight',inning_recap:'inning_recap',hot:'hot',cold:'cold',streak:'streak',roster:'roster',award:'award',record:'award'};
-  var labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',leaders:'LEADERS',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT',inning_recap:'INNING RECAP',hot:'HOT',cold:'COLD',streak:'HITTING STREAK',roster:'ROSTER MOVE',award:'AWARD',record:'SEASON HIGH'};
-  var bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
+  const el=document.getElementById('storyCard'); if(!el) return;
+  const badgeMap={live:'live',final:'final',today:'today',yesterday:'yesterday',onthisday:'onthisday',upcoming:'upcoming',leaders:'leaders',probables:'probables',highlight:'highlight',inning_recap:'inning_recap',hot:'hot',cold:'cold',streak:'streak',roster:'roster',award:'award',record:'award'};
+  const labelMap={live:'LIVE',final:'FINAL',today:'TODAY',yesterday:'YESTERDAY',onthisday:'ON THIS DAY',upcoming:'UPCOMING',leaders:'LEADERS',probables:"TODAY'S PROBABLE PITCHERS",highlight:'HIGHLIGHT',inning_recap:'INNING RECAP',hot:'HOT',cold:'COLD',streak:'HITTING STREAK',roster:'ROSTER MOVE',award:'AWARD',record:'SEASON HIGH'};
+  const bc=badgeMap[story.badge]||'today', bl=labelMap[story.badge]||'TODAY';
   el.className='story-card tier'+story.tier+(story.id.indexOf('biginning')===0?' story-biginning':'')+(story.id.indexOf('leader_')===0?' story-leaders':'');
   el.innerHTML='<div><span class="story-badge '+bc+'">'+bl+'</span></div>'
     +'<div style="display:flex;align-items:flex-start;gap:6px;margin-top:2px">'
@@ -103,23 +103,23 @@ function renderStoryCard(story){
 }
 
 function updateStoryDots(){
-  var el=document.getElementById('storyDots'); if(!el) return;
-  var max=Math.min(state.storyPool.length,8);
-  var curIdx=state.storyPool.findIndex(function(s){return s.id===state.storyShownId;});
-  var html='';
-  for(var i=0;i<max;i++) html+='<div class="story-dot'+(i===curIdx?' active':'')+'"></div>';
+  const el=document.getElementById('storyDots'); if(!el) return;
+  const max=Math.min(state.storyPool.length,8);
+  const curIdx=state.storyPool.findIndex(function(s){return s.id===state.storyShownId;});
+  let html='';
+  for(let i=0;i<max;i++) html+='<div class="story-dot'+(i===curIdx?' active':'')+'"></div>';
   el.innerHTML=html;
 }
 
 function prevStory(){
   if(!state.storyPool.length) return;
-  var idx=state.storyPool.findIndex(function(s){return s.id===state.storyShownId;});
+  const idx=state.storyPool.findIndex(function(s){return s.id===state.storyShownId;});
   showStoryCard(state.storyPool[idx<=0?state.storyPool.length-1:idx-1]);
 }
 
 function nextStory(){
   if(!state.storyPool.length) return;
-  var idx=state.storyPool.findIndex(function(s){return s.id===state.storyShownId;});
+  const idx=state.storyPool.findIndex(function(s){return s.id===state.storyShownId;});
   showStoryCard(state.storyPool[idx>=state.storyPool.length-1?0:idx+1]);
 }
 

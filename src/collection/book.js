@@ -54,11 +54,11 @@ export function saveCollection(obj) {
 }
 
 function showCollectedToast(type, playerName, eventType, tier) {
-  var el = document.getElementById('cardCollectedToast');
+  const el = document.getElementById('cardCollectedToast');
   if (!el) return;
-  var tierColor = { legendary: '#e03030', epic: '#f59e0b', rare: '#3b82f6', common: '#9aa0a8' }[tier] || '#9aa0a8';
-  var lastName = playerName.split(' ').pop();
-  var prefix, msg;
+  const tierColor = { legendary: '#e03030', epic: '#f59e0b', rare: '#3b82f6', common: '#9aa0a8' }[tier] || '#9aa0a8';
+  const lastName = playerName.split(' ').pop();
+  let prefix, msg;
   if (type === 'new') {
     if (tier === 'legendary') { prefix = '🔴'; msg = 'LEGENDARY PULL! ' + lastName + ' ' + eventType; }
     else if (tier === 'epic') { prefix = '🟠'; msg = 'EPIC CARD! ' + lastName + ' ' + eventType; }
@@ -78,7 +78,7 @@ function showCollectedToast(type, playerName, eventType, tier) {
   el.style.borderColor = tierColor + '99';
   el.style.boxShadow = (tier === 'legendary' || tier === 'epic') ? '0 0 14px ' + tierColor + '55' : '';
   el.innerHTML = '<span style="color:' + tierColor + ';font-weight:800;">' + prefix + '</span> ' + msg;
-  var duration = (tier === 'legendary' || tier === 'epic') ? 2800 : 2100;
+  const duration = (tier === 'legendary' || tier === 'epic') ? 2800 : 2100;
   el.style.animationDuration = duration + 'ms';
   el.style.display = 'block';
   el.classList.remove('show');
@@ -88,24 +88,24 @@ function showCollectedToast(type, playerName, eventType, tier) {
 }
 
 export function collectCard(data, force) {
-  var playerId = data.playerId, playerName = data.playerName, teamAbbr = data.teamAbbr;
-  var teamPrimary = data.teamPrimary, teamSecondary = data.teamSecondary, position = data.position || '';
-  var eventType = data.eventType, badge = data.badge || '', rbi = data.rbi || 0;
-  var key = playerId + '_' + eventType;
-  var tier = getCardTier(badge, eventType, rbi);
+  const playerId = data.playerId, playerName = data.playerName, teamAbbr = data.teamAbbr;
+  const teamPrimary = data.teamPrimary, teamSecondary = data.teamSecondary, position = data.position || '';
+  const eventType = data.eventType, badge = data.badge || '', rbi = data.rbi || 0;
+  const key = playerId + '_' + eventType;
+  const tier = getCardTier(badge, eventType, rbi);
   devTrace('collect', (playerName || '?') + ' · ' + eventType + ' · tier=' + tier + (rbi ? ' · rbi=' + rbi : '') + (force ? ' [forced]' : ''));
 
   if (state.demoMode && !force) {
     // Simulate the collection outcome so the rail flash + toast still
     // fire, but never persist to localStorage. Increment a session-only
     // counter so the rail count chip ticks up visibly during demo.
-    var demoCol = loadCollection();
-    var demoEx = demoCol[key];
+    const demoCol = loadCollection();
+    const demoEx = demoCol[key];
     if (!demoEx) {
       state.lastCollectionResult = { type: 'new', playerName: playerName, eventType: eventType, tier: tier };
       state.demoCardCount = (state.demoCardCount || 0) + 1;
     } else {
-      var dRank = tierRank(tier), dExRank = tierRank(demoEx.tier);
+      const dRank = tierRank(tier), dExRank = tierRank(demoEx.tier);
       state.lastCollectionResult = {
         type: dRank > dExRank ? 'upgrade' : 'dup',
         playerName: playerName, eventType: eventType, tier: tier
@@ -115,8 +115,8 @@ export function collectCard(data, force) {
     return;
   }
 
-  var col = loadCollection();
-  var eventCtx = {
+  const col = loadCollection();
+  const eventCtx = {
     badge: badge,
     date: new Date().toLocaleDateString('en-CA'),
     inning: data.inning || 0,
@@ -135,8 +135,8 @@ export function collectCard(data, force) {
     state.lastCollectionResult = { type: 'new', playerName: playerName, eventType: eventType, tier: tier };
     showCollectedToast('new', playerName, eventType, tier);
   } else {
-    var existing = col[key];
-    var newRank = tierRank(tier), existRank = tierRank(existing.tier);
+    const existing = col[key];
+    const newRank = tierRank(tier), existRank = tierRank(existing.tier);
     if (newRank > existRank) {
       existing.tier = tier;
       existing.events = [eventCtx];
@@ -161,15 +161,15 @@ export function collectCard(data, force) {
 
 export async function fetchCareerStats(playerId, position) {
   if (state.collectionCareerStatsCache[playerId]) return state.collectionCareerStatsCache[playerId];
-  var isPitcher = ['SP', 'RP', 'CP', 'P'].indexOf((position || '').toUpperCase()) !== -1;
-  var group = isPitcher ? 'pitching' : 'hitting';
+  const isPitcher = ['SP', 'RP', 'CP', 'P'].indexOf((position || '').toUpperCase()) !== -1;
+  const group = isPitcher ? 'pitching' : 'hitting';
   try {
-    var r = await fetch(MLB_BASE + '/people/' + playerId + '/stats?stats=career&group=' + group);
+    const r = await fetch(MLB_BASE + '/people/' + playerId + '/stats?stats=career&group=' + group);
     if (!r.ok) throw new Error(r.status);
-    var d = await r.json();
-    var stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
+    const d = await r.json();
+    const stat = d.stats && d.stats[0] && d.stats[0].splits && d.stats[0].splits[0] && d.stats[0].splits[0].stat;
     if (!stat) return null;
-    var result = isPitcher
+    const result = isPitcher
       ? { careerERA: fmt(stat.era, 2), careerWHIP: fmt(stat.whip, 2), careerW: stat.wins || 0, careerK: stat.strikeOuts || 0 }
       : { careerHR: stat.homeRuns || 0, careerAVG: fmtRate(stat.avg), careerRBI: stat.rbi || 0, careerOPS: fmtRate(stat.ops) };
     state.collectionCareerStatsCache[playerId] = result;
@@ -178,14 +178,14 @@ export async function fetchCareerStats(playerId, position) {
 }
 
 export function openCollection() {
-  var el = document.getElementById('collectionOverlay');
+  const el = document.getElementById('collectionOverlay');
   if (!el) return;
   state.collectionPage = 0;
   el.style.display = 'flex';
   if (state.demoMode) {
     // Demo doesn't persist cards — show a sign-in nudge instead of an
     // empty/fake binder. Real cards only collect when signed in + live.
-    var book = document.getElementById('collectionBook');
+    const book = document.getElementById('collectionBook');
     if (book) {
       book.innerHTML =
         '<div style="display:flex;align-items:center;justify-content:center;min-height:50vh;padding:40px 20px">' +
@@ -203,7 +203,7 @@ export function openCollection() {
 }
 
 export function closeCollection() {
-  var el = document.getElementById('collectionOverlay');
+  const el = document.getElementById('collectionOverlay');
   if (el) el.style.display = 'none';
 }
 
@@ -211,40 +211,40 @@ export function filterCollection(f) { state.collectionFilter = f; state.collecti
 export function sortCollection(s) { state.collectionSort = s; state.collectionPage = 0; renderCollectionBook(); }
 
 export function goCollectionPage(dir) {
-  var col = loadCollection();
-  var slots = Object.values(col);
+  const col = loadCollection();
+  let slots = Object.values(col);
   if (state.collectionFilter !== 'all') slots = slots.filter(function(s) { return s.eventType === state.collectionFilter; });
   if (state.collectionSort === 'team') {
-    var abbrs = [];
+    const abbrs = [];
     slots.forEach(function(s) { if (abbrs.indexOf(s.teamAbbr) === -1) abbrs.push(s.teamAbbr); });
     abbrs.sort();
     state.collectionPage = Math.max(0, Math.min(abbrs.length - 1, state.collectionPage + dir));
   } else {
-    var totalPages = Math.max(1, Math.ceil(slots.length / 9));
+    const totalPages = Math.max(1, Math.ceil(slots.length / 9));
     state.collectionPage = Math.max(0, Math.min(totalPages - 1, state.collectionPage + dir));
   }
   renderCollectionBook();
 }
 
 export async function renderCollectionBook() {
-  var book = document.getElementById('collectionBook');
+  const book = document.getElementById('collectionBook');
   if (!book) return;
-  var col = loadCollection();
-  var slots = Object.values(col);
+  const col = loadCollection();
+  let slots = Object.values(col);
   if (state.collectionFilter !== 'all') slots = slots.filter(function(s) { return s.eventType === state.collectionFilter; });
-  var teamContext = null;
+  let teamContext = null;
   if (state.collectionSort === 'rarity') {
     slots.sort(function(a, b) { return tierRank(b.tier) - tierRank(a.tier) || b.collectedAt - a.collectedAt; });
   } else if (state.collectionSort === 'team') {
-    var teamAbbrs = [];
+    const teamAbbrs = [];
     slots.forEach(function(s) { if (teamAbbrs.indexOf(s.teamAbbr) === -1) teamAbbrs.push(s.teamAbbr); });
     teamAbbrs.sort();
-    var teamCount = teamAbbrs.length;
+    const teamCount = teamAbbrs.length;
     state.collectionPage = Math.max(0, Math.min(Math.max(0, teamCount - 1), state.collectionPage));
-    var currentAbbr = teamAbbrs[state.collectionPage] || '';
+    const currentAbbr = teamAbbrs[state.collectionPage] || '';
     slots = slots.filter(function(s) { return s.teamAbbr === currentAbbr; });
     slots.sort(function(a, b) { return tierRank(b.tier) - tierRank(a.tier); });
-    var td = TEAMS.find(function(t) { return t.short === currentAbbr; });
+    const td = TEAMS.find(function(t) { return t.short === currentAbbr; });
     teamContext = {
       abbr: currentAbbr,
       primary: (td && td.primary) || '#444444',
@@ -258,17 +258,17 @@ export async function renderCollectionBook() {
   }
 
   if (state.collectionSort !== 'team') {
-    var totalPages = Math.max(1, Math.ceil(slots.length / 9));
+    const totalPages = Math.max(1, Math.ceil(slots.length / 9));
     state.collectionPage = Math.min(state.collectionPage, totalPages - 1);
   }
 
-  var pageSlots = (state.collectionSort === 'team')
+  const pageSlots = (state.collectionSort === 'team')
     ? slots
     : slots.slice(state.collectionPage * 9, (state.collectionPage + 1) * 9);
-  var careerStatsMap = Object.assign({}, state.collectionCareerStatsCache);
+  const careerStatsMap = Object.assign({}, state.collectionCareerStatsCache);
   await Promise.all(pageSlots.map(async function(slot) {
     if (!careerStatsMap[slot.playerId]) {
-      var cs = await fetchCareerStats(slot.playerId, slot.position);
+      const cs = await fetchCareerStats(slot.playerId, slot.position);
       if (cs) careerStatsMap[slot.playerId] = cs;
     }
   }));
@@ -285,19 +285,19 @@ export async function renderCollectionBook() {
 }
 
 export function openCardFromCollection(idx) {
-  var slot = state.collectionSlotsDisplay[idx];
+  const slot = state.collectionSlotsDisplay[idx];
   if (!slot || !slot.events || !slot.events.length) return;
 
-  var ev = slot.events[Math.floor(Math.random() * slot.events.length)];
+  const ev = slot.events[Math.floor(Math.random() * slot.events.length)];
 
-  var awayTeam = TEAMS.find(function(t) { return t.short === ev.awayAbbr; });
-  var homeTeam = TEAMS.find(function(t) { return t.short === ev.homeAbbr; });
-  var awayTeamId = awayTeam ? awayTeam.id : 0;
-  var homeTeamId = homeTeam ? homeTeam.id : 0;
+  const awayTeam = TEAMS.find(function(t) { return t.short === ev.awayAbbr; });
+  const homeTeam = TEAMS.find(function(t) { return t.short === ev.homeAbbr; });
+  const awayTeamId = awayTeam ? awayTeam.id : 0;
+  const homeTeamId = homeTeam ? homeTeam.id : 0;
 
   if (slot.eventType === 'HR') {
-    var careerStats = state.collectionCareerStatsCache[slot.playerId];
-    var overrideStats = null;
+    const careerStats = state.collectionCareerStatsCache[slot.playerId];
+    let overrideStats = null;
     if (careerStats && careerStats.careerHR !== undefined) {
       overrideStats = {
         avg: careerStats.careerAVG,
@@ -311,27 +311,27 @@ export function openCardFromCollection(idx) {
     }
     if (_showPlayerCard) _showPlayerCard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, overrideStats, null, ev.badge, null);
   } else {
-    var badgeUp = (ev.badge || '').toUpperCase();
-    var eventType = '';
+    const badgeUp = (ev.badge || '').toUpperCase();
+    let eventType = '';
     if      (badgeUp.indexOf('SINGLE')  !== -1) eventType = 'Single';
     else if (badgeUp.indexOf('DOUBLE')  !== -1) eventType = 'Double';
     else if (badgeUp.indexOf('TRIPLE')  !== -1) eventType = 'Triple';
     else if (badgeUp.indexOf('SAC FLY') !== -1) eventType = 'Sac Fly';
     else if (badgeUp.indexOf('WALK')    !== -1) eventType = 'Walk';
     else if (badgeUp.indexOf('HBP')     !== -1) eventType = 'HBP';
-    var rbiMatch = badgeUp.match(/^(\d+)-RUN/);
-    var rbi = rbiMatch ? parseInt(rbiMatch[1]) : 1;
+    const rbiMatch = badgeUp.match(/^(\d+)-RUN/);
+    const rbi = rbiMatch ? parseInt(rbiMatch[1]) : 1;
     if (_showRBICard) _showRBICard(slot.playerId, slot.playerName, awayTeamId, homeTeamId, ev.halfInning, rbi, eventType, ev.awayScore, ev.homeScore, ev.inning, null);
   }
 }
 
 export function openCardFromKey(key) {
-  var col = loadCollection();
-  var slot = col[key];
+  const col = loadCollection();
+  const slot = col[key];
   if (!slot || !slot.events || !slot.events.length) return;
-  var sorted = Object.values(col).sort(function(a, b) { return (b.collectedAt || 0) - (a.collectedAt || 0); });
+  const sorted = Object.values(col).sort(function(a, b) { return (b.collectedAt || 0) - (a.collectedAt || 0); });
   state.collectionSlotsDisplay = sorted;
-  var idx = sorted.indexOf(slot);
+  let idx = sorted.indexOf(slot);
   if (idx === -1) { state.collectionSlotsDisplay.push(slot); idx = state.collectionSlotsDisplay.length - 1; }
   openCardFromCollection(idx);
 }
@@ -339,18 +339,18 @@ export function openCardFromKey(key) {
 export function updateCollectionUI() {
   // In demo, the count reflects session-only demo collections so the rail
   // chip ticks up visibly. Real localStorage stays untouched.
-  var count = state.demoMode
+  const count = state.demoMode
     ? (state.demoCardCount || 0)
     : Object.keys(loadCollection()).length;
-  var countEl = document.getElementById('collectionCountLabel');
+  const countEl = document.getElementById('collectionCountLabel');
   if (countEl) countEl.textContent = count;
   renderCollectionRailModule();
 }
 
 function renderCollectionRailModule() {
-  var el = document.getElementById('collectionRailModule');
+  const el = document.getElementById('collectionRailModule');
   if (!el || !window.CollectionCard) return;
-  var count = state.demoMode
+  const count = state.demoMode
     ? (state.demoCardCount || 0)
     : Object.keys(loadCollection()).length;
   el.innerHTML = window.CollectionCard.renderRailModule(count);
@@ -358,13 +358,13 @@ function renderCollectionRailModule() {
 
 export function flashCollectionRailMessage() {
   if (!state.lastCollectionResult) return;
-  var el = document.getElementById('collectionRailModule');
+  const el = document.getElementById('collectionRailModule');
   if (!el) return;
-  var r = state.lastCollectionResult;
+  const r = state.lastCollectionResult;
   state.lastCollectionResult = null;
-  var tierColor = { legendary: '#e03030', epic: '#f59e0b', rare: '#3b82f6', common: '#9aa0a8' }[r.tier] || '#9aa0a8';
-  var name = r.playerName.split(' ').pop();
-  var label, sublabel;
+  const tierColor = { legendary: '#e03030', epic: '#f59e0b', rare: '#3b82f6', common: '#9aa0a8' }[r.tier] || '#9aa0a8';
+  const name = r.playerName.split(' ').pop();
+  let label, sublabel;
   if (r.type === 'new') {
     if (r.tier === 'legendary')   { label = '🔴 LEGENDARY PULL!';     sublabel = name + ' ' + r.eventType; }
     else if (r.tier === 'epic')   { label = '⚡ EPIC CARD!';           sublabel = name + ' ' + r.eventType; }
@@ -381,7 +381,7 @@ export function flashCollectionRailMessage() {
     else if (r.tier === 'rare')   { label = '💎 Rare Variant';         sublabel = name + ' ' + r.eventType; }
     else                          { label = '✓ Already Have';          sublabel = name + ' ' + r.eventType; }
   }
-  var dotGlow = (r.tier === 'legendary' || r.tier === 'epic') ? ';box-shadow:0 0 6px ' + tierColor : '';
+  const dotGlow = (r.tier === 'legendary' || r.tier === 'epic') ? ';box-shadow:0 0 6px ' + tierColor : '';
   el.innerHTML =
     '<div onclick="openCollection()" style="' +
       'display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;' +
@@ -399,7 +399,7 @@ export function flashCollectionRailMessage() {
 }
 
 export function generateTestCard() {
-  var rosterEntries = (state.rosterData.hitting || []).map(function(p) {
+  const rosterEntries = (state.rosterData.hitting || []).map(function(p) {
     return {
       personId: p.person.id,
       personName: p.person.fullName,
@@ -408,14 +408,14 @@ export function generateTestCard() {
     };
   });
 
-  var seenIds = {};
+  const seenIds = {};
   rosterEntries.forEach(function(e) { seenIds[e.personId] = true; });
-  var leaderEntries = [];
+  const leaderEntries = [];
   function addLeadersFromMap(map) {
     Object.keys(map).forEach(function(cat) {
       (map[cat] || []).forEach(function(l) {
         if (!l.person || !l.person.id || seenIds[l.person.id]) return;
-        var td = (l.team && l.team.id) ? TEAMS.find(function(t) { return t.id === l.team.id; }) : null;
+        const td = (l.team && l.team.id) ? TEAMS.find(function(t) { return t.id === l.team.id; }) : null;
         if (!td) return;
         seenIds[l.person.id] = true;
         leaderEntries.push({
@@ -427,30 +427,30 @@ export function generateTestCard() {
       });
     });
   }
-  var leagueLeadersCache = _getLeagueLeadersCache ? _getLeagueLeadersCache() : null;
+  const leagueLeadersCache = _getLeagueLeadersCache ? _getLeagueLeadersCache() : null;
   if (leagueLeadersCache && leagueLeadersCache.hitting) addLeadersFromMap(leagueLeadersCache.hitting);
   if (state.dailyLeadersCache) {
-    var hitCats = { homeRuns: 1, battingAverage: 1, runsBattedIn: 1, stolenBases: 1 };
-    var hitOnly = {};
+    const hitCats = { homeRuns: 1, battingAverage: 1, runsBattedIn: 1, stolenBases: 1 };
+    const hitOnly = {};
     Object.keys(state.dailyLeadersCache).forEach(function(k) { if (hitCats[k]) hitOnly[k] = state.dailyLeadersCache[k]; });
     addLeadersFromMap(hitOnly);
   }
 
-  var fullPool = rosterEntries.concat(leaderEntries);
+  const fullPool = rosterEntries.concat(leaderEntries);
   if (!fullPool.length) { showCollectedToast('new', 'No roster loaded', '', 'common'); return; }
 
-  var p = fullPool[Math.floor(Math.random() * fullPool.length)];
-  var eventType = Math.random() > 0.5 ? 'HR' : 'RBI';
-  var tiers = ['common', 'common', 'rare', 'epic', 'legendary'];
-  var tier = tiers[Math.floor(Math.random() * tiers.length)];
-  var badgeMap = {
+  const p = fullPool[Math.floor(Math.random() * fullPool.length)];
+  const eventType = Math.random() > 0.5 ? 'HR' : 'RBI';
+  const tiers = ['common', 'common', 'rare', 'epic', 'legendary'];
+  const tier = tiers[Math.floor(Math.random() * tiers.length)];
+  const badgeMap = {
     HR: { legendary: 'WALK-OFF GRAND SLAM!', epic: 'GRAND SLAM!', rare: 'GO-AHEAD HOME RUN!', common: '💥 HOME RUN!' },
     RBI: { legendary: 'WALK-OFF DOUBLE!', epic: 'WALK-OFF SINGLE!', rare: 'GO-AHEAD SINGLE!', common: 'RBI SINGLE!' }
   };
-  var rbiByTier = { legendary: 2, epic: 1, rare: 1, common: 1 };
-  var innings = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  var halves = ['top', 'bottom'];
-  var scores = [0, 1, 2, 3, 4, 5];
+  const rbiByTier = { legendary: 2, epic: 1, rare: 1, common: 1 };
+  const innings = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const halves = ['top', 'bottom'];
+  const scores = [0, 1, 2, 3, 4, 5];
   collectCard({
     playerId: p.personId,
     playerName: p.personName,

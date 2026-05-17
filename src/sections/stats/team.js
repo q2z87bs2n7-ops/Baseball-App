@@ -10,13 +10,13 @@ import { SEASON, MLB_BASE } from '../../config/constants.js';
 import { fmt, fmtRate, etDateStr, etDatePlus } from '../../utils/format.js';
 
 export async function loadTeamStats(){
-  var stripEl=document.getElementById('teamStatsStrip');
-  var formEl=document.getElementById('teamFormLine');
-  var titleEl=document.getElementById('teamStatsTitle');
+  const stripEl=document.getElementById('teamStatsStrip');
+  const formEl=document.getElementById('teamFormLine');
+  const titleEl=document.getElementById('teamStatsTitle');
   if(!stripEl)return;
   titleEl.textContent=SEASON+' '+state.activeTeam.short+' · Team Stats';
-  var FRESH_MS=300000;
-  var teamId=state.activeTeam.id;
+  const FRESH_MS=300000;
+  const teamId=state.activeTeam.id;
   if(state.teamStats.teamId===teamId&&Date.now()-state.teamStatsFetchedAt<FRESH_MS){renderTeamStats();return;}
   if(state.teamStatsInflight)return state.teamStatsInflight;
   stripEl.innerHTML='<div class="loading">Loading team stats...</div>';
@@ -26,17 +26,17 @@ export async function loadTeamStats(){
       // Last-25-day window for the L10-run-diff calc (v4.6.23 — the standings
       // endpoint only returns season-aggregate runDifferential, which was being
       // rendered next to "Last 10:" and read as a last-10 figure).
-      var todayStr=etDateStr();
-      var fromStr=etDatePlus(todayStr,-25);
-      var schedReq=fetch(MLB_BASE+'/schedule?teamId='+teamId+'&startDate='+fromStr+'&endDate='+todayStr+'&hydrate=linescore&sportId=1');
-      var seasonReq=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching,fielding&stats=season&season='+SEASON);
-      var l10Req=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching&stats=lastXGames&limitGames=10&season='+SEASON);
-      var standingsReq=fetch(MLB_BASE+'/standings?leagueId=103,104&season='+SEASON);
-      var [seasonRes,l10Res,standingsRes,schedRes]=await Promise.all([seasonReq,l10Req,standingsReq,schedReq]);
-      var seasonData=seasonRes&&seasonRes.ok?await seasonRes.json():null;
-      var l10Data=l10Res&&l10Res.ok?await l10Res.json():null;
-      var standingsData=standingsRes&&standingsRes.ok?await standingsRes.json():null;
-      var schedData=schedRes&&schedRes.ok?await schedRes.json():null;
+      const todayStr=etDateStr();
+      const fromStr=etDatePlus(todayStr,-25);
+      const schedReq=fetch(MLB_BASE+'/schedule?teamId='+teamId+'&startDate='+fromStr+'&endDate='+todayStr+'&hydrate=linescore&sportId=1');
+      const seasonReq=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching,fielding&stats=season&season='+SEASON);
+      const l10Req=fetch(MLB_BASE+'/teams/'+teamId+'/stats?group=hitting,pitching&stats=lastXGames&limitGames=10&season='+SEASON);
+      const standingsReq=fetch(MLB_BASE+'/standings?leagueId=103,104&season='+SEASON);
+      const [seasonRes,l10Res,standingsRes,schedRes]=await Promise.all([seasonReq,l10Req,standingsReq,schedReq]);
+      const seasonData=seasonRes&&seasonRes.ok?await seasonRes.json():null;
+      const l10Data=l10Res&&l10Res.ok?await l10Res.json():null;
+      const standingsData=standingsRes&&standingsRes.ok?await standingsRes.json():null;
+      const schedData=schedRes&&schedRes.ok?await schedRes.json():null;
       state.teamStats.hitting=extractTeamStat(seasonData,'hitting');
       state.teamStats.pitching=extractTeamStat(seasonData,'pitching');
       state.teamStats.fielding=extractTeamStat(seasonData,'fielding');
@@ -58,7 +58,7 @@ export async function loadTeamStats(){
 
 function extractTeamStat(payload,group){
   if(!payload||!payload.stats)return null;
-  var blk=payload.stats.find(function(s){return s.group&&s.group.displayName&&s.group.displayName.toLowerCase()===group;});
+  const blk=payload.stats.find(function(s){return s.group&&s.group.displayName&&s.group.displayName.toLowerCase()===group;});
   if(!blk||!blk.splits||!blk.splits.length)return null;
   return blk.splits[0].stat;
 }
@@ -70,21 +70,21 @@ function extractTeamStat(payload,group){
 // than misleading with a partial sum.
 function computeLast10RunDiff(schedPayload,teamId){
   if(!schedPayload||!schedPayload.dates)return null;
-  var games=[];
+  const games=[];
   schedPayload.dates.forEach(function(d){(d.games||[]).forEach(function(g){games.push(g);});});
   // Final only, newest first
-  var finals=games.filter(function(g){
+  const finals=games.filter(function(g){
     return g.status&&g.status.abstractGameState==='Final'
       &&g.linescore&&g.linescore.teams
       &&g.linescore.teams.home&&g.linescore.teams.away;
   }).sort(function(a,b){return new Date(b.gameDate)-new Date(a.gameDate);});
   if(!finals.length)return null;
-  var slice=finals.slice(0,10);
-  var diff=0,counted=0;
+  const slice=finals.slice(0,10);
+  let diff=0,counted=0;
   slice.forEach(function(g){
-    var home=g.teams&&g.teams.home,away=g.teams&&g.teams.away;
-    var ls=g.linescore.teams;
-    var homeR=parseInt(ls.home.runs,10),awayR=parseInt(ls.away.runs,10);
+    const home=g.teams&&g.teams.home,away=g.teams&&g.teams.away;
+    const ls=g.linescore.teams;
+    const homeR=parseInt(ls.home.runs,10),awayR=parseInt(ls.away.runs,10);
     if(isNaN(homeR)||isNaN(awayR))return;
     if(home&&home.team&&home.team.id===teamId){diff+=(homeR-awayR);counted++;}
     else if(away&&away.team&&away.team.id===teamId){diff+=(awayR-homeR);counted++;}
@@ -94,11 +94,11 @@ function computeLast10RunDiff(schedPayload,teamId){
 
 function extractTeamRecord(standingsData,teamId){
   if(!standingsData||!standingsData.records)return null;
-  for(var i=0;i<standingsData.records.length;i++){
-    var teams=standingsData.records[i].teamRecords||[];
-    for(var j=0;j<teams.length;j++){
+  for(let i=0;i<standingsData.records.length;i++){
+    const teams=standingsData.records[i].teamRecords||[];
+    for(let j=0;j<teams.length;j++){
       if(teams[j].team&&teams[j].team.id===teamId){
-        var split=(teams[j].records&&teams[j].records.splitRecords||[]).find(function(s){return s.type==='lastTen';});
+        const split=(teams[j].records&&teams[j].records.splitRecords||[]).find(function(s){return s.type==='lastTen';});
         return{
           lastTen:split?(split.wins+'-'+split.losses):'',
           lastTenWins:split?split.wins:0,
@@ -114,13 +114,13 @@ function extractTeamRecord(standingsData,teamId){
 
 
 function renderTeamStats(){
-  var stripEl=document.getElementById('teamStatsStrip');
-  var formEl=document.getElementById('teamFormLine');
+  const stripEl=document.getElementById('teamStatsStrip');
+  const formEl=document.getElementById('teamFormLine');
   if(!stripEl)return;
-  var ts=state.teamStats;
-  var html='';
+  const ts=state.teamStats;
+  let html='';
   if(ts.hitting){
-    var h=ts.hitting;
+    const h=ts.hitting;
     html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>⚾ Hitting</span></div>'+
       '<div class="team-stat-tile-grid">'+
       '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(h.avg)+'</div><div class="l">AVG</div></div>'+
@@ -130,7 +130,7 @@ function renderTeamStats(){
       '</div></div>';
   }
   if(ts.pitching){
-    var p=ts.pitching;
+    const p=ts.pitching;
     html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🥎 Pitching</span></div>'+
       '<div class="team-stat-tile-grid">'+
       '<div class="team-stat-tile-stat"><div class="v">'+fmt(p.era,2)+'</div><div class="l">ERA</div></div>'+
@@ -140,7 +140,7 @@ function renderTeamStats(){
       '</div></div>';
   }
   if(ts.fielding){
-    var f=ts.fielding;
+    const f=ts.fielding;
     html+='<div class="team-stat-tile"><div class="team-stat-tile-head"><span>🧤 Fielding</span></div>'+
       '<div class="team-stat-tile-grid">'+
       '<div class="team-stat-tile-stat"><div class="v">'+fmtRate(f.fielding)+'</div><div class="l">FPCT</div></div>'+
@@ -152,21 +152,21 @@ function renderTeamStats(){
   if(!html)html='<div class="empty-state" style="grid-column:1/-1">No team stats available</div>';
   stripEl.innerHTML=html;
   if(!formEl)return;
-  var rec=ts.standingsRecord;
+  const rec=ts.standingsRecord;
   if(rec&&rec.lastTen){
-    var streakUp=rec.streak&&rec.streak.charAt(0)==='W';
+    const streakUp=rec.streak&&rec.streak.charAt(0)==='W';
     // Use last-10 run diff (computed from schedule+linescore) — the standings
     // endpoint's runDifferential is season-aggregate and was misread next to
     // "Last 10:". Fall back to omitting the chip when L10 diff isn't computable
     // rather than mixing scopes.
-    var rd=ts.last10RunDiff;
-    var rdStr=rd==null?'':' · run diff '+(rd>=0?'+':'')+rd;
+    const rd=ts.last10RunDiff;
+    const rdStr=rd==null?'':' · run diff '+(rd>=0?'+':'')+rd;
     // v4.6.24: color the form line by L10 wins, not the current streak. A 9-1
     // team that lost last night should still read green; a 1-9 team that won
     // last night shouldn't suddenly look hot. Threshold: >5 warm, =5 neutral,
     // <5 cold.
-    var l10w=rec.lastTenWins||0;
-    var formClass=l10w>5?'':(l10w===5?' neutral':' cold');
+    const l10w=rec.lastTenWins||0;
+    const formClass=l10w>5?'':(l10w===5?' neutral':' cold');
     formEl.className='team-form-line'+formClass;
     formEl.innerHTML='<div><b style="color:#fff;">Last 10:</b> '+rec.lastTen+(rec.streak?' · '+(streakUp?'▲ ':'▼ ')+rec.streak:'')+rdStr+'</div><div class="form-meta">Form</div>';
   }else{
