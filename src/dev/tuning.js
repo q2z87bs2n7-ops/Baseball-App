@@ -29,9 +29,6 @@ import { openRadioCheck } from '../radio/check.js';
 import { previewSound } from '../ui/sound.js';
 import { devTestClassicRadio } from '../radio/classic.js';
 import { Recorder } from './recorder.js';
-// DEBUG START: buzz handle health check
-import { runBuzzCheck } from './buzz-check.js';
-// DEBUG END: buzz handle health check
 
 const DEBUG = false;
 
@@ -242,9 +239,7 @@ export function initDevToolsClickDelegator() {
       else if (action === 'recorderCopy')      { Recorder.copy(); }
       else if (action === 'recorderReset')     { Recorder.reset(); }
       else if (action === 'confirm')           { confirmDevToolsChanges(); }
-      // DEBUG START: buzz handle health check
-      else if (action === 'buzzCheck')         { runBuzzCheck(); }
-      // DEBUG END: buzz handle health check
+
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
