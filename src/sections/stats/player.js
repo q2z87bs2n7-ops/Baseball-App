@@ -31,7 +31,7 @@ export async function selectPlayer(id,type,noScroll){
     ]);
     if(!r.ok) throw new Error(r.status);
     if(group!=='fielding'){
-      fetchGameLog(id, group).then(function(){ onGameLogResolved(id, group); });
+      fetchGameLog(id, group).then(function(){ onGameLogResolved(id, group); }).catch(function(){});
     }
     var d=await r.json();
     var stats=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat;
@@ -82,18 +82,18 @@ function renderPlayerStats(s,group){
       if(activeTab==='gamelog'){
         var glk = pid + ':' + (group==='fielding'?'hitting':group);
         if(state.gameLogCache[glk]) renderGameLogTab(pid, group);
-        else fetchGameLog(pid, group).then(function(){ onGameLogResolved(pid, group); });
+        else fetchGameLog(pid, group).then(function(){ onGameLogResolved(pid, group); }).catch(function(){});
       } else if(activeTab==='splits'){
         var slk = pid + ':' + (group==='fielding'?'hitting':group);
         if(state.statSplitsCache[slk]) renderSplitsTab(pid, group);
         else fetchStatSplits(pid, group).then(function(){
           if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='splits') renderSplitsTab(pid, group);
-        });
+        }).catch(function(){});
       } else if(activeTab==='advanced' && group==='pitching'){
         if(state.pitchArsenalCache[pid]) renderArsenalTab(pid);
         else fetchPitchArsenal(pid).then(function(){
           if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced') renderArsenalTab(pid);
-        });
+        }).catch(function(){});
       } else if(activeTab==='advanced' && group==='hitting'){
         if(state.advancedHittingCache[pid] && state.hotColdCache[pid]) renderAdvancedHittingTab(pid);
         else loadAdvancedHittingForTab(pid);
@@ -128,7 +128,7 @@ export function switchPlayerStatsTab(tab,btn){
   if(tab==='gamelog'){
     var cacheKey = pid + ':' + (group==='fielding'?'hitting':group);
     if(!state.gameLogCache[cacheKey]){
-      fetchGameLog(pid, group).then(function(){ onGameLogResolved(pid, group); });
+      fetchGameLog(pid, group).then(function(){ onGameLogResolved(pid, group); }).catch(function(){});
     } else {
       renderGameLogTab(pid, group);
     }
@@ -139,7 +139,7 @@ export function switchPlayerStatsTab(tab,btn){
         if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='splits'){
           renderSplitsTab(pid, group);
         }
-      });
+      }).catch(function(){});
     } else {
       renderSplitsTab(pid, group);
     }
@@ -150,7 +150,7 @@ export function switchPlayerStatsTab(tab,btn){
           if(state.selectedPlayer && state.selectedPlayer.person && state.selectedPlayer.person.id===pid && state.activeStatsTab==='advanced'){
             renderArsenalTab(pid);
           }
-        });
+        }).catch(function(){});
       } else {
         renderArsenalTab(pid);
       }
