@@ -23,7 +23,7 @@ self.addEventListener("activate", function(e) {
   );
 });
 self.addEventListener("fetch", function(e) {
-  var url = new URL(e.request.url);
+  const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
   e.respondWith(caches.match(e.request).then(function(r) {
     return r || fetch(e.request).then(function(resp) {
@@ -33,13 +33,13 @@ self.addEventListener("fetch", function(e) {
   }));
 });
 self.addEventListener("push", function(e) {
-  var data = {};
+  let data = {};
   try {
     data = e.data ? e.data.json() : {};
   } catch (err) {
   }
-  var title = data.title || "MLB Tracker";
-  var opts = {
+  const title = data.title || "MLB Tracker";
+  const opts = {
     body: data.body || "Game starting soon!",
     icon: ICON,
     badge: ICON,
@@ -52,7 +52,7 @@ self.addEventListener("push", function(e) {
 self.addEventListener("notificationclick", function(e) {
   e.notification.close();
   e.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then(function(ws) {
-    var w = ws.find(function(w2) {
+    const w = ws.find(function(w2) {
       return w2.url.includes(self.location.origin);
     });
     if (w) return w.focus();
