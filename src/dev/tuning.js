@@ -29,6 +29,9 @@ import { openRadioCheck } from '../radio/check.js';
 import { previewSound } from '../ui/sound.js';
 import { devTestClassicRadio } from '../radio/classic.js';
 import { Recorder } from './recorder.js';
+// DEBUG START
+import { toggleTouchDebug } from './touchDebug.js';
+// DEBUG END
 
 const DEBUG = false;
 
@@ -196,6 +199,9 @@ export function initDevToolsClickDelegator() {
       else if (action === 'youtubeDebug')      { openYoutubeDebug(); toggleDevTools(); }
       else if (action === 'videoDebug')        { openVideoDebugPanel(); toggleDevTools(); }
       else if (action === 'radioCheck')        { openRadioCheck(); toggleDevTools(); }
+      // DEBUG START
+      else if (action === 'touchDebug')        { toggleDevTools(); toggleTouchDebug(); }
+      // DEBUG END
       else if (action === 'testClassicRadio')  { devTestClassicRadio(); }
       else if (action === 'openDemoFeeds')     {
         const det = document.getElementById('demoFeedsDetails');
