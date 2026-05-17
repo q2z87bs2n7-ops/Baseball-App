@@ -49,7 +49,7 @@ export function openYesterdayRecap(offset) {
     loadYdForDate(getYesterdayDateStr()).then(function(data){
       state.ydDisplayCache=data||[];
       renderYesterdayRecap();
-    });
+    }).catch(function(e){console.error('[yesterday] loadYdForDate error',e);});
   }else{
     renderYesterdayRecap();
   }
