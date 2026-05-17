@@ -211,7 +211,7 @@
     <div class="card" id="leadersCard">
       <div class="leaders-card-head">
         <div class="card-title">Leaders</div>
-        <button type="button" id="qualifiedToggle" class="qualified-toggle on" role="switch" aria-checked="true" onclick="toggleQualifiedOnly()" title="Hide players below qualified threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers)">
+        <button type="button" id="qualifiedToggle" class="qualified-toggle on" role="switch" aria-checked="true" onclick="toggleQualifiedOnly()" aria-label="Qualified players only" title="Hide players below qualified threshold (PA ≥ 3.1×G hitters, IP ≥ 1×G pitchers)">
           <span class="qualified-toggle-track"><span class="qualified-toggle-knob"></span></span>
           <span class="qualified-toggle-label">Qualified</span>
         </button>
@@ -230,7 +230,7 @@
           <button type="button" class="stat-tab leader-pill" data-stat="slg" onclick="selectLeaderPill('hitting','slg',this)">SLG</button>
           <button type="button" class="stat-tab leader-pill" data-stat="hits" onclick="selectLeaderPill('hitting','hits',this)">H</button>
           <button type="button" class="stat-tab leader-pill" data-stat="stolenBases" onclick="selectLeaderPill('hitting','stolenBases',this)">SB</button>
-          <button type="button" class="stat-tab leader-pill leader-pill--more" onclick="toggleLeaderMore('hitting',this)" aria-expanded="false">+ more</button>
+          <button type="button" class="stat-tab leader-pill leader-pill--more" onclick="toggleLeaderMore('hitting',this)" aria-expanded="false" aria-label="Show more hitting stats">+ more</button>
         </div>
         <div id="hitLeaderPillsExtras" class="stat-tabs leader-pill-extras" style="flex-wrap:wrap;gap:6px;margin-bottom:8px" hidden>
           <button type="button" class="stat-tab leader-pill" data-stat="baseOnBalls" onclick="selectLeaderPill('hitting','baseOnBalls',this)">BB</button>
@@ -248,7 +248,7 @@
           <button type="button" class="stat-tab leader-pill" data-stat="losses" onclick="selectLeaderPill('pitching','losses',this)">L</button>
           <button type="button" class="stat-tab leader-pill" data-stat="saves" onclick="selectLeaderPill('pitching','saves',this)">SV</button>
           <button type="button" class="stat-tab leader-pill" data-stat="inningsPitched" onclick="selectLeaderPill('pitching','inningsPitched',this)">IP</button>
-          <button type="button" class="stat-tab leader-pill leader-pill--more" onclick="toggleLeaderMore('pitching',this)" aria-expanded="false">+ more</button>
+          <button type="button" class="stat-tab leader-pill leader-pill--more" onclick="toggleLeaderMore('pitching',this)" aria-expanded="false" aria-label="Show more pitching stats">+ more</button>
         </div>
         <div id="pitLeaderPillsExtras" class="stat-tabs leader-pill-extras" style="flex-wrap:wrap;gap:6px;margin-bottom:8px" hidden>
           <button type="button" class="stat-tab leader-pill" data-stat="strikeoutsPer9Inn" onclick="selectLeaderPill('pitching','strikeoutsPer9Inn',this)">K/9</button>
@@ -368,9 +368,9 @@
   <div id="focusAlertBanner" style="display:none"></div>
   <div id="storyCarousel" style="display:none">
     <div class="story-card-wrap">
-      <button class="story-nav story-nav-prev" onclick="prevStory()">‹</button>
+      <button class="story-nav story-nav-prev" onclick="prevStory()" aria-label="Previous story">‹</button>
       <div id="storyCard"></div>
-      <button class="story-nav story-nav-next" onclick="nextStory()">›</button>
+      <button class="story-nav story-nav-next" onclick="nextStory()" aria-label="Next story">›</button>
     </div>
     <div class="story-dots-row">
       <div class="story-dots" id="storyDots"></div>
