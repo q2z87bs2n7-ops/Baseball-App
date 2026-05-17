@@ -23,5 +23,9 @@ export function forceHttps(url){return url?url.replace(/^http:/,'https:'):url;}
 export function decodeNewsHtml(s){const map={'&quot;':'"','&amp;':'&','&lt;':'<','&gt;':'>','&#39;':"'",'&apos;':"'"};return String(s||'').replace(/&(?:#\d+|#x[0-9a-f]+|quot|amp|lt|gt|apos?);/gi,function(e){return map[e.toLowerCase()]||e;}).replace(/&#(\d+);/g,function(m,code){return String.fromCharCode(parseInt(code,10));}).replace(/&#x([0-9a-f]+);/gi,function(m,code){return String.fromCharCode(parseInt(code,16));}); }
 
 export function isBettingPromo(item) {
-  return item.source === 'CBS' && /^Use\s+/i.test(item.title);
+  if (item.source !== 'cbs') return false;
+  return /^Use\s+/i.test(item.title) ||
+    /\bpromo\s+code\b|\bbonus\s+(code|bets?)\b|\bprop\s+bets?\b/i.test(item.title) ||
+    /\bpicks?,\s*odds\b|\bodds,\s*time\b|\bpicks\s+for\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i.test(item.title) ||
+    /\b(draftkings|betmgm|fanduel|caesars|pointsbet)\b/i.test(item.title);
 }
