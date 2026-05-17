@@ -26,6 +26,9 @@ export async function fetchLiveGame(){
   var liveSig=state.liveAbortCtrl.signal;
   try{
     var responses=await Promise.all([fetch(MLB_BASE+'/game/'+liveGamePk+'/linescore',{signal:liveSig}),fetch(MLB_BASE+'/game/'+liveGamePk+'/boxscore',{signal:liveSig}),fetch(MLB_BASE+'/schedule?gamePk='+liveGamePk,{signal:liveSig})]);
+    if(!responses[0].ok) throw new Error(responses[0].status);
+    if(!responses[1].ok) throw new Error(responses[1].status);
+    if(!responses[2].ok) throw new Error(responses[2].status);
     var ls=await responses[0].json(),bs=await responses[1].json(),sd=await responses[2].json();
     var gameState=(sd.dates&&sd.dates[0]&&sd.dates[0].games&&sd.dates[0].games[0])?sd.dates[0].games[0].status.abstractGameState:'Live';
     var isFinal=gameState==='Final';
@@ -70,6 +73,7 @@ export async function fetchLiveGame(){
 async function fetchPlayByPlay(){
   try{
     var r=await fetch(MLB_BASE+'/game/'+liveGamePk+'/playByPlay');
+    if(!r.ok) throw new Error(r.status);
     var data=await r.json();
     var plays=(data.allPlays||[]).filter(function(p){return p.about&&p.about.isComplete;});
     if(!plays.length){document.getElementById('livePlayByPlay').innerHTML='';return;}
