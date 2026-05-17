@@ -146,7 +146,7 @@ import {
 } from './carousel/generators.js';
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import { openMoreSheet, closeMoreSheet, toggleMoreSheet, openPulseOverflow, closePulseOverflow, togglePulseOverflow, openPulseShortcuts, closePulseShortcuts, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
-import { installHideOnScroll, captureScroll, restoreScroll, installHashRouter, syncHash, installNavDotsRefresh, installNavLongPress } from './nav/behavior.js';
+import { installHideOnScroll, captureScroll, restoreScroll, installHashRouter, syncHash, installNavDotsRefresh, installNavLongPress, installNavClicks } from './nav/behavior.js';
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
@@ -706,6 +706,7 @@ document.addEventListener('visibilitychange',function(){
 
 installMoreSheetEscClose();
 installHideOnScroll();
+installNavClicks(showSection);
 installHashRouter(showSection);
 installNavDotsRefresh(30000);
 installNavLongPress({

@@ -192,3 +192,15 @@ export function installNavLongPress(handlers) {
     if (typeof h === 'function') attachLongPress(btn, h);
   });
 }
+
+// Delegated click handler for the 7 section nav buttons (replaces inline onclick).
+export function installNavClicks(showSectionFn) {
+  const nav = document.querySelector('header nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    const btn = e.target.closest('button[data-section]');
+    if (!btn) return;
+    const section = btn.getAttribute('data-section');
+    if (section) showSectionFn(section, btn);
+  });
+}
