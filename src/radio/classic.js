@@ -53,8 +53,8 @@ function pickRandomUrl() {
 function pickOffset(dur) {
   // Random in [30min, 90min] — skips pre-game intros and post-game
   // sign-offs. Caps to dur-60s if the file is shorter than 91 min.
-  var minS = 30 * 60;
-  var maxS = 90 * 60;
+  const minS = 30 * 60;
+  let maxS = 90 * 60;
   if (dur && dur < maxS + 60) maxS = Math.max(minS, dur - 60);
   if (maxS <= minS) return minS;
   return minS + Math.random() * (maxS - minS);
@@ -66,8 +66,8 @@ function pickOffset(dur) {
 // user gets the same visual feedback as live radio.
 function _playUrl(url) {
   if (!url) return;
-  var a = ensureAudio();
-  var label = _broadcastLabel(url);
+  const a = ensureAudio();
+  const label = _broadcastLabel(url);
   // If the URL is already playing or loaded, just seek to a new offset
   if (a.src && a.src.indexOf(url) !== -1 && a.readyState >= 2 && a.duration) {
     a.currentTime = pickOffset(a.duration);
@@ -90,9 +90,9 @@ function _playUrl(url) {
   a.load();
   // Show UI in "loading" state immediately so button doesn't flicker off/on
   try { setRadioUI(true, { abbr: 'CLASSIC', name: label + ' (loading…)' }); } catch (e) {}
-  var onMeta = function() {
+  const onMeta = function() {
     a.removeEventListener('loadedmetadata', onMeta);
-    var dur = a.duration || 0;
+    const dur = a.duration || 0;
     if (dur > 60) a.currentTime = pickOffset(dur);
     a.play().then(function() {
       try { setRadioUI(true, { abbr: 'CLASSIC', name: label }); } catch (e) {}
@@ -106,7 +106,7 @@ function _broadcastLabel(url) {
   // "1969%2010%2016%20New%20York%20Mets%20vs%20Baltimore%20Orioles%20World%20Series%20Game%205.mp3"
   // → "1969 10 16 New York Mets vs Baltimore Orioles World Series Game 5"
   try {
-    var name = decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, ''));
+    const name = decodeURIComponent(url.split('/').pop().replace(/\.mp3$/i, ''));
     return name.length > 60 ? name.slice(0, 57) + '…' : name;
   } catch (e) { return url; }
 }
@@ -118,7 +118,7 @@ function _broadcastLabel(url) {
 export function playClassicRandom() {
   _active = true;
   try { stopRadio(); } catch (e) {}
-  var url = pickRandomUrl();
+  const url = pickRandomUrl();
   console.log('[classic radio] play:', _broadcastLabel(url));
   _playUrl(url);
 }
@@ -158,7 +158,7 @@ export function setClassicVolume(v) {
 export function rollClassicOnSwitch() {
   if (!_active) return;
   try { stopRadio(); } catch (e) {}
-  var url = pickRandomUrl();
+  const url = pickRandomUrl();
   console.log('[classic radio] roll on focus switch:', _broadcastLabel(url));
   _playUrl(url);
 }

@@ -37,7 +37,7 @@ Full file map, layering rule, and runtime dependency table: `docs/module-graph.m
 - **Cron**: GitHub Actions (free) pings `/api/notify` every 5 minutes
 
 ### Session Storage & Cross-Device Sync
-Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: GitHub OAuth + Email magic-link. Session: 40-char random token, 90-day TTL, `localStorage('mlb_session_token')`. Collection sync: `GET/PUT/POST /api/collection-sync` → Upstash Redis `collection:{userId}`. Merge: highest tier wins; same tier keeps newer `collectedAt` + merged events (deduped, capped 10). Vercel env vars required: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `EMAIL_API_KEY`, `EMAIL_FROM_ADDRESS`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`. Full setup: `docs/auth-architecture.md`.
+Sign-in is **100% optional**; signed-in users get card collection sync (GitHub OAuth + Email magic-link, session token in `localStorage('mlb_session_token')`, synced to Upstash Redis). Full architecture, endpoints, merge algorithm, env vars, setup steps: `docs/auth-architecture.md`.
 
 **Rule:** before deleting any file in repo root or `icons/`, grep `index.html`, `src/`, `sw.js`, and `manifest.json` for references first. Full runtime dependency table: `docs/module-graph.md`.
 
@@ -55,7 +55,7 @@ Sign-in is **100% optional**. Signed-in users get card collection sync. Auth: Gi
 | Version bump | `index.html` (title + settings-version + bundle/CSS cache-bust `?v=`) |
 | `CACHE` constant bump (forces PWA refresh) | `sw.js` |
 
-**Script load chain:** `assets/vendor/pulse-card-templates.js` → `assets/vendor/focusCard.js` → `assets/vendor/collectionCard.js` → `dist/app.bundle.js` (all `<script defer>` in `<head>`, executed in order after the document parses). Theme-flash prevention snippet at `index.html:7` is the only inline-and-synchronous script — must stay inline. (Note: a previous dynamic script-insert pattern caused the bundle to execute **async**; the readyState guard in `src/dev/tuning.js` is no longer load-order-critical but is harmless.)
+**Script load chain:** `pulse-card-templates.js` → `focusCard.js` → `collectionCard.js` → `dist/app.bundle.js` (all `<script defer>`, DOM order). Theme-flash snippet at `index.html:7` is the only inline-synchronous script — must stay inline. Full detail + history: `docs/module-graph.md`.
 
 **Where to edit:** always edit `src/**/*.js` and rebuild the bundle (`npm run build`) before pushing.
 
@@ -87,9 +87,7 @@ Full endpoint table (status, gotchas, query patterns) + external services + game
 
 Full per-section architecture, API sources, and layout details: `docs/sections.md`.
 
-**Critical traps:**
-- `gameGradient(g)` is away→home order — only used by `renderGameBig` (schedule/history cards). `renderNextGame` builds its own gradient so opponent is always left; using `gameGradient` there would be wrong for away games.
-- `#playerCardOverlay` must stay top-level DOM (sibling of `#focusOverlay`, `#collectionOverlay`, `#devToolsPanel`) — never nested inside `#pulse`. Sections create stacking contexts that trap z-index. Current z-index: 600.
+**Critical traps** (full detail in `docs/sections.md`): `gameGradient(g)` is away→home order — only `renderGameBig` uses it (`renderNextGame` builds its own). `#playerCardOverlay` must stay top-level DOM (z-index 600) — never nested inside `#pulse`.
 
 ---
 
@@ -101,7 +99,10 @@ All bundle functions organised by subsystem: `docs/functions.md`. Key subsystem 
 - At-Bat Focus Mode: `docs/focus-mode.md`
 - Card Collection: `docs/card-collection.md`
 - Radio system: `docs/radio-system.md`
+- Team Podcasts strip: `docs/podcast.md`
+- Baseball Buzz (Pulse social rail): `docs/buzz.md`
 - Demo Mode: `docs/demo-mode.md`
+- Old-School Scorecard: `docs/scorecard.md`
 
 ---
 
@@ -137,6 +138,14 @@ Self-contained replay of May 11-12, 2026 from `assets/daily-events.json` (~2.5MB
 
 ---
 
+## 📋 Old-School Scorecard
+
+Full-screen overlay (`#scorecardOverlay`, z-index 650) reconstructing a traditional scoring-book from `feed/live` for any live or completed game. "Paper" heritage visual treatment; **base-keyed** runner tracking (pinch-runners inherit the base). Logic in `src/overlay/scorecard.js`. Unsupported in Demo Mode.
+
+Full data model, notation engine, rendering, base-keyed tracking, launch points, visual spec: `docs/scorecard.md`.
+
+---
+
 ## PWA & Push Notifications
 
 Manifest uses relative paths (required for GitHub Pages subdirectory). Splash screen (`#appSplash`) is inline in `index.html` — edit it there directly. Push via `api/notify.js`; deduplicates via Redis. On every content commit bump: `<title>`, settings-panel version, `CACHE` in `sw.js`.
@@ -164,35 +173,13 @@ Subtle bugs that could be silently re-introduced. Full descriptions + reproducti
 
 ## Hardcoding Risks
 
-| Item | Risk | Fix |
-|---|---|---|
-| `SEASON = 2026` | Must update each season | Derive from system date or MLB API |
-| Team colours in TEAMS array | Teams rebrand | Verify each offseason |
-| ESPN team IDs | Different system from MLB IDs | Verified Apr 2026 — re-verify each offseason |
-| `WC_SPOTS = 3` | Rule change risk | Already a named const |
-| ESPN API endpoint | Unofficial, undocumented | Monitor for breakage |
-| MLB Stats API base URL | Unofficial | Watch for deprecation |
-| Leaders `cats` array order | Index-based mapping — order matters | Re-test empirically if results look wrong |
-| allorigins.win proxy URL | Free public proxy, no SLA | Swap URL if it goes down; retry logic in place |
-| YouTube channel IDs (`youtubeUC`) | Teams may rebrand/change channels | Verify each offseason |
-| Game state strings | MLB uses both `"Preview"` and `"Scheduled"` | Both checked — verify if new states appear |
-| `MLB_TEAM_RADIO` URLs | radio.net-sourced; stations may change CDNs | Re-run 🔍 Radio Check sweep periodically |
-| `APPROVED_RADIO_TEAM_IDS` Set | Hand-curated — last updated 2026-05-06 | Update Set when sweep results change |
-| Hls.js CDN URL | `cdn.jsdelivr.net/npm/hls.js@1.5.18` — pinned, free CDN | Bundle locally if CDN unreliable |
-| `NEWS_IMAGE_HOSTS` allowlist | Hand-curated CDN domain list — thumbnails silently fall back to placeholder if CDN changes | Add new hostname to `NEWS_IMAGE_HOSTS` regex in `src/utils/news.js` |
+Hand-curated constants and unofficial endpoints needing periodic re-verification — team colours, ESPN team IDs + endpoint, MLB Stats API base, `SEASON`, leaders `cats` order, allorigins proxy, Hls.js CDN, radio/podcast/Buzz curation, `NEWS_IMAGE_HOSTS` allowlist. Full risk register + per-item fix + offseason re-verify checklist: `docs/hardcoding-risks.md`.
 
 ---
 
 ## Stat Display Conventions
 
-| Category | Stats | Format | Rule |
-|---|---|---|---|
-| Rate (no leading zero) | AVG, OBP, SLG, OPS, FPCT | `.xxx` | `fmtRate(v)` — strips leading zero when 0 < val < 1 |
-| Traditional pitching | ERA | `z.xx` | `fmt(v, 2)` |
-| Traditional pitching | WHIP | `z.xx` | `fmt(v, 2)` |
-| Per-9 / ratio | K/9, BB/9, K/BB | `z.xx` | `fmt(v, 2)` |
-| Innings pitched | IP | `x.x` | Pass-through string — tenths = outs, not fractions. Never parse/round. |
-| Counting | HR, RBI, H, K, BB, R, SB, PA, AB, W, L, SV, GS, ER, PC, E, PO, A, TC, DP | integer | Raw value, no `toFixed` |
+Rate stats (AVG/OBP/SLG/OPS/FPCT) use `fmtRate` (no leading zero); ERA/WHIP/per-9 use `fmt(v,2)`; IP is a pass-through string (tenths = outs, never parse/round); counting stats are raw integers. Full format/rule table: `docs/stat-conventions.md`.
 
 ---
 

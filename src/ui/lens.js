@@ -8,7 +8,7 @@ import { state } from '../state.js';
 import { renderTicker, updateFeedEmpty } from '../feed/render.js';
 
 export function myTeamGamePks() {
-  var out = new Set();
+  const out = new Set();
   Object.values(state.gameStates).forEach(function(g) {
     if (g.awayId === state.activeTeam.id || g.homeId === state.activeTeam.id) out.add(g.gamePk);
   });
@@ -18,15 +18,15 @@ export function myTeamGamePks() {
 export function applyMyTeamLens(on) {
   state.myTeamLens = !!on;
   localStorage.setItem('mlb_my_team_lens', state.myTeamLens ? '1' : '0');
-  var btn = document.getElementById('myTeamLensBtn'), knob = document.getElementById('myTeamLensKnob');
+  const btn = document.getElementById('myTeamLensBtn'), knob = document.getElementById('myTeamLensKnob');
   if (btn) btn.classList.toggle('on', state.myTeamLens);
   if (knob) knob.style.left = state.myTeamLens ? '21px' : '2px';
   if (state.myTeamLens) {
-    var keep = myTeamGamePks();
+    const keep = myTeamGamePks();
     state.enabledGames = new Set();
     keep.forEach(function(pk) { state.enabledGames.add(pk); });
     document.querySelectorAll('[data-gamepk]').forEach(function(el) {
-      var pk = +el.getAttribute('data-gamepk');
+      const pk = +el.getAttribute('data-gamepk');
       el.classList.toggle('feed-hidden', !keep.has(pk));
     });
   } else {

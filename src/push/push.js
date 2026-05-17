@@ -12,19 +12,19 @@ import { API_BASE } from '../config/constants.js';
 export const VAPID_PUBLIC_KEY = 'BPI_UHKC-1UI9uIacuEooLwnRaRcGgIf1tji_5PiNhr6lcpQrgs2PqKyhfdhsYtxSxaUaENoAiZ7781iBvOlZWE';
 
 export function urlBase64ToUint8Array(b64) {
-  var pad = '='.repeat((4 - b64.length % 4) % 4);
-  var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
 export async function subscribeToPush() {
   try {
-    var reg = await navigator.serviceWorker.ready;
-    var sub = await reg.pushManager.subscribe({
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
-    var r = await fetch((API_BASE || '') + '/api/subscribe', {
+    const r = await fetch((API_BASE || '') + '/api/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sub),
@@ -33,7 +33,7 @@ export async function subscribeToPush() {
     localStorage.setItem('mlb_push', '1');
     document.getElementById('pushStatusText').textContent = 'On';
   } catch (err) {
-    var pt=document.getElementById('pushToggle');pt.style.background = 'var(--border)';pt.setAttribute('aria-checked','false');
+    const pt=document.getElementById('pushToggle');pt.style.background = 'var(--border)';pt.setAttribute('aria-checked','false');
     document.getElementById('pushToggleKnob').style.left = '3px';
     document.getElementById('pushStatusText').textContent = 'Permission Denied';
   }
@@ -41,11 +41,11 @@ export async function subscribeToPush() {
 
 export async function unsubscribeFromPush() {
   try {
-    var reg = await navigator.serviceWorker.ready;
-    var sub = await reg.pushManager.getSubscription();
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
     if (sub) {
       await sub.unsubscribe();
-      var r = await fetch((API_BASE || '') + '/api/subscribe', {
+      const r = await fetch((API_BASE || '') + '/api/subscribe', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint: sub.endpoint }),
@@ -58,9 +58,9 @@ export async function unsubscribeFromPush() {
 }
 
 export function togglePush() {
-  var tog = document.getElementById('pushToggle');
-  var knob = document.getElementById('pushToggleKnob');
-  var enabled = localStorage.getItem('mlb_push') === '1';
+  const tog = document.getElementById('pushToggle');
+  const knob = document.getElementById('pushToggleKnob');
+  const enabled = localStorage.getItem('mlb_push') === '1';
   if (!enabled) {
     if (!('serviceWorker' in navigator && 'PushManager' in window)) {
       document.getElementById('pushStatusText').textContent = 'Not Supported On This Browser';

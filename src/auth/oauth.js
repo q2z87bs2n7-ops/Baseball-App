@@ -17,7 +17,7 @@ export function signInWithGitHub() {
 }
 
 export function signInWithEmail() {
-  var email = prompt('Enter your email to receive a sign-in link:');
+  const email = prompt('Enter your email to receive a sign-in link:');
   if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
     return alert('Invalid email');
   }

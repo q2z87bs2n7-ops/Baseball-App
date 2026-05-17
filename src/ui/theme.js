@@ -2,16 +2,16 @@ import { state } from '../state.js';
 import { TEAMS, MLB_THEME } from '../config/constants.js';
 import { devTrace } from '../devtools-feed/devLog.js';
 
-let themeCallbacks = { loadTodayGame: null, loadNextGame: null, loadNews: null, loadStandings: null, loadRoster: null, loadTeamStats: null, loadHomeYoutubeWidget: null, applyMyTeamLens: null, clearHomeLiveTimer: null };
+let themeCallbacks = { loadTodayGame: null, loadNextGame: null, loadNews: null, loadStandings: null, loadRoster: null, loadTeamStats: null, loadHomeInjuries: null, loadHomeMoves: null, loadHomeYoutubeWidget: null, loadHomePodcastWidget: null, applyMyTeamLens: null, clearHomeLiveTimer: null };
 function setThemeCallbacks(callbacks) {
   Object.assign(themeCallbacks, callbacks);
 }
 
-function relLuminance(hex){hex=hex.replace('#','');var n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;r=r<=0.03928?r/12.92:Math.pow((r+0.055)/1.055,2.4);g=g<=0.03928?g/12.92:Math.pow((g+0.055)/1.055,2.4);b=b<=0.03928?b/12.92:Math.pow((b+0.055)/1.055,2.4);return 0.2126*r+0.7152*g+0.0722*b;}
-function contrastRatio(hexA,hexB){var lA=relLuminance(hexA),lB=relLuminance(hexB);return(Math.max(lA,lB)+0.05)/(Math.min(lA,lB)+0.05);}
-function hslHex(h,s,l){s/=100;l/=100;var a=s*Math.min(l,1-l),f=function(n){var k=(n+h/30)%12,c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};return'#'+f(0)+f(8)+f(4);}
-function hslLighten(hex,targetL){hex=hex.replace('#','');var n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),h=0,s=0,l=(max+min)/2;if(max!==min){var d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return hslHex(Math.round(h*360),Math.round(s*100),Math.round(targetL*100));}
-function pickAccent(secondaryHex,cardHex){var sLum=relLuminance(secondaryHex),cCon=contrastRatio(secondaryHex,cardHex);if(sLum>=0.18&&cCon>=3.0)return secondaryHex;var lifted=hslLighten(secondaryHex,0.65);if(contrastRatio(lifted,cardHex)>=3.0)return lifted;return'#FFB273';}
+function relLuminance(hex){hex=hex.replace('#','');let n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;r=r<=0.03928?r/12.92:Math.pow((r+0.055)/1.055,2.4);g=g<=0.03928?g/12.92:Math.pow((g+0.055)/1.055,2.4);b=b<=0.03928?b/12.92:Math.pow((b+0.055)/1.055,2.4);return 0.2126*r+0.7152*g+0.0722*b;}
+function contrastRatio(hexA,hexB){const lA=relLuminance(hexA),lB=relLuminance(hexB);return(Math.max(lA,lB)+0.05)/(Math.min(lA,lB)+0.05);}
+function hslHex(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l),f=function(n){const k=(n+h/30)%12,c=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*c).toString(16).padStart(2,'0');};return'#'+f(0)+f(8)+f(4);}
+function hslLighten(hex,targetL){hex=hex.replace('#','');let n=parseInt(hex,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),h=0,s=0,l=(max+min)/2;if(max!==min){const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return hslHex(Math.round(h*360),Math.round(s*100),Math.round(targetL*100));}
+function pickAccent(secondaryHex,cardHex){const sLum=relLuminance(secondaryHex),cCon=contrastRatio(secondaryHex,cardHex);if(sLum>=0.18&&cCon>=3.0)return secondaryHex;const lifted=hslLighten(secondaryHex,0.65);if(contrastRatio(lifted,cardHex)>=3.0)return lifted;return'#FFB273';}
 function pickHeaderText(primaryHex){return relLuminance(primaryHex)>0.5?'#0a0f1e':'#ffffff';}
 
 function applyTeamTheme(team){
@@ -28,24 +28,24 @@ function applyTeamTheme(team){
     document.documentElement.style.setProperty('--header-text',state.devColorOverrides.app.headerText);
     return;
   }
-  var hdr=document.querySelector('header');
+  const hdr=document.querySelector('header');
   if(hdr){['--primary','--secondary','--accent','--accent-text','--header-text'].forEach(function(v){hdr.style.removeProperty(v);});}
-  var ct=state.themeOverride||team;
-  var cp=state.themeInvert?ct.secondary:ct.primary,cs=state.themeInvert?ct.primary:ct.secondary;
-  var l1=relLuminance(cp),l2=relLuminance(cs),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?cs:'#ffffff',accentLum=relLuminance(accent);
+  const ct=state.themeOverride||team;
+  const cp=state.themeInvert?ct.secondary:ct.primary,cs=state.themeInvert?ct.primary:ct.secondary;
+  let l1=relLuminance(cp),l2=relLuminance(cs),ratio=(Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05),accent=ratio>=3?cs:'#ffffff',accentLum=relLuminance(accent);
   if(accentLum<0.05){accent='#ffffff';accentLum=1;}
-  var accentText=accentLum>0.4?'#111827':'#ffffff';
-  var hueOf=function(hex){hex=hex.replace('#','');var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
-  var h=hueOf(cp),cardHex=hslHex(h,45,22);
-  var safeAccent=pickAccent(accent,cardHex),headerText=pickHeaderText(cp);
+  const accentText=accentLum>0.4?'#111827':'#ffffff';
+  let hueOf=function(hex){hex=hex.replace('#','');let r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;if(d){if(max===r)h=((g-b)/d+(g<b?6:0))/6;else if(max===g)h=((b-r)/d+2)/6;else h=((r-g)/d+4)/6;}return Math.round(h*360);};
+  const h=hueOf(cp),cardHex=hslHex(h,45,22);
+  const safeAccent=pickAccent(accent,cardHex),headerText=pickHeaderText(cp);
   if(state.themeScope==='nav'){
-    var dp=MLB_THEME.primary,ds=MLB_THEME.secondary;
-    var dl1=relLuminance(dp),dl2=relLuminance(ds),dr=(Math.max(dl1,dl2)+0.05)/(Math.min(dl1,dl2)+0.05);
-    var dacc=dr>=3?ds:'#ffffff',daccLum=relLuminance(dacc);
+    const dp=MLB_THEME.primary,ds=MLB_THEME.secondary;
+    const dl1=relLuminance(dp),dl2=relLuminance(ds),dr=(Math.max(dl1,dl2)+0.05)/(Math.min(dl1,dl2)+0.05);
+    let dacc=dr>=3?ds:'#ffffff',daccLum=relLuminance(dacc);
     if(daccLum<0.05){dacc='#ffffff';daccLum=1;}
-    var daccText=daccLum>0.4?'#111827':'#ffffff';
-    var dh=hueOf(dp),dcard=hslHex(dh,45,22);
-    var dSafeAcc=pickAccent(dacc,dcard),dHdrText=pickHeaderText(dp);
+    const daccText=daccLum>0.4?'#111827':'#ffffff';
+    const dh=hueOf(dp),dcard=hslHex(dh,45,22);
+    const dSafeAcc=pickAccent(dacc,dcard),dHdrText=pickHeaderText(dp);
     document.documentElement.style.setProperty('--dark',hslHex(dh,50,18));
     document.documentElement.style.setProperty('--card',dcard);
     document.documentElement.style.setProperty('--card2',hslHex(dh,40,26));
@@ -65,8 +65,8 @@ function applyTeamTheme(team){
     }
     document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
     document.title=team.short+' Tracker';
-    var tcmN=document.getElementById('themeColorMeta');if(tcmN)tcmN.setAttribute('content',cp);
-    var chipN=document.getElementById('teamChip');if(chipN)chipN.textContent=team.name.toUpperCase();
+    const tcmN=document.getElementById('themeColorMeta');if(tcmN)tcmN.setAttribute('content',cp);
+    const chipN=document.getElementById('teamChip');if(chipN)chipN.textContent=team.name.toUpperCase();
     return;
   }
   document.documentElement.style.setProperty('--dark',hslHex(h,50,18));
@@ -81,8 +81,8 @@ function applyTeamTheme(team){
   try{localStorage.setItem('mlb_theme_vars',JSON.stringify({'--dark':hslHex(h,50,18),'--card':cardHex,'--card2':hslHex(h,40,26),'--border':hslHex(h,35,30),'--primary':cp,'--secondary':accent,'--accent-text':accentText,'--accent':safeAccent,'--header-text':headerText}));}catch(e){}
   document.querySelector('.logo').innerHTML='<img src="https://www.mlbstatic.com/team-logos/'+team.id+'.svg" style="height:32px;width:32px"> <span>'+team.short.toUpperCase()+'</span>';
   document.title=team.short+' Tracker';
-  var tcm=document.getElementById('themeColorMeta');if(tcm)tcm.setAttribute('content',cp);
-  var chip=document.getElementById('teamChip');if(chip)chip.textContent=team.name.toUpperCase();
+  const tcm=document.getElementById('themeColorMeta');if(tcm)tcm.setAttribute('content',cp);
+  const chip=document.getElementById('teamChip');if(chip)chip.textContent=team.name.toUpperCase();
 }
 
 const PULSE_SCHEME = {
@@ -116,7 +116,7 @@ function applyPulseMLBTheme(){
     document.documentElement.style.setProperty('--p-border',state.devColorOverrides.pulse.border);
     return;
   }
-  var s=PULSE_SCHEME[pulseColorScheme]||PULSE_SCHEME.dark;
+  const s=PULSE_SCHEME[pulseColorScheme]||PULSE_SCHEME.dark;
   document.documentElement.style.setProperty('--dark',s.dark);
   document.documentElement.style.setProperty('--p-dark',s.dark);
   document.documentElement.style.setProperty('--p-card',s.card);
@@ -138,14 +138,14 @@ function applyPulseMLBTheme(){
 function setPulseColorScheme(scheme){
   pulseColorScheme=scheme;
   try{localStorage.setItem('mlb_pulse_scheme',scheme);}catch(e){}
-  var ps=document.getElementById('pulse');
+  const ps=document.getElementById('pulse');
   if(ps&&ps.classList.contains('active'))applyPulseMLBTheme();
   updatePulseToggle();
 }
 
 function updatePulseToggle(){
-  var isLight=pulseColorScheme==='light';
-  var icon=document.getElementById('ptbSchemeIcon');
+  const isLight=pulseColorScheme==='light';
+  const icon=document.getElementById('ptbSchemeIcon');
   if(icon) icon.textContent=isLight?'☀️':'🌙';
 }
 
@@ -156,17 +156,31 @@ function togglePulseColorScheme(){
 function toggleSettings(){document.getElementById('settingsPanel').classList.toggle('open');}
 
 function setupSettingsClickOutside(){
-  document.addEventListener('click',function(e){
-    if(!document.querySelector('.settings-wrap').contains(e.target))document.getElementById('settingsPanel').classList.remove('open');
-    var tt=document.getElementById('calTooltip');if(tt&&tt.classList.contains('open')&&!e.target.closest('.cal-day'))tt.classList.remove('open');
-  });
+  // iOS suppresses click synthesis on scrollable-area taps even with cursor:pointer.
+  // touchend fires unconditionally — filter genuine taps by movement delta < 10px.
+  let t0x=0,t0y=0;
+  document.addEventListener('touchstart',function(e){
+    t0x=e.touches[0].clientX;t0y=e.touches[0].clientY;
+  },{passive:true});
+  function closeIfOutside(target){
+    const wrap=document.querySelector('.settings-wrap');
+    if(wrap&&!wrap.contains(target)){const panel=document.getElementById('settingsPanel');if(panel)panel.classList.remove('open');}
+    const tt=document.getElementById('calTooltip');if(tt&&tt.classList.contains('open')&&!target.closest('.cal-day'))tt.classList.remove('open');
+  }
+  document.addEventListener('touchend',function(e){
+    const t=e.changedTouches[0];
+    if(Math.abs(t.clientX-t0x)>10||Math.abs(t.clientY-t0y)>10)return;
+    const target=document.elementFromPoint(t.clientX,t.clientY);
+    if(target)closeIfOutside(target);
+  },{passive:true});
+  document.addEventListener('click',function(e){closeIfOutside(e.target);});
 }
 
 function buildThemeSelect(){
-  var sel=document.getElementById('themeSelect');sel.innerHTML='<option value="-1">Default</option><option value="0">Follow Team</option>';var lastDiv='';
+  const sel=document.getElementById('themeSelect');sel.innerHTML='<option value="-1">Default</option><option value="0">Follow Team</option>';let lastDiv='';
   TEAMS.forEach(function(t){
-    if(t.division!==lastDiv){var og=document.createElement('optgroup');og.label=t.division;sel.appendChild(og);lastDiv=t.division;}
-    var opt=document.createElement('option');opt.value=t.id;opt.textContent=t.name;sel.lastChild.appendChild(opt);
+    if(t.division!==lastDiv){const og=document.createElement('optgroup');og.label=t.division;sel.appendChild(og);lastDiv=t.division;}
+    const opt=document.createElement('option');opt.value=t.id;opt.textContent=t.name;sel.lastChild.appendChild(opt);
   });
 }
 
@@ -187,7 +201,7 @@ function switchThemeScope(val){
 function toggleInvert(){
   state.themeInvert=!state.themeInvert;
   localStorage.setItem('mlb_invert',state.themeInvert);
-  var t=document.getElementById('invertToggle'),k=document.getElementById('invertToggleKnob');
+  const t=document.getElementById('invertToggle'),k=document.getElementById('invertToggleKnob');
   t.style.background=state.themeInvert?'var(--primary)':'var(--border)';
   k.style.left=state.themeInvert?'21px':'3px';
   t.setAttribute('aria-checked',state.themeInvert?'true':'false');
@@ -197,10 +211,10 @@ function toggleInvert(){
 }
 
 function buildTeamSelect(){
-  var sel=document.getElementById('teamSelect');sel.innerHTML='';var lastDiv='';
+  const sel=document.getElementById('teamSelect');sel.innerHTML='';let lastDiv='';
   TEAMS.forEach(function(t){
-    if(t.division!==lastDiv){var og=document.createElement('optgroup');og.label=t.division;sel.appendChild(og);lastDiv=t.division;}
-    var opt=document.createElement('option');opt.value=t.id;opt.textContent=t.name;if(t.id===state.activeTeam.id)opt.selected=true;sel.lastChild.appendChild(opt);
+    if(t.division!==lastDiv){const og=document.createElement('optgroup');og.label=t.division;sel.appendChild(og);lastDiv=t.division;}
+    const opt=document.createElement('option');opt.value=t.id;opt.textContent=t.name;if(t.id===state.activeTeam.id)opt.selected=true;sel.lastChild.appendChild(opt);
   });
 }
 
@@ -216,6 +230,9 @@ function switchTeam(teamId){
   if(themeCallbacks.loadStandings) themeCallbacks.loadStandings();
   if(themeCallbacks.loadRoster) themeCallbacks.loadRoster();
   if(themeCallbacks.loadTeamStats) themeCallbacks.loadTeamStats();
+  if(themeCallbacks.loadHomeInjuries) themeCallbacks.loadHomeInjuries();
+  if(themeCallbacks.loadHomeMoves) themeCallbacks.loadHomeMoves();
+  if(themeCallbacks.loadHomePodcastWidget) themeCallbacks.loadHomePodcastWidget();
   if(themeCallbacks.loadHomeYoutubeWidget) themeCallbacks.loadHomeYoutubeWidget();
   if(document.getElementById('schedule').classList.contains('active')&&themeCallbacks.loadTodayGame) themeCallbacks.loadTodayGame();
   if(state.myTeamLens&&themeCallbacks.applyMyTeamLens) themeCallbacks.applyMyTeamLens(true);

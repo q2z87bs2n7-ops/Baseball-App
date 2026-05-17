@@ -42,6 +42,13 @@ src/
                                      MLB_BASE_V1_1, API_BASE, TEAMS,
                                      MLB_THEME, NEWS_SOURCE_LABELS/ICONS,
                                      TIMING.
+    buzz.js                         — BASEBALL_BUZZ_ACCOUNTS (curated
+                                     baseball Bluesky handles + category)
+                                     for the Pulse "Baseball Buzz" rail.
+    podcasts.js                     — TEAM_PODCASTS (curated Apple
+                                     Podcasts collectionIds keyed by MLB
+                                     team id) + fallbackPodcastTerm().
+                                     Consumed by sections/home.js.
 
   devtools-feed/
     devLog.js                       — console wrap + ring buffer + devTrace
@@ -112,6 +119,11 @@ src/
     news-carousel.js                — loadPulseNews, nextNewsCard, prevNewsCard,
                                      renderPulseNewsCard. Rotating headline
                                      carousel in Pulse side rail.
+    baseball-buzz.js                — loadBaseballBuzz + render. Curated
+                                     baseball Bluesky posts in the Pulse
+                                     side rail via the keyless public
+                                     AT-Protocol API (client-side, no
+                                     proxy). Consumes src/config/buzz.js.
 
   carousel/
     rotation.js                     — buildStoryPool, rotateStory, showStoryCard,
@@ -130,6 +142,23 @@ src/
                                      renderFocusCard, renderFocusMiniBar,
                                      openFocusOverlay, closeFocusOverlay,
                                      dismissFocusAlert.
+
+  overlay/
+    scorecard.js                    — Old-school scoring-book overlay
+                                     (openScorecardOverlay, closeScorecardOverlay).
+                                     Fetches feed/live (v1.1): line-score header,
+                                     diamond-per-PA with fielder notation
+                                     (6-3/F8/K/ꓘ), traced base paths, in-cell
+                                     ball-strike + pitch count, inning-ending
+                                     diagonals, advancement reason codes
+                                     (SB/WP/PB/BK/E), runner-out markers
+                                     (CS/PO), Manfred-runner (MR) handling,
+                                     batting-around stacking, PH/PR sub tags,
+                                     and a full pitcher table with W/L/S.
+                                     Runner tracking is base-keyed (not
+                                     id-keyed) so pinch-runners inherit the
+                                     base. Self-refreshes on LIVE_REFRESH_MS
+                                     while a live game is open.
 
   cards/
     playerCard.js                   — resolvePlayerCardData, showPlayerCard,
@@ -328,6 +357,8 @@ Files that are NOT part of the bundle but must be present in the repo / served a
 | `icons/icon-mono.svg` | `manifest.json` | iOS 16.4+ monochrome icon |
 
 **Script load chain (all `<script defer>`):** `pulse-card-templates.js` → `focusCard.js` → `collectionCard.js` → `app.bundle.js` — executed in DOM order after document parses. The theme-flash prevention snippet at `index.html:7` is the only inline-and-synchronous script.
+
+> History: a previous dynamic script-insert pattern caused the bundle to execute **async**; the readyState guard in `src/dev/tuning.js` is no longer load-order-critical but is harmless and retained.
 
 ---
 

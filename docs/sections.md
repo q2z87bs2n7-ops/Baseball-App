@@ -1,7 +1,7 @@
 # App Pages & Sections
 
 ## 🏠 Home
-**Left card — "Next Game"** (`#todayGame`, `loadTodayGame()`) — priority: (1) live game with score + Watch Live, (2) upcoming today, (3) next upcoming. Series info via `getSeriesInfo(g)`. Layout: 5-column row [opp cap] [opp name/score] [—] [my name/score] [my cap]. Background: opp primary → #111827 50% → active-team colour (built in `renderNextGame`, NOT via `gameGradient()` — see Critical Traps in CLAUDE.md).
+**Left card — "Next Game"** (`#todayGame`, `loadTodayGame()`) — priority: (1) live game with score + Watch Live, (2) upcoming today, (3) next upcoming. Series info via `getSeriesInfo(g)`. Layout: 5-column row [opp cap] [opp name/score] [—] [my name/score] [my cap]. Background: opp primary → #111827 50% → active-team colour (built in `renderNextGame`, NOT via `gameGradient()` — see below).
 
 **Right card — "Next Series"** (`#nextGame`, `loadNextGame()`) — fetches 28 days, groups into series, finds the **second** series with any non-Final game (skips current series). 3-stop gradient.
 
@@ -9,6 +9,10 @@
 
 **Division Snapshot** — compact standings for active team's division.
 **Latest News** — top 5 ESPN headlines.
+**Injury Report** (`#homeInjuries`, `loadHomeInjuries()`) — IL players from `/teams/{id}/roster?rosterType=40Man&date={today}`. The `&date=` param is required: without it the API returns season-opening (all "Active") statuses. IL detection matches `status.code` `/^D\d/` (D7/D10/D15/D60) **or** `status.description` `/injured list|disabled list|\bil\b/i`. Sorted by IL length ascending (day count parsed from code/description), name A–Z tiebreak.
+**Roster Moves** (`#homeMoves`, `loadHomeMoves()`) — last 30 days of `/transactions?teamId={id}&startDate=&endDate=`, newest first, capped at 15. Date range built from `etDateStr()` / `etDatePlus(end,-30)`.
+Both cards reload on team switch via the theme-callback path (`themeCallbacks.loadHomeInjuries` / `loadHomeMoves` in `src/ui/theme.js` `switchTeam`). API text escaped via `escapeNewsHtml`.
+**Team Podcasts strip** (`#homePodcastWidget`, above the YouTube widget) — horizontal scroll of up to 8 show-artwork icons + an inline `<audio>` player. Loaded by `loadHomePodcastWidget()` → `/api/proxy-podcast`; reloads on team switch via `themeCallbacks.loadHomePodcastWidget`. Curated shows from `src/config/podcasts.js` (`collectionId`-anchored) plus an iTunes search-by-term fallback/backfill for uncurated teams. Only shows whose latest episode is within ~31 days are shown, newest-episode-first; stale curated shows are dropped and backfilled toward 8 from iTunes search (fewer than 8 if not enough are fresh — the bar is never relaxed). Tapping an icon plays that show's latest episode via `playPodcast()`; integrates with `stopAllMedia` (`stopPodcast`) so it coexists with radio/YouTube. Full subsystem doc: `docs/podcast.md`.
 **YouTube Widget** (`#homeYoutubeWidget`) — team YouTube channel, 25%/75% two-panel layout. Loaded by `loadHomeYoutubeWidget()` → `loadMediaFeed(uc)`. **Requires deployed URL** — YouTube embeds return Error 153 on `file://`.
 
 ## 📅 Schedule
@@ -86,7 +90,7 @@ Matchups: all MLB games, 3-per-row, day toggle (Yesterday/Today/Tomorrow), opaci
 Sources: `/schedule?sportId=1&date={date}&hydrate=linescore,team` + `/stats/leaders` with `statGroup` param
 
 ## ⚡ Pulse
-Global live MLB play-by-play feed — scoring plays, home runs, RISP across all simultaneous games. Lazy-loaded on first nav. **Desktop/iPad Landscape (≥1025px):** CSS Grid 700px + 320px side rail with games module + news carousel. **≤767px:** side rail hidden, single column.
+Global live MLB play-by-play feed — scoring plays, home runs, RISP across all simultaneous games. Lazy-loaded on first nav. **Desktop/iPad Landscape (≥1025px):** CSS Grid 700px + 320px side rail: MLB News carousel → games module → **Baseball Buzz** (`#sideRailBuzz`, `src/pulse/baseball-buzz.js`) — curated baseball Bluesky accounts (`src/config/buzz.js`) via the keyless public AT-Protocol API, client-side, no Vercel function, no filters. Last-month/newest-first, capped 10, header-row card (avatar + name + category pill + relative time on one line, full-width post text below), image embeds, "via Bluesky" footer. Refreshes every 2 min (`TIMING.BUZZ_REFRESH_MS`); `localStorage`-cached 2 min (reopen/reload guard only — the timer force-fetches). Full subsystem doc: `docs/buzz.md`. **≤767px:** side rail hidden, single column.
 
 Ticker: live-only chips sorted by inning progress. Expanded chip (base diamond SVG) fires when `g.onFirst || g.onSecond || g.onThird`. Feed: newest-first, inserted at correct chronological position via `data-ts` attributes.
 
@@ -107,6 +111,11 @@ ESPN headlines with a **MY TEAM lens toggle** (`#newsTeamBtn`) using the `ptb-le
 Triggered from Home card or matchup grid. Score header + count/runners + current matchup + linescore + play log (newest first, grouped by inning half) + box score (tabbed away/home) + game info. FINAL header and auto-refresh stop when `abstractGameState === 'Final'`. Auto-refresh every 5 minutes.
 
 Source: `/game/{gamePk}/linescore` + `/game/{gamePk}/boxscore` + `/game/{gamePk}/playByPlay` (v1 path — do NOT use `feed/live` v1, it 404s)
+
+## 📋 Old-School Scorecard (overlay)
+Triggered from the Schedule game-detail panel (Live + Final) and the Live Game View toolbar. Implemented as an overlay (`src/overlay/scorecard.js`), not a `<section>`. `#scorecardOverlay` (z-index 650) renders a traditional scoring-book: line-score header (R/H/E/LOB), a diamond per plate appearance with traced base paths + fielder notation + spray vector + ball-strike/pitch caption below each diamond, batting-order rows with PH/PR sub-rows, batting-around stacking, runner-out (CS/PO) and Manfred-runner (MR) handling, and a full pitcher table with W/L/S. Runner tracking is base-keyed so pinch-runners inherit the base. Self-refreshes on `LIVE_REFRESH_MS` while a live game is open.
+
+Source: `/game/{gamePk}/feed/live` (v1.1 path). Full architecture: `docs/scorecard.md`.
 
 ## ⚙️ Settings
 - **Select Team** — dropdown of all 30 teams; switching reloads all data, reapplies theme, resets caches

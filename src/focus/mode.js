@@ -12,27 +12,27 @@ import { rollClassicOnSwitch, isClassicActive } from '../radio/classic.js';
 
 export function calcFocusScore(g) {
   if(g.status!=='Live'||(g.detailedState==='Warmup'||g.detailedState==='Pre-Game')) return 0;
-  var diff=Math.abs(g.awayScore-g.homeScore);
-  var runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
-  var battingScore=g.halfInning==='top'?g.awayScore:g.homeScore;
-  var fieldingScore=g.halfInning==='top'?g.homeScore:g.awayScore;
-  var deficit=Math.max(0,fieldingScore-battingScore);
-  var effectiveDiff=runners>0&&deficit>0?Math.max(0,deficit-runners):diff;
-  var closeness=effectiveDiff===0?60:effectiveDiff===1?45:effectiveDiff===2?28:effectiveDiff===3?20:effectiveDiff===4?8:3;
-  var isBL=g.onFirst&&g.onSecond&&g.onThird;
-  var isWalkoff=g.halfInning==='bottom'&&g.inning>=9&&(g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
-  var isNoHit=g.inning>=6&&(g.awayHits===0||g.homeHits===0);
-  var situation=isBL?40:(g.onThird&&(g.onSecond||g.onFirst))?35:g.onThird?28:(g.onSecond&&g.onFirst)?22:g.onSecond?20:runners>0?12:0;
+  const diff=Math.abs(g.awayScore-g.homeScore);
+  const runners=(g.onFirst?1:0)+(g.onSecond?1:0)+(g.onThird?1:0);
+  const battingScore=g.halfInning==='top'?g.awayScore:g.homeScore;
+  const fieldingScore=g.halfInning==='top'?g.homeScore:g.awayScore;
+  const deficit=Math.max(0,fieldingScore-battingScore);
+  const effectiveDiff=runners>0&&deficit>0?Math.max(0,deficit-runners):diff;
+  const closeness=effectiveDiff===0?60:effectiveDiff===1?45:effectiveDiff===2?28:effectiveDiff===3?20:effectiveDiff===4?8:3;
+  const isBL=g.onFirst&&g.onSecond&&g.onThird;
+  const isWalkoff=g.halfInning==='bottom'&&g.inning>=9&&(g.awayScore-g.homeScore)<=runners+1&&g.awayScore>=g.homeScore;
+  const isNoHit=g.inning>=6&&(g.awayHits===0||g.homeHits===0);
+  let situation=isBL?40:(g.onThird&&(g.onSecond||g.onFirst))?35:g.onThird?28:(g.onSecond&&g.onFirst)?22:g.onSecond?20:runners>0?12:0;
   if(isWalkoff) situation+=50;
   if(isNoHit) situation+=Math.min((g.inning-4)*18,120);
   if(g.inning>=6&&diff<=2&&runners===0) situation+=Math.min((g.inning-5)*6,24);
-  var countBonus=0;
+  let countBonus=0;
   if(g.gamePk===state.focusGamePk){
     if(state.focusState.balls===3&&state.focusState.strikes===2) countBonus=20;
     else if(state.focusState.strikes===2) countBonus=12;
     if(state.focusState.outs===2) countBonus+=8;
   }
-  var innMult=g.inning<=3?0.5:g.inning<=5?0.75:g.inning<=8?1.0:g.inning===9?1.5:1.8;
+  let innMult=g.inning<=3?0.5:g.inning<=5?0.75:g.inning<=8?1.0:g.inning===9?1.5:1.8;
   if(g.inning>=9&&diff>runners+2&&!isNoHit) innMult=Math.min(innMult,1.0);
   return (closeness+situation+countBonus)*innMult;
 }
@@ -53,11 +53,11 @@ export function selectFocusGame() {
     // walk and yanks the user back to whatever game the recorder user
     // had focused (usually the same one for the whole session).
     if(state.focusIsManual) return;
-    var ft=state.focusTrack||[];
+    const ft=state.focusTrack||[];
     if(ft.length) {
-      var nowMs=state.demoCurrentTime||0;
-      var entry=null;
-      for(var ti=ft.length-1;ti>=0;ti--) { if(ft[ti].ts<=nowMs) { entry=ft[ti]; break; } }
+      const nowMs=state.demoCurrentTime||0;
+      let entry=null;
+      for(let ti=ft.length-1;ti>=0;ti--) { if(ft[ti].ts<=nowMs) { entry=ft[ti]; break; } }
       // Bootstrap: focusTrack[0].ts is metadata.startedAt (recording-begin),
       // but demoCurrentTime starts at the earliest baselined play — well
       // before that. Without this fallback, demo falls through to tension
@@ -71,7 +71,7 @@ export function selectFocusGame() {
       // before any game went live), look forward for the first non-null
       // entry so the focus card isn't empty for the first few demo ticks.
       if(entry&&!entry.focusGamePk){
-        for(var fi=0;fi<ft.length;fi++){ if(ft[fi].focusGamePk){ entry=ft[fi]; break; } }
+        for(let fi=0;fi<ft.length;fi++){ if(ft[fi].focusGamePk){ entry=ft[fi]; break; } }
       }
       if(entry&&entry.focusGamePk&&state.focusGamePk!==entry.focusGamePk) {
         // Don't write entry.isManual into state.focusIsManual — that's
@@ -84,11 +84,11 @@ export function selectFocusGame() {
       return;
     }
   }
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
+  const liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   if(!liveGames.length) return;
-  var scored=liveGames.map(function(g){return {g:g,score:calcFocusScore(g)};});
+  const scored=liveGames.map(function(g){return {g:g,score:calcFocusScore(g)};});
   scored.sort(function(a,b){return b.score-a.score;});
-  var best=scored[0];
+  const best=scored[0];
   // Auto-select on first run or if current game is no longer live
   if(!state.focusGamePk||!state.gameStates[state.focusGamePk]||state.gameStates[state.focusGamePk].status!=='Live') {
     state.focusIsManual=false;
@@ -96,10 +96,10 @@ export function selectFocusGame() {
   }
   // Soft alert if a different game scores ≥25 higher (with 90s cooldown)
   if(best.g.gamePk!==state.focusGamePk&&best.score-calcFocusScore(state.gameStates[state.focusGamePk])>=state.devTuning.focus_switch_margin) {
-    var now=Date.now();
+    const now=Date.now();
     if(!state.focusAlertShown[best.g.gamePk]||(now-state.focusAlertShown[best.g.gamePk])>state.devTuning.focus_alert_cooldown) {
       state.focusAlertShown[best.g.gamePk]=now;
-      var tension=getTensionInfo(best.score);
+      const tension=getTensionInfo(best.score);
       showFocusAlert(best.g.gamePk,tension.label+' · '+best.g.awayAbbr+' @ '+best.g.homeAbbr);
     }
   }
@@ -107,7 +107,7 @@ export function selectFocusGame() {
 
 export function setFocusGame(pk) {
   if(!pk) return;
-  var changed = state.focusGamePk !== pk;
+  const changed = state.focusGamePk !== pk;
   state.focusGamePk=pk;
   if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
     window.Recorder._captureFocusTrack();
@@ -139,9 +139,9 @@ export function setFocusGameManual(pk) {
 
 export function resetFocusAuto() {
   state.focusIsManual=false;
-  var live=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
+  const live=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
   if(!live.length) return;
-  var scored=live.map(function(g){return {g:g,score:calcFocusScore(g)};});
+  const scored=live.map(function(g){return {g:g,score:calcFocusScore(g)};});
   scored.sort(function(a,b){return b.score-a.score;});
   setFocusGame(scored[0].g.gamePk);
 }
@@ -152,13 +152,13 @@ export function resetFocusAuto() {
 // data lookup with no API calls. Falls back to gameStates only when no
 // pitch envelope exists yet for the focused game (e.g. early in demo).
 function hydrateFocusFromDemo() {
-  var pk=state.focusGamePk;
+  const pk=state.focusGamePk;
   if(!pk) return;
-  var g=state.gameStates[pk]||{};
-  var timeline=state.pitchTimeline[pk]||[];
-  var nowMs=state.demoCurrentTime||0;
-  var envelope=null;
-  for(var i=timeline.length-1;i>=0;i--) { if(timeline[i].ts<=nowMs) { envelope=timeline[i]; break; } }
+  const g=state.gameStates[pk]||{};
+  const timeline=state.pitchTimeline[pk]||[];
+  const nowMs=state.demoCurrentTime||0;
+  let envelope=null;
+  for(let i=timeline.length-1;i>=0;i--) { if(timeline[i].ts<=nowMs) { envelope=timeline[i]; break; } }
   // Bootstrap progression: pitchTimeline entries are captured during the
   // recording window (ts >= metadata.startedAt), but demoCurrentTime
   // starts in the pre-recording baseline. Without a fallback the focus
@@ -168,13 +168,13 @@ function hydrateFocusFromDemo() {
   // at-bats as demo plays out. Normal ts-based lookup naturally takes
   // over once demoCurrentTime catches up to the recording window.
   if(!envelope&&timeline.length) {
-    var queueLen=(state.demoPlayQueue&&state.demoPlayQueue.length)||1;
-    var idx=state.demoPlayIdx||0;
-    var fraction=Math.max(0,Math.min(1,idx/queueLen));
-    var progressIdx=Math.min(timeline.length-1,Math.floor(fraction*timeline.length));
+    const queueLen=(state.demoPlayQueue&&state.demoPlayQueue.length)||1;
+    const idx=state.demoPlayIdx||0;
+    const fraction=Math.max(0,Math.min(1,idx/queueLen));
+    const progressIdx=Math.min(timeline.length-1,Math.floor(fraction*timeline.length));
     envelope=timeline[progressIdx];
   }
-  var tension=getTensionInfo(calcFocusScore(g));
+  const tension=getTensionInfo(calcFocusScore(g));
   if(!envelope) {
     // No pitch data yet for this game — render score+inning skeleton
     state.focusState={
@@ -199,7 +199,7 @@ function hydrateFocusFromDemo() {
   // demoCurrentTime to each pitch's eventTs before re-hydrating, so each
   // tick adds one pitch. Pitches without eventTs (e.g. legacy recordings
   // pre-recorderV2.x) fall back to the full envelope so demo doesn't regress.
-  var revealedPitches=(envelope.pitches||[]).filter(function(p){
+  const revealedPitches=(envelope.pitches||[]).filter(function(p){
     return p.eventTs==null||p.eventTs<=nowMs;
   });
   state.focusPitchSequence=revealedPitches.map(function(p) {
@@ -208,13 +208,13 @@ function hydrateFocusFromDemo() {
       resultCode:p.resultCode,resultDesc:p.resultDesc,sequenceIndex:p.sequenceIndex
     };
   });
-  var lastPitch=state.focusPitchSequence.length?state.focusPitchSequence[state.focusPitchSequence.length-1]:null;
+  const lastPitch=state.focusPitchSequence.length?state.focusPitchSequence[state.focusPitchSequence.length-1]:null;
   // Prefer the post-pitch count from the most recently revealed pitch over
   // the envelope's end-of-AB count, so B/S/O animate as pitches arrive.
-  var lastRaw=revealedPitches.length?revealedPitches[revealedPitches.length-1]:null;
-  var displayBalls=(lastRaw&&lastRaw.ballsAfter!=null)?lastRaw.ballsAfter:(envelope.balls||0);
-  var displayStrikes=(lastRaw&&lastRaw.strikesAfter!=null)?lastRaw.strikesAfter:(envelope.strikes||0);
-  var displayOuts=(lastRaw&&lastRaw.outsAfter!=null)?lastRaw.outsAfter:(envelope.outs||0);
+  const lastRaw=revealedPitches.length?revealedPitches[revealedPitches.length-1]:null;
+  const displayBalls=(lastRaw&&lastRaw.ballsAfter!=null)?lastRaw.ballsAfter:(envelope.balls||0);
+  const displayStrikes=(lastRaw&&lastRaw.strikesAfter!=null)?lastRaw.strikesAfter:(envelope.strikes||0);
+  const displayOuts=(lastRaw&&lastRaw.outsAfter!=null)?lastRaw.outsAfter:(envelope.outs||0);
   state.focusState={
     balls:displayBalls,strikes:displayStrikes,outs:displayOuts,
     inning:envelope.inning||g.inning||1,halfInning:envelope.halfInning||g.halfInning||'top',
@@ -242,13 +242,13 @@ export async function pollFocusLinescore() {
   }
   if(state.focusAbortCtrl){state.focusAbortCtrl.abort();}
   state.focusAbortCtrl=new AbortController();
-  var focusSig=state.focusAbortCtrl.signal;
+  const focusSig=state.focusAbortCtrl.signal;
   try {
-    var r=await fetch(MLB_BASE+'/game/'+state.focusGamePk+'/linescore',{signal:focusSig});
+    const r=await fetch(MLB_BASE+'/game/'+state.focusGamePk+'/linescore',{signal:focusSig});
     if(!r.ok) throw new Error(r.status);
-    var ls=await r.json();
-    var g=state.gameStates[state.focusGamePk]||{};
-    var tension=getTensionInfo(calcFocusScore(g));
+    const ls=await r.json();
+    const g=state.gameStates[state.focusGamePk]||{};
+    const tension=getTensionInfo(calcFocusScore(g));
     state.focusState={
       balls:ls.balls||0, strikes:ls.strikes||0, outs:ls.outs||0,
       inning:ls.currentInning||g.inning||1,
@@ -277,13 +277,13 @@ export async function pollFocusLinescore() {
 
 async function fetchFocusPlayerStats(batterId, pitcherId) {
   if(state.demoMode) return;
-  var changed=false;
+  let changed=false;
   if(batterId&&!state.focusStatsCache[batterId]) {
     try {
-      var r=await fetch(MLB_BASE+'/people/'+batterId+'/stats?stats=season&group=hitting&season='+SEASON);
+      const r=await fetch(MLB_BASE+'/people/'+batterId+'/stats?stats=season&group=hitting&season='+SEASON);
       if(!r.ok) throw new Error(r.status);
-      var d=await r.json();
-      var s=(d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat)||{};
+      const d=await r.json();
+      const s=(d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0]&&d.stats[0].splits[0].stat)||{};
       state.focusStatsCache[batterId]={avg:s.avg||'—',obp:s.obp||'—',ops:s.ops||'—',hr:s.homeRuns!=null?s.homeRuns:'—',rbi:s.rbi!=null?s.rbi:'—'};
       if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
         window.Recorder._captureFocusStat(batterId, 'hitting', state.focusStatsCache[batterId]);
@@ -293,10 +293,10 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
   }
   if(pitcherId&&!state.focusStatsCache[pitcherId]) {
     try {
-      var r2=await fetch(MLB_BASE+'/people/'+pitcherId+'/stats?stats=season&group=pitching&season='+SEASON);
+      const r2=await fetch(MLB_BASE+'/people/'+pitcherId+'/stats?stats=season&group=pitching&season='+SEASON);
       if(!r2.ok) throw new Error(r2.status);
-      var d2=await r2.json();
-      var s2=(d2.stats&&d2.stats[0]&&d2.stats[0].splits&&d2.stats[0].splits[0]&&d2.stats[0].splits[0].stat)||{};
+      const d2=await r2.json();
+      const s2=(d2.stats&&d2.stats[0]&&d2.stats[0].splits&&d2.stats[0].splits[0]&&d2.stats[0].splits[0].stat)||{};
       state.focusStatsCache[pitcherId]={era:s2.era||'—',whip:s2.whip||'—',wins:s2.wins!=null?s2.wins:'—',losses:s2.losses!=null?s2.losses:'—'};
       if (typeof window !== 'undefined' && window.Recorder && window.Recorder.active) {
         window.Recorder._captureFocusStat(pitcherId, 'pitching', state.focusStatsCache[pitcherId]);
@@ -313,34 +313,34 @@ async function fetchFocusPlayerStats(batterId, pitcherId) {
 async function pollFocusRich(sig) {
   if(!state.focusGamePk||state.demoMode) return;
   try {
-    var data;
+    let data;
     if(!state.focusLastTimecode) {
       // First call: full feed to seed state and get initial timecode
-      var r=await fetch(MLB_BASE_V1_1+'/game/'+state.focusGamePk+'/feed/live',sig?{signal:sig}:{});
+      const r=await fetch(MLB_BASE_V1_1+'/game/'+state.focusGamePk+'/feed/live',sig?{signal:sig}:{});
       if(!r.ok) throw new Error(r.status);
       data=await r.json();
-      var tsList=data&&data.metaData&&data.metaData.timeStamp;
+      const tsList=data&&data.metaData&&data.metaData.timeStamp;
       if(tsList) state.focusLastTimecode=tsList;
     } else {
       // Subsequent calls: delta only (~1-5KB vs ~500KB)
-      var tsResp=await fetch(MLB_BASE_V1_1+'/game/'+state.focusGamePk+'/feed/live/timestamps',sig?{signal:sig}:{});
+      const tsResp=await fetch(MLB_BASE_V1_1+'/game/'+state.focusGamePk+'/feed/live/timestamps',sig?{signal:sig}:{});
       if(!tsResp.ok) throw new Error(tsResp.status);
-      var tsArr=await tsResp.json();
-      var latest=Array.isArray(tsArr)&&tsArr.length?tsArr[tsArr.length-1]:null;
+      const tsArr=await tsResp.json();
+      const latest=Array.isArray(tsArr)&&tsArr.length?tsArr[tsArr.length-1]:null;
       if(!latest||latest===state.focusLastTimecode) return; // nothing new
-      var dResp=await fetch(MLB_BASE_V1_1+'/game/'+state.focusGamePk+'/feed/live/diffPatch?startTimecode='+encodeURIComponent(state.focusLastTimecode)+'&endTimecode='+encodeURIComponent(latest),sig?{signal:sig}:{});
+      const dResp=await fetch(MLB_BASE_V1_1+'/game/'+state.focusGamePk+'/feed/live/diffPatch?startTimecode='+encodeURIComponent(state.focusLastTimecode)+'&endTimecode='+encodeURIComponent(latest),sig?{signal:sig}:{});
       if(!dResp.ok) throw new Error(dResp.status);
-      var patch=await dResp.json();
+      const patch=await dResp.json();
       state.focusLastTimecode=latest;
       // diffPatch wraps currentPlay under liveData.plays.currentPlay same as full feed
       data=patch;
     }
-    var cp=data&&data.liveData&&data.liveData.plays&&data.liveData.plays.currentPlay;
+    const cp=data&&data.liveData&&data.liveData.plays&&data.liveData.plays.currentPlay;
     if(!cp) return;
-    var abIdx=cp.about&&cp.about.atBatIndex;
+    const abIdx=cp.about&&cp.about.atBatIndex;
     if(state.focusCurrentAbIdx!==null&&state.focusCurrentAbIdx!==abIdx) state.focusPitchSequence=[];
     state.focusCurrentAbIdx=abIdx;
-    var pitchEvents=(cp.playEvents||[]).filter(function(e){return e.isPitch||e.type==='pitch';});
+    const pitchEvents=(cp.playEvents||[]).filter(function(e){return e.isPitch||e.type==='pitch';});
     state.focusPitchSequence=pitchEvents.map(function(e){
       return {
         typeCode:(e.details&&e.details.type&&e.details.type.code)||'??',
@@ -361,11 +361,11 @@ async function pollFocusRich(sig) {
 }
 
 export function renderFocusCard() {
-  var el=document.getElementById('focusCard'); if(!el) return;
+  const el=document.getElementById('focusCard'); if(!el) return;
   if(!state.focusGamePk||(!state.focusState.awayAbbr&&!state.demoMode)){el.style.display='none';return;}
   el.style.display='';
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
-  var cardData=Object.assign({},state.focusState,{
+  const liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
+  const cardData=Object.assign({},state.focusState,{
     isManual: state.focusIsManual,
     gamePk: state.focusGamePk,
     allLiveGames: liveGames.map(function(g){
@@ -378,19 +378,19 @@ export function renderFocusCard() {
 }
 
 export function renderFocusMiniBar() {
-  var el=document.getElementById('focusMiniBar'); if(!el) return;
+  const el=document.getElementById('focusMiniBar'); if(!el) return;
   if(!state.focusGamePk||!state.focusState.awayAbbr){el.style.display='none';return;}
-  var half=state.focusState.halfInning==='bottom'?'▼':'▲';
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
-  var showStrip=liveGames.length>1||state.focusIsManual;
-  var stripHtml='';
+  const half=state.focusState.halfInning==='bottom'?'▼':'▲';
+  const liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
+  const showStrip=liveGames.length>1||state.focusIsManual;
+  let stripHtml='';
   if(showStrip){
     stripHtml='<div style="display:flex;align-items:center;gap:5px;padding:3px 10px 4px;background:var(--p-dark,#080e1c);border-bottom:1px solid var(--p-border,#1e2d4a);overflow-x:auto;-webkit-overflow-scrolling:touch;">';
     if(state.focusIsManual){
       stripHtml+='<button onclick="resetFocusAuto()" style="flex:0 0 auto;padding:2px 7px;border-radius:4px;border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.08);font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;color:#22c55e;cursor:pointer">↩ AUTO</button>';
     }
     liveGames.forEach(function(g){
-      var focused=g.gamePk===state.focusGamePk;
+      const focused=g.gamePk===state.focusGamePk;
       stripHtml+='<button'+(focused?'':' onclick="setFocusGameManual('+g.gamePk+')"')+' style="flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;border:'+(focused?'1.5px solid var(--p-accent,#3a4d75)':'1px solid var(--p-border,#1e2d4a)')+';background:transparent;cursor:'+(focused?'default':'pointer')+'">'
         +'<span style="width:4px;height:4px;border-radius:50%;background:'+(g.awayPrimary||'#3a4d75')+';flex:0 0 auto"></span>'
         +'<span style="font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;color:'+(focused?'var(--p-text,#e8eaf0)':'var(--p-muted,#9aa0a8)')+'">'+g.awayAbbr+'<span style="color:var(--p-border,#3a4d75);margin:0 2px">@</span>'+g.homeAbbr+'</span>'
@@ -409,22 +409,22 @@ export function renderFocusMiniBar() {
 }
 
 export function openFocusOverlay() {
-  var el=document.getElementById('focusOverlay'); if(!el||!state.focusGamePk) return;
+  const el=document.getElementById('focusOverlay'); if(!el||!state.focusGamePk) return;
   state.focusOverlayOpen=true;
   el.style.display='flex';
   renderFocusOverlay();
 }
 
 export function closeFocusOverlay() {
-  var el=document.getElementById('focusOverlay'); if(!el) return;
+  const el=document.getElementById('focusOverlay'); if(!el) return;
   state.focusOverlayOpen=false;
   el.style.display='none';
 }
 
 export function renderFocusOverlay() {
-  var card=document.getElementById('focusOverlayCard'); if(!card) return;
-  var liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
-  var data=Object.assign({},state.focusState,{
+  const card=document.getElementById('focusOverlayCard'); if(!card) return;
+  const liveGames=Object.values(state.gameStates).filter(function(g){return g.status==='Live'&&g.detailedState!=='Warmup'&&g.detailedState!=='Pre-Game';});
+  const data=Object.assign({},state.focusState,{
     pitchSequence: state.focusPitchSequence,
     gamePk: state.focusGamePk,
     allLiveGames: liveGames.map(function(g){
@@ -437,7 +437,7 @@ export function renderFocusOverlay() {
 }
 
 function showFocusAlert(pk, reason) {
-  var el=document.getElementById('focusAlertBanner'); if(!el) return;
+  const el=document.getElementById('focusAlertBanner'); if(!el) return;
   el.style.display='';
   el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:6px;margin:6px 0;font-size:.75rem">'
     +'<span>⚡ <strong style="color:var(--text)">'+reason+'</strong></span>'
@@ -448,5 +448,5 @@ function showFocusAlert(pk, reason) {
 }
 
 export function dismissFocusAlert() {
-  var el=document.getElementById('focusAlertBanner'); if(el) el.style.display='none';
+  const el=document.getElementById('focusAlertBanner'); if(el) el.style.display='none';
 }

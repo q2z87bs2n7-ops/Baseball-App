@@ -25,27 +25,27 @@ export function closeNewsSourceTest() {
 }
 
 function renderNewsSourceTest() {
-  var list = document.getElementById('newsSourceTestList');
+  const list = document.getElementById('newsSourceTestList');
   if (!list) return;
-  var testsDone = Object.keys(newsTestResults).length > 0;
-  var carouselDone = carouselDiagnostics !== null;
+  const testsDone = Object.keys(newsTestResults).length > 0;
+  const carouselDone = carouselDiagnostics !== null;
   if (!testsDone && !carouselDone) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Click "▶ Run All" to test each source and carousel.</div>';
     return;
   }
-  var html = '';
+  let html = '';
   html += '<div style="padding:10px;border-bottom:2px solid var(--border);background:var(--card2)"><b style="color:var(--text)">News Sources</b></div>';
-  var rows = NEWS_TEST_SOURCES.map(function(k) {
-    var r = newsTestResults[k];
+  const rows = NEWS_TEST_SOURCES.map(function(k) {
+    const r = newsTestResults[k];
     if (!r) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>' + k + '</b> · pending</div>';
     if (r.pending) return '<div style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)"><b>' + k + '</b> · ⏳ testing…</div>';
-    var ok = r.ok && r.status >= 200 && r.status < 300 && (r.itemCount > 0);
-    var icon = ok ? '✅' : '❌';
-    var line1 = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:1rem">' + icon + '</span><b style="color:var(--text)">' + k + '</b><span style="color:var(--muted);font-size:.7rem">HTTP ' + (r.status || '?') + ' · ' + (r.kind || '?') + ' · ' + (r.byteLength || 0) + 'b · ' + (r.elapsedMs || 0) + 'ms · ' + (r.itemCount || 0) + ' items</span></div>';
-    var line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml(r.firstTitle).slice(0, 140) + '</div>' : '';
-    var line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml(r.error) + '</div>' : '';
-    var line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml(r.sample) + '</pre></details>' : '';
-    var line5 = r.firstItemSample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:#8ad">first item / article (full)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto">' + escapeHtml(r.firstItemSample) + '</pre></details>' : '';
+    const ok = r.ok && r.status >= 200 && r.status < 300 && (r.itemCount > 0);
+    const icon = ok ? '✅' : '❌';
+    const line1 = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:1rem">' + icon + '</span><b style="color:var(--text)">' + k + '</b><span style="color:var(--muted);font-size:.7rem">HTTP ' + (r.status || '?') + ' · ' + (r.kind || '?') + ' · ' + (r.byteLength || 0) + 'b · ' + (r.elapsedMs || 0) + 'ms · ' + (r.itemCount || 0) + ' items</span></div>';
+    const line2 = r.firstTitle ? '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)">First: ' + escapeHtml(r.firstTitle).slice(0, 140) + '</div>' : '';
+    const line3 = r.error ? '<div style="margin-top:4px;font-size:.7rem;color:#e03030">Error: ' + escapeHtml(r.error) + '</div>' : '';
+    const line4 = r.sample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:var(--muted)">sample (first 600 chars)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">' + escapeHtml(r.sample) + '</pre></details>' : '';
+    const line5 = r.firstItemSample ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:.65rem;color:#8ad">first item / article (full)</summary><pre style="margin:4px 0 0;padding:6px 8px;background:var(--card2);border:1px solid var(--border);border-radius:6px;font-size:.62rem;color:var(--text);white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto">' + escapeHtml(r.firstItemSample) + '</pre></details>' : '';
     return '<div style="padding:10px;border-bottom:1px solid var(--border)">' + line1 + line2 + line3 + line4 + line5 + '</div>';
   }).join('');
   html += rows;
@@ -60,10 +60,10 @@ function renderNewsSourceTest() {
     } else {
       // Per-source image extraction summary
       if (carouselDiagnostics.bySource) {
-        var summaryRows = Object.keys(carouselDiagnostics.bySource).sort().map(function(src) {
-          var s = carouselDiagnostics.bySource[src];
-          var pct = s.total ? Math.round(100 * s.withImage / s.total) : 0;
-          var color = pct >= 80 ? '#22c55e' : pct >= 40 ? '#e0a040' : '#ff6b6b';
+        const summaryRows = Object.keys(carouselDiagnostics.bySource).sort().map(function(src) {
+          const s = carouselDiagnostics.bySource[src];
+          const pct = s.total ? Math.round(100 * s.withImage / s.total) : 0;
+          const color = pct >= 80 ? '#22c55e' : pct >= 40 ? '#e0a040' : '#ff6b6b';
           return '<tr><td style="padding:3px 8px"><b>' + escapeHtml(src) + '</b></td>'
             + '<td style="padding:3px 8px">' + s.total + ' items</td>'
             + '<td style="padding:3px 8px;color:' + color + '">' + s.withImage + ' w/ image (' + pct + '%)</td>'
@@ -76,14 +76,14 @@ function renderNewsSourceTest() {
       }
       html += '<div style="padding:10px;border-bottom:1px solid var(--border);background:var(--card2);font-size:.7rem;color:var(--muted)">First 10 articles (newest by pubDate):</div>';
       carouselDiagnostics.articles.forEach(function(a, i) {
-        var headline = escapeHtml(a.headline || a.title || '(no headline)');
-        var srcTag = a.source ? '<span style="display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:0 6px;font-size:.6rem;color:var(--muted);margin-right:6px">' + escapeHtml(a.source) + '</span>' : '';
-        var imageLine = '';
+        const headline = escapeHtml(a.headline || a.title || '(no headline)');
+        const srcTag = a.source ? '<span style="display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:0 6px;font-size:.6rem;color:var(--muted);margin-right:6px">' + escapeHtml(a.source) + '</span>' : '';
+        let imageLine = '';
         if (a.image) {
-          var safe = a.imageSafe ? '✅' : '❌';
-          var original = escapeHtml(a.image);
-          var afterHttps = escapeHtml(a.imageAfterHttps || a.image);
-          var domain = escapeHtml(a.imageDomain || '?');
+          const safe = a.imageSafe ? '✅' : '❌';
+          const original = escapeHtml(a.image);
+          const afterHttps = escapeHtml(a.imageAfterHttps || a.image);
+          const domain = escapeHtml(a.imageDomain || '?');
           imageLine = '<div style="margin-top:4px;font-size:.7rem;color:var(--muted)"><b>Image:</b> [' + safe + '] domain: ' + domain + '</div>'
             + '<div style="margin-top:2px;font-size:.65rem;color:var(--muted);word-break:break-all">URL: ' + original + '</div>'
             + (a.image !== (a.imageAfterHttps || a.image) ? '<div style="margin-top:2px;font-size:.65rem;color:#b0a0ff">forceHttps: ' + original + ' → ' + afterHttps + '</div>' : '')
@@ -109,7 +109,7 @@ function forceHttps(url) {
 }
 
 export function runNewsSourceTest() {
-  var btn = document.getElementById('newsTestRunBtn');
+  const btn = document.getElementById('newsTestRunBtn');
   if (btn) {
     btn.disabled = true;
     btn.textContent = '⏳ Running…';
@@ -120,7 +120,7 @@ export function runNewsSourceTest() {
     newsTestResults[k] = { pending: true };
   });
   renderNewsSourceTest();
-  var promises = NEWS_TEST_SOURCES.map(function(k) {
+  const promises = NEWS_TEST_SOURCES.map(function(k) {
     return fetch(API_BASE + '/api/proxy-test?source=' + encodeURIComponent(k))
       .then(function(r) {
         return r.json();
@@ -150,11 +150,11 @@ function fetchCarouselDiagnostics() {
       return r.json();
     })
     .then(function(d) {
-      var allArticles = Array.isArray(d.articles) ? d.articles : [];
+      const allArticles = Array.isArray(d.articles) ? d.articles : [];
       // Per-source image stats over the FULL pool (proxy-news returns up to 80)
-      var bySource = {};
+      const bySource = {};
       allArticles.forEach(function(a) {
-        var src = a.source || '(unknown)';
+        const src = a.source || '(unknown)';
         if (!bySource[src]) bySource[src] = { total: 0, withImage: 0, withSafeImage: 0, exampleNoImage: null };
         bySource[src].total += 1;
         if (a.image) {
@@ -164,28 +164,28 @@ function fetchCarouselDiagnostics() {
           bySource[src].exampleNoImage = { title: a.title || a.headline || '', link: a.link || '' };
         }
       });
-      var articles = allArticles.slice(0, 10);
+      const articles = allArticles.slice(0, 10);
       carouselDiagnostics = {
         totalCount: allArticles.length,
         bySource: bySource,
         articles: articles.map(function(a) {
-          var img = a.image || null;
-          var imgDomain = null;
-          var imgSafe = false;
-          var imgAfterHttps = null;
-          var safeReason = null;
-          var suggestedEntry = null;
+          const img = a.image || null;
+          let imgDomain = null;
+          let imgSafe = false;
+          let imgAfterHttps = null;
+          let safeReason = null;
+          let suggestedEntry = null;
           if (!img) {
             safeReason = 'no image URL';
           } else {
             try {
-              var url = new URL(img);
+              const url = new URL(img);
               imgDomain = url.hostname;
               imgSafe = isSafeNewsImage(img);
               imgAfterHttps = forceHttps(img);
               if (!imgSafe) {
                 // Compute likely parent registrable domain (last two labels) — e.g. sportshub.cbsistatic.com → cbsistatic.com
-                var parts = imgDomain.split('.');
+                const parts = imgDomain.split('.');
                 suggestedEntry = parts.length >= 2 ? parts.slice(-2).join('.') : imgDomain;
                 safeReason = 'hostname "' + imgDomain + '" not in NEWS_IMAGE_HOSTS allowlist (add "' + suggestedEntry + '" to fix)';
               }
@@ -217,9 +217,9 @@ function fetchCarouselDiagnostics() {
 }
 
 export function copyNewsSourceTest() {
-  var lines = ['MLB News Source Test', 'Date: ' + new Date().toISOString(), 'Proxy: ' + API_BASE + '/api/proxy-test', ''];
+  const lines = ['MLB News Source Test', 'Date: ' + new Date().toISOString(), 'Proxy: ' + API_BASE + '/api/proxy-test', ''];
   NEWS_TEST_SOURCES.forEach(function(k) {
-    var r = newsTestResults[k];
+    const r = newsTestResults[k];
     lines.push('── ' + k + ' ──');
     if (!r || r.pending) {
       lines.push('  (not tested)');
@@ -260,8 +260,8 @@ export function copyNewsSourceTest() {
         lines.push('');
         lines.push('Per-source image extraction:');
         Object.keys(carouselDiagnostics.bySource).sort().forEach(function(src) {
-          var s = carouselDiagnostics.bySource[src];
-          var pct = s.total ? Math.round(100 * s.withImage / s.total) : 0;
+          const s = carouselDiagnostics.bySource[src];
+          const pct = s.total ? Math.round(100 * s.withImage / s.total) : 0;
           lines.push('  ' + src.padEnd(12) + ' total=' + s.total + '  withImage=' + s.withImage + ' (' + pct + '%)  passSafe=' + s.withSafeImage);
           if (s.exampleNoImage && s.exampleNoImage.title) {
             lines.push('    example with no image: ' + s.exampleNoImage.title);
@@ -292,11 +292,11 @@ export function copyNewsSourceTest() {
   } else {
     lines.push('(not tested)');
   }
-  var text = lines.join('\n');
-  var btn = document.getElementById('newsTestCopyBtn');
+  const text = lines.join('\n');
+  const btn = document.getElementById('newsTestCopyBtn');
   function flash(msg) {
     if (!btn) return;
-    var orig = btn.textContent;
+    const orig = btn.textContent;
     btn.textContent = msg;
     setTimeout(function() {
       btn.textContent = orig;

@@ -59,21 +59,21 @@ function compareBoxesFor(group){
 function compareFmt(box, val){
   if(val==null||val==='')return '—';
   if(box.fmt==='rate'){
-    var n=parseFloat(val); if(isNaN(n))return String(val); var s=n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s;
+    const n=parseFloat(val); if(isNaN(n))return String(val); const s=n.toFixed(3); return s.charAt(0)==='0'?s.slice(1):s;
   }
   if(box.fmt==='two'){
-    var n=parseFloat(val); if(isNaN(n))return String(val); return n.toFixed(2);
+    const n=parseFloat(val); if(isNaN(n))return String(val); return n.toFixed(2);
   }
   if(box.fmt==='ip'){ return String(val); }
-  var n=parseInt(val,10); return isNaN(n)?String(val):String(n);
+  const n=parseInt(val,10); return isNaN(n)?String(val):String(n);
 }
 
 // Pulls a player's season stat from state.statsCache (same-team only — v1
 // scope). Returns null when the active team's cache hasn't filled yet or the
 // player isn't on this team.
 function compareStatFor(playerId, group){
-  var pool=state.statsCache[group]||[];
-  var entry=pool.find(function(p){return p.player&&p.player.id===playerId;});
+  const pool=state.statsCache[group]||[];
+  const entry=pool.find(function(p){return p.player&&p.player.id===playerId;});
   return entry&&entry.stat?entry.stat:null;
 }
 
@@ -81,16 +81,16 @@ export function openCompareOverlay(){
   if(!state.selectedPlayer)return;
   // Determine group from active roster tab (hitting / pitching). Fielding
   // collapses to hitting for compare since the stat catalog is the same.
-  var group=state.currentRosterTab==='pitching'?'pitching':'hitting';
+  const group=state.currentRosterTab==='pitching'?'pitching':'hitting';
   state.compareGroup=group;
   state.compareA=state.selectedPlayer;
   // Default slot B = next player in the same group's roster (skip A)
-  var pool=state.rosterData[group]||[];
-  var aId=state.selectedPlayer.person&&state.selectedPlayer.person.id;
-  var b=pool.find(function(p){return p.person&&p.person.id!==aId;});
+  const pool=state.rosterData[group]||[];
+  const aId=state.selectedPlayer.person&&state.selectedPlayer.person.id;
+  const b=pool.find(function(p){return p.person&&p.person.id!==aId;});
   state.compareB=b||null;
   state.compareOpen=true;
-  var ov=document.getElementById('compareOverlay');
+  const ov=document.getElementById('compareOverlay');
   if(ov)ov.removeAttribute('hidden');
   document.body.style.overflow='hidden';
   renderCompare();
@@ -98,15 +98,15 @@ export function openCompareOverlay(){
 
 export function closeCompareOverlay(){
   state.compareOpen=false;
-  var ov=document.getElementById('compareOverlay');
+  const ov=document.getElementById('compareOverlay');
   if(ov)ov.setAttribute('hidden','');
   document.body.style.overflow='';
 }
 
 export function setCompareSlot(slot, playerId){
-  var pool=state.rosterData[state.compareGroup]||[];
-  var pid=parseInt(playerId,10);
-  var p=pool.find(function(pl){return pl.person&&pl.person.id===pid;});
+  const pool=state.rosterData[state.compareGroup]||[];
+  const pid=parseInt(playerId,10);
+  const p=pool.find(function(pl){return pl.person&&pl.person.id===pid;});
   if(!p)return;
   if(slot==='a')state.compareA=p;
   else state.compareB=p;
@@ -118,25 +118,25 @@ export function setCompareGroup(group){
   if(state.compareGroup===group)return;
   state.compareGroup=group;
   // Re-pick defaults from the new group when current slots are not in the new pool
-  var pool=state.rosterData[group]||[];
+  const pool=state.rosterData[group]||[];
   function inPool(pl){ return pl && pl.person && pool.some(function(p){return p.person&&p.person.id===pl.person.id;}); }
   if(!inPool(state.compareA)) state.compareA = pool[0] || null;
   if(!inPool(state.compareB)){
-    var aId=state.compareA&&state.compareA.person&&state.compareA.person.id;
+    const aId=state.compareA&&state.compareA.person&&state.compareA.person.id;
     state.compareB = pool.find(function(p){return p.person&&p.person.id!==aId;}) || null;
   }
   renderCompare();
 }
 
 function renderCompare(){
-  var bodyEl=document.getElementById('compareBody');
+  const bodyEl=document.getElementById('compareBody');
   if(!bodyEl)return;
-  var group=state.compareGroup;
-  var a=state.compareA, b=state.compareB;
+  const group=state.compareGroup;
+  const a=state.compareA, b=state.compareB;
   // Group toggle (only available when the other group has roster entries)
-  var hasHitters=(state.rosterData.hitting||[]).length>0;
-  var hasPitchers=(state.rosterData.pitching||[]).length>0;
-  var groupBar=(hasHitters&&hasPitchers)?
+  const hasHitters=(state.rosterData.hitting||[]).length>0;
+  const hasPitchers=(state.rosterData.pitching||[]).length>0;
+  const groupBar=(hasHitters&&hasPitchers)?
     '<div class="compare-group-bar">'+
       ['hitting','pitching'].map(function(g){
         return '<button type="button" class="compare-group-btn'+(group===g?' active':'')+'" onclick="setCompareGroup(\''+g+'\')">'+(g==='hitting'?'⚾ Hitting':'🥎 Pitching')+'</button>';
@@ -146,19 +146,19 @@ function renderCompare(){
   // Player picker option list — exclude the "other" slot's player to avoid
   // selecting the same player on both sides.
   function pickerOptions(otherId, selectedId){
-    var pool=state.rosterData[group]||[];
+    const pool=state.rosterData[group]||[];
     return pool.filter(function(p){return p.person&&p.person.id!==otherId;}).map(function(p){
-      var sel = p.person.id === selectedId ? ' selected' : '';
+      const sel = p.person.id === selectedId ? ' selected' : '';
       return '<option value="'+p.person.id+'"'+sel+'>'+(p.person.fullName||'#'+p.person.id)+'</option>';
     }).join('');
   }
   function slotHeader(slot, player, otherPlayer){
-    var pid=player&&player.person&&player.person.id;
-    var pname=player&&player.person&&player.person.fullName||'—';
-    var pos=player&&player.position&&player.position.abbreviation||'';
-    var jersey=player&&player.jerseyNumber?'#'+player.jerseyNumber:'';
-    var headshot=pid?'<img class="compare-headshot" src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current" alt="">' : '<div class="compare-headshot compare-headshot-empty">?</div>';
-    var otherId=otherPlayer&&otherPlayer.person&&otherPlayer.person.id;
+    const pid=player&&player.person&&player.person.id;
+    const pname=player&&player.person&&player.person.fullName||'—';
+    const pos=player&&player.position&&player.position.abbreviation||'';
+    const jersey=player&&player.jerseyNumber?'#'+player.jerseyNumber:'';
+    const headshot=pid?'<img class="compare-headshot" src="https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/'+pid+'/headshot/67/current" alt="">' : '<div class="compare-headshot compare-headshot-empty">?</div>';
+    const otherId=otherPlayer&&otherPlayer.person&&otherPlayer.person.id;
     return '<div class="compare-slot">'+
       headshot+
       '<div class="compare-slot-name">'+pname+'</div>'+
@@ -169,10 +169,10 @@ function renderCompare(){
     '</div>';
   }
 
-  var aStat=a?compareStatFor(a.person.id, group):null;
-  var bStat=b?compareStatFor(b.person.id, group):null;
+  const aStat=a?compareStatFor(a.person.id, group):null;
+  const bStat=b?compareStatFor(b.person.id, group):null;
 
-  var head =
+  const head =
     '<div class="compare-pickers">'+
       slotHeader('a', a, b)+
       '<div class="compare-vs">vs</div>'+
@@ -192,15 +192,15 @@ function renderCompare(){
     return;
   }
 
-  var boxes=compareBoxesFor(group);
-  var rows=boxes.map(function(box){
-    var av=aStat[box.k], bv=bStat[box.k];
-    var aDisp=compareFmt(box, av);
-    var bDisp=compareFmt(box, bv);
-    var aN=parseFloat(av), bN=parseFloat(bv);
-    var aClass='', bClass='';
+  const boxes=compareBoxesFor(group);
+  const rows=boxes.map(function(box){
+    const av=aStat[box.k], bv=bStat[box.k];
+    const aDisp=compareFmt(box, av);
+    const bDisp=compareFmt(box, bv);
+    const aN=parseFloat(av), bN=parseFloat(bv);
+    let aClass='', bClass='';
     if(!box.neutral && !isNaN(aN) && !isNaN(bN) && aN !== bN){
-      var aWins = box.lowerBetter ? aN < bN : aN > bN;
+      const aWins = box.lowerBetter ? aN < bN : aN > bN;
       aClass = aWins ? ' compare-win' : ' compare-lose';
       bClass = aWins ? ' compare-lose' : ' compare-win';
     }

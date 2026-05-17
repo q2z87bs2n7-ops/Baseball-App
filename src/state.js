@@ -69,6 +69,7 @@ export const state = {
   newsArticlesCache: [],
   pulseNewsArticles: [],
   pulseNewsIndex: 0,
+  baseballBuzzPosts: [],
 
   // ── League Pulse State ───────────────────────────────────────────────────
   pulseInitialized: false,
@@ -185,6 +186,12 @@ export const state = {
   focusAlertShown: {},
   focusOverlayOpen: false,
   tabHiddenAt: null,
+
+  // ── Scorecard Overlay State ──────────────────────────────────────────────
+  scorecardOverlayOpen: false,
+  scorecardGamePk: null,
+  scorecardModel: null,
+  scorecardCache: {},
 
   // ── Collection State ─────────────────────────────────────────────────────
   collectionFilter: 'all',

@@ -41,8 +41,8 @@ export function setTuningCallbacks(cbs) {
 }
 
 export function toggleDevTools() {
-  var p = document.getElementById('devToolsPanel');
-  var opening = p.style.display !== 'block';
+  const p = document.getElementById('devToolsPanel');
+  const opening = p.style.display !== 'block';
   p.style.display = opening ? 'block' : 'none';
   if (opening) {
     document.getElementById('tuneRotateMs').value = state.devTuning.rotateMs;
@@ -56,14 +56,14 @@ export function toggleDevTools() {
     document.getElementById('tuneNohitterFloor').value = state.devTuning.nohitter_inning_floor;
     document.getElementById('tuneBasesLoadedEnable').checked = state.devTuning.basesloaded_enable;
     document.getElementById('tuneBasesLoadedPriority').value = state.devTuning.basesloaded_priority;
-    var tHF = document.getElementById('tuneHitstreakFloor'); if (tHF) tHF.value = state.devTuning.hitstreak_floor || 10;
-    var tHP = document.getElementById('tuneHitstreakPriority'); if (tHP) tHP.value = state.devTuning.hitstreak_priority || 65;
-    var tRI = document.getElementById('tuneRosterPriorityIL'); if (tRI) tRI.value = state.devTuning.roster_priority_il || 40;
-    var tRT = document.getElementById('tuneRosterPriorityTrade'); if (tRT) tRT.value = state.devTuning.roster_priority_trade || 55;
-    var tWL = document.getElementById('tuneWPLeverageFloor'); if (tWL) tWL.value = state.devTuning.wp_leverage_floor || 2;
-    var tWE = document.getElementById('tuneWPExtremeFloor'); if (tWE) tWE.value = state.devTuning.wp_extreme_floor || 85;
-    var tLP = document.getElementById('tuneLiveWPPriority'); if (tLP) tLP.value = state.devTuning.livewp_priority || 30;
-    var tLR = document.getElementById('tuneLiveWPRefresh'); if (tLR) tLR.value = state.devTuning.livewp_refresh_ms || 90000;
+    const tHF = document.getElementById('tuneHitstreakFloor'); if (tHF) tHF.value = state.devTuning.hitstreak_floor || 10;
+    const tHP = document.getElementById('tuneHitstreakPriority'); if (tHP) tHP.value = state.devTuning.hitstreak_priority || 65;
+    const tRI = document.getElementById('tuneRosterPriorityIL'); if (tRI) tRI.value = state.devTuning.roster_priority_il || 40;
+    const tRT = document.getElementById('tuneRosterPriorityTrade'); if (tRT) tRT.value = state.devTuning.roster_priority_trade || 55;
+    const tWL = document.getElementById('tuneWPLeverageFloor'); if (tWL) tWL.value = state.devTuning.wp_leverage_floor || 2;
+    const tWE = document.getElementById('tuneWPExtremeFloor'); if (tWE) tWE.value = state.devTuning.wp_extreme_floor || 85;
+    const tLP = document.getElementById('tuneLiveWPPriority'); if (tLP) tLP.value = state.devTuning.livewp_priority || 30;
+    const tLR = document.getElementById('tuneLiveWPRefresh'); if (tLR) tLR.value = state.devTuning.livewp_refresh_ms || 90000;
     document.getElementById('tuneFocusCritical').value = state.devTuning.focus_critical;
     document.getElementById('tuneFocusHigh').value = state.devTuning.focus_high;
     document.getElementById('tuneFocusSwitchMargin').value = state.devTuning.focus_switch_margin;
@@ -80,7 +80,7 @@ export function updateTuning(param, val) {
     if (DEBUG) console.log('✓ Bases Loaded ' + (state.devTuning[param] ? 'enabled' : 'disabled'));
     return;
   }
-  var parsed = parseInt(val, 10);
+  const parsed = parseInt(val, 10);
   if (isNaN(parsed) || parsed < 1) return;
   state.devTuning[param] = parsed;
   if (param === 'rotateMs') {
@@ -125,13 +125,13 @@ export function updateColorOverride(context, colorVar, value) {
 }
 
 export function captureCurrentTheme(context) {
-  var cssVarMap = { dark: '--dark', card: '--card', card2: '--card2', border: '--border', primary: '--primary', secondary: '--secondary', accent: '--accent', accentText: '--accent-text', headerText: '--header-text' };
-  var root = document.documentElement;
+  const cssVarMap = { dark: '--dark', card: '--card', card2: '--card2', border: '--border', primary: '--primary', secondary: '--secondary', accent: '--accent', accentText: '--accent-text', headerText: '--header-text' };
+  const root = document.documentElement;
   Object.keys(cssVarMap).forEach(function(v) {
-    var cssVal = getComputedStyle(root).getPropertyValue(cssVarMap[v]).trim();
+    const cssVal = getComputedStyle(root).getPropertyValue(cssVarMap[v]).trim();
     state.devColorOverrides[context][v] = cssVal;
-    var elId = 'color' + context.charAt(0).toUpperCase() + context.slice(1) + v.charAt(0).toUpperCase() + v.slice(1);
-    var el = document.getElementById(elId);
+    const elId = 'color' + context.charAt(0).toUpperCase() + context.slice(1) + v.charAt(0).toUpperCase() + v.slice(1);
+    const el = document.getElementById(elId);
     if (el) el.value = cssVal;
   });
   if (DEBUG) console.log('✓ Captured current ' + context + ' theme colors');
@@ -153,7 +153,7 @@ export function toggleColorLock(enable) {
 }
 
 export function confirmDevToolsChanges() {
-  var fields = [
+  const fields = [
     ['rotateMs', 'tuneRotateMs'], ['rbiThreshold', 'tuneRbiThreshold'], ['rbiCooldown', 'tuneRbiCooldown'],
     ['hr_priority', 'tuneHRPriority'], ['hr_cooldown', 'tuneHRCooldown'],
     ['biginning_priority', 'tuneBigInningPriority'], ['biginning_threshold', 'tuneBigInningThreshold'],
@@ -166,8 +166,8 @@ export function confirmDevToolsChanges() {
     ['focus_critical', 'tuneFocusCritical'], ['focus_high', 'tuneFocusHigh'],
     ['focus_switch_margin', 'tuneFocusSwitchMargin'], ['focus_alert_cooldown', 'tuneFocusAlertCooldown']
   ];
-  fields.forEach(function(f) { var el = document.getElementById(f[1]); if (el && el.value !== '') updateTuning(f[0], el.value); });
-  var btn = document.getElementById('devConfirmBtn');
+  fields.forEach(function(f) { const el = document.getElementById(f[1]); if (el && el.value !== '') updateTuning(f[0], el.value); });
+  const btn = document.getElementById('devConfirmBtn');
   btn.textContent = '✓ Applied!'; btn.classList.add('applied');
   setTimeout(function() { btn.textContent = 'Confirm Changes'; btn.classList.remove('applied'); }, 1500);
 }
@@ -178,12 +178,12 @@ export function confirmDevToolsChanges() {
 // time this runs. Guard with readyState so we attach immediately in that case.
 export function initDevToolsClickDelegator() {
   function attach() {
-    var panel = document.getElementById('devToolsPanel');
+    const panel = document.getElementById('devToolsPanel');
     if (!panel) return;
     panel.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-dt-action]');
+      const btn = e.target.closest('[data-dt-action]');
       if (!btn) return;
-      var action = btn.dataset.dtAction;
+      const action = btn.dataset.dtAction;
       if      (action === 'close')             { toggleDevTools(); }
       else if (action === 'demo')              { toggleDemoMode(); toggleDevTools(); }
       else if (action === 'replayHR')          { replayHRCard(); toggleDevTools(); }
@@ -198,11 +198,11 @@ export function initDevToolsClickDelegator() {
       else if (action === 'radioCheck')        { openRadioCheck(); toggleDevTools(); }
       else if (action === 'testClassicRadio')  { devTestClassicRadio(); }
       else if (action === 'openDemoFeeds')     {
-        var det = document.getElementById('demoFeedsDetails');
+        const det = document.getElementById('demoFeedsDetails');
         if (det) { det.open = true; renderDemoFeedsTester(); }
       }
       else if (action === 'demoFeedPlay') {
-        var url = btn.dataset.demoFeedUrl;
+        const url = btn.dataset.demoFeedUrl;
         if (url) testDemoFeedUrl(url);
       }
       else if (action === 'resetTuning')       { resetTuning(); }
@@ -239,6 +239,7 @@ export function initDevToolsClickDelegator() {
       else if (action === 'recorderCopy')      { Recorder.copy(); }
       else if (action === 'recorderReset')     { Recorder.reset(); }
       else if (action === 'confirm')           { confirmDevToolsChanges(); }
+
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);

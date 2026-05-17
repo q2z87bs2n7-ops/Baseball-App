@@ -5,7 +5,100 @@
 
 ---
 
-**Current version:** v4.20.0
+**Current version:** v4.28.6
+
+**v4.28.6** — Baseball Buzz layout fix: replaced the avatar-gutter grid with a single header row (avatar + name + category pill + time all on one line, name ellipsises so the badge no longer wraps below) and full-width post text reclaiming the dead space under the avatar; added a right gutter so time/text don't reach the edge; dropped the now-redundant hover ↗ glyph. Docs: added `docs/buzz.md` subsystem doc; registered it in CLAUDE.md's subsystem list; updated `docs/sections.md`, `docs/functions.md`, `docs/module-graph.md`. Merged to prod at v4.28.6 (version intentionally not bumped on merge).
+
+**v4.28.5** — Baseball Buzz polish: removed the All/My-team/Insiders filter chips (and all filter state/handlers — feed is unfiltered); row dividers now use `var(--p-border)` to match the Completed/Upcoming games rows (the faint hardcoded divider is gone); restored the header→first-post divider (list keeps its top border, like the games container). Header font already matched "Upcoming Today" (shared `.side-rail-section-title`, .625rem) — unchanged.
+
+**v4.28.4** — Baseball Buzz: refresh cadence 10 min → **2 min** (new `TIMING.BUZZ_REFRESH_MS`); cache decoupled from the timer (scheduled tick force-fetches, `CACHE_TTL_MS` 10→2 min now only guards reopen/reload) so the interval is the true cadence — fixes the prior ~20-min effective rate. Text clamp expanded 3→8 lines (5 with an image embed) so the majority of a post is readable in the rail; very long posts still truncate.
+
+**v4.28.3** — Baseball Buzz v2 (design handoff): 28px author avatars (Bluesky CDN, initials fallback), larger type, category-coloured tag pills, hover ↗ affordance, image-embed slot (text clamp 3→2 lines when present), All/My-team/Insiders filter chips (localStorage-persisted), "via Bluesky" footer; section count-badge removed. Cache key → `mlb_buzz_cache_v2`. Discretionary deviations from spec: avatars/embeds gated through `isSafeNewsImage()` with `bsky.app` added to `NEWS_IMAGE_HOSTS` (firewall-safety invariant); layered avatar markup instead of inline-JS `onerror`; branch patch version per CLAUDE.md rule #7 (becomes v4.29.0 on merge to main); CHANGELOG-not-CLAUDE.md for history. Placement (below games) unchanged.
+
+**v4.28.2** — Baseball Buzz: moved below the upcoming/completed games in the Pulse side rail (order is now News → Games → Buzz).
+
+**v4.28.1** — Baseball Buzz: capped to the 10 most-recent posts (was 40); redesigned to match the side-rail "games" module — joined section header with post-count badge, bordered list container with row dividers/hover, name-ellipsis + accent tag + right-aligned relative time, 3-line text clamp.
+
+**v4.28.0** — Merge to main: Pulse Baseball Buzz Bluesky side-rail feed (branch `claude/research-podcast-apis-JzN1O`).
+
+**v4.27.1** — **New Pulse side-rail feature: Baseball Buzz.** Curated baseball Bluesky accounts (`src/config/buzz.js` — core analytics/insiders + one beat writer per club) rendered as a recent-posts feed in the Pulse side rail (`#sideRailBuzz`, between MLB News and the games list). Pulled keyless/no-account from the public AT-Protocol API client-side (`app.bsky.feed.getAuthorFeed`, no Vercel function), original posts only (no replies/reposts), last-month freshness filter, newest-first, capped 40, `localStorage`-cached 10 min. Text-only v1, links out to bsky.app. Curated handles are unverified — re-verify offseason.
+
+**v4.27.0** — Merge to main: fix podcast/YouTube not halting live-game radio (branch `claude/research-podcast-apis-JzN1O`).
+
+**v4.26.1** — Fix: podcast (and YouTube / schedule highlight) playback did not halt the live-game radio. `stopAllMedia` was imported into `main.js` but never added to the `Object.assign(window, …)` export block, so the `window.stopAllMedia(...)` calls in `playPodcast` / `selectMediaVideo` / schedule silently no-op'd. Exported it on `window`. (The radio→podcast direction already worked since `stopPodcast` was exported.)
+
+**v4.26.0** — Merge to main: Team Podcasts strip documentation (branch `claude/research-podcast-apis-JzN1O`).
+
+**v4.25.1** — Docs: documented the Team Podcasts strip end-to-end — new `docs/podcast.md` subsystem doc; registered it in CLAUDE.md (subsystem-docs list + a `TEAM_PODCASTS` Hardcoding-Risks row + `collection-sync` now `…/DELETE`); added the strip to `docs/sections.md`, the functions to `docs/functions.md`, `src/config/podcasts.js` to `docs/module-graph.md`; updated `docs/auth-architecture.md` + `docs/card-collection.md` for the `DELETE /api/collection-sync` reset consolidation.
+
+**v4.25.0** — Merge to main: podcast strip last-month filter + newest-first sort + up to 8 with API fill (branch `claude/research-podcast-apis-JzN1O`).
+
+**v4.24.1** — Podcasts: only shows whose latest episode is within ~31 days are returned, sorted newest-episode-first, capped at 8. Stale curated `collectionId`s are dropped and the iTunes search backfills toward 8 (curated requests now also send the team term); if fewer than 8 are fresh, fewer are returned — the freshness bar is never relaxed. Edge cache cut 7d → 6h since the window and sort are time-relative.
+
+**v4.24.0** — Merge to main: consolidate collection reset into `collection-sync` (DELETE).
+
+**v4.23.1** — Consolidated `api/collection/reset.js` into `api/collection-sync.js` as a `DELETE` method (same `collection:{userId}` resource, same auth — duplicated `verifySession` removed). Frees a Vercel Hobby function slot (13 → 12) so `proxy-podcast.js` ships as its own single-purpose function. Client reset call updated to `DELETE /api/collection-sync`.
+
+**v4.23.0** — Merge to main: podcast proxy CORS + OPTIONS.
+
+**v4.22.2** — `api/proxy-podcast.js`: added `Access-Control-Allow-Origin: *` + OPTIONS handling so the strip loads from cross-origin preview deployments as well as same-origin production (matches `subscribe.js` / `collection-sync.js`).
+
+**v4.22.1** — **New Home feature: Team Podcasts strip** above the YouTube widget. Curated per-team Apple Podcasts (`collectionId`-anchored, `src/config/podcasts.js`) with iTunes search-by-term fallback for uncurated teams. New `api/proxy-podcast.js` resolves each show's artwork + latest-episode audio server-side via the keyless iTunes lookup API. Horizontal icon strip + inline `<audio>` player; integrates with `stopAllMedia` so it coexists with radio/YouTube.
+
+**v4.22.0** — Merge to main: Home Injury Report + Roster Moves cards (branch `claude/add-home-screen-team-items-hJHMJ`, PR #77).
+
+**v4.21.17** — Home Injury Report / Roster Moves: dropped the emoji from both card headers; documented both cards in `docs/sections.md` and registered `/transactions` + the `/roster` `&date=` gotcha in `docs/api-reference.md`.
+
+**v4.21.16** — Sort Injury Report by IL length ascending (10-day → 15-day → 60-day), player name A–Z tiebreak. Day count parsed from whichever of `status.code`/`status.description` carries the number.
+
+**v4.21.15** — Fix Injury Report showing no players on IL: add `&date={today}` to the 40-man roster fetch (without it the API returns season-opening "Active" statuses) and match IL status codes (D7/D10/D15/D60) in addition to description text.
+
+**v4.21.14** — **New Home cards: Injury Report + Roster Moves** above the YouTube widget. Injury Report filters the 40-man roster for IL statuses; Roster Moves lists the last 30 days of `/transactions`. Both reload on team switch via the theme-callback path; API text escaped via `escapeNewsHtml`.
+
+**v4.21.13** — Docs: refreshed `docs/scorecard.md` (Paper visual treatment, responsive batting-grid section, non-blocking font load, single inning-end slash, subtle launch button) and the CLAUDE.md scorecard summary to match the v4.21.5 → v4.21.12 work.
+
+**v4.21.12** — **Fix double inning-ending diagonal.** Two diagonals were rendering on the half-inning-ending cell: the bold red slash inside the diamond SVG (the spec renderer's mark, the traditional scorebook convention) *and* a faint 135° cell-background gradient stripe added from the handoff README's checklist item 5. The spec only ever drew one; the README's cell-overlay note was an alternative, not an addition. Removed the cell-background gradient (and the now-unused `.inning-end` class plumbing) — a single in-diamond slash remains.
+
+**v4.21.11** — **Tone down the scorecard launch button.** It reused the prominent solid `.watch-live-btn` pill, so it was as eye-catching as "Watch Live" and oversized for a secondary action. Added a `.watch-live-btn.sc-btn` override (ghost style: transparent bg, 1px subtle border, muted text, smaller padding/font, lighter weight) — placement unchanged. The real "Watch Live" button is untouched.
+
+**v4.21.10** — **Fix batter names overflowing into inning 1.** Side effect of the v4.21.9 responsive grid: `table-layout: fixed` pinned the name column to a hard 150px, but the base `.sc-name` still had `white-space: nowrap`, so long names ("Bryce Harper 1B", "Edmundo Sosa LF") and especially indented sub rows (`SUB · Rafael Marchán C`) overflowed past 150px into the inning-1 diamond. Batting name cells now wrap (`white-space: normal`), hard-clip (`overflow: hidden`) so nothing can ever bleed into the grid, with tight line-height + vertical centering (rows are ~116px tall, so a 2-line name fits). Sub-row indent trimmed 16 → 10px to give the tag+name a touch more room. No data/logic change — subs were always tracked correctly; this was purely the fixed-width + nowrap layout gap.
+
+**v4.21.9** — **Responsive batting grid (fixes the landscape dead space).** The v4.21.8 content-width fix stopped the name-column bloat but left a wide blank strip on landscape iPad/desktop and made the fixed-size diamonds feel small. The diamonds were never actually resized by orientation — they're a fixed 76px; it was purely the empty space. Made the batting table fill the card width via `table-layout: fixed` with a 150px name column, so the 9 inning columns share the remaining width and the diamond SVGs scale up to fill them (capped at 116px), with `min-width: 820px` so it still scrolls when narrow. Scoped to `.sc-bat` only (line-score now also spans full width for visual coherence; pitcher table unchanged). Net: bigger diamonds on landscape, no dead space, no name-column regression.
+
+**v4.21.8** — **Actually fix the name-column width.** The earlier `min-width` trim didn't help because the real cause was `.sc-table { width: 100% }` with auto table layout: the inning cells are fixed 80px so on a wide iPad/desktop *all* the leftover horizontal space was absorbed by the only flexible column — the name column. Changed the table to `width: max-content` (`min-width: 0`) so it sizes to its content and any slack falls outside the grid as blank paper instead of bloating the name column.
+
+**v4.21.7** — **Fix print regression from the Paper redesign.** The Playfair Display font was added as a render-blocking `<link rel="stylesheet">`; WebKit/iPad defers `window.print()` until pending stylesheets resolve, so when the Google Fonts request stalled the print dialog never appeared (Georgia fallback hid the visual symptom). Switched to a non-blocking `rel="preload" … onload` swap (+ `<noscript>` fallback) and trimmed the request to italic-800 only. Print works again; the font also no longer blocks first paint.
+
+**v4.21.6** — **Scorecard sticky-column fixes (UAT).** (1) Fixed sticky name-column bleed-through when scrolling to later innings: switched `.sc-table` from `border-collapse: collapse` to `separate` + `border-spacing: 0` (per-cell right/bottom borders, table top/left edge) — the canonical fix for the WebKit/iPad bug where scrolled cells paint over a sticky column — and gave all sticky cells **opaque** backgrounds (the header sticky cell was translucent `rgba(…,.25)`), with corrected z-index layering (body-left 2, header 3, corner 4). (2) Trimmed the wasted name-column width: `min-width` 180 → 148px and tighter cell padding.
+
+**v4.21.5** — **Scorecard "Paper" heritage redesign (full replace).** Implements the design-handoff Paper variant: cream stock with paper-grain gradients, navy ink for plays, faded red for outs/RBI/HR/inning-end, faint-sand borders, pencil-mute spray/footer; serif type (Georgia + Playfair Display italic title via Google Fonts, Georgia fallback); Courier line score. Palette is fixed (not team-themed) — remapped through CSS custom properties scoped to `#scorecardCard` so the `.sc-*` rules recolour without a rewrite. Five cell-readability fixes: 76px cells (54px batting-around), HR diamond fill + 13pt code, 22pt centred K with spray suppressed, red restraint (navy paths for non-scoring hits), circled red out-number chip. Model logic untouched; the SB/CS/PO/adv functional markers added during UAT are preserved (restyled). Dark treatment dropped per the chosen delivery option.
+
+**v4.21.4** — Chore: remove a stray `Score cards.zip` (UAT artifact uploaded to the branch) so it doesn't ship to main; recoverable in branch history.
+
+**v4.21.3** — **UAT fixes.** (1) Pulse side-rail games: when every game is in progress, both Upcoming and Completed are empty and the panel wrongly read "No games today" (`renderSideRailGames` deliberately excludes Live games — they're in the ticker). It now counts live games and shows "All N games in progress — see ticker above" when that's the case. (2) Scorecard pitcher table: narrowed the name column (`min-width` 180 → 132px) and widened/`nowrap`-ed the value columns (38 → 46px) so the P-S figure (e.g. `106-71`) stops wrapping and the line breathes.
+
+**v4.21.2** — **Scorecard review-feedback pass.** Eight improvements from an external code review: (1) live re-render now preserves the overlay's scroll position + each grid's horizontal pan; (2) a failed *refresh* no longer wipes a good scorecard — only the first load shows an error; (4) `@media print` stylesheet + 🖨 button → clean black-on-white landscape printout; (5) final games session-cached in `state.scorecardCache` (instant reopen, no refetch); (6) accessibility — `role="dialog"`/`aria-modal`/`aria-labelledby`, per-cell `aria-label` summaries with `aria-hidden` SVGs, Tab focus-trap; (7) PH/PR `subRoles` keyed by resolved player id instead of name (same-name collision); (8) half-inning key style tidy; (10) per-inning "Left on base" footer row from the base map. Items 3 (sticky name column — already implemented) and 9 (file split — deliberate future refactor) intentionally deferred. Shipped on branch v4.21.2.
+
+**v4.21.1** — **Post-merge patch for the scorecard UAT-fix branch.** Bug-fix follow-up to v4.21.0 (not a new feature), so a patch bump per CLAUDE.md rule #7. Branch shipped v4.20.19 → v4.20.21:
+
+- **v4.20.19** — Fix missing SB/CS/PO markers for mid-at-bat actions. The advancement reason was read from the play-level `result.eventType`, but a steal / caught-stealing / pickoff that happens during an at-bat is recorded on that at-bat (eventType = the at-bat's result, e.g. `strikeout`), so the runner moved on the diamond but no marker was set. Now derived per-runner from `runner.details` (`movementReason`/`eventType`/`event`), falling back to the play-level reason. Found in UAT: Chisholm's stolen base on the Mets/Yankees scorecard showed no `SB`.
+- **v4.20.20** — Move the ball-strike/pitch count out of the cramped 6.5px in-SVG text to a tight `.sc-foot` caption directly below the diamond (and below each mini-diamond when batting around).
+- **v4.20.21** — Docs: `docs/scorecard.md` / `docs/sections.md` wording updated for the relocated pitch-count caption.
+
+**v4.21.0** — **Post-merge minor bump for the Old-School Scorecard branch (PR #72).** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.20.11 → v4.20.18; full per-version notes below.
+
+**v4.20.18** — **Old-School Scorecard overlay (new feature).** Branch `claude/baseball-scorecard-viz` shipped v4.20.11 → v4.20.18; merged to main as v4.21.0. New `src/overlay/scorecard.js` + `#scorecardOverlay` (z-index 650) reconstructs a traditional scoring-book from `feed/live` for any live or completed game. Per-version:
+
+- **v4.20.11** — Initial overlay: diamond-per-PA SVG grid, fielder notation (`6-3`/`F8`/`K`/`ꓘ`), traced base paths, per-inning R/H/E, pitcher one-liner. Launchable from Schedule cards (Live + Final) and the Live Game View toolbar (`liveScorecard()`). State fields, Escape-to-close, window exports.
+- **v4.20.12** — Correctness: station-to-station advancement (1B→2B was dropped), out numbers from authoritative `play.count.outs` (was double-counting on DPs), fielder-credit order preserved for rundowns (1-3-6-3) while collapsing the shared DP pivot (6-4-3), non-PA event skip-list (SB/CS/WP/PB/balk/pickoff/subs no longer render junk cells), `scheduledInnings` so 7-inning DH games stop drawing phantom columns.
+- **v4.20.13** — Authenticity: line-score header (inning strip + R/H/E) replacing the awkward per-row columns; in-cell ball-strike + pitch-count footer; inning-ending diagonal; advancement reason codes (SB/WP/PB/BK/E); out-type prefix from `hitData.trajectory`; full pitcher table with W/L/S decisions; PH/PR substitution tags; venue/date/attendance/weather header.
+- **v4.20.14** — Base-keyed runner tracking (was id-keyed): pinch-runners inherit the base and the run is credited to the originating batter; caught-stealing/pickoff outs marked (CS/PO); Manfred extra-innings runner synthesised as an `MR` cell; batting-around stored as an array and rendered as stacked mini-diamonds; uncaught-third-strike handled; LOB column; fixed `.sc-sub` CSS collision (→ `.sc-subtag`).
+- **v4.20.15** — Fixed nonsensical RBI marker (`1·`/`2R`) → one accent dot per RBI.
+- **v4.20.16** — Real batted-ball spray vector from `hitData.coordinates` (direction within the ±45° fair wedge + depth; grounders straight, fly balls arced), replacing the valueless line-to-fielder tick.
+- **v4.20.17** — Removed the legend/key strip and its unused CSS.
+- **v4.20.18** — Documentation: `docs/scorecard.md` (new), CLAUDE.md feature section + subsystem-docs entry, `docs/sections.md` + `docs/module-graph.md` entries.
+
+Live/demo behaviour elsewhere untouched; the overlay is additive and hits the live API only when opened (unsupported in Demo Mode).
 
 **v4.20.0** — **Post-merge minor bump for the demo-RISP / pitch-by-pitch / recorder-enrichment branch (PR #65).** Per CLAUDE.md rule #7, drops the patch on merge to main and bumps minor. No new code in this commit — pure version propagation. Branch shipped v4.19.3 → v4.19.18 covering:
 

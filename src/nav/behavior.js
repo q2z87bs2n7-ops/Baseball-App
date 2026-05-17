@@ -172,9 +172,9 @@ export function attachLongPress(el, handler, ms) {
   }
 
   el.addEventListener('touchstart', start, { passive: true });
-  el.addEventListener('touchend', cancel);
-  el.addEventListener('touchmove', cancel);
-  el.addEventListener('touchcancel', cancel);
+  el.addEventListener('touchend', cancel, { passive: true });
+  el.addEventListener('touchmove', cancel, { passive: true });
+  el.addEventListener('touchcancel', cancel, { passive: true });
   el.addEventListener('mousedown', start);
   el.addEventListener('mouseup', cancel);
   el.addEventListener('mouseleave', cancel);
@@ -190,5 +190,17 @@ export function installNavLongPress(handlers) {
     const section = btn.getAttribute('data-section');
     const h = map[section];
     if (typeof h === 'function') attachLongPress(btn, h);
+  });
+}
+
+// Delegated click handler for the 7 section nav buttons (replaces inline onclick).
+export function installNavClicks(showSectionFn) {
+  const nav = document.querySelector('header nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    const btn = e.target.closest('button[data-section]');
+    if (!btn) return;
+    const section = btn.getAttribute('data-section');
+    if (section && document.getElementById(section)) showSectionFn(section, btn);
   });
 }

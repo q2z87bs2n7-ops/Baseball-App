@@ -59,6 +59,9 @@ The signatures listed in the rest of this file are organised by topic, not by mo
 | `loadNextGame()` | Right home card — finds and renders series after the current one |
 | `loadHomeYoutubeWidget()` | Builds team-colored YouTube header, calls `loadMediaFeed(uc)`; replaced old `loadMedia()` when Media tab was folded into Home |
 | `loadMediaFeed(uc)` | Fetches YouTube channel RSS via `/api/proxy-youtube`, populates `mediaVideos[]`, auto-selects first video |
+| `loadHomePodcastWidget()` | Builds the team-colored Podcasts header, fetches `/api/proxy-podcast?term=…[&ids=…]` (curated `collectionId`s from `src/config/podcasts.js` + iTunes term fallback), populates `podcastShows[]`, renders the icon strip |
+| `playPodcast(collectionId)` | Plays the chosen show's latest episode in the inline `#homePodcastAudio` element; calls `stopAllMedia('podcast')` first; re-renders the strip to mark the playing show |
+| `stopPodcast()` | Pauses the inline podcast `<audio>` (called by `stopAllMedia` when radio/YouTube/highlight start) |
 
 ## Schedule Tab
 
@@ -245,6 +248,19 @@ The Stats Tab Revamp (Sprints 1+2, shipped under v4.7) added the Team Stats card
 | `updateInningStates()` | Called post-poll; placeholder for inning transition detection |
 | `genInningRecapStories()` | One-shot end-of-inning recap cards. Primary path: processes `inningRecapsPending{}`. Fallback: `lastInningState` linescore transition. 19 templates, priorities 0–100. |
 | `replayRBICard(itemIndex)` | Dev tool — scans `feedItems` for most recent non-HR scoring play, calls `showRBICard()` bypassing cooldown. |
+
+## Baseball Buzz (Pulse side rail)
+
+`src/pulse/baseball-buzz.js` — curated baseball Bluesky posts. Keyless public AT-Protocol API, client-side, no Vercel function.
+
+| Function | Purpose |
+|---|---|
+| `loadBaseballBuzz(force)` | Fans out `app.bsky.feed.getAuthorFeed` (posts, no replies) across `BASEBALL_BUZZ_ACCOUNTS` (~49 accounts) via `Promise.allSettled`; drops reposts/replies, last-month freshness, newest-first, caps 10, caches `mlb_buzz_cache_v2`. `force=true` (the 2-min timer) bypasses the cache; `force` falsey (first Pulse nav / reopen) uses it. Wired in `main.js` `initReal()` + `setInterval(…, TIMING.BUZZ_REFRESH_MS)`. |
+| `fetchAccount(acct)` | One account → fresh original posts with `name/handle/tag/category/avatar/embedImage/text/ts/url`. |
+| `extractEmbedImage(embed)` | First `app.bsky.embed.images#view` thumb URL or `null` (link previews / quotes ignored). |
+| `cardHtml(p)` / `avatarHtml(p)` | Header-row card: avatar (initials fallback) + name + category pill + relative time on one line, full-width post text + optional 16:9 image embed below. Images gated via `isSafeNewsImage()` (`bsky.app` is in `NEWS_IMAGE_HOSTS`). |
+| `renderBaseballBuzz()` | Header + bordered list + "via Bluesky" footer into `#sideRailBuzz`; loading/empty/error use `.buzz-empty`. |
+| `relTime(ts)` / `initialsOf(name)` | "now/Xm/Xh/Xd" relative time; avatar-fallback initials. |
 
 ## Video Clips
 

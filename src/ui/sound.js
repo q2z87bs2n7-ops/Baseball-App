@@ -15,7 +15,7 @@ export const soundSettings = {
 
 // Hydrate from localStorage at module-init time.
 try {
-  var stored = localStorage.getItem('mlb_sound_settings');
+  const stored = localStorage.getItem('mlb_sound_settings');
   if (stored) Object.assign(soundSettings, JSON.parse(stored));
 } catch (e) { /* ignore corrupt JSON */ }
 
@@ -35,11 +35,11 @@ function _closeCtx(ctx, dur) {
 }
 
 function _osc(ctx, freq, t0, dur, vol, wave, attack, dest) {
-  var osc = ctx.createOscillator(), g = ctx.createGain();
+  const osc = ctx.createOscillator(), g = ctx.createGain();
   osc.connect(g); g.connect(dest || ctx.destination);
   osc.type = wave || 'sine';
   osc.frequency.value = freq;
-  var at = ctx.currentTime + t0, att = attack || 0.005;
+  const at = ctx.currentTime + t0, att = attack || 0.005;
   g.gain.setValueAtTime(0.0001, at);
   g.gain.exponentialRampToValueAtTime(vol, at + att);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
@@ -47,19 +47,19 @@ function _osc(ctx, freq, t0, dur, vol, wave, attack, dest) {
 }
 
 function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ, dest) {
-  var len = Math.ceil(ctx.sampleRate * (dur + 0.1));
-  var buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  var d = buf.getChannelData(0);
-  for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-  var src = ctx.createBufferSource();
+  const len = Math.ceil(ctx.sampleRate * (dur + 0.1));
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
   src.buffer = buf;
-  var filt = ctx.createBiquadFilter();
+  const filt = ctx.createBiquadFilter();
   filt.type = filterType || 'bandpass';
   filt.frequency.value = filterFreq || 1000;
   filt.Q.value = filterQ !== undefined ? filterQ : 1;
-  var g = ctx.createGain();
+  const g = ctx.createGain();
   src.connect(filt); filt.connect(g); g.connect(dest || ctx.destination);
-  var at = ctx.currentTime + t0, att = attack || 0.003;
+  const at = ctx.currentTime + t0, att = attack || 0.003;
   g.gain.setValueAtTime(0.0001, at);
   g.gain.exponentialRampToValueAtTime(vol, at + att);
   g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
@@ -68,7 +68,7 @@ function _ns(ctx, t0, dur, vol, attack, filterType, filterFreq, filterQ, dest) {
 
 // ── Glue compressor (prevents inter-layer clipping, adds punch) ───────────────
 function _comp(ctx) {
-  var c = ctx.createDynamicsCompressor();
+  const c = ctx.createDynamicsCompressor();
   c.threshold.value = -12; c.knee.value = 6; c.ratio.value = 4;
   c.attack.value = 0.003; c.release.value = 0.15;
   c.connect(ctx.destination);
@@ -78,7 +78,7 @@ function _comp(ctx) {
 // ── Per-event sounds ─────────────────────────────────────────────────────────
 function playHrSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // Crack of the bat (sharp broadband + body thud + bass)
     _ns(ctx, 0,    0.05, 0.95, 0.0005, 'highpass', 2800, 0.8, d);
     _ns(ctx, 0,    0.12, 0.80, 0.001,  'bandpass', 1000, 2.0, d);
@@ -94,7 +94,7 @@ function playHrSound() {
 }
 function playRunSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // G4→B4→D5→G5 bright arpeggio (G major — distinct from C-major game-start)
     _osc(ctx, 392, 0,    0.24, 0.55, 'sine', 0.01, d);
     _osc(ctx, 494, 0.20, 0.24, 0.55, 'sine', 0.01, d);
@@ -110,7 +110,7 @@ function playRunSound() {
 }
 function playRispSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // Two kick-drum pulses (tension — runners are in scoring position)
     _osc(ctx, 100, 0,    0.32, 0.80, 'sine', 0.003, d);
     _ns(ctx,  0,   0.13, 0.65, 0.002, 'lowpass', 200, 1.5, d);
@@ -123,7 +123,7 @@ function playRispSound() {
 }
 function playDpSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // Two crisp snaps + quick up-note (1-2-done feel)
     _ns(ctx, 0,    0.07, 0.95, 0.001, 'bandpass', 1100, 5, d);
     _osc(ctx, 200, 0,    0.10, 0.65, 'sine', 0.001, d);
@@ -135,7 +135,7 @@ function playDpSound() {
 }
 function playTpSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // Three rapid snaps (one per out)
     _ns(ctx, 0,    0.07, 0.90, 0.001, 'bandpass', 1000, 4, d);
     _osc(ctx, 180, 0,    0.10, 0.60, 'sine', 0.001, d);
@@ -153,7 +153,7 @@ function playTpSound() {
 }
 function playGameStartSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // C5→E5→G5→C6 stately fanfare (triangle = warm, brass-like)
     _osc(ctx, 523,  0,    0.26, 0.55, 'triangle', 0.01, d);
     _osc(ctx, 659,  0.24, 0.26, 0.55, 'triangle', 0.01, d);
@@ -169,7 +169,7 @@ function playGameStartSound() {
 }
 function playGameEndSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // G5→E5→C5 descending farewell
     _osc(ctx, 784, 0,    0.70, 0.55, 'sine', 0.01, d);
     _osc(ctx, 659, 0.58, 0.70, 0.55, 'sine', 0.01, d);
@@ -185,7 +185,7 @@ function playGameEndSound() {
 }
 function playErrorSound() {
   try {
-    var ctx = _makeCtx(), d = _comp(ctx);
+    const ctx = _makeCtx(), d = _comp(ctx);
     // Descending dissonant sawtooth buzz
     _osc(ctx, 220, 0,    0.50, 0.70, 'sawtooth', 0.005, d);
     _osc(ctx, 165, 0.10, 0.50, 0.60, 'sawtooth', 0.005, d);
@@ -222,7 +222,7 @@ export function setSoundPref(key, val) {
 }
 
 export function toggleSoundPanel() {
-  var p = document.getElementById('soundPanel');
+  const p = document.getElementById('soundPanel');
   p.style.display = p.style.display === 'none' ? '' : 'none';
 }
 
@@ -230,13 +230,13 @@ export function toggleSoundPanel() {
 // (Combined here because they share the same global listener; the Dev Tools
 // branch will move to dev/panel.js when that subsystem is extracted.)
 export function onSoundPanelClickOutside(e) {
-  var panel = document.getElementById('soundPanel');
-  var btn = document.getElementById('ptbSoundBtn');
+  const panel = document.getElementById('soundPanel');
+  const btn = document.getElementById('ptbSoundBtn');
   if (panel && panel.style.display !== 'none' && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
     panel.style.display = 'none';
   }
-  var dbgPanel = document.getElementById('devToolsPanel');
-  var dbgBtn = document.getElementById('btnDevTools');
+  const dbgPanel = document.getElementById('devToolsPanel');
+  const dbgBtn = document.getElementById('btnDevTools');
   if (dbgPanel && dbgPanel.style.display !== 'none' && !dbgPanel.contains(e.target) && dbgBtn && !dbgBtn.contains(e.target)) {
     dbgPanel.style.display = 'none';
   }
