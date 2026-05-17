@@ -147,6 +147,9 @@ import {
 import { signInWithGitHub, signInWithEmail } from './auth/oauth.js';
 import { openMoreSheet, closeMoreSheet, toggleMoreSheet, openPulseOverflow, closePulseOverflow, togglePulseOverflow, openPulseShortcuts, closePulseShortcuts, updateHeaderCrumb, installMoreSheetEscClose } from './nav/sheet.js';
 import { installHideOnScroll, captureScroll, restoreScroll, installHashRouter, syncHash, installNavDotsRefresh, installNavLongPress, installNavClicks } from './nav/behavior.js';
+// DEBUG START
+import { installTouchDebug, toggleTouchDebug } from './dev/touchDebug.js';
+// DEBUG END
 import {
   VAPID_PUBLIC_KEY, urlBase64ToUint8Array,
   subscribeToPush, unsubscribeFromPush, togglePush,
@@ -706,6 +709,9 @@ document.addEventListener('visibilitychange',function(){
 
 installMoreSheetEscClose();
 installHideOnScroll();
+// DEBUG START
+installTouchDebug();
+// DEBUG END
 installNavClicks(showSection);
 installHashRouter(showSection);
 installNavDotsRefresh(30000);
@@ -729,6 +735,9 @@ document.addEventListener('keydown',function(e){
   if(e.shiftKey && e.key === 'C') { window.CollectionCard && window.CollectionCard.demo(); }
   if(e.shiftKey && e.key === 'P') { devTestVideoClip(); }
   if(e.shiftKey && e.key === 'N') { openNewsSourceTest(); } // TEMP — News tab QA
+  // DEBUG START
+  if(e.shiftKey && e.key === 'T') { toggleTouchDebug(); }
+  // DEBUG END
   if(e.shiftKey && e.key === 'L') {
     const p=document.getElementById('devToolsPanel');
     if(p && p.style.display!=='block') toggleDevTools();
